@@ -1,0 +1,37 @@
+#!/bin/bash
+#
+#BSUB -q cuda
+#BSUB -o /home/boonleng/radarsim/radarsim_stdout.txt
+#BSUB -e /home/boonleng/radarsim/radarsim_stderr.txt
+#BSUB -W 01:00
+#BSUB -N
+#
+# The BSUB directive below says to use 1 CPU core of one CPU chip
+# on one compute node, meaning that this batch jobs is non-parallel
+# (serial). DON'T CHANGE THIS.
+#
+#BSUB -n 2
+#BSUB -J "radarsim"
+
+function decho() {
+	echo $@
+	echo $@ >> ${errlog}
+}
+
+export CUDA_PATH="/opt/local/software/Cuda/4.2.9"
+export LD_LIBRARY_PATH="/usr/lib64:${CUDA_PATH}/lib64:${CUDA_PATH}/open64/lib:${CUDA_PATH}/lib:${LD_LIBRARY_PATH}"
+export PATH="${CUDA_PATH}/bin:${CUDA_PATH}/open64/bin:${PATH}"
+
+errlog="radarsim_stderr.txt"
+nowstr=`date`
+
+cd /home/boonleng/radarsim
+
+decho "================== $nowstr ================="
+decho `pwd`
+decho "radarsim"
+
+./radarsim -v -c -f 100
+decho "-----------------------------------------------------------------"
+./radarsim -vv -f 100
+

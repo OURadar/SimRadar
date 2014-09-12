@@ -1,0 +1,37 @@
+#!/bin/tcsh
+#
+#BSUB -q debug_cuda
+#BSUB -o /home/boonleng/radarsim/radarsim_stdout.txt
+#BSUB -e /home/boonleng/radarsim/radarsim_stderr.txt
+#BSUB -W 00:10
+#BSUB -N
+#
+# The BSUB directive below says to use 1 CPU core of one CPU chip
+# on one compute node, meaning that this batch jobs is non-parallel
+# (serial). DON'T CHANGE THIS.
+#
+#BSUB -n 1
+#BSUB -J "cldemo"
+
+setenv CUDA_PATH /opt/local/software/Cuda/4.2.9
+
+if ($?LD_LIBRARY_PATH) then
+  setenv LD_LIBRARY_PATH /usr/lib64:${CUDA_PATH}/lib64:${CUDA_PATH}/open64/lib:${CUDA_PATH}/lib:${LD_LIBRARY_PATH}
+else
+  setenv LD_LIBRARY_PATH /usr/lib64:${CUDA_PATH}/lib64:${CUDA_PATH}/open64/lib:${CUDA_PATH}/lib
+endif
+
+
+if ($?PATH) then
+  setenv PATH ${CUDA_PATH}/bin:${CUDA_PATH}/open64/bin:${PATH}
+else
+  setenv PATH ${CUDA_PATH}/bin:${CUDA_PATH}/open64/bin
+endif
+
+echo "========================================================"
+echo "========================================================" >> radarsim_stderr.txt
+cd /home/boonleng/radarsim
+pwd
+./cldemo
+
+
