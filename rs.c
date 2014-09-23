@@ -1981,6 +1981,7 @@ void RS_share_mem_with_vbo(RSHandle *H, unsigned int *vbo) {
 	for (int i=0; i<H->num_workers; i++) {
 		H->worker[i].vbo_scat_pos = vbo[0];
 		H->worker[i].vbo_scat_clr = vbo[1];
+		H->worker[i].vbo_scat_tfm = vbo[2];
 	}
 }
 

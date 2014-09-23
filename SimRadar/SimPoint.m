@@ -84,8 +84,7 @@
 
 - (void)shareVBOsWithGL:(GLuint *)vbos
 {
-	unsigned int uivbos[2] = {vbos[0], vbos[1]};
-	RS_share_mem_with_vbo(S, uivbos);
+	RS_share_mem_with_vbo(S, vbos);
 }
 
 - (void)upload

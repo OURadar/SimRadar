@@ -159,10 +159,10 @@ typedef struct _rs_worker {
 	// GPU side memory
 	cl_mem                 scat_pos;
 	cl_mem                 scat_vel;
-	cl_mem                 scat_ori;
-	cl_mem                 scat_att;
-	cl_mem                 scat_sig;
-	cl_mem                 scat_rnd;
+	cl_mem                 scat_ori;   // alpha, beta, gamma angles
+	cl_mem                 scat_att;   // type, dot products, range, etc.
+	cl_mem                 scat_sig;   // signal: Ih Qh Iv Qv
+	cl_mem                 scat_rnd;   // random seed
 	cl_mem                 work;
 	cl_mem                 pulse;
 
@@ -188,8 +188,10 @@ typedef struct _rs_worker {
 	// GPU side VBO's
 	unsigned int           vbo_scat_pos;
 	unsigned int           vbo_scat_clr;
-	
-	cl_mem                 scat_clr;        // color
+	unsigned int           vbo_scat_tfm;
+
+	cl_mem                 scat_clr;   // color
+	cl_mem                 scat_tfm;   // transformation in homogeneous coords (depends on scat_pos & scat_ori)
 	
 #else
 	

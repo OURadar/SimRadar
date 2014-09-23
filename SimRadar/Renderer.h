@@ -15,7 +15,7 @@
 typedef struct _draw_resource {
 	GLuint program;
 	GLuint vao;
-	GLuint vbo[4];       // positions, colors, tex_coord, wvp_mat
+	GLuint vbo[5];       // positions, colors, tex_coord, wvp_mat
 	GLint mvpUI;
 	GLint colorUI;
     GLint textureUI;
@@ -24,8 +24,9 @@ typedef struct _draw_resource {
 	GLfloat *colors;     // CPU side color
 	GLuint *indices;     // CPU side indexing for instancing
     GLint positionAI;
-    GLint colorAI;
-	GLint orientationAI;
+	GLint rotationAI;
+	GLint translationAI;
+	GLint colorAI;
     GLKTextureInfo *texture;
 } RenderResource;
 
