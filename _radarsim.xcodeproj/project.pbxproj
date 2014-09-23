@@ -7,23 +7,29 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B5110A4319CCCCE000EE0902 /* square.fsh in Resources */ = {isa = PBXBuildFile; fileRef = B5110A4119CCCCE000EE0902 /* square.fsh */; };
+		B5110A4419CCCCE000EE0902 /* square.vsh in Resources */ = {isa = PBXBuildFile; fileRef = B5110A4219CCCCE000EE0902 /* square.vsh */; };
 		B51767C118A2DFB700D47C27 /* Curious-Minion-Icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = B51767C018A2DFB700D47C27 /* Curious-Minion-Icon.icns */; };
 		B527893118A13C4400650679 /* radarsim.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281717D7C2F400E4DE66 /* radarsim.c */; };
 		B527893318A13C5F00650679 /* rs.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281917D7C4D500E4DE66 /* rs.c */; };
 		B527893418A13C6D00650679 /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
 		B527893518A13C6D00650679 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5EF31BD18205EC8002DDEFC /* OpenGL.framework */; };
-		B537B9F7199DA37D00460E82 /* les in Resources */ = {isa = PBXBuildFile; fileRef = B537B9F5199DA2E800460E82 /* les */; };
-		B537B9F8199DA3BE00460E82 /* les in CopyFiles */ = {isa = PBXBuildFile; fileRef = B537B9F5199DA2E800460E82 /* les */; };
 		B541C630188DF896000AF6DD /* shape_sc.fsh in Resources */ = {isa = PBXBuildFile; fileRef = B593683D188DE4BC00B4106C /* shape_sc.fsh */; };
 		B541C631188DF896000AF6DD /* shape_sc.vsh in Resources */ = {isa = PBXBuildFile; fileRef = B593683E188DE4BC00B4106C /* shape_sc.vsh */; };
 		B54DEB3718A5453800EBEC07 /* Minion-Icons in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB3618A5453800EBEC07 /* Minion-Icons */; };
 		B54DEB3918A56A5700EBEC07 /* Sparkle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B54DEB3818A56A5700EBEC07 /* Sparkle.framework */; };
-		B54DEB3C18A572EB00EBEC07 /* Sparkle.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = B54DEB3818A56A5700EBEC07 /* Sparkle.framework */; };
+		B54DEB3C18A572EB00EBEC07 /* Sparkle.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = B54DEB3818A56A5700EBEC07 /* Sparkle.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		B54DEB4218A5746E00EBEC07 /* versions.html in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB4118A5746E00EBEC07 /* versions.html */; };
 		B54DEB4318A5748100EBEC07 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = B5EF318618204B5C002DDEFC /* MainMenu.xib */; };
 		B54DEB4518A582F100EBEC07 /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB4418A582F100EBEC07 /* dsa_pub.pem */; };
 		B5576B8B18315B3B0012E6F5 /* SimPoint.m in Sources */ = {isa = PBXBuildFile; fileRef = B5576B8A18315B3B0012E6F5 /* SimPoint.m */; };
 		B5576B8E1831612A0012E6F5 /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
+		B55A0B4E19D0AD4300875832 /* sphere1.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B4919D0AD4300875832 /* sphere1.png */; };
+		B55A0B4F19D0AD4300875832 /* sphere16.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B4A19D0AD4300875832 /* sphere16.png */; };
+		B55A0B5019D0AD4300875832 /* SphereAda.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B4B19D0AD4300875832 /* SphereAda.png */; };
+		B55A0B5119D0AD4300875832 /* texture_32.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B4C19D0AD4300875832 /* texture_32.png */; };
+		B55A0B5319D0B00400875832 /* sphere64.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B5219D0B00400875832 /* sphere64.png */; };
+		B55A0B5519D0B93E00875832 /* disc64.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B5419D0B93E00875832 /* disc64.png */; };
 		B56077F617E356A70068C6BE /* cldemo.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A280617D7B1EC00E4DE66 /* cldemo.c */; };
 		B56077F717E356B10068C6BE /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
 		B570B0B118BC5B5500391717 /* rs.cl in Sources */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
@@ -42,6 +48,8 @@
 		B5D1421A18AA73220041566E /* test_make_pulse.c in Sources */ = {isa = PBXBuildFile; fileRef = B5D1420A18AA72E90041566E /* test_make_pulse.c */; };
 		B5D1421C18AA7D720041566E /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
 		B5D1421D18ABD4380041566E /* reduce.cl in CopyFiles */ = {isa = PBXBuildFile; fileRef = B5760EAD18A94328008DAF83 /* reduce.cl */; };
+		B5D1B11019D0EE8300769416 /* leaf.fsh in Resources */ = {isa = PBXBuildFile; fileRef = B5D1B10E19D0EE8300769416 /* leaf.fsh */; };
+		B5D1B11119D0EE8300769416 /* leaf.vsh in Resources */ = {isa = PBXBuildFile; fileRef = B5D1B10F19D0EE8300769416 /* leaf.vsh */; };
 		B5EF317218204B5C002DDEFC /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5EF317118204B5C002DDEFC /* Cocoa.framework */; };
 		B5EF317C18204B5C002DDEFC /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = B5EF317A18204B5C002DDEFC /* InfoPlist.strings */; };
 		B5EF317E18204B5C002DDEFC /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = B5EF317D18204B5C002DDEFC /* main.m */; };
@@ -72,7 +80,6 @@
 			dstSubfolderSpec = 16;
 			files = (
 				B582522718BF2F1300ADFCD5 /* rs.cl in CopyFiles */,
-				B537B9F8199DA3BE00460E82 /* les in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -142,9 +149,10 @@
 		B50A281617D7C21F00E4DE66 /* rs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = rs.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		B50A281717D7C2F400E4DE66 /* radarsim.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = radarsim.c; sourceTree = "<group>"; };
 		B50A281917D7C4D500E4DE66 /* rs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = rs.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
+		B5110A4119CCCCE000EE0902 /* square.fsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = square.fsh; sourceTree = "<group>"; };
+		B5110A4219CCCCE000EE0902 /* square.vsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = square.vsh; sourceTree = "<group>"; };
 		B51767C018A2DFB700D47C27 /* Curious-Minion-Icon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = "Curious-Minion-Icon.icns"; sourceTree = "<group>"; };
 		B527892C18A13C0100650679 /* radarsim */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = radarsim; sourceTree = BUILT_PRODUCTS_DIR; };
-		B537B9F5199DA2E800460E82 /* les */ = {isa = PBXFileReference; lastKnownFileType = folder; path = les; sourceTree = "<group>"; };
 		B54DEB3618A5453800EBEC07 /* Minion-Icons */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "Minion-Icons"; sourceTree = "<group>"; };
 		B54DEB3818A56A5700EBEC07 /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Sparkle.framework; sourceTree = "<group>"; };
 		B54DEB3E18A5742300EBEC07 /* SimRadar-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "SimRadar-Info.plist"; sourceTree = "<group>"; };
@@ -153,6 +161,12 @@
 		B54DEB4418A582F100EBEC07 /* dsa_pub.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = dsa_pub.pem; sourceTree = "<group>"; };
 		B5576B8918315B3B0012E6F5 /* SimPoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SimPoint.h; sourceTree = "<group>"; };
 		B5576B8A18315B3B0012E6F5 /* SimPoint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SimPoint.m; sourceTree = "<group>"; };
+		B55A0B4919D0AD4300875832 /* sphere1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = sphere1.png; sourceTree = "<group>"; };
+		B55A0B4A19D0AD4300875832 /* sphere16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = sphere16.png; sourceTree = "<group>"; };
+		B55A0B4B19D0AD4300875832 /* SphereAda.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = SphereAda.png; sourceTree = "<group>"; };
+		B55A0B4C19D0AD4300875832 /* texture_32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = texture_32.png; sourceTree = "<group>"; };
+		B55A0B5219D0B00400875832 /* sphere64.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = sphere64.png; sourceTree = "<group>"; };
+		B55A0B5419D0B93E00875832 /* disc64.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = disc64.png; sourceTree = "<group>"; };
 		B56077EF17E356910068C6BE /* cldemo */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = cldemo; sourceTree = BUILT_PRODUCTS_DIR; };
 		B570B0AF18BC5B5500391717 /* rs.cl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.opencl; path = rs.cl; sourceTree = "<group>"; };
 		B5760E9E18A938D3008DAF83 /* test_clreduce */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_clreduce; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -168,6 +182,8 @@
 		B5BAD56218B67E8B007AC15D /* test_make_pulse copy */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "test_make_pulse copy"; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5D1420A18AA72E90041566E /* test_make_pulse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_make_pulse.c; sourceTree = "<group>"; };
 		B5D1420F18AA72F80041566E /* test_make_pulse */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_make_pulse; sourceTree = BUILT_PRODUCTS_DIR; };
+		B5D1B10E19D0EE8300769416 /* leaf.fsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = leaf.fsh; sourceTree = "<group>"; };
+		B5D1B10F19D0EE8300769416 /* leaf.vsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = leaf.vsh; sourceTree = "<group>"; };
 		B5EF317018204B5C002DDEFC /* SimRadar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimRadar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5EF317118204B5C002DDEFC /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		B5EF317418204B5C002DDEFC /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
@@ -272,9 +288,9 @@
 		B50A27FF17D7B1DC00E4DE66 = {
 			isa = PBXGroup;
 			children = (
-				B537B9F4199DA2AA00460E82 /* Data */,
 				B57ADA6117E225EE00B03074 /* Makefile */,
 				B54DEB4118A5746E00EBEC07 /* versions.html */,
+				B55A0B4719D0AD4300875832 /* images */,
 				B57ADA5F17E2068F00B03074 /* Kernels */,
 				B50A281517D7BF0900E4DE66 /* Sources */,
 				B519295217D9153C00AB3687 /* Programs */,
@@ -347,12 +363,18 @@
 			path = ..;
 			sourceTree = "<group>";
 		};
-		B537B9F4199DA2AA00460E82 /* Data */ = {
+		B55A0B4719D0AD4300875832 /* images */ = {
 			isa = PBXGroup;
 			children = (
-				B537B9F5199DA2E800460E82 /* les */,
+				B55A0B4919D0AD4300875832 /* sphere1.png */,
+				B55A0B4A19D0AD4300875832 /* sphere16.png */,
+				B55A0B4B19D0AD4300875832 /* SphereAda.png */,
+				B55A0B4C19D0AD4300875832 /* texture_32.png */,
+				B55A0B5219D0B00400875832 /* sphere64.png */,
+				B55A0B5419D0B93E00875832 /* disc64.png */,
 			);
-			name = Data;
+			name = images;
+			path = SimRadar/images;
 			sourceTree = "<group>";
 		};
 		B57ADA5F17E2068F00B03074 /* Kernels */ = {
@@ -425,6 +447,10 @@
 				B5EF31B818205A7B002DDEFC /* shape.vsh */,
 				B593683D188DE4BC00B4106C /* shape_sc.fsh */,
 				B593683E188DE4BC00B4106C /* shape_sc.vsh */,
+				B5110A4119CCCCE000EE0902 /* square.fsh */,
+				B5110A4219CCCCE000EE0902 /* square.vsh */,
+				B5D1B10E19D0EE8300769416 /* leaf.fsh */,
+				B5D1B10F19D0EE8300769416 /* leaf.vsh */,
 			);
 			path = Shaders;
 			sourceTree = "<group>";
@@ -559,7 +585,7 @@
 		B50A280017D7B1DC00E4DE66 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0510;
+				LastUpgradeCheck = 0600;
 				ORGANIZATIONNAME = "Boon Leng Cheong";
 			};
 			buildConfigurationList = B50A280317D7B1DC00E4DE66 /* Build configuration list for PBXProject "_radarsim" */;
@@ -592,18 +618,27 @@
 			buildActionMask = 2147483647;
 			files = (
 				B54DEB4318A5748100EBEC07 /* MainMenu.xib in Resources */,
+				B55A0B5019D0AD4300875832 /* SphereAda.png in Resources */,
+				B55A0B5519D0B93E00875832 /* disc64.png in Resources */,
 				B54DEB4518A582F100EBEC07 /* dsa_pub.pem in Resources */,
+				B5110A4419CCCCE000EE0902 /* square.vsh in Resources */,
 				B541C630188DF896000AF6DD /* shape_sc.fsh in Resources */,
 				B541C631188DF896000AF6DD /* shape_sc.vsh in Resources */,
+				B55A0B5319D0B00400875832 /* sphere64.png in Resources */,
+				B55A0B4E19D0AD4300875832 /* sphere1.png in Resources */,
 				B5EF31BB18205AA8002DDEFC /* shape.fsh in Resources */,
+				B5D1B11019D0EE8300769416 /* leaf.fsh in Resources */,
 				B5EF31BC18205AAD002DDEFC /* shape.vsh in Resources */,
 				B5EF317C18204B5C002DDEFC /* InfoPlist.strings in Resources */,
 				B54DEB4218A5746E00EBEC07 /* versions.html in Resources */,
+				B55A0B5119D0AD4300875832 /* texture_32.png in Resources */,
 				B5EF318218204B5C002DDEFC /* Credits.rtf in Resources */,
 				B54DEB3718A5453800EBEC07 /* Minion-Icons in Resources */,
+				B55A0B4F19D0AD4300875832 /* sphere16.png in Resources */,
+				B5110A4319CCCCE000EE0902 /* square.fsh in Resources */,
 				B5EF31C2182060E1002DDEFC /* LiveDisplay.xib in Resources */,
 				B51767C118A2DFB700D47C27 /* Curious-Minion-Icon.icns in Resources */,
-				B537B9F7199DA37D00460E82 /* les in Resources */,
+				B5D1B11119D0EE8300769416 /* leaf.vsh in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

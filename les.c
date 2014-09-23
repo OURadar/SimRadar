@@ -248,29 +248,40 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
     if (getcwd(cwd, sizeof(cwd)) == NULL)
         fprintf(stderr, "Error in getcwd()\n");
     
-    char search_paths[][1024] = {"./les", ""};
+    char search_paths[10][1024] = {"./les"};
+	
     if (path == NULL) {
         snprintf(search_paths[1], 1024, "%s/%s", cwd, "Contents/Resources/les");
     } else {
-        snprintf(search_paths[1], 1024, "%s/%s", path, "les");
+		snprintf(search_paths[1], 1024, "%s/%s", path, "les");
     }
 
-    struct stat path_stat;
-    char *les_path;
-    int ret;
+	char *ctmp = getenv("HOME");
+	if (ctmp != NULL) {
+		printf("HOME = %s\n", ctmp);
+		snprintf(search_paths[2], 1024, "%s/Desktop/les", ctmp);
+		snprintf(search_paths[3], 1024, "%s/Douments/les", ctmp);
+		snprintf(search_paths[4], 1024, "%s/Downloads/les", ctmp);
+	}
+	
+    struct stat path_stat, file_stat;
+    char *les_path, les_file_path[1024];
+    int dir_ret, file_ret;
     for (int i=0; i<sizeof(search_paths)/sizeof(search_paths[0]); i++) {
         les_path = search_paths[i];
-        ret = stat(les_path, &path_stat);
-        if (ret == 0 && S_ISDIR(path_stat.st_mode)) {
+		snprintf(les_file_path, 1024, "%s/twocell/fort.10_2", les_path);
+        dir_ret = stat(les_path, &path_stat);
+		file_ret = stat(les_file_path, &file_stat);
+        if (dir_ret == 0 && S_ISDIR(path_stat.st_mode) && S_ISREG(file_stat.st_mode)) {
 
-#ifdef DEBUG
+//#ifdef DEBUG
             printf("Found LES folder @ %s\n", les_path);
-#endif
+//#endif
 
             break;
         }
     }
-    if (ret < 0) {
+    if (dir_ret < 0) {
         fprintf(stderr, "Unable to find the LES data folder.\n");
         return NULL;
     }

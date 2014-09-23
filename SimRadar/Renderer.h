@@ -15,12 +15,18 @@
 typedef struct _draw_resource {
 	GLuint program;
 	GLuint vao;
-	GLuint vbo[2];
+	GLuint vbo[4];       // positions, colors, tex_coord, wvp_mat
 	GLint mvpUI;
 	GLint colorUI;
+    GLint textureUI;
 	GLuint count;
-	GLfloat *positions;
-	GLfloat *colors;
+	GLfloat *positions;  // CPU side position
+	GLfloat *colors;     // CPU side color
+	GLuint *indices;     // CPU side indexing for instancing
+    GLint positionAI;
+    GLint colorAI;
+	GLint orientationAI;
+    GLKTextureInfo *texture;
 } RenderResource;
 
 
@@ -50,6 +56,7 @@ typedef struct _draw_resource {
 	RenderResource bodyRenderer;
 	RenderResource anchorRenderer;
 	RenderResource anchorLineRenderer;
+	RenderResource leafRenderer;
 	
 	GLfloat pixelsPerUnit;
 	GLfloat unitsPerPixel;
@@ -73,6 +80,7 @@ typedef struct _draw_resource {
 - (void)setAnchorPoints:(GLfloat *)points number:(GLuint)number;
 - (void)setAnchorLines:(GLfloat *)lines number:(GLuint)number;
 - (void)setCenterPoisitionX:(GLfloat)x y:(GLfloat)y z:(GLfloat)z;
+- (void)makeOneLeaf;
 
 - (void)allocateVAO;
 - (void)render;
