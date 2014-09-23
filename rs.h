@@ -188,10 +188,9 @@ typedef struct _rs_worker {
 	// GPU side VBO's
 	unsigned int           vbo_scat_pos;
 	unsigned int           vbo_scat_clr;
-	unsigned int           vbo_scat_tfm;
+	unsigned int           vbo_scat_ori;
 
 	cl_mem                 scat_clr;   // color
-	cl_mem                 scat_tfm;   // transformation in homogeneous coords (depends on scat_pos & scat_ori)
 	
 #else
 	

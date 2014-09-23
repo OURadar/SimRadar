@@ -9,20 +9,14 @@ out vec4 varColor;
 
 void main (void)
 {
-	mat4 transformMatrix = mat4(1.0);
+	mat4 transformMatrix;
+	vec3 c = cos(inRotation);
+	vec3 s = sin(inRotation);
 	
-	vec3 cos_angles = cos(inRotation);
-	vec3 sin_angles = sin(inRotation);
-	
-//	transformMatrix[0][0] =  cos_angles.x;   transformMatrix[1][0] =  sin_angles.x;    transformMatrix[2][0] = 0.0f;
-//	transformMatrix[0][1] = -sin_angles.x;   transformMatrix[1][0] =  cos_angles.x;    transformMatrix[2][0] = 0.0f;
-//	transformMatrix[0][2] =  0.0f;           transformMatrix[1][0] =  0.0f;            transformMatrix[2][0] = 1.0f;
-	
-//	transformMatrix[3].x = inTranslation.x;
-//	transformMatrix[3].y = inTranslation.y;
-//	transformMatrix[3].z = inTranslation.z;
-	
-	transformMatrix[3].xyz = inTranslation;
+	transformMatrix[0] = vec4( c.z * c.y * c.x - s.z * s.x ,  s.z * c.y * c.x + c.z * s.x , -s.y * c.x , 0.0);
+	transformMatrix[1] = vec4(-c.z * c.y * s.x - s.z * c.x , -s.z * c.y * s.x + c.z * c.x ,  s.y * s.x , 0.0);
+	transformMatrix[2] = vec4( c.z * s.y                   ,  s.z * s.y                   ,  c.y       , 0.0);
+	transformMatrix[3] = vec4(inTranslation, 1.0);
 	
 	gl_Position = modelViewProjectionMatrix * transformMatrix * vec4(inPosition, 1.0);
 

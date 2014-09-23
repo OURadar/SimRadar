@@ -96,4 +96,7 @@ typedef struct _draw_resource {
 - (void)toggleSpinModel;
 - (void)toggleSpinModelReverse;
 
+- (void)increaseLeaves;
+- (void)decreaseLeaves;
+
 @end

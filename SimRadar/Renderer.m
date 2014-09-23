@@ -200,15 +200,16 @@
 		NSLog(@"leafRenderer.positions allocated @ %p", leafRenderer.positions);
 	}
 	
-	leafRenderer.positions[0]  =  1.0f;   leafRenderer.positions[1]  =  0.0f;   leafRenderer.positions[2]  = 0.0f;   leafRenderer.positions[3]  = 1.0f;
-	leafRenderer.positions[4]  = -1.0f;   leafRenderer.positions[5]  =  0.0f;   leafRenderer.positions[6]  = 0.0f;   leafRenderer.positions[7]  = 1.0f;
-	leafRenderer.positions[8]  =  0.0f;   leafRenderer.positions[9]  =  2.0f;   leafRenderer.positions[10] = 0.0f;   leafRenderer.positions[11] = 1.0f;
-	leafRenderer.positions[12] =  0.0f;   leafRenderer.positions[13] = -1.0f;   leafRenderer.positions[14] = 0.0f;   leafRenderer.positions[15] = 1.0f;
-	leafRenderer.positions[16] =  0.0f;   leafRenderer.positions[17] = -1.0f;   leafRenderer.positions[18] = 0.5f;   leafRenderer.positions[19] = 1.0f;
+	leafRenderer.positions[0]  =  1.0f;   leafRenderer.positions[1]  =  0.0f;   leafRenderer.positions[2]  = 0.0f;   leafRenderer.positions[3]  = 0.0f;
+	leafRenderer.positions[4]  = -1.0f;   leafRenderer.positions[5]  =  0.0f;   leafRenderer.positions[6]  = 0.0f;   leafRenderer.positions[7]  = 0.0f;
+	leafRenderer.positions[8]  =  0.0f;   leafRenderer.positions[9]  =  2.0f;   leafRenderer.positions[10] = 0.0f;   leafRenderer.positions[11] = 0.0f;
+	leafRenderer.positions[12] =  0.0f;   leafRenderer.positions[13] = -1.0f;   leafRenderer.positions[14] = 0.0f;   leafRenderer.positions[15] = 0.0f;
+	leafRenderer.positions[16] =  0.0f;   leafRenderer.positions[17] = -1.0f;   leafRenderer.positions[18] = 0.5f;   leafRenderer.positions[19] = 0.0f;
+	leafRenderer.positions[20] =  0.0f;   leafRenderer.positions[21] =  0.0f;   leafRenderer.positions[22] = 0.0f;   leafRenderer.positions[23] = 0.0f;
 
-	leafRenderer.count = 10;
+	leafRenderer.count = 50;
 	
-	for (int i=0; i<20; i++) {
+	for (int i=0; i<24; i++) {
 		leafRenderer.positions[i] *= 50.0f;
 	}
 	
@@ -518,7 +519,6 @@
 	
 	glGenBuffers(1, gridRenderer.vbo);
 	
-	NSLog(@"gridRenderer.count = %d", gridRenderer.count);
 	glBindBuffer(GL_ARRAY_BUFFER, gridRenderer.vbo[0]);
 	glBufferData(GL_ARRAY_BUFFER, gridRenderer.count * sizeof(cl_float4), gridRenderer.positions, GL_STATIC_DRAW);
 	glVertexAttribPointer(gridRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, 0);
@@ -528,18 +528,23 @@
 	// Scatter body
 	glBindVertexArray(bodyRenderer.vao);
 	
-	glGenBuffers(2, bodyRenderer.vbo);
+	glGenBuffers(3, bodyRenderer.vbo);
 	
-	glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer.vbo[0]);
+	glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer.vbo[0]);  // position
 	glBufferData(GL_ARRAY_BUFFER, bodyRenderer.count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
 	glVertexAttribPointer(bodyRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(bodyRenderer.positionAI);
 	
-	glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer.vbo[1]);
+	glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer.vbo[1]);  // color
 	glBufferData(GL_ARRAY_BUFFER, bodyRenderer.count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
 	glVertexAttribPointer(bodyRenderer.colorAI, 4, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(bodyRenderer.colorAI);
 	
+	glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer.vbo[2]);  // angles
+	glBufferData(GL_ARRAY_BUFFER, bodyRenderer.count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
+	glVertexAttribPointer(bodyRenderer.rotationAI, 4, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(bodyRenderer.rotationAI);
+
 	
 	// Anchor
 	glBindVertexArray(anchorRenderer.vao);
@@ -567,52 +572,24 @@
 	
 	glGenBuffers(3, leafRenderer.vbo);
 	
-	NSLog(@"leafRenderer.positionAI = %d", leafRenderer.positionAI);
-	NSLog(@"leafRenderer.rotationAI = %d", leafRenderer.rotationAI);
-	NSLog(@"leafRenderer.translationAI = %d", leafRenderer.translationAI);
-
-	glBindBuffer(GL_ARRAY_BUFFER, leafRenderer.vbo[0]);
+	glBindBuffer(GL_ARRAY_BUFFER, leafRenderer.vbo[0]);  // Debris primitive
 	glBufferData(GL_ARRAY_BUFFER, 5 * sizeof(cl_float4), leafRenderer.positions, GL_STATIC_DRAW);
 	glVertexAttribPointer(leafRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(leafRenderer.positionAI);
 	
-	glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer.vbo[0]);
+	glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer.vbo[0]);  // Debris position as translation
 	glVertexAttribPointer(leafRenderer.translationAI, 4, GL_FLOAT, GL_FALSE, 0, 0);
 	glVertexAttribDivisor(leafRenderer.translationAI, 1);
 	glEnableVertexAttribArray(leafRenderer.translationAI);
 
-	cl_float4 zeros[10];
-	memset(zeros, 0, 10 * sizeof(cl_float4));
-	glBindBuffer(GL_ARRAY_BUFFER, leafRenderer.vbo[1]);
-	glBufferData(GL_ARRAY_BUFFER, bodyRenderer.count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer.vbo[2]);  // Debris angles as rotation
 	glVertexAttribPointer(leafRenderer.rotationAI, 4, GL_FLOAT, GL_FALSE, 0, 0);
 	glVertexAttribDivisor(leafRenderer.rotationAI, 1);
 	glEnableVertexAttribArray(leafRenderer.rotationAI);
 
-//	glBindBuffer(GL_ARRAY_BUFFER, leafRenderer.vbo[3]);
-//	GLKMatrix4 mvp[10];
-////    mvp[0] = GLKMatrix4Scale(GLKMatrix4MakeTranslation(-2000.0f, 10000.0f, 500.0f), 200.0f, 200.0f, 200.0f);
-////    mvp[1] = GLKMatrix4Scale(GLKMatrix4MakeTranslation(1000.0f, 10000.0f, 1200.0f), 200.0f, 200.0f, 200.0f);
-//	for (int i=0; i<10; i++) {
-//		mvp[i] = GLKMatrix4Identity;
-//	}
-//	glBufferData(GL_ARRAY_BUFFER, 10 * sizeof(GLKMatrix4), mvp, GL_STATIC_DRAW);
-//	glVertexAttribPointer(leafRenderer.transformMatrixAI    , 4, GL_FLOAT, GL_FALSE, sizeof(GLKMatrix4), NULL);
-//	glVertexAttribPointer(leafRenderer.transformMatrixAI + 1, 4, GL_FLOAT, GL_FALSE, sizeof(GLKMatrix4), (const void *)(1 * sizeof(GLKVector4)));
-//	glVertexAttribPointer(leafRenderer.transformMatrixAI + 2, 4, GL_FLOAT, GL_FALSE, sizeof(GLKMatrix4), (const void *)(2 * sizeof(GLKVector4)));
-//	glVertexAttribPointer(leafRenderer.transformMatrixAI + 3, 4, GL_FLOAT, GL_FALSE, sizeof(GLKMatrix4), (const void *)(3 * sizeof(GLKVector4)));
-//	glVertexAttribDivisor(leafRenderer.transformMatrixAI    , 1);
-//	glVertexAttribDivisor(leafRenderer.transformMatrixAI + 1, 1);
-//	glVertexAttribDivisor(leafRenderer.transformMatrixAI + 2, 1);
-//	glVertexAttribDivisor(leafRenderer.transformMatrixAI + 3, 1);
-//	glEnableVertexAttribArray(leafRenderer.transformMatrixAI);
-//	glEnableVertexAttribArray(leafRenderer.transformMatrixAI + 1);
-//	glEnableVertexAttribArray(leafRenderer.transformMatrixAI + 2);
-//	glEnableVertexAttribArray(leafRenderer.transformMatrixAI + 3);
-
-	GLuint indices[] = {2, 0, 1, 2, 3, 4};
+	GLuint indices[] = {5, 1, 2, 0, 5, 3, 4};
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, leafRenderer.vbo[2]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(GLuint), indices, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	#ifdef DEBUG
 	NSLog(@"VBOs %d %d %d ...", bodyRenderer.vbo[0], bodyRenderer.vbo[1], anchorRenderer.vbo[0]);
@@ -700,7 +677,7 @@
 	glUseProgram(leafRenderer.program);
 	glUniform4f(leafRenderer.colorUI, 0.3f, 1.0f, 0.0f, 1.0f);
     glUniformMatrix4fv(leafRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
-	glDrawElementsInstanced(GL_LINE_STRIP, 6, GL_UNSIGNED_INT, leafRenderer.indices, 200);
+	glDrawElementsInstanced(GL_LINE_STRIP, 7, GL_UNSIGNED_INT, NULL, leafRenderer.count);
 }
 
 #pragma mark -
@@ -781,6 +758,20 @@
 - (void)toggleSpinModelReverse
 {
 	spinModel = spinModel == 0 ? 5 : spinModel - 1;
+}
+
+- (void)increaseLeaves
+{
+	if (leafRenderer.count < bodyRenderer.count - 100) {
+		leafRenderer.count += 100;
+	}
+}
+
+- (void)decreaseLeaves
+{
+	if (leafRenderer.count > 100) {
+		leafRenderer.count -= 100;
+	}
 }
 
 @end

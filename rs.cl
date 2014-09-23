@@ -115,6 +115,22 @@ __kernel void scat_mov(__global float4 *p,
 	iidx_int = convert_uint2(fidx_int);
 	a[i].s3 = mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
 
+	const float4 ages = (float4)(a[i].s1, a[i].s1, a[i].s1, 0.0f);
+	const float4 offsets = (float4)(0.625f, 0.375f, 0.125f, 0.0f);
+	const float4 a_max = (float4)(M_PI_F * 0.7f, M_PI_2_F, M_PI_2_F, 0.0f) * 8.0f;
+
+	float4 lo = o[i];
+	
+	lo = clamp(ages - offsets, 0.0f, 0.125f);
+//	if (i == 9) {
+//		printf("i=%3d   %6.4f  o = [ %6.3f, %6.3f, %6.3f ]\n",
+//			   i, a[i].s1, lo.x, lo.y, lo.z);
+//	}
+	lo *= a_max;
+
+	o[i] = lo;
+
+	
 //	if (i < 3) {
 //		printf("i=%3d  angle=%6.3f --> %6.3f, %6.3f, %6.3f --> w=%6.3f\n",
 //			   i, angle, fidx_int.s0, fidx_int.s1, fidx_dec.s0, a[i].s3);

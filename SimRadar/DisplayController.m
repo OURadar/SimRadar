@@ -219,6 +219,13 @@ NSWindow *standardWindow;
 			[rootSender resetSimulator:self];
 			break;
 
+		case ']':
+			[glView.renderer increaseLeaves];
+			break;
+		case '[':
+			[glView.renderer decreaseLeaves];
+			break;
+			
 		default:
 			// Allow other character to be handled by how the superclass defined it
 			[super keyDown:event];

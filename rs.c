@@ -203,13 +203,14 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	// printf("Creating cl_mem from vbo ... %d %d\n", C->vbo_scat_pos, C->vbo_scat_clr);
 	C->scat_pos = gcl_gl_create_ptr_from_buffer(C->vbo_scat_pos);
 	C->scat_clr = gcl_gl_create_ptr_from_buffer(C->vbo_scat_clr);
-	if (C->scat_pos == NULL || C->scat_clr == NULL) {
+	C->scat_ori = gcl_gl_create_ptr_from_buffer(C->vbo_scat_ori);
+	if (C->scat_pos == NULL || C->scat_clr == NULL || C->scat_ori == NULL) {
 		fprintf(stderr, "%s : RS : Error in gcl_gl_create_ptr_from_buffer().\n", now());
 		return;
 	}
 	
 	C->scat_vel = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
-	C->scat_ori = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
+	//C->scat_ori = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
 	C->scat_att = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
 	C->scat_sig = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
 	C->work = gcl_malloc(RS_MAX_GATES * RS_CL_GROUP_ITEMS * sizeof(cl_float4), NULL, 0);
@@ -1981,7 +1982,7 @@ void RS_share_mem_with_vbo(RSHandle *H, unsigned int *vbo) {
 	for (int i=0; i<H->num_workers; i++) {
 		H->worker[i].vbo_scat_pos = vbo[0];
 		H->worker[i].vbo_scat_clr = vbo[1];
-		H->worker[i].vbo_scat_tfm = vbo[2];
+		H->worker[i].vbo_scat_ori = vbo[2];
 	}
 }
 
