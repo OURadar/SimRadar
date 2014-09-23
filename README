@@ -1,2 +1,18 @@
-README File
+Requirements:
+=============
+C compiler
+OpenCL framework
+Make utility
 
+
+Optional:
+=========
+XCode
+
+
+Compilation:
+===========
+
+A Makefile is included in the archive. To compile a command line radar simulator, unzip the archive and use the command:
+
+make
