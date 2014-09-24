@@ -49,6 +49,7 @@ typedef struct _draw_resource {
 	
 	GLKMatrix4 modelView, projection, modelViewProjection;
 	GLKMatrix4 modelRotate;
+    GLKMatrix4 hudMatrix;
 	
 	GLint MVPUniformIndex, singleColorMVPUniformIndex;
 	GLint ColorUniformIndex;
@@ -58,6 +59,7 @@ typedef struct _draw_resource {
 	RenderResource anchorRenderer;
 	RenderResource anchorLineRenderer;
 	RenderResource leafRenderer;
+	RenderResource hudRenderer;
 	
 	GLfloat pixelsPerUnit;
 	GLfloat unitsPerPixel;

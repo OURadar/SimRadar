@@ -20,6 +20,8 @@
 #pragma mark -
 #pragma Properties
 
+@synthesize az_deg;
+
 - (NSInteger)numberOfPoints {
 	return (NSInteger)S->num_scats;
 }

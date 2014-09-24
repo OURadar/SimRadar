@@ -2000,7 +2000,7 @@ void RS_update_colors_only(RSHandle *H) {
 							 (cl_float *)H->worker[i].angular_weight,
 							 H->worker[i].angular_weight_desc,
 							 H->beam_pos,
-							 (unsigned int)H->worker[i].num_scats * 3 / 4);
+							 (unsigned int)H->worker[i].num_scats);
 			dispatch_semaphore_signal(H->worker[i].sem);
 		});
 	}

@@ -35,7 +35,7 @@
 @property (nonatomic, readonly) BOOL busy;
 @property (nonatomic, assign) id<SimPointDelegate> delegate;
 @property (nonatomic, readonly) NSInteger numberOfPoints;
-
+@property (nonatomic, readonly, getter=azimuthInDegrees) float az_deg;
 
 - (void)shareVBOsWithGL:(GLuint *)vbos;
 - (void)upload;

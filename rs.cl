@@ -183,6 +183,20 @@ __kernel void scat_chk(__global float4 *p,
 }
 
 
+float4 set_clr(float4 att)
+{
+	float g = clamp(fma(log10(att.s3), 0.3f, 1.5f), 0.05f, 0.3f);
+	
+	float4 c;
+
+	c.x = clamp(0.4f * att.s1, 0.0f, 1.0f) + 0.6f * g;
+	c.y = 0.9f * g;
+	c.z = clamp(1.0f - c.x - 3.5f * g, 0.0f, 1.0f) + 0.2f * (g - 0.1f);
+	c.w = 0.3f;
+	
+	return c;
+}
+
 //
 // c - color
 // p - position
@@ -199,21 +213,7 @@ __kernel void scat_clr(__global float4 *c,
 {
 	unsigned int i = get_global_id(0);
 
-	float g = clamp(fma(log10(a[i].s3), 0.25f, 1.5f), 0.05f, 0.25f);
-	
-	//c[i].x = i > n ? 0.0f : 1.0f;
-	//c[i].x = 0.4f;
-	c[i].x = clamp(0.75f * a[i].s1, 0.0f, 1.0f);
-    //c[i].x = 1.0f;
-	c[i].y = g;
-	//c[i].z = 1.0f - c[i].y;
-	//c[i].w = 0.4f;
-	//c[i].y = 0.5f;
-	c[i].z = clamp(1.0f - c[i].x - 2.5f * g, 0.0f, 1.0f);
-	//c[i].z = 1.0f - a[i].s1;
-    //c[i].z = 1.0f;
-    c[i].w = 0.2f;
-	//c[i].w = 1.0f - c[i].x;
+	c[i] = set_clr(a[i]);
 }
 
 
@@ -242,13 +242,11 @@ __kernel void scat_clr2(__global float4 *c,
 	fidx_dec = fract(fidx_raw, &fidx_int);
 	iidx_int = convert_uint2(fidx_int);
 
+	a[i].s3 = mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
+
 	//float w = mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
-	
-	//c[i].x = i < n ? 0.0f : 1.0f;
-	c[i].x = a[i].s1;
-	c[i].y = clamp(fma(log10(a[i].s3), 0.25f, 1.5f), 0.1f, 0.5f);
-	c[i].z = 1.0f - c[i].x;
-	c[i].w = 0.2f;
+
+	c[i] = set_clr(a[i]);
 }
 
 

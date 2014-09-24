@@ -7,7 +7,7 @@
 //
 
 #import "RootController.h"
-#define STATE_MAX  3
+#define STATE_MAX  2
 
 @interface RootController()
 - (void)setIcon:(NSInteger)index;
@@ -35,36 +35,36 @@
 {
 	if (dc == nil) {
 		dc = [[DisplayController alloc] initWithWindowNibName:@"LiveDisplay" viewDelegate:self];
-		state = STATE_MAX;
+		state = 0;
 	}
 
 	[dc showWindow:self];
 	
 	//state = 3;
 	
-	//[sim explode];
-    state = 3;
-	
+	//[sim explode];	
 }
 
 - (IBAction)playPause:(id)sender
 {
 	state = state == STATE_MAX ? 0 : state + 1;
+	//NSLog(@"state = %d", state);
+	
 	switch (state) {
 		case 1:
-			[self setIcon:19];
+			[self setIcon:2];
 			break;
 
 		case 2:
-			[self setIcon:11];
+			[self setIcon:19];
 			break;
 
 		case 3:
-			[self setIcon:1];
+			[self setIcon:11];
 			break;
 
 		default:
-			[self setIcon:2];
+			[self setIcon:1];
 			break;
 	}
 }
@@ -137,20 +137,21 @@
 - (void)willDrawScatterBody
 {
 	switch (state) {
-		case 1:
-        [sim advanceBeamPosition];
-		break;
-		
-		case 2:
-        [sim advanceTime];
-		break;
-		
-		case 3:
-        [sim advanceTimeAndBeamPosition];
-		break;
-		
 		default:
-		break;
+			[sim advanceTimeAndBeamPosition];
+			break;
+
+		case 1:
+			// Nothing moves
+			break;
+			
+		case 2:
+			[sim advanceTime];
+			break;
+
+		case 3:
+			[sim advanceBeamPosition];
+			break;
 	}
 }
 @end
