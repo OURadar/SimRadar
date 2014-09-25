@@ -112,7 +112,12 @@
 		NSLog(@"There is simulation session running.");
 	} else {
 		sim = [SimPoint new];
-		NSLog(@"New simulation domain initiated.");
+        if (sim) {
+            NSLog(@"New simulation domain initiated.");
+        } else {
+            NSLog(@"Error initializing simulation domain.");
+            [[NSApplication sharedApplication] terminate:self];
+        }
 	}
 	
 	// Wire the simulator to the controller.

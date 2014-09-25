@@ -70,6 +70,7 @@
 		B5F3C31E18F2F86700092A72 /* les.c in Sources */ = {isa = PBXBuildFile; fileRef = B5F3C31C18F2F86700092A72 /* les.c */; };
 		B5F3C32D18F2FDE700092A72 /* test_les.c in Sources */ = {isa = PBXBuildFile; fileRef = B5F3C31F18F2FD3800092A72 /* test_les.c */; };
 		B5F3C32E18F2FDF700092A72 /* les.c in Sources */ = {isa = PBXBuildFile; fileRef = B5F3C31C18F2F86700092A72 /* les.c */; };
+		B5FDCAE519D453B10016C2F7 /* GLText.m in Sources */ = {isa = PBXBuildFile; fileRef = B5FDCAE419D453B10016C2F7 /* GLText.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -218,6 +219,8 @@
 		B5F3C31C18F2F86700092A72 /* les.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = les.c; sourceTree = "<group>"; };
 		B5F3C31F18F2FD3800092A72 /* test_les.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_les.c; sourceTree = "<group>"; };
 		B5F3C32418F2FD8F00092A72 /* test_les */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_les; sourceTree = BUILT_PRODUCTS_DIR; };
+		B5FDCAE319D453B10016C2F7 /* GLText.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GLText.h; sourceTree = "<group>"; };
+		B5FDCAE419D453B10016C2F7 /* GLText.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GLText.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -417,6 +420,8 @@
 				B5576B8A18315B3B0012E6F5 /* SimPoint.m */,
 				B5A5142518328A2F00921ACE /* FullscreenWindow.h */,
 				B5A5142618328A2F00921ACE /* FullscreenWindow.m */,
+				B5FDCAE319D453B10016C2F7 /* GLText.h */,
+				B5FDCAE419D453B10016C2F7 /* GLText.m */,
 				B5EF318618204B5C002DDEFC /* MainMenu.xib */,
 				B5EF31C1182060E1002DDEFC /* LiveDisplay.xib */,
 				B51D2D6018A3D54E00C96966 /* Icons */,
@@ -716,6 +721,7 @@
 				B5F3C31E18F2F86700092A72 /* les.c in Sources */,
 				B5EF31AB18205244002DDEFC /* DisplayController.m in Sources */,
 				B5EF31AE1820526F002DDEFC /* SimGLView.m in Sources */,
+				B5FDCAE519D453B10016C2F7 /* GLText.m in Sources */,
 				B5EF31C51820619E002DDEFC /* RootController.m in Sources */,
 				B5A5142718328A2F00921ACE /* FullscreenWindow.m in Sources */,
 				B5EF31C91820647E002DDEFC /* Grid.m in Sources */,

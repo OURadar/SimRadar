@@ -9,6 +9,7 @@
 #import <Foundation/Foundation.h>
 #import <OpenCL/OpenCL.h>
 #import "glUtil.h"
+#import "GLText.h"
 
 #define RENDERER_NEAR_RANGE  2.0f
 
@@ -60,6 +61,8 @@ typedef struct _draw_resource {
 	RenderResource anchorLineRenderer;
 	RenderResource leafRenderer;
 	RenderResource hudRenderer;
+	
+	GLText *textRenderer;
 	
 	GLfloat pixelsPerUnit;
 	GLfloat unitsPerPixel;

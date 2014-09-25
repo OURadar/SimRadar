@@ -469,7 +469,7 @@
 #pragma mark -
 #pragma mark Methods
 
-// Call this method as soon as the OpenGL context is initialized
+// This method is called right after the OpenGL context is initialized
 
 - (void)allocateVAO
 {
@@ -491,6 +491,8 @@
 	anchorLineRenderer = [self createRenderResourceFromProgram:gridRenderer.program];
 	leafRenderer = [self createRenderResourceFromVertexShader:@"leaf" fragmentShader:@"leaf"];
 	hudRenderer = [self createRenderResourceFromProgram:gridRenderer.program];
+	
+	textRenderer = [GLText new];
 	
 	NSLog(@"bodyRenderer.vao = %d   gridRenderer.vao = %d  anchorRenderer.vao = %d  anchorLineRendrer.vao = %d  leafRendrer.vao = %d",
 		  bodyRenderer.vao, gridRenderer.vao, anchorRenderer.vao, anchorLineRenderer.vao, leafRenderer.vao);
