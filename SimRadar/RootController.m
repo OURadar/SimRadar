@@ -116,6 +116,13 @@
             NSLog(@"New simulation domain initiated.");
         } else {
             NSLog(@"Error initializing simulation domain.");
+            NSAlert *alert = [NSAlert new];
+            [alert addButtonWithTitle:@"OK"];
+            [alert setMessageText:@"Unable to locate LES data."];
+            [alert setInformativeText:@"Unable to find LES data in any of the search paths. Please download the LES data and put it in one of the search paths."];
+            [alert setAlertStyle:NSWarningAlertStyle];
+            [alert runModal];
+            [alert release];
             [[NSApplication sharedApplication] terminate:self];
         }
 	}
