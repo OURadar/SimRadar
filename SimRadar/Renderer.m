@@ -14,6 +14,8 @@
 - (RenderResource)createRenderResourceFromProgram:(GLuint)program;
 - (void)allocateVBO;
 - (GLKTextureInfo *)loadTexture:(NSString *)filename;
+- (void)updateStatusMessage;
+- (void)measureFPS;
 
 @end
 
@@ -206,7 +208,7 @@
 	leafRenderer.positions[16] =  0.0f;   leafRenderer.positions[17] = -1.0f;   leafRenderer.positions[18] = 0.5f;   leafRenderer.positions[19] = 0.0f;
 	leafRenderer.positions[20] =  0.0f;   leafRenderer.positions[21] =  0.0f;   leafRenderer.positions[22] = 0.0f;   leafRenderer.positions[23] = 0.0f;
 
-	leafRenderer.count = 50;
+	leafRenderer.count = 100;
 	
 	for (int i=0; i<24; i++) {
 		leafRenderer.positions[i] *= 40.0f;
@@ -400,8 +402,8 @@
         //resource.texture = [self loadTexture:@"depth.png"];
         //resource.texture = [self loadTexture:@"sphere64.png"];
 		resource.texture = [self loadTexture:@"disc64.png"];
-        glUniform1i(resource.textureUI, resource.texture.name);
-        glBindTexture(GL_TEXTURE_2D, resource.texture.name);
+        resource.textureID = [resource.texture name];
+        glUniform1i(resource.textureUI, resource.textureID);
     }
 	
 	// Get attributes
@@ -433,6 +435,24 @@
     return texture;
 }
 
+- (void)updateStatusMessage
+{
+    snprintf(statusMessage,
+             sizeof(statusMessage),
+             "@ %d Particles / %d Leaves",
+             bodyRenderer.count,
+             leafRenderer.count);
+}
+
+- (void)measureFPS
+{
+    int otic = itic;
+    tics[itic] = [NSDate timeIntervalSinceReferenceDate];
+    itic = itic == RENDERER_TIC_COUNT - 1 ? 0 : itic + 1;
+    fps = (float)RENDERER_TIC_COUNT / (tics[otic] - tics[itic]);
+    snprintf(fpsString, sizeof(fpsString), "%.0f FPS", fps);
+}
+
 #pragma mark -
 #pragma mark Initializations & Deallocation
 
@@ -443,10 +463,10 @@
 		// View size in pixel counts
 		width = 1;
 		height = 1;
+        spinModel = 1;
 		aspectRatio = 1.0f;
-		spinModel = 1;
-		
-        hudMatrix = GLKMatrix4Identity;
+        
+        hudModelViewProjection = GLKMatrix4Identity;
         
 		// View parameters
 		[self resetViewParameters];
@@ -494,23 +514,26 @@
 	
 	textRenderer = [GLText new];
 	
-	NSLog(@"bodyRenderer.vao = %d   gridRenderer.vao = %d  anchorRenderer.vao = %d  anchorLineRendrer.vao = %d  leafRendrer.vao = %d",
+	NSLog(@"VAOs = bodyRenderer %d  gridRenderer %d  anchorRenderer %d  anchorLineRendrer %d  leafRendrer = %d",
 		  bodyRenderer.vao, gridRenderer.vao, anchorRenderer.vao, anchorLineRenderer.vao, leafRenderer.vao);
 	// Depth test will always be enabled
 	//glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 
 	// We will always cull back faces for better performance
-	glEnable(GL_CULL_FACE);
-	
+	//glEnable(GL_CULL_FACE);
+    glEnable(GL_TEXTURE_2D);
+    
 	// Always use this clear color
 	//glClearColor(0.0f, 0.2f, 0.25f, 1.0f);
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
 	[self makeOneLeaf];
-	
-	// Tell whatever controller that the OpenGL context is ready for sharing and set up renderer's body count
+    
+    // Tell whatever controller that the OpenGL context is ready for sharing and set up renderer's body count
 	[delegate glContextVAOPrepared];
+
+    [self updateStatusMessage];
 }
 
 
@@ -611,10 +634,10 @@
 		           0.0f, 1.0f, 0.0f, 0.0f,
 				   0.0f, 0.0f, 0.0f, 0.0f};
     for (int k=0; k<20; k+=4) {
-        pos[k] = pos[k] * 100.0f + 20.0f;
+        pos[k] = pos[k] * 200.0f + 20.5f;
     }
     for (int k=1; k<20; k+=4) {
-        pos[k] = pos[k] * 50.0f + 20.0f;
+        pos[k] = pos[k] * 100.0f + 20.5f;
     }
     
     glBufferData(GL_ARRAY_BUFFER, sizeof(pos), pos, GL_STATIC_DRAW);
@@ -630,7 +653,6 @@
 	
 	viewParametersNeedUpdate = TRUE;
 }
-
 
 - (void)render
 {
@@ -652,15 +674,15 @@
 		[self updateViewParameters];
 	}
 	
+    [self measureFPS];
+    
 	// Tell the delgate I'm about to draw
 	[delegate willDrawScatterBody];
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
 //	NSLog(@"%d %d", anchorRenderer.colorUI, gridRenderer.colorUI);
-	
-    glViewport(0, 0, width, height);
-
+    
     // Grid
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBindVertexArray(gridRenderer.vao);
@@ -690,9 +712,10 @@
 	glBindVertexArray(bodyRenderer.vao);
 	glPointSize(MIN(MAX(5.0f * sqrtf(pixelsPerUnit), 1.0f), 32.0f));
 	glUseProgram(bodyRenderer.program);
-	glUniform4f(anchorRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
+	glUniform4f(bodyRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
 	glUniformMatrix4fv(bodyRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
     glUniform1i(bodyRenderer.textureUI, 0);
+    glBindTexture(GL_TEXTURE_2D, bodyRenderer.textureID);
 	glDrawArrays(GL_POINTS, 0, bodyRenderer.count);
 	
 	// Leaves
@@ -704,12 +727,25 @@
 	glDrawElementsInstanced(GL_LINE_STRIP, 7, GL_UNSIGNED_INT, NULL, leafRenderer.count);
 	
     // HUD
-    glBindVertexArray(hudRenderer.vao);
-    glUseProgram(hudRenderer.program);
-    glLineWidth(1.0f);
-    glUniform4f(hudRenderer.colorUI, 0.0f, 1.0f, 1.0f, 1.0f);
-    glUniformMatrix4fv(leafRenderer.mvpUI, 1, GL_FALSE, hudMatrix.m);
-    glDrawArrays(GL_LINE_STRIP, 0, 5);
+//    glBindVertexArray(hudRenderer.vao);
+//    glUseProgram(hudRenderer.program);
+//    glLineWidth(1.0f);
+//    glUniform4f(hudRenderer.colorUI, 0.0f, 1.0f, 1.0f, 1.0f);
+//    glUniformMatrix4fv(hudRenderer.mvpUI, 1, GL_FALSE, hudModelViewProjection.m);
+//    glDrawArrays(GL_LINE_STRIP, 0, 5);
+
+#ifdef DEBUG_GL
+    [textRenderer showTextureMap];
+#endif
+    
+    // Text
+    [textRenderer drawText:"SimRadar" origin:NSMakePoint(25.0f, height - 60.0f) scale:0.5f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
+    //[textRenderer drawText:"SimRadar" origin:NSMakePoint(25.0f, height - 150.0f) scale:1.0f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
+    [textRenderer drawText:statusMessage origin:NSMakePoint(25.0f, height - 90.0f) scale:0.333f];
+    [textRenderer drawText:fpsString origin:NSMakePoint(width - 25.0f, height - 49.0f) scale:0.333f red:1.0f green:0.9f blue:0.2f alpha:1.0f align:GLTextAlignmentRight];
+
+    glBindVertexArray(0);
+    glUseProgram(0);
 }
 
 #pragma mark -
@@ -727,7 +763,8 @@
 	
 	modelViewProjection = GLKMatrix4Multiply(projection, modelView);
 
-    hudMatrix = GLKMatrix4MakeOrtho(0.0f, width, 0.0f, height, 0.0f, 1.0f);
+    hudModelViewProjection = GLKMatrix4MakeOrtho(0.0f, width, 0.0f, height, 0.0f, 1.0f);
+    [textRenderer setModelViewProjection:hudModelViewProjection];
 }
 
 
@@ -793,18 +830,24 @@
 	spinModel = spinModel == 0 ? 5 : spinModel - 1;
 }
 
-- (void)increaseLeaves
+- (void)increaseLeafCount
 {
-	if (leafRenderer.count < bodyRenderer.count - 100) {
+    if (leafRenderer.count >= 1000 && leafRenderer.count < bodyRenderer.count - 1000) {
+        leafRenderer.count += 1000;
+    } else if (leafRenderer.count < bodyRenderer.count - 100) {
 		leafRenderer.count += 100;
 	}
+    [self updateStatusMessage];
 }
 
-- (void)decreaseLeaves
+- (void)decreaseLeafCount
 {
-	if (leafRenderer.count > 100) {
+    if (leafRenderer.count > 1000) {
+        leafRenderer.count -= 1000;
+    } else if (leafRenderer.count > 100) {
 		leafRenderer.count -= 100;
 	}
+    [self updateStatusMessage];
 }
 
 @end

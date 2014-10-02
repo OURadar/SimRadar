@@ -35,12 +35,9 @@
 {
 	if (dc == nil) {
 		dc = [[DisplayController alloc] initWithWindowNibName:@"LiveDisplay" viewDelegate:self];
-		state = 0;
 	}
 
 	[dc showWindow:self];
-	
-	//state = 3;
 	
 	//[sim explode];	
 }

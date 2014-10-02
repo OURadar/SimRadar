@@ -12,6 +12,7 @@
 #import "GLText.h"
 
 #define RENDERER_NEAR_RANGE  2.0f
+#define RENDERER_TIC_COUNT   10
 
 typedef struct _draw_resource {
 	GLuint program;
@@ -29,6 +30,7 @@ typedef struct _draw_resource {
 	GLint translationAI;
 	GLint colorAI;
     GLKTextureInfo *texture;
+    GLuint textureID;
 } RenderResource;
 
 
@@ -50,32 +52,39 @@ typedef struct _draw_resource {
 	
 	GLKMatrix4 modelView, projection, modelViewProjection;
 	GLKMatrix4 modelRotate;
-    GLKMatrix4 hudMatrix;
+    GLKMatrix4 hudModelViewProjection;
 	
 	GLint MVPUniformIndex, singleColorMVPUniformIndex;
 	GLint ColorUniformIndex;
 
-	RenderResource gridRenderer;
-	RenderResource bodyRenderer;
-	RenderResource anchorRenderer;
-	RenderResource anchorLineRenderer;
-	RenderResource leafRenderer;
-	RenderResource hudRenderer;
-	
-	GLText *textRenderer;
-	
 	GLfloat pixelsPerUnit;
 	GLfloat unitsPerPixel;
 
-	BOOL vbosNeedUpdate;
-	BOOL viewParametersNeedUpdate;
-	GLchar spinModel;
-	
 	id<RendererDelegate> delegate;
 	
 	@private
 	
 	cl_float4 modelCenter;
+
+    BOOL vbosNeedUpdate;
+    BOOL viewParametersNeedUpdate;
+    GLchar spinModel;
+    
+    RenderResource gridRenderer;
+    RenderResource bodyRenderer;
+    RenderResource anchorRenderer;
+    RenderResource anchorLineRenderer;
+    RenderResource leafRenderer;
+    RenderResource hudRenderer;
+    
+    GLText *textRenderer;
+    
+    char statusMessage[256];
+    
+    int itic;
+    NSTimeInterval tics[RENDERER_TIC_COUNT];
+    float fps;
+    char fpsString[16];
 }
 
 @property (nonatomic, retain) id<RendererDelegate> delegate;
@@ -101,7 +110,7 @@ typedef struct _draw_resource {
 - (void)toggleSpinModel;
 - (void)toggleSpinModelReverse;
 
-- (void)increaseLeaves;
-- (void)decreaseLeaves;
+- (void)increaseLeafCount;
+- (void)decreaseLeafCount;
 
 @end

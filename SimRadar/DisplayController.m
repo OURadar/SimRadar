@@ -220,10 +220,10 @@ NSWindow *standardWindow;
 			break;
 
 		case ']':
-			[glView.renderer increaseLeaves];
+			[glView.renderer increaseLeafCount];
 			break;
 		case '[':
-			[glView.renderer decreaseLeaves];
+			[glView.renderer decreaseLeafCount];
 			break;
 			
 		default:
