@@ -793,8 +793,7 @@
 
     GLKMatrix4 mat;
 
-//    NSLog(@"modelCenter = %.2f %.2f %.2f", modelCenter.x, modelCenter.y, modelCenter.z);
-
+    // Finally, world's z-axis (up) should be antenna's y-axis (up)
     modelView = GLKMatrix4MakeTranslation(0.0f, 0.0f, -modelCenter.y);
     modelView = GLKMatrix4Multiply(modelView, modelRotate);
     modelView = GLKMatrix4Translate(modelView, -modelCenter.x, -modelCenter.z, modelCenter.y);
