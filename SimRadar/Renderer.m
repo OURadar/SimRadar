@@ -22,6 +22,8 @@
 @implementation Renderer
 
 @synthesize delegate;
+@synthesize width, height;
+@synthesize beamAzimuth, beamElevation;
 
 #pragma mark Properties
 
@@ -41,6 +43,8 @@
 	aspectRatio = size.width / size.height;
 	
 	[self setRange:10.0f];
+    
+    viewParametersNeedUpdate = TRUE;
 }
 
 
@@ -195,6 +199,14 @@
 	modelRotate = GLKMatrix4Translate(modelRotate, -x, -y, -z);
 }
 
+
+- (void)setBeamElevation:(GLfloat)elevation azimuth:(GLfloat)azimuth
+{
+    beamElevation = elevation * M_PI / 180.0f;
+    beamAzimuth = azimuth * M_PI / 180.0f;
+}
+
+
 - (void)makeOneLeaf
 {
 	if (leafRenderer.positions == NULL) {
@@ -208,7 +220,7 @@
 	leafRenderer.positions[16] =  0.0f;   leafRenderer.positions[17] = -1.0f;   leafRenderer.positions[18] = 0.5f;   leafRenderer.positions[19] = 0.0f;
 	leafRenderer.positions[20] =  0.0f;   leafRenderer.positions[21] =  0.0f;   leafRenderer.positions[22] = 0.0f;   leafRenderer.positions[23] = 0.0f;
 
-	leafRenderer.count = 100;
+	leafRenderer.count = 1;
 	
 	for (int i=0; i<24; i++) {
 		leafRenderer.positions[i] *= 40.0f;
@@ -437,8 +449,8 @@
 
 - (void)updateStatusMessage
 {
-    snprintf(statusMessage,
-             sizeof(statusMessage),
+    snprintf(statusMessage[0],
+             sizeof(statusMessage[0]),
              "@ %d Particles / %d Leaves",
              bodyRenderer.count,
              leafRenderer.count);
@@ -467,6 +479,7 @@
 		aspectRatio = 1.0f;
         
         hudModelViewProjection = GLKMatrix4Identity;
+        beamModelViewProjection = GLKMatrix4Identity;
         
 		// View parameters
 		[self resetViewParameters];
@@ -547,7 +560,7 @@
 	glBindVertexArray(gridRenderer.vao);
 	
 	glGenBuffers(1, gridRenderer.vbo);
-	
+
 	glBindBuffer(GL_ARRAY_BUFFER, gridRenderer.vbo[0]);
 	glBufferData(GL_ARRAY_BUFFER, gridRenderer.count * sizeof(cl_float4), gridRenderer.positions, GL_STATIC_DRAW);
 	glVertexAttribPointer(gridRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
@@ -626,19 +639,17 @@
 	glBindVertexArray(hudRenderer.vao);
 	
 	glGenBuffers(1, hudRenderer.vbo);
-	
+    
 	glBindBuffer(GL_ARRAY_BUFFER, hudRenderer.vbo[0]);
 	float pos[] = {0.0f, 0.0f, 0.0f, 0.0f,
+		           0.0f, 1.0f, 0.0f, 0.0f,
+                   1.0f, 0.0f, 0.0f, 0.0f,
+                   1.0f, 1.0f, 0.0f, 0.0f,
+                   0.0f, 0.0f, 0.0f, 0.0f,
 				   1.0f, 0.0f, 0.0f, 0.0f,
 		           1.0f, 1.0f, 0.0f, 0.0f,
 		           0.0f, 1.0f, 0.0f, 0.0f,
 				   0.0f, 0.0f, 0.0f, 0.0f};
-    for (int k=0; k<20; k+=4) {
-        pos[k] = pos[k] * 200.0f + 20.5f;
-    }
-    for (int k=1; k<20; k+=4) {
-        pos[k] = pos[k] * 100.0f + 20.5f;
-    }
     
     glBufferData(GL_ARRAY_BUFFER, sizeof(pos), pos, GL_STATIC_DRAW);
     glVertexAttribPointer(hudRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
@@ -674,12 +685,16 @@
 		[self updateViewParameters];
 	}
 	
+
+    iframe++;
     [self measureFPS];
     
 	// Tell the delgate I'm about to draw
 	[delegate willDrawScatterBody];
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
+    glViewport(0, 0, width, height);
 	
 //	NSLog(@"%d %d", anchorRenderer.colorUI, gridRenderer.colorUI);
     
@@ -726,23 +741,41 @@
     glUniformMatrix4fv(leafRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
 	glDrawElementsInstanced(GL_LINE_STRIP, 7, GL_UNSIGNED_INT, NULL, leafRenderer.count);
 	
+
     // HUD
-//    glBindVertexArray(hudRenderer.vao);
-//    glUseProgram(hudRenderer.program);
-//    glLineWidth(1.0f);
-//    glUniform4f(hudRenderer.colorUI, 0.0f, 1.0f, 1.0f, 1.0f);
-//    glUniformMatrix4fv(hudRenderer.mvpUI, 1, GL_FALSE, hudModelViewProjection.m);
-//    glDrawArrays(GL_LINE_STRIP, 0, 5);
+    glBindVertexArray(hudRenderer.vao);
+    glUseProgram(hudRenderer.program);
+    glLineWidth(1.0f);
+    glUniform4f(hudRenderer.colorUI, 0.0f, 0.0f, 0.0f, 0.8f);
+    glUniformMatrix4fv(hudRenderer.mvpUI, 1, GL_FALSE, hudModelViewProjection.m);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glUniform4f(hudRenderer.colorUI, 0.0f, 1.0f, 1.0f, 1.0f);
+    glDrawArrays(GL_LINE_STRIP, 4, 5);
 
 #ifdef DEBUG_GL
     [textRenderer showTextureMap];
 #endif
-    
+
     // Text
+    snprintf(statusMessage[1], 256, "Frame %d", iframe);
+    
     [textRenderer drawText:"SimRadar" origin:NSMakePoint(25.0f, height - 60.0f) scale:0.5f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
     //[textRenderer drawText:"SimRadar" origin:NSMakePoint(25.0f, height - 150.0f) scale:1.0f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
-    [textRenderer drawText:statusMessage origin:NSMakePoint(25.0f, height - 90.0f) scale:0.333f];
-    [textRenderer drawText:fpsString origin:NSMakePoint(width - 25.0f, height - 49.0f) scale:0.333f red:1.0f green:0.9f blue:0.2f alpha:1.0f align:GLTextAlignmentRight];
+    [textRenderer drawText:statusMessage[0] origin:NSMakePoint(25.0f, height - 90.0f) scale:0.333f];
+    [textRenderer drawText:statusMessage[1] origin:NSMakePoint(25.0f, height - 120.0f) scale:0.333f];
+//    [textRenderer drawText:fpsString origin:NSMakePoint(width - 25.0f, height - 49.0f) scale:0.333f red:1.0f green:0.9f blue:0.2f alpha:1.0f align:GLTextAlignmentRight];
+
+    snprintf(statusMessage[2], 128, "AZ %.2f", beamAzimuth / M_PI * 180.0f);
+    [textRenderer drawText:statusMessage[2] origin:NSMakePoint(width - hudRect.size.width - 15.0f, height - hudRect.size.height - 15.0f) scale:0.25f];
+    
+    glViewport(hudRect.origin.x, hudRect.origin.y, hudRect.size.width, hudRect.size.height);
+    
+    // Leaves on HUD
+    glBindVertexArray(leafRenderer.vao);
+    glUseProgram(leafRenderer.program);
+    glUniformMatrix4fv(leafRenderer.mvpUI, 1, GL_FALSE, beamModelViewProjection.m);
+    glDrawElementsInstanced(GL_LINE_STRIP, 7, GL_UNSIGNED_INT, NULL, leafRenderer.count);
+    
 
     glBindVertexArray(0);
     glUseProgram(0);
@@ -757,14 +790,37 @@
 	
 	GLfloat scale = 2.0f / range;
 
-	modelView = GLKMatrix4MakeTranslation(0.0f, 0.0f, -4.0f * RENDERER_NEAR_RANGE);
+    GLKMatrix4 mat = GLKMatrix4Identity;
+
+    modelView = GLKMatrix4MakeTranslation(0.0f, 0.0f, -4.0f * RENDERER_NEAR_RANGE);
 	modelView = GLKMatrix4Scale(modelView, scale, scale, scale);
 	modelView = GLKMatrix4Multiply(modelView, modelRotate);
-	
 	modelViewProjection = GLKMatrix4Multiply(projection, modelView);
 
-    hudModelViewProjection = GLKMatrix4MakeOrtho(0.0f, width, 0.0f, height, 0.0f, 1.0f);
-    [textRenderer setModelViewProjection:hudModelViewProjection];
+    hudRect = CGRectMake(width - 280.0f, height - 280.0f, 250.0f, 250.0f);
+    hudProjection = GLKMatrix4MakeOrtho(0.0f, width, 0.0f, height, 0.0f, 1.0f);
+    mat = GLKMatrix4MakeTranslation(hudRect.origin.x + 0.5f, hudRect.origin.y + 0.5f, 0.0f);
+    mat = GLKMatrix4Scale(mat, hudRect.size.width, hudRect.size.height, 1.0f);
+    hudModelViewProjection = GLKMatrix4Multiply(hudProjection, mat);
+
+//    float r = sqrtf(modelCenter.x * modelCenter.x + modelCenter.y + modelCenter.y + modelCenter.z * modelCenter.z);
+    
+//    beamProjection = GLKMatrix4MakeOrtho(-1.0f, 1.0f, -1.0f, 1.0f, RENDERER_NEAR_RANGE, 10000.0f);
+    beamProjection = GLKMatrix4MakeFrustum(-1.0f, 1.0f, -1.0f, 1.0f, 8.0f * RENDERER_NEAR_RANGE, 30000.0f);
+//    scale = 0.02f; // Maybe make this a function of beamwidth next time
+    mat = GLKMatrix4Identity;
+//    mat = GLKMatrix4Translate(mat, 0.0f, 0.0f, -2.0f * RENDERER_NEAR_RANGE + modelCenter.z * scale);
+//    mat = GLKMatrix4Translate(mat, 0.0f, 0.0f, RENDERER_NEAR_RANGE);
+//    mat = GLKMatrix4Scale(mat, scale, scale, scale);
+    mat = GLKMatrix4RotateY(mat, beamAzimuth);
+    mat = GLKMatrix4RotateX(mat, -beamElevation);
+    mat = GLKMatrix4RotateX(mat, -M_PI_2);
+    
+//    mat = GLKMatrix4Translate(mat, -modelCenter.x, -modelCenter.y, -modelCenter.z);
+    
+    beamModelViewProjection = GLKMatrix4Multiply(beamProjection, mat);
+    
+    [textRenderer setModelViewProjection:hudProjection];
 }
 
 
@@ -798,15 +854,17 @@
 //	range = 20000.0f;
 //	modelRotate = GLKMatrix4MakeTranslation(-modelCenter.x, -modelCenter.y, -modelCenter.z);
 
-	rotateX = -0.65f * M_PI;
+	rotateX = -0.35f * M_PI;
 //	rotateX = -0.9f * M_PI;
-	rotateY = 2.1f;
+	rotateY = -0.1f;
     //rotateY = M_PI;
-	range = 1800.0f;
+	range = 1000.0f;
 	modelRotate = GLKMatrix4MakeTranslation(-modelCenter.x, -modelCenter.y, -modelCenter.z);
 	modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeXRotation(rotateX), modelRotate);
 	modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeYRotation(rotateY), modelRotate);
 
+    iframe = 0;
+    
 	viewParametersNeedUpdate = TRUE;
 }
 

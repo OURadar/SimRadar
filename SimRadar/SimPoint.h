@@ -22,6 +22,7 @@
 	id<SimPointDelegate> delegate;
 
 	float az_deg;
+    float el_deg;
 	
 @private
 	
@@ -36,6 +37,7 @@
 @property (nonatomic, assign) id<SimPointDelegate> delegate;
 @property (nonatomic, readonly) NSInteger numberOfPoints;
 @property (nonatomic, readonly, getter=azimuthInDegrees) float az_deg;
+@property (nonatomic, readonly, getter=elevationInDegrees) float el_deg;
 
 - (void)shareVBOsWithGL:(GLuint *)vbos;
 - (void)upload;

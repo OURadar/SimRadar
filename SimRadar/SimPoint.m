@@ -20,7 +20,7 @@
 #pragma mark -
 #pragma Properties
 
-@synthesize az_deg;
+@synthesize az_deg, el_deg;
 
 - (NSInteger)numberOfPoints {
 	return (NSInteger)S->num_scats;
@@ -70,6 +70,7 @@
 		RS_set_prt(S, 0.1f);
 
 		az_deg = 0.0f;
+        el_deg = 4.8f;
 	}
 	return self;
 }
@@ -125,22 +126,23 @@
 
 - (void)advanceBeamPosition
 {
-	az_deg = fmodf(az_deg + 0.2f + 12.0f, 24.0f) - 12.0f;
-	RS_set_beam_pos(S, az_deg, 2.0f);
+//	az_deg = fmodf(az_deg + 0.05f + 12.0f, 24.0f) - 12.0f;
+    az_deg = fmodf(az_deg + 0.2f + 45.0f, 90.0f) - 45.0f;
+	RS_set_beam_pos(S, az_deg, el_deg);
 	RS_update_colors_only(S);
 }
 
 - (void)advanceTimeAndBeamPosition
 {
-    az_deg = fmodf(az_deg + 0.2f + 12.0f, 24.0f) - 12.0f;
-	RS_set_beam_pos(S, az_deg, 2.0f);
+    az_deg = fmodf(az_deg + 0.05f + 12.0f, 24.0f) - 12.0f;
+	RS_set_beam_pos(S, az_deg, el_deg);
 	RS_advance_time(S);
 }
 
 - (void)randomBeamPosition
 {
 	az_deg = (float)rand() / RAND_MAX * 24.0f - 12.0f;
-	RS_set_beam_pos(S, az_deg, 2.0f);
+	RS_set_beam_pos(S, az_deg, el_deg);
 	RS_update_colors_only(S);
 }
 

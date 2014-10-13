@@ -41,6 +41,9 @@ __kernel void scat_physics(__global float4 *p,
 	float4 coord = fma(pos, physics_desc.s0123, physics_desc.s4567);
 	v[i] = read_imagef(physics, sampler, coord);
 
+    if (i == 0) {
+        v[i] = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
+    }
 //	if (i == 0) {
 //		printf("(%9.2f, %9.2f, %9.2f) / [%.2f, %.2f, %.2f] + [%.2f, %.2f, %.2f] = (%.2f, %.2f, %.2f)  (%6.2f, %6.2f, %6.2f)\n",
 //			   pos.x, pos.y, pos.z,
@@ -116,8 +119,8 @@ __kernel void scat_mov(__global float4 *p,
 	a[i].s3 = mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
 
 	const float4 ages = (float4)(a[i].s1, a[i].s1, a[i].s1, 0.0f);
-	const float4 offsets = (float4)(0.625f, 0.375f, 0.125f, 0.0f);
-	const float4 a_max = (float4)(M_PI_F * 0.7f, M_PI_2_F, M_PI_2_F, 0.0f) * 8.0f;
+	const float4 offsets = (float4)(0.125f, 0.375f, 0.625f, 0.0f);
+	const float4 a_max = (float4)(M_PI_2_F, M_PI_2_F, 1.4f * M_PI_2_F, 0.0f) * 8.0f;
 
 	float4 lo = o[i];
 	
@@ -171,14 +174,14 @@ __kernel void scat_chk(__global float4 *p,
 	//if (any(isless(pos.xyz, box.s012) | isgreater(pos.xyz, box.s012 + box.s456))) {
 	if (any(isless(pos.xyz, box.s012) | isgreater(pos.xyz, box.s012 + box.s456)) | isgreater(a[i].s1, 1.0f)) {
 	//if (isgreater(a[i].s1, 1.0f)) {
-		uint4 seed = s[i];
-		float4 r = rand(&seed);
-		s[i] = seed;
+        if (i > 0) {
+            uint4 seed = s[i];
+            float4 r = rand(&seed);
+            s[i] = seed;
 
-		a[i].s1 = 0.0f;
-
-		p[i].xyz = r.xyz * box.s456 + box.s012;
-        //p[i].z = 200.0f;
+            p[i].xyz = r.xyz * box.s456 + box.s012;
+        }
+        a[i].s1 = 0.0f;
 	}
 }
 

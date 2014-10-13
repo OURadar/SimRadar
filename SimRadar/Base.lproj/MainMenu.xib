@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="4514" systemVersion="13B42" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="6249" systemVersion="14A379a" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="4514"/>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="6249"/>
     </dependencies>
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="NSApplication">
@@ -10,7 +11,7 @@
             </connections>
         </customObject>
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
-        <customObject id="-3" userLabel="Application"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
         <menu title="AMainMenu" systemMenu="main" id="29">
             <items>
                 <menuItem title="SimRadar" id="56">
@@ -627,6 +628,11 @@
                             <menuItem title="HD 720p" keyEquivalent="3" id="bsl-Rr-EMB">
                                 <connections>
                                     <action selector="setSizeTo720p:" target="-1" id="9mR-e7-xlc"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="HD 4K" keyEquivalent="4" id="UjU-T6-Lcb">
+                                <connections>
+                                    <action selector="setSizeTo4K:" target="-1" id="ONL-eM-fBD"/>
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="Jm9-mS-0PT">

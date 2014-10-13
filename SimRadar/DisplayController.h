@@ -30,6 +30,7 @@
 - (IBAction)normalSizeWindow:(id)sender;
 - (IBAction)doubleSizeWindow:(id)sender;
 - (IBAction)setSizeTo720p:(id)sender;
+- (IBAction)setSizeTo4K:(id)sender;
 - (IBAction)fullscreenMode:(id)sender;
 
 @end

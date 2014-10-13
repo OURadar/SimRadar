@@ -1041,7 +1041,7 @@ void RS_init_scat_pos(RSHandle *H) {
 	//
 	// Initialize the scatter body positions & velocities
 	//
-	for (int i=0; i<H->num_scats; i++) {
+	for (int i=1; i<H->num_scats; i++) {
 		H->scat_pos[i].x = (float)rand() / RAND_MAX * H->domain.size.x + H->domain.origin.x;
 		H->scat_pos[i].y = (float)rand() / RAND_MAX * H->domain.size.y + H->domain.origin.y;
 		H->scat_pos[i].z = (float)rand() / RAND_MAX * H->domain.size.z + H->domain.origin.z;

@@ -52,14 +52,19 @@ typedef struct _draw_resource {
 	
 	GLKMatrix4 modelView, projection, modelViewProjection;
 	GLKMatrix4 modelRotate;
-    GLKMatrix4 hudModelViewProjection;
+    GLKMatrix4 hudProjection, hudModelViewProjection;
+    GLKMatrix4 beamProjection, beamModelViewProjection;
 	
+    CGRect hudRect;
+    
 	GLint MVPUniformIndex, singleColorMVPUniformIndex;
 	GLint ColorUniformIndex;
 
 	GLfloat pixelsPerUnit;
 	GLfloat unitsPerPixel;
 
+    GLfloat beamAzimuth, beamElevation;
+    
 	id<RendererDelegate> delegate;
 	
 	@private
@@ -79,15 +84,17 @@ typedef struct _draw_resource {
     
     GLText *textRenderer;
     
-    char statusMessage[256];
-    
-    int itic;
+    char statusMessage[10][256];
+
+    int itic, iframe;
     NSTimeInterval tics[RENDERER_TIC_COUNT];
     float fps;
     char fpsString[16];
 }
 
 @property (nonatomic, retain) id<RendererDelegate> delegate;
+@property (nonatomic, readonly) GLsizei width, height;
+@property (nonatomic) GLfloat beamAzimuth, beamElevation;
 
 - (void)setSize:(CGSize)size;
 - (void)setBodyCount:(GLuint)number;
@@ -95,6 +102,7 @@ typedef struct _draw_resource {
 - (void)setAnchorPoints:(GLfloat *)points number:(GLuint)number;
 - (void)setAnchorLines:(GLfloat *)lines number:(GLuint)number;
 - (void)setCenterPoisitionX:(GLfloat)x y:(GLfloat)y z:(GLfloat)z;
+- (void)setBeamElevation:(GLfloat)elevation azimuth:(GLfloat)azimuth;
 - (void)makeOneLeaf;
 
 - (void)allocateVAO;
@@ -112,5 +120,6 @@ typedef struct _draw_resource {
 
 - (void)increaseLeafCount;
 - (void)decreaseLeafCount;
+
 
 @end

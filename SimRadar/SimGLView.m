@@ -64,6 +64,8 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	[pf release];
 
 	renderer = [Renderer new];
+
+    posix_memalign(&scratchBuffer, 64, 3840 * 2160 * 4);
 }
 
 
@@ -77,6 +79,8 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	CVDisplayLinkRelease(displayLink);
 	
 	[renderer release];
+    
+    free(scratchBuffer);
 	
 	[super dealloc];
 }
@@ -164,7 +168,6 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	[renderer render];
 	
 	CGLFlushDrawable([[self openGLContext] CGLContextObj]);
-	CGLUnlockContext([[self openGLContext] CGLContextObj]);
 
 #ifdef GEN_IMG
     if (tic > 379 && tic < 2400) {
@@ -175,7 +178,9 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
         [[NSApplication sharedApplication] terminate:self];
     }
 #endif
-    
+
+    CGLUnlockContext([[self openGLContext] CGLContextObj]);
+
     tic++;
     
 }
@@ -282,14 +287,14 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	int bytesPerRow;
 	unsigned char *bitmapData;
 	
-	int width = self.bounds.size.width;
-	int height = self.bounds.size.height;
+    int width = renderer.width;
+    int height = renderer.height;
 	
 	NSBitmapImageRep *imageRep = [[[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
 																		  pixelsWide:width
 																		  pixelsHigh:height
 																	   bitsPerSample:8
-																	 samplesPerPixel:clearBackground?4:3
+																	 samplesPerPixel:clearBackground ? 4 : 3
 																			hasAlpha:NO
 																			isPlanar:NO
 																	  colorSpaceName:NSDeviceRGBColorSpace
@@ -299,18 +304,11 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	bitmapData = [imageRep bitmapData];
 	bytesPerRow = (int)[imageRep bytesPerRow];
     
-	[[self openGLContext] makeCurrentContext];
-	[[self openGLContext] flushBuffer];
-    
-	void *scratchBuffer = valloc(height * bytesPerRow);
-    
-	glPixelStorei(GL_PACK_ROW_LENGTH, 8*bytesPerRow/[imageRep bitsPerPixel]);
-	glReadPixels(0, 0, width, height, clearBackground?GL_RGBA:GL_RGB, GL_UNSIGNED_BYTE, scratchBuffer);
+	glPixelStorei(GL_PACK_ROW_LENGTH, 8 * bytesPerRow / [imageRep bitsPerPixel]);
+	glReadPixels(0, 0, width, height, clearBackground ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, scratchBuffer);
     
 	for (int j=0; j<height; j++)
-		bcopy(scratchBuffer+j*bytesPerRow, bitmapData+(height-1-j)*bytesPerRow, bytesPerRow);
-    
-	free(scratchBuffer);
+		bcopy(scratchBuffer + j * bytesPerRow, bitmapData + (height - 1 - j) * bytesPerRow, bytesPerRow);
     
 	return imageRep;
 }
@@ -329,6 +327,7 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 
 - (void)viewToFile:(NSString *)filename {
 	NSBitmapImageRep *imageRep = [self bitmapImageRepFromView];
+    NSLog(@"%@", imageRep);
 	NSData *data = [imageRep representationUsingType:NSPNGFileType properties:[NSDictionary dictionaryWithObjectsAndKeys:[NSColor blackColor], NSImageFallbackBackgroundColor, nil]];
 	[data writeToFile:filename atomically:NO];
 }

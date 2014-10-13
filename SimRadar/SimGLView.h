@@ -15,6 +15,7 @@
 @private
 	CVDisplayLinkRef displayLink;
     unsigned int tic;
+    void *scratchBuffer;
 }
 
 @property (readonly, nonatomic, getter = isAnimating) BOOL animating;

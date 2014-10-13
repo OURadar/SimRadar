@@ -149,6 +149,16 @@ NSWindow *standardWindow;
 	[self setSizeAndCentralized:NSMakeSize(1280.0f, 720.0f + 17.0f)];
 }
 
+- (IBAction)setSizeTo4K:(id)sender
+{
+//    [self.window setFrame:NSMakeRect(0.0f, -3000.0f, 3180.0f, 2160.0f + 17.0f) display:NO];
+    NSSize size = NSMakeSize(3180.0f, 2160.0f);
+    
+    //[glView setFrameSize:size];
+    [glView setBoundsSize:size];
+    [glView.renderer setSize:size];
+}
+
 - (void)keyDown:(NSEvent *)event
 {
 	unichar c = [[event charactersIgnoringModifiers] characterAtIndex:0];

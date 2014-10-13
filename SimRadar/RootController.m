@@ -7,7 +7,7 @@
 //
 
 #import "RootController.h"
-#define STATE_MAX  2
+#define STATE_MAX  3
 
 @interface RootController()
 - (void)setIcon:(NSInteger)index;
@@ -148,6 +148,7 @@
 	switch (state) {
 		default:
 			[sim advanceTimeAndBeamPosition];
+            [dc.glView.renderer setBeamElevation:sim.elevationInDegrees azimuth:sim.azimuthInDegrees];
 			break;
 
 		case 1:
@@ -160,6 +161,7 @@
 
 		case 3:
 			[sim advanceBeamPosition];
+            [dc.glView.renderer setBeamElevation:sim.elevationInDegrees azimuth:sim.azimuthInDegrees];
 			break;
 	}
 }
