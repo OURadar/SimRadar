@@ -29,7 +29,7 @@
 
 - (void)setRange:(float)newRange
 {
-	projection = GLKMatrix4MakeFrustum(-aspectRatio, aspectRatio, -1.0f, 1.0f, RENDERER_NEAR_RANGE, 1000.0f);
+	projection = GLKMatrix4MakeFrustum(-aspectRatio, aspectRatio, -1.0f, 1.0f, RENDERER_NEAR_RANGE, RENDERER_FAR_RANGE);
 }
 
 
@@ -196,7 +196,6 @@
 	modelCenter.x = x;
 	modelCenter.y = y;
 	modelCenter.z = z;
-	modelRotate = GLKMatrix4Translate(modelRotate, -x, -y, -z);
 }
 
 
@@ -676,7 +675,8 @@
 	
 	if (spinModel) {
 		modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeYRotation(0.001f * spinModel), modelRotate);
-        //modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeYRotation(0.003f * cos(theta)), modelRotate);
+//        modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeYRotation(0.003f * cos(theta)), modelRotate);
+//        modelRotate = GLKMatrix4RotateY(modelRotate, 0.001f * spinModel);
         theta = theta + 0.005f;
 		viewParametersNeedUpdate = TRUE;
 	}
@@ -725,7 +725,7 @@
 	// The scatter bodies
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 	glBindVertexArray(bodyRenderer.vao);
-	glPointSize(MIN(MAX(5.0f * sqrtf(pixelsPerUnit), 1.0f), 32.0f));
+	glPointSize(MIN(MAX(15.0f * pixelsPerUnit, 1.0f), 32.0f));
 	glUseProgram(bodyRenderer.program);
 	glUniform4f(bodyRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
 	glUniformMatrix4fv(bodyRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
@@ -785,17 +785,23 @@
 #pragma mark Interaction
 
 - (void)updateViewParameters {
-	unitsPerPixel = 2.0f * range / height;
-	pixelsPerUnit = 1.0f / unitsPerPixel;
-	
-	GLfloat scale = 2.0f / range;
 
-    GLKMatrix4 mat = GLKMatrix4Identity;
+    GLfloat near = 2.0f / range * modelCenter.y;
+    
+    unitsPerPixel = range / height;
+    pixelsPerUnit = 1.0f / unitsPerPixel;
 
-    modelView = GLKMatrix4MakeTranslation(0.0f, 0.0f, -4.0f * RENDERER_NEAR_RANGE);
-	modelView = GLKMatrix4Scale(modelView, scale, scale, scale);
-	modelView = GLKMatrix4Multiply(modelView, modelRotate);
-	modelViewProjection = GLKMatrix4Multiply(projection, modelView);
+    GLKMatrix4 mat;
+
+//    NSLog(@"modelCenter = %.2f %.2f %.2f", modelCenter.x, modelCenter.y, modelCenter.z);
+
+    modelView = GLKMatrix4MakeTranslation(0.0f, 0.0f, -modelCenter.y);
+    modelView = GLKMatrix4Multiply(modelView, modelRotate);
+    modelView = GLKMatrix4Translate(modelView, -modelCenter.x, -modelCenter.z, modelCenter.y);
+    modelView = GLKMatrix4RotateX(modelView, -M_PI_2);
+    
+    projection = GLKMatrix4MakeFrustum(-aspectRatio, aspectRatio, -1.0f, 1.0f, MIN(RENDERER_NEAR_RANGE, near), RENDERER_FAR_RANGE);
+    modelViewProjection = GLKMatrix4Multiply(projection, modelView);
 
     hudRect = CGRectMake(width - 280.0f, height - 280.0f, 250.0f, 250.0f);
     hudProjection = GLKMatrix4MakeOrtho(0.0f, width, 0.0f, height, 0.0f, 1.0f);
@@ -803,21 +809,12 @@
     mat = GLKMatrix4Scale(mat, hudRect.size.width, hudRect.size.height, 1.0f);
     hudModelViewProjection = GLKMatrix4Multiply(hudProjection, mat);
 
-//    float r = sqrtf(modelCenter.x * modelCenter.x + modelCenter.y + modelCenter.y + modelCenter.z * modelCenter.z);
-    
-//    beamProjection = GLKMatrix4MakeOrtho(-1.0f, 1.0f, -1.0f, 1.0f, RENDERER_NEAR_RANGE, 10000.0f);
-    beamProjection = GLKMatrix4MakeFrustum(-1.0f, 1.0f, -1.0f, 1.0f, 8.0f * RENDERER_NEAR_RANGE, 30000.0f);
-//    scale = 0.02f; // Maybe make this a function of beamwidth next time
+//    beamProjection = GLKMatrix4MakeFrustum(-1.0f, 1.0f, -1.0f, 1.0f, 16.0f, RENDERER_FAR_RANGE);
+    beamProjection = GLKMatrix4MakeFrustum(-1.0f, 1.0f, -1.0f, 1.0f, MIN(RENDERER_NEAR_RANGE, near), RENDERER_FAR_RANGE);
     mat = GLKMatrix4Identity;
-//    mat = GLKMatrix4Translate(mat, 0.0f, 0.0f, -2.0f * RENDERER_NEAR_RANGE + modelCenter.z * scale);
-//    mat = GLKMatrix4Translate(mat, 0.0f, 0.0f, RENDERER_NEAR_RANGE);
-//    mat = GLKMatrix4Scale(mat, scale, scale, scale);
     mat = GLKMatrix4RotateY(mat, beamAzimuth);
     mat = GLKMatrix4RotateX(mat, -beamElevation);
     mat = GLKMatrix4RotateX(mat, -M_PI_2);
-    
-//    mat = GLKMatrix4Translate(mat, -modelCenter.x, -modelCenter.y, -modelCenter.z);
-    
     beamModelViewProjection = GLKMatrix4Multiply(beamProjection, mat);
     
     [textRenderer setModelViewProjection:hudProjection];
@@ -854,15 +851,13 @@
 //	range = 20000.0f;
 //	modelRotate = GLKMatrix4MakeTranslation(-modelCenter.x, -modelCenter.y, -modelCenter.z);
 
-	rotateX = -0.35f * M_PI;
-//	rotateX = -0.9f * M_PI;
+	rotateX = 0.35f * M_PI;
 	rotateY = -0.1f;
-    //rotateY = M_PI;
-	range = 1000.0f;
-	modelRotate = GLKMatrix4MakeTranslation(-modelCenter.x, -modelCenter.y, -modelCenter.z);
-	modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeXRotation(rotateX), modelRotate);
-	modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeYRotation(rotateY), modelRotate);
+	range = 5000.0f;
 
+    modelRotate = GLKMatrix4MakeRotation(rotateY, 0.0f, 1.0f, 0.0f);
+    modelRotate = GLKMatrix4RotateX(modelRotate, rotateX);
+    
     iframe = 0;
     
 	viewParametersNeedUpdate = TRUE;

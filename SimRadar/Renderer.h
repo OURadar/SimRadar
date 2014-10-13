@@ -11,7 +11,8 @@
 #import "glUtil.h"
 #import "GLText.h"
 
-#define RENDERER_NEAR_RANGE  2.0f
+#define RENDERER_NEAR_RANGE  1000.0f
+#define RENDERER_FAR_RANGE   100000.0f
 #define RENDERER_TIC_COUNT   10
 
 typedef struct _draw_resource {

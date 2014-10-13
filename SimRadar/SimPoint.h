@@ -47,6 +47,7 @@
 - (void)advanceBeamPosition;
 - (void)advanceTimeAndBeamPosition;
 - (void)randomBeamPosition;
+- (void)homeBeamPosition;
 - (void)run;
 
 - (cl_float4 *)points;

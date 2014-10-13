@@ -236,6 +236,11 @@ NSWindow *standardWindow;
 			[glView.renderer decreaseLeafCount];
 			break;
 			
+        case 'b':
+            [sim homeBeamPosition];
+            [glView.renderer setBeamElevation:sim.elevationInDegrees azimuth:sim.azimuthInDegrees];
+            break;
+            
 		default:
 			// Allow other character to be handled by how the superclass defined it
 			[super keyDown:event];
