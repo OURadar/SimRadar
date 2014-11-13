@@ -476,6 +476,7 @@
 		height = 1;
         spinModel = 1;
 		aspectRatio = 1.0f;
+        showHud = TRUE;
         
         hudModelViewProjection = GLKMatrix4Identity;
         beamModelViewProjection = GLKMatrix4Identity;
@@ -701,7 +702,6 @@
     // Grid
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBindVertexArray(gridRenderer.vao);
-	glLineWidth(2.0f);
 	glUseProgram(gridRenderer.program);
 	glUniform4f(gridRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
 	glUniformMatrix4fv(gridRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
@@ -741,21 +741,44 @@
     glUniformMatrix4fv(leafRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
 	glDrawElementsInstanced(GL_LINE_STRIP, 7, GL_UNSIGNED_INT, NULL, leafRenderer.count);
 	
+    if (showHud) {
+        // HUD Background & Outline
+        glBindVertexArray(hudRenderer.vao);
+        glUseProgram(hudRenderer.program);
+        glUniform4f(hudRenderer.colorUI, 0.0f, 0.0f, 0.0f, 0.8f);
+        glUniformMatrix4fv(hudRenderer.mvpUI, 1, GL_FALSE, hudModelViewProjection.m);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        glUniform4f(hudRenderer.colorUI, 0.0f, 1.0f, 1.0f, 1.0f);
+        glDrawArrays(GL_LINE_STRIP, 4, 5);
+        
+        
+        // Objects on HUD (beam's view)
+        glViewport(hudOrigin.x, hudOrigin.y, hudSize.width, hudSize.height);
 
-    // HUD
-    glBindVertexArray(hudRenderer.vao);
-    glUseProgram(hudRenderer.program);
-    glLineWidth(1.0f);
-    glUniform4f(hudRenderer.colorUI, 0.0f, 0.0f, 0.0f, 0.8f);
-    glUniformMatrix4fv(hudRenderer.mvpUI, 1, GL_FALSE, hudModelViewProjection.m);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    glUniform4f(hudRenderer.colorUI, 0.0f, 1.0f, 1.0f, 1.0f);
-    glDrawArrays(GL_LINE_STRIP, 4, 5);
+        glBindVertexArray(leafRenderer.vao);
+        glUseProgram(leafRenderer.program);
+        glUniformMatrix4fv(leafRenderer.mvpUI, 1, GL_FALSE, beamModelViewProjection.m);
+        glDrawElementsInstanced(GL_LINE_STRIP, 7, GL_UNSIGNED_INT, NULL, leafRenderer.count);
 
+        glBindVertexArray(anchorLineRenderer.vao);
+        glUseProgram(anchorLineRenderer.program);
+        glUniform4f(gridRenderer.colorUI, 1.0f, 1.0f, 0.0f, 0.8f);
+        glUniformMatrix4fv(anchorLineRenderer.mvpUI, 1, GL_FALSE, beamModelViewProjection.m);
+        glDrawArrays(GL_LINES, 0, anchorLineRenderer.count);
+        
+        glBindVertexArray(gridRenderer.vao);
+        glUseProgram(gridRenderer.program);
+        glUniform4f(gridRenderer.colorUI, 1.0f, 1.0f, 1.0f, 0.8f);
+        glUniformMatrix4fv(gridRenderer.mvpUI, 1, GL_FALSE, beamModelViewProjection.m);
+        glDrawArrays(GL_LINES, 0, gridRenderer.count);
+    }
+    
+    glViewport(0, 0, width, height);
+    
 #ifdef DEBUG_GL
     [textRenderer showTextureMap];
 #endif
-
+    
     // Text
     snprintf(statusMessage[1], 256, "Frame %d", iframe);
     
@@ -763,19 +786,12 @@
     //[textRenderer drawText:"SimRadar" origin:NSMakePoint(25.0f, height - 150.0f) scale:1.0f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
     [textRenderer drawText:statusMessage[0] origin:NSMakePoint(25.0f, height - 90.0f) scale:0.333f];
     [textRenderer drawText:statusMessage[1] origin:NSMakePoint(25.0f, height - 120.0f) scale:0.333f];
-//    [textRenderer drawText:fpsString origin:NSMakePoint(width - 25.0f, height - 49.0f) scale:0.333f red:1.0f green:0.9f blue:0.2f alpha:1.0f align:GLTextAlignmentRight];
-
-    snprintf(statusMessage[2], 128, "AZ %.2f", beamAzimuth / M_PI * 180.0f);
-    [textRenderer drawText:statusMessage[2] origin:NSMakePoint(width - hudRect.size.width - 15.0f, height - hudRect.size.height - 15.0f) scale:0.25f];
+    //    [textRenderer drawText:fpsString origin:NSMakePoint(width - 25.0f, height - 49.0f) scale:0.333f red:1.0f green:0.9f blue:0.2f alpha:1.0f align:GLTextAlignmentRight];
     
-    glViewport(hudRect.origin.x, hudRect.origin.y, hudRect.size.width, hudRect.size.height);
-    
-    // Leaves on HUD
-    glBindVertexArray(leafRenderer.vao);
-    glUseProgram(leafRenderer.program);
-    glUniformMatrix4fv(leafRenderer.mvpUI, 1, GL_FALSE, beamModelViewProjection.m);
-    glDrawElementsInstanced(GL_LINE_STRIP, 7, GL_UNSIGNED_INT, NULL, leafRenderer.count);
-    
+    if (showHud) {
+        snprintf(statusMessage[2], 128, "EL %.2f   AZ %.2f", beamElevation / M_PI * 180.0f, beamAzimuth / M_PI * 180.0f);
+        [textRenderer drawText:statusMessage[2] origin:NSMakePoint(hudOrigin.x + 15.0f, hudOrigin.y + 15.0f) scale:0.25f];
+    }
 
     glBindVertexArray(0);
     glUseProgram(0);
@@ -802,14 +818,14 @@
     projection = GLKMatrix4MakeFrustum(-aspectRatio, aspectRatio, -1.0f, 1.0f, MIN(RENDERER_NEAR_RANGE, near), RENDERER_FAR_RANGE);
     modelViewProjection = GLKMatrix4Multiply(projection, modelView);
 
-    hudRect = CGRectMake(width - 280.0f, height - 280.0f, 250.0f, 250.0f);
+    hudSize = CGSizeMake(aspectRatio * 250.0f, 250.0f);
+    hudOrigin = CGPointMake(width - hudSize.width - 30.0f, height - hudSize.height - 30.0f);
     hudProjection = GLKMatrix4MakeOrtho(0.0f, width, 0.0f, height, 0.0f, 1.0f);
-    mat = GLKMatrix4MakeTranslation(hudRect.origin.x + 0.5f, hudRect.origin.y + 0.5f, 0.0f);
-    mat = GLKMatrix4Scale(mat, hudRect.size.width, hudRect.size.height, 1.0f);
+    mat = GLKMatrix4MakeTranslation(hudOrigin.x + 0.5f, hudOrigin.y + 0.5f, 0.0f);
+    mat = GLKMatrix4Scale(mat, hudSize.width, hudSize.height, 1.0f);
     hudModelViewProjection = GLKMatrix4Multiply(hudProjection, mat);
 
-//    beamProjection = GLKMatrix4MakeFrustum(-1.0f, 1.0f, -1.0f, 1.0f, 16.0f, RENDERER_FAR_RANGE);
-    beamProjection = GLKMatrix4MakeFrustum(-1.0f, 1.0f, -1.0f, 1.0f, MIN(RENDERER_NEAR_RANGE, near), RENDERER_FAR_RANGE);
+    beamProjection = GLKMatrix4MakeFrustum(-aspectRatio, aspectRatio, -1.0f, 1.0f, MIN(RENDERER_NEAR_RANGE, 4.0f * near), RENDERER_FAR_RANGE);
     mat = GLKMatrix4Identity;
     mat = GLKMatrix4RotateY(mat, beamAzimuth);
     mat = GLKMatrix4RotateX(mat, -beamElevation);

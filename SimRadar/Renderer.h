@@ -56,7 +56,8 @@ typedef struct _draw_resource {
     GLKMatrix4 hudProjection, hudModelViewProjection;
     GLKMatrix4 beamProjection, beamModelViewProjection;
 	
-    CGRect hudRect;
+    CGPoint hudOrigin;
+    CGSize hudSize;
     
 	GLint MVPUniformIndex, singleColorMVPUniformIndex;
 	GLint ColorUniformIndex;
@@ -67,6 +68,8 @@ typedef struct _draw_resource {
     GLfloat beamAzimuth, beamElevation;
     
 	id<RendererDelegate> delegate;
+    
+    BOOL showHud;
 	
 	@private
 	
