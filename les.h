@@ -33,7 +33,7 @@ typedef struct les_grid {
 	float     *z;             // Z values
 } LESGrid;
 
-typedef struct _les_databox {
+typedef struct _les_value {
 	float *x;
 	float *y;
 	float *z;
@@ -42,7 +42,7 @@ typedef struct _les_databox {
 	float *w;
 	float *p;
 	float *t;
-} LESDataBox;
+} LESValue;
 
 typedef struct _les_table {
 	uint32_t  nx;             // Number of cells in x direction
@@ -66,7 +66,8 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path);
 LESHandle *LES_init(void);
 void LES_free(LESHandle *);
 
-LESTable *LES_get_frame(LESHandle *, const int n);
+LESTable *LES_get_frame(const LESHandle *, const int n);
+
 void LES_show_table_summary(const LESTable *table);
 
 #endif

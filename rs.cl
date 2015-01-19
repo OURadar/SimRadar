@@ -41,9 +41,11 @@ __kernel void scat_physics(__global float4 *p,
 	float4 coord = fma(pos, physics_desc.s0123, physics_desc.s4567);
 	v[i] = read_imagef(physics, sampler, coord);
 
+    // For DEBUG: Override 1-st particle's velocity so it does not move.
     if (i == 0) {
         v[i] = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
     }
+
 //	if (i == 0) {
 //		printf("(%9.2f, %9.2f, %9.2f) / [%.2f, %.2f, %.2f] + [%.2f, %.2f, %.2f] = (%.2f, %.2f, %.2f)  (%6.2f, %6.2f, %6.2f)\n",
 //			   pos.x, pos.y, pos.z,
@@ -91,13 +93,8 @@ __kernel void scat_mov(__global float4 *p,
 	const float4 dt = (float4)(t.s0, t.s0, t.s0, 0.0f);
 	float4 pos = p[i];
 
-	// Future position
-	pos += v[i] * dt;
-
-	float dprod = dot(b.xyz, normalize(pos.xyz));
+    float dprod = dot(b.xyz, normalize(pos.xyz));
 	float angle = acos(dprod);
-	
-	p[i] = pos;
 	
 	a[i].s0 = length(pos);                                 // Range of the point
 //	if (i < 10)
@@ -134,6 +131,10 @@ __kernel void scat_mov(__global float4 *p,
 	o[i] = lo;
 
 	
+    // Future position
+    pos += v[i] * dt;
+    p[i] = pos;
+    
 //	if (i < 3) {
 //		printf("i=%3d  angle=%6.3f --> %6.3f, %6.3f, %6.3f --> w=%6.3f\n",
 //			   i, angle, fidx_int.s0, fidx_int.s1, fidx_dec.s0, a[i].s3);

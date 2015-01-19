@@ -157,8 +157,8 @@ typedef struct _rs_worker {
 	RSMakePulseParams      make_pulse_params;
 
 	// GPU side memory
-	cl_mem                 scat_pos;
-	cl_mem                 scat_vel;
+	cl_mem                 scat_pos;   // x, y, z coordinates
+	cl_mem                 scat_vel;   // u, v, w wind components
 	cl_mem                 scat_ori;   // alpha, beta, gamma angles
 	cl_mem                 scat_att;   // type, dot products, range, etc.
 	cl_mem                 scat_sig;   // signal: Ih Qh Iv Qv

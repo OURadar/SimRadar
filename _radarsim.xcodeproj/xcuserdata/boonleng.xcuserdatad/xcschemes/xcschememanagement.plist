@@ -34,6 +34,11 @@
 			<key>orderHint</key>
 			<integer>1</integer>
 		</dict>
+		<key>test_adm.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>10</integer>
+		</dict>
 		<key>test_clreduce.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
@@ -108,6 +113,11 @@
 			<true/>
 		</dict>
 		<key>B560780717E357340068C6BE</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>B567F8BA1A6D66E700F40660</key>
 		<dict>
 			<key>primary</key>
 			<true/>

@@ -25,11 +25,11 @@ typedef struct _les_mem {
 } LESMem;
 
 // Private functions
-void show_row(const char *prefix, const char *posfix, const float *f, const int n);
-void show_slice(const float *values, const int nx, const int ny, const int nz);
-void show_volume(const float *values, const int nx, const int ny, const int nz);
-void show_dots(const char *prefix, const char *posfix);
-void show_slice_dots(void);
+void LES_show_row(const char *prefix, const char *posfix, const float *f, const int n);
+void LES_show_slice(const float *values, const int nx, const int ny, const int nz);
+void LES_show_volume(const float *values, const int nx, const int ny, const int nz);
+void LES_show_dots(const char *prefix, const char *posfix);
+void LES_show_slice_dots(void);
 
 //LESTable *LES_table_from_file(const char *grid_filename, const char *table_filename);
 LESGrid *LES_enclosing_grid_create_from_file(const char *filename);
@@ -43,38 +43,38 @@ void LES_table_free(LESTable *table);
 //void LES_table_fill(LESTable *table, const LESGrid *grid, const char *filename);
 
 
-#define FMT   "%+8.4f"
-#define CFMT  "%s" FMT " " FMT "  " FMT " .. " FMT "%s"
-void show_row(const char *prefix, const char *posfix, const float *f, const int n) {
-	printf(CFMT, prefix, f[0], f[1], f[2], f[n-1], posfix);
+#define LES_FMT   "%+8.4f"
+#define LES_CFMT  "%s" LES_FMT " " LES_FMT "  " LES_FMT " .. " LES_FMT "%s"
+void LES_show_row(const char *prefix, const char *posfix, const float *f, const int n) {
+	printf(LES_CFMT, prefix, f[0], f[1], f[2], f[n-1], posfix);
 }
 
 
-void show_slice(const float *values, const int nx, const int s, const int nz) {
-    show_row("  [ ", " ]", &values[0], nx);
-	show_row("  [ ", " ]", &values[s], nx);
-	show_row("  [ ", " ]  ..", &values[2 * s], nx);
-	show_row("  [ ", " ]\n", &values[(nz - 1) * s], nx);
+void LES_show_slice(const float *values, const int nx, const int s, const int nz) {
+    LES_show_row("  [ ", " ]", &values[0], nx);
+	LES_show_row("  [ ", " ]", &values[s], nx);
+	LES_show_row("  [ ", " ]  ..", &values[2 * s], nx);
+	LES_show_row("  [ ", " ]\n", &values[(nz - 1) * s], nx);
 }
 
 
-void show_volume(const float *values, const int nx, const int ny, const int nz) {
+void LES_show_volume(const float *values, const int nx, const int ny, const int nz) {
 	int o = 0;
 	int s = nx * ny;
 		
-	o = 0;                show_slice(&values[o], nx, s, nz);
-	o = nx;               show_slice(&values[o], nx, s, nz);
-	o = 2 * nx;           show_slice(&values[o], nx, s, nz);
+	o = 0;                LES_show_slice(&values[o], nx, s, nz);
+	o = nx;               LES_show_slice(&values[o], nx, s, nz);
+	o = 2 * nx;           LES_show_slice(&values[o], nx, s, nz);
 	
-	show_slice_dots();
+	LES_show_slice_dots();
 
-	o = (ny - 1) * nx;    show_slice(&values[o], nx, s, nz);
+	o = (ny - 1) * nx;    LES_show_slice(&values[o], nx, s, nz);
 	
 	printf("\n");
 }
 
 
-void show_dots(const char *prefix, const char *posfix) {
+void LES_show_dots(const char *prefix, const char *posfix) {
 	char buf[1024];
 	sprintf(buf, CFMT, prefix, 1.0f, 1.0f, 1.0f, 1.0f, posfix);
 	for (int i=(int)strlen(prefix); i<strlen(buf)-strlen(posfix); i++) {
@@ -87,11 +87,11 @@ void show_dots(const char *prefix, const char *posfix) {
 	printf("%s", buf);
 }
 
-void show_slice_dots() {
-	show_dots("  [ ", " ]");
-	show_dots("  [ ", " ]");
-	show_dots("  [ ", " ]  ..");
-	show_dots("  [ ", " ]\n");
+void LES_show_slice_dots() {
+	LES_show_dots("  [ ", " ]");
+	LES_show_dots("  [ ", " ]");
+	LES_show_dots("  [ ", " ]  ..");
+	LES_show_dots("  [ ", " ]\n");
 }
 
 
@@ -173,20 +173,20 @@ void LES_show_grid_summary(const LESGrid *grid) {
 	printf("%d x %d x %d = %zu\n", grid->nx, grid->ny, grid->nz, count);
 
 	printf(" x =\n");
-	show_volume(grid->x, grid->nx, grid->ny, grid->nz);
+	LES_show_volume(grid->x, grid->nx, grid->ny, grid->nz);
 
 	printf(" y =\n");
-	show_volume(grid->y, grid->nx, grid->ny, grid->nz);
+	LES_show_volume(grid->y, grid->nx, grid->ny, grid->nz);
 	
 	printf(" z =\n");
-	show_volume(grid->z, grid->nx, grid->ny, grid->nz);
+	LES_show_volume(grid->z, grid->nx, grid->ny, grid->nz);
 }
 
 
 LESTable *LES_table_create(const LESGrid *grid) {
 	LESTable *table = (LESTable *)malloc(sizeof(LESTable));
 	if (table == NULL) {
-		fprintf(stderr, "Error allocating table.\n");
+		fprintf(stderr, "Error allocating table (LESTable).\n");
 		return NULL;
 	}
 	table->nx = grid->nx;
@@ -226,19 +226,19 @@ void LES_table_free(LESTable *table) {
 void LES_show_table_summary(const LESTable *table) {
 	
 	printf(" u =\n");
-	show_volume(table->u, table->nx, table->ny, table->nz);
+	LES_show_volume(table->u, table->nx, table->ny, table->nz);
 
 	printf(" v =\n");
-	show_volume(table->v, table->nx, table->ny, table->nz);
+	LES_show_volume(table->v, table->nx, table->ny, table->nz);
 
 	printf(" w =\n");
-	show_volume(table->w, table->nx, table->ny, table->nz);
+	LES_show_volume(table->w, table->nx, table->ny, table->nz);
 
 //	printf(" p =\n");
 //	show_volume(table->p, table->nx, table->ny, table->nz);
 //
 	printf(" t =\n");
-	show_volume(table->t, table->nx, table->ny, table->nz);
+	LES_show_volume(table->t, table->nx, table->ny, table->nz);
 }
 
 
@@ -327,7 +327,7 @@ LESHandle *LES_init() {
 }
 
 
-LESTable *LES_get_frame(LESHandle *i, const int n) {
+LESTable *LES_get_frame(const LESHandle *i, const int n) {
 	LESTable *table;
 	LESMem *h = (LESMem *)i;
 
