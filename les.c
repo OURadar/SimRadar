@@ -76,7 +76,7 @@ void LES_show_volume(const float *values, const int nx, const int ny, const int 
 
 void LES_show_dots(const char *prefix, const char *posfix) {
 	char buf[1024];
-	sprintf(buf, CFMT, prefix, 1.0f, 1.0f, 1.0f, 1.0f, posfix);
+	sprintf(buf, LES_CFMT, prefix, 1.0f, 1.0f, 1.0f, 1.0f, posfix);
 	for (int i=(int)strlen(prefix); i<strlen(buf)-strlen(posfix); i++) {
 		if (buf[i] == '.' && buf[i+1] == '0') {
 			buf[i] = ':';
@@ -264,9 +264,14 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
 		snprintf(search_paths[4], 1024, "%s/Downloads/les", ctmp);
 	}
 	
-    struct stat path_stat, file_stat;
-    char *les_path, les_file_path[1024];
-    int dir_ret, file_ret;
+    struct stat path_stat;
+    struct stat file_stat;
+    char *les_path;
+    char les_file_path[1024];
+    int dir_ret;
+    int file_ret;
+    int found_dir = 0;
+    
     for (int i=0; i<sizeof(search_paths)/sizeof(search_paths[0]); i++) {
         les_path = search_paths[i];
 		snprintf(les_file_path, 1024, "%s/twocell/fort.10_2", les_path);
@@ -274,14 +279,15 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
 		file_ret = stat(les_file_path, &file_stat);
         if (dir_ret == 0 && S_ISDIR(path_stat.st_mode) && S_ISREG(file_stat.st_mode)) {
 
-//#ifdef DEBUG
+            #ifdef DEBUG
             printf("Found LES folder @ %s\n", les_path);
-//#endif
-
+            #endif
+            
+            found_dir = 1;
             break;
         }
     }
-    if (dir_ret < 0) {
+    if (found_dir == 0) {
         fprintf(stderr, "Unable to find the LES data folder.\n");
         return NULL;
     }

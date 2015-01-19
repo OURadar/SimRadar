@@ -19,6 +19,7 @@ typedef struct _adm_mem {
 
 // Private functions
 void ADM_show_row(const char *prefix, const char *posfix, const float *f, const int n);
+void ADM_show_blk(const char *prefix, const char *posfix);
 void ADM_show_slice(const float *values, const int nb, const int na);
 
 
@@ -29,9 +30,32 @@ ADMTable *ADM_get_frame(const ADMHandle *i) {
 
 
 #define ADM_FMT   "%+9.4f"
-#define ADM_CFMT  "%s" ADM_FMT " " ADM_FMT "  " ADM_FMT " .. " ADM_FMT "%s"
+#define ADM_CFMT  "%s" ADM_FMT " " ADM_FMT "  " ADM_FMT " ... " ADM_FMT "%s"
 void ADM_show_row(const char *prefix, const char *posfix, const float *f, const int n) {
     printf(ADM_CFMT, prefix, f[0], f[1], f[2], f[n-1], posfix);
+}
+
+
+void ADM_show_blk(const char *prefix, const char *posfix) {
+    char buf[1024];
+    sprintf(buf, ADM_CFMT, prefix, 1.0f, 1.0f, 1.0f, 1.0f, posfix);
+    for (int i=(int)strlen(prefix); i<strlen(buf)-strlen(posfix); i++) {
+        if (buf[i] == '.' && buf[i+1] == '0') {
+            buf[i] = ':';
+        } else {
+            buf[i] = ' ';
+        }
+    }
+    printf("%s", buf);
+}
+
+
+void ADM_show_slice(const float *values, const int nb, const int na) {
+    ADM_show_row("  [ ", " ]\n", &values[0], nb);
+    ADM_show_row("  [ ", " ]\n", &values[nb], nb);
+    ADM_show_row("  [ ", " ]\n", &values[2 * nb], nb);
+    ADM_show_blk("  [ ", " ]\n");
+    ADM_show_row("  [ ", " ]\n\n", &values[(na - 1) * nb], nb);
 }
 
 
@@ -47,7 +71,7 @@ ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path) {
         }
         snprintf(search_paths[1], 1024, "%s/%s", cwd, "Contents/Resources/les");
     } else {
-        snprintf(search_paths[1], 1024, "%s/%s", path, "les");
+        snprintf(search_paths[1], 1024, "%s", path);
     }
     
     char *ctmp = getenv("HOME");
@@ -58,24 +82,31 @@ ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path) {
         snprintf(search_paths[4], 1024, "%s/Downloads/les", ctmp);
     }
     
-    struct stat path_stat, file_stat;
-    char *dat_path = NULL, dat_file_path[1024];
-    int dir_ret = -1, file_ret;
-    for (int i=0; i<sizeof(search_paths)/sizeof(search_paths[0]); i++) {
+    struct stat path_stat;
+    struct stat file_stat;
+    char *dat_path = NULL;
+    char dat_file_path[1024];
+    int dir_ret;
+    int file_ret;
+    int found_dir = 0;
+    
+    for (int i=0; i<5; i++) {
         dat_path = search_paths[i];
         snprintf(dat_file_path, 1024, "%s/%s.adm", dat_path, ADMSquarePlate);
         dir_ret = stat(dat_path, &path_stat);
         file_ret = stat(dat_file_path, &file_stat);
+        //printf("testing %s (%d)  %s (%d)\n", dat_path, S_ISDIR(path_stat.st_mode), dat_file_path, S_ISREG(file_stat.st_mode));
         if (dir_ret == 0 && S_ISDIR(path_stat.st_mode) && S_ISREG(file_stat.st_mode)) {
             
-            //#ifdef DEBUG
+            #ifdef DEBUG
             printf("Found ADM folder @ %s\n", dat_path);
-            //#endif
+            #endif
             
+            found_dir = 1;
             break;
         }
     }
-    if (dir_ret < 0) {
+    if (found_dir == 0) {
         fprintf(stderr, "Unable to find the ADM data folder.\n");
         return NULL;
     }
@@ -174,14 +205,6 @@ void ADM_free(ADMHandle *i) {
 }
 
 
-void ADM_show_slice(const float *values, const int nb, const int na) {
-    ADM_show_row("  [ ", " ]", &values[0], nb);
-    ADM_show_row("  [ ", " ]", &values[nb], nb);
-    ADM_show_row("  [ ", " ]  ..", &values[2 * nb], nb);
-    ADM_show_row("  [ ", " ]\n", &values[(na - 1) * nb], nb);
-}
-
-
 void ADM_show_table_summary(const ADMTable *T) {
     printf(" beta =\n");
     ADM_show_row("  [ ", " ]\n\n", T->b, T->nb);
@@ -189,15 +212,21 @@ void ADM_show_table_summary(const ADMTable *T) {
     printf(" alpha =\n");
     ADM_show_row("  [ ", " ]\n\n", T->a, T->na);
 
-    printf(" cd =\n");
+    printf(" cdx =\n");
     ADM_show_slice(T->cdx, T->nb, T->na);
+
+    printf(" cdy =\n");
     ADM_show_slice(T->cdy, T->nb, T->na);
+
+    printf(" cdz =\n");
     ADM_show_slice(T->cdz, T->nb, T->na);
     
-    printf("\n");
-
-    printf(" cm =\n");
+    printf(" cmx =\n");
     ADM_show_slice(T->cmx, T->nb, T->na);
+
+    printf(" cmy =\n");
     ADM_show_slice(T->cmy, T->nb, T->na);
+
+    printf(" cmz =\n");
     ADM_show_slice(T->cmz, T->nb, T->na);
 }

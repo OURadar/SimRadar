@@ -17,6 +17,10 @@ int main(int argc, const char **argv) {
     
     ADMHandle *A = ADM_init();
     
+    if (A == NULL) {
+        return EXIT_FAILURE;
+    }
+    
     table = ADM_get_frame(A);
     ADM_show_table_summary(table);
     

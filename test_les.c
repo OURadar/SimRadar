@@ -10,6 +10,9 @@ int main(int argc, const char **argv) {
 
 	LESHandle *L = LES_init();
 	
+    if (L == NULL) {
+        return EXIT_FAILURE;
+    }
 	
 	table = LES_get_frame(L, 0);
 	LES_show_table_summary(table);
