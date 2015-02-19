@@ -17,8 +17,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#define ADMSquarePlate       "square_plate"
-#define ADMRoofTile          "roof_tile"
+#define ADMConfigSquarePlate       "square_plate"
+#define ADMConfigRoofTile          "roof_tile"
 
 typedef void* ADMHandle;
 typedef char* ADMConfig;
@@ -43,6 +43,7 @@ typedef struct _adm_data {
 } ADMData;
 
 typedef struct _adm_table {
+    uint32_t  nt;             // Number of debris types
     uint32_t  nb;             // Number of cells in beta direction
     uint32_t  na;             // Number of cells in alpha direction
     uint32_t  nn;             // Number of cells in all directions combined
@@ -54,6 +55,7 @@ typedef struct _adm_table {
     float     *cmx;
     float     *cmy;
     float     *cmz;
+    char      **name;
 } ADMTable;
 
 ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path);

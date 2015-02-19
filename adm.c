@@ -9,7 +9,6 @@
 #include "adm.h"
 
 // Private structure
-
 typedef struct _adm_mem {
     char data_path[1024];
     char file[1024];
@@ -18,23 +17,13 @@ typedef struct _adm_mem {
 } ADMMem;
 
 // Private functions
-void ADM_show_row(const char *prefix, const char *posfix, const float *f, const int n);
 void ADM_show_blk(const char *prefix, const char *posfix);
+void ADM_show_row(const char *prefix, const char *posfix, const float *f, const int n);
 void ADM_show_slice(const float *values, const int nb, const int na);
-
-
-ADMTable *ADM_get_frame(const ADMHandle *i) {
-    ADMMem *h = (ADMMem *)i;
-    return h->data_value;
-}
 
 
 #define ADM_FMT   "%+9.4f"
 #define ADM_CFMT  "%s" ADM_FMT " " ADM_FMT "  " ADM_FMT " ... " ADM_FMT "%s"
-void ADM_show_row(const char *prefix, const char *posfix, const float *f, const int n) {
-    printf(ADM_CFMT, prefix, f[0], f[1], f[2], f[n-1], posfix);
-}
-
 
 void ADM_show_blk(const char *prefix, const char *posfix) {
     char buf[1024];
@@ -47,6 +36,11 @@ void ADM_show_blk(const char *prefix, const char *posfix) {
         }
     }
     printf("%s", buf);
+}
+
+
+void ADM_show_row(const char *prefix, const char *posfix, const float *f, const int n) {
+    printf(ADM_CFMT, prefix, f[0], f[1], f[2], f[n-1], posfix);
 }
 
 
@@ -77,9 +71,10 @@ ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path) {
     char *ctmp = getenv("HOME");
     if (ctmp != NULL) {
         //printf("HOME = %s\n", ctmp);
-        snprintf(search_paths[2], 1024, "%s/Desktop/les", ctmp);
-        snprintf(search_paths[3], 1024, "%s/Douments/les", ctmp);
-        snprintf(search_paths[4], 1024, "%s/Downloads/les", ctmp);
+        snprintf(search_paths[2], 1024, "%s/Downloads/tables", ctmp);
+        snprintf(search_paths[3], 1024, "%s/Desktop/les", ctmp);
+        snprintf(search_paths[4], 1024, "%s/Douments/les", ctmp);
+        snprintf(search_paths[5], 1024, "%s/Downloads/les", ctmp);
     }
     
     struct stat path_stat;
@@ -92,7 +87,7 @@ ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path) {
     
     for (int i=0; i<5; i++) {
         dat_path = search_paths[i];
-        snprintf(dat_file_path, 1024, "%s/%s.adm", dat_path, ADMSquarePlate);
+        snprintf(dat_file_path, 1024, "%s/%s.adm", dat_path, ADMConfigSquarePlate);
         dir_ret = stat(dat_path, &path_stat);
         file_ret = stat(dat_file_path, &file_stat);
         //printf("testing %s (%d)  %s (%d)\n", dat_path, S_ISDIR(path_stat.st_mode), dat_file_path, S_ISREG(file_stat.st_mode));
@@ -185,7 +180,7 @@ ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path) {
 
 
 ADMHandle *ADM_init(void) {
-    return ADM_init_with_config_path(ADMSquarePlate, "les");
+    return ADM_init_with_config_path(ADMConfigSquarePlate, "les");
 }
 
 
@@ -202,6 +197,12 @@ void ADM_free(ADMHandle *i) {
     free(h->data_grid->a);
     free(h->data_grid);
     free(h);
+}
+
+
+ADMTable *ADM_get_frame(const ADMHandle *i) {
+    ADMMem *h = (ADMMem *)i;
+    return h->data_value;
 }
 
 

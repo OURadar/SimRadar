@@ -1,4 +1,69 @@
 float4 rand(uint4 *seed);
+float4 quat_mult(float4 left,
+                 float4 right);
+float4 quat_sq(float4 quat);
+
+float4 set_clr(float4 att);
+
+///////////////////////////////////////////////////////////////////////////////////////////
+//
+// Rudimentary functions
+//
+
+float4 rand(uint4 *seed)
+{
+    const uint4 a = {16807, 16807, 16807, 16807};
+    const uint4 m = {0x7FFFFFFF, 0x7FFFFFFF, 0x7FFFFFFF, 0x7FFFFFFF};
+    const float4 n = {1.0f / 2147483647.0f, 1.0f / 2147483647.0f, 1.0f / 2147483647.0f, 1.0f / 2147483647.0f};
+    
+    *seed = (*seed * a) & m;
+    
+    return convert_float4(*seed) * n;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////
+//
+// Quaternion arithmetics
+//
+
+float4 quat_mult(float4 left,
+                 float4 right)
+{
+    return (float4) (left.x * right.x - left.y * right.y - left.z * right.z - left.w * right.w,
+                     left.x * right.y + left.y * right.x + left.z * right.w - left.w * right.z,
+                     left.x * right.z + left.z * right.x + left.w * right.y - left.y * right.w,
+                     left.x * right.w + left.w * right.x + left.y * right.z - left.z * right.y);
+}
+
+float4 quat_sq(float4 quat)
+{
+    return (float4) (quat.x * quat.x - quat.y * quat.y - quat.z * quat.z - quat.w * quat.w,
+                     2.0f * quat.x * quat.y,
+                     2.0f * quat.x * quat.z,
+                     2.0f * quat.x * quat.w);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////
+//
+// Functions for convenience
+//
+
+// Set colors
+float4 set_clr(float4 att)
+{
+    float g = clamp(fma(log10(att.s3), 0.3f, 1.5f), 0.05f, 0.3f);
+    
+    float4 c;
+    
+    c.x = clamp(0.4f * att.s1, 0.0f, 1.0f) + 0.6f * g;
+    c.y = 0.9f * g;
+    c.z = clamp(1.0f - c.x - 3.5f * g, 0.0f, 1.0f) + 0.2f * (g - 0.1f);
+    c.w = 0.3f;
+    
+    return c;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////
 
 //
 // table description:
@@ -12,6 +77,12 @@ float4 rand(uint4 *seed);
 // Notice SOM? Coincident...
 //
 
+///////////////////////////////////////////////////////////////////////////////////////////
+//
+// OpenCL Kernel Functions
+//
+
+// Input output for measuring data throughput
 //
 // i - input
 // o - output
@@ -23,6 +94,7 @@ __kernel void io(__global float4 *i,
     o[k] = i[k];
 }
 
+// Scatterer physics - assign physical parameters based on position
 //
 // p - position
 // v - velocity
@@ -68,6 +140,7 @@ __kernel void scat_physics(__global float4 *p,
 //   s7
 //
 
+// Scatterer move
 //
 // p - position
 // v - velocity
@@ -143,17 +216,6 @@ __kernel void scat_mov(__global float4 *p,
 }
 
 
-float4 rand(uint4 *seed)
-{
-	const uint4 a = {16807, 16807, 16807, 16807};
-	const uint4 m = {0x7FFFFFFF, 0x7FFFFFFF, 0x7FFFFFFF, 0x7FFFFFFF};
-	const float4 n = {1.0f / 2147483647.0f, 1.0f / 2147483647.0f, 1.0f / 2147483647.0f, 1.0f / 2147483647.0f};
-
-    *seed = (*seed * a) & m;
-
-	return convert_float4(*seed) * n;
-}
-
 //
 // p - position
 // a - attributes
@@ -186,20 +248,6 @@ __kernel void scat_chk(__global float4 *p,
 	}
 }
 
-
-float4 set_clr(float4 att)
-{
-	float g = clamp(fma(log10(att.s3), 0.3f, 1.5f), 0.05f, 0.3f);
-	
-	float4 c;
-
-	c.x = clamp(0.4f * att.s1, 0.0f, 1.0f) + 0.6f * g;
-	c.y = 0.9f * g;
-	c.z = clamp(1.0f - c.x - 3.5f * g, 0.0f, 1.0f) + 0.2f * (g - 0.1f);
-	c.w = 0.3f;
-	
-	return c;
-}
 
 //
 // c - color

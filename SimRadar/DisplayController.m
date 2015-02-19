@@ -19,6 +19,7 @@ NSWindow *standardWindow;
 
 @interface DisplayController ()
 - (void)setSizeAndCentralized:(NSSize)newSize;
+- (void)checkInputIdling;
 @end
 
 @implementation DisplayController
@@ -38,6 +39,18 @@ NSWindow *standardWindow;
 	rect.size = newSize;
 	
 	[self.window setFrame:rect display:YES];
+}
+
+- (void)checkInputIdling
+{
+    CFTimeInterval
+    t = CGEventSourceSecondsSinceLastEventType(kCGEventSourceStateCombinedSessionState, kCGAnyInputEventType);
+    
+    if (t > 2.0) {
+        [NSCursor setHiddenUntilMouseMoves:YES];
+    } else {
+        [NSCursor unhide];
+    }
 }
 
 #pragma mark -
@@ -310,18 +323,6 @@ NSWindow *standardWindow;
 													   userInfo:nil
 														repeats:YES];
 	
-}
-
-- (void)checkInputIdling
-{
-	CFTimeInterval
-	t = CGEventSourceSecondsSinceLastEventType(kCGEventSourceStateCombinedSessionState, kCGAnyInputEventType);
-	
-	if (t > 2.0) {
-		[NSCursor setHiddenUntilMouseMoves:YES];
-	} else {
-		[NSCursor unhide];
-	}
 }
 
 @end

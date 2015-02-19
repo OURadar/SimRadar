@@ -78,6 +78,7 @@ int main(int argc, char *argv[]) {
 	printf("%s : Session started\n", now());
 	
 	RSHandle *S;
+    ADMHandle *A;
     LESHandle *L;
 
 	// Initialize the RS framework
@@ -88,7 +89,7 @@ int main(int argc, char *argv[]) {
 		S = RS_init_verbose(verb);
 	}
 	if (S == NULL) {
-		fprintf(stderr, "%s : Some errors occurred.\n", now());
+		fprintf(stderr, "%s : Some errors occurred during RS_init().\n", now());
 		return EXIT_FAILURE;
 	}
 
@@ -99,8 +100,12 @@ int main(int argc, char *argv[]) {
     // Initialize the LES framework
     L = LES_init();
     if (L == NULL) {
-        fprintf(stderr, "%s : Some errors occurred.\n", now());
+        fprintf(stderr, "%s : Some errors occurred during LES_init().\n", now());
 		return EXIT_FAILURE;
+    }
+    A = ADM_init();
+    if (A == NULL) {
+        fprintf(stderr, "%s : Some errors occurred during ADM_init().\n", now());
     }
     
 	// Set up the parameters:

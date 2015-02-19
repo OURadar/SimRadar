@@ -21,6 +21,7 @@
 
 #include "rs_types.h"
 #include "les.h"
+#include "adm.h"
 
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
@@ -43,6 +44,8 @@
 #define RS_MAX_NUM_SCATS      4000000
 #define RS_BODY_PER_CELL           50.0
 #define RS_CL_GROUP_ITEMS          32
+#define RS_MAX_ADM_TABLES           4
+#define RS_MAX_RCS_TABLES           4
 
 #ifndef MAX
 #define MAX(X, Y)      ((X) > (Y) ? (X) : (Y))
@@ -116,12 +119,26 @@ typedef struct _rs_table {
 	float         x0;                 // offset to the 1st element in the table
 	float         xm;                 // maximum index in float
 	float         dx;                 // scaling to map to table index
-	unsigned int  reserved;           // n/a
+	uint32_t      reserved;           // n/a
 	float         *data;              // table values
 } RSTable;
 
 
-// A table (texture for 3D physics paramters
+// A table (texture) for air-drag parameters
+typedef struct _rs_table2d {
+    float         xs;                 // x scaling to map to table index
+    float         xo;                 // x offset to the 1st element in the table
+    float         xm;                 // x maximum index in float
+    uint32_t      x_;
+    float         ys;                 // y scaling to map to table index
+    float         yo;                 // y offset to the 1st element in the table
+    float         ym;                 // y maximum index in float
+    uint32_t      y_;
+    cl_float8     *data;              // Data in float8 grid, e.g., x, y, z, u, v, w
+} RSTable2D;
+
+
+// A table (texture) for 3D physics paramters
 typedef struct _rs_table3d {
 	float         xs;                 // x scaling to map to table index
 	float         xo;                 // x offset to the 1st element in the table
@@ -139,6 +156,7 @@ typedef struct _rs_table3d {
 	float         reserved[3];        // n/a. simply pad to 128-bit
 	cl_float4     *data;              // Data in float4 grid, e.g., u, v, w, t
 } RSTable3D;
+
 
 //
 //  Worker (per GPU) handle
@@ -172,10 +190,16 @@ typedef struct _rs_worker {
 	cl_mem                 angular_weight;
 	cl_float4              angular_weight_desc;
 	
+    cl_mem                 adm[RS_MAX_ADM_TABLES];
+    cl_float16             adm_desc[RS_MAX_ADM_TABLES];
+    
+    cl_mem                 rcs[RS_MAX_ADM_TABLES];
+    cl_float16             rcs_desc[RS_MAX_ADM_TABLES];
+    
 	cl_mem                 physics;
 	cl_float16             physics_desc;
 
-	cl_uint                mem_size;
+    cl_uint                mem_size;
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 	
@@ -246,6 +270,8 @@ typedef struct _rs_handle {
 	
 	RSTable                range_weight_table;
 	RSTable                angular_weight_table;
+    RSTable2D              adm_tables[RS_MAX_ADM_TABLES];
+    RSTable2D              rcs_tables[RS_MAX_RCS_TABLES];
 	RSTable3D              physics_table;
 	
 	// OpenCL device
@@ -312,10 +338,13 @@ void RS_set_angular_weight(RSHandle *H, const float *table, const float table_in
 void RS_set_angular_weight_to_standard(RSHandle *H, float beamwidth_deg);
 void RS_set_angular_weight_to_double_cone(RSHandle *H, float beamwidth_deg);
 
-void RS_set_physics_data(RSHandle *H, RSTable3D table);
+void RS_set_physics_data(RSHandle *H, const RSTable3D table);
 void RS_set_physics_data_to_LES_table(RSHandle *H, const LESTable *table);
 void RS_set_physics_data_to_cube27(RSHandle *H);
 void RS_set_physics_data_to_cube125(RSHandle *H);
+
+void RS_set_adm_data(RSHandle *H, const RSTable2D table);
+void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *table);
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 #pragma mark -
@@ -345,6 +374,8 @@ void RS_make_pulse_cpu(RSHandle *H);
 
 RSTable RS_table_init(size_t numel);
 void RS_table_free(RSTable T);
+RSTable2D RS_table2d_init(size_t numel);
+void RS_table2d_free(RSTable2D T);
 RSTable3D RS_table3d_init(size_t numel);
 void RS_table3d_free(RSTable3D T);
 

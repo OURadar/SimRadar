@@ -103,7 +103,7 @@ static inline int makeThickLineTriagleStrips(float *thickLine, float *thickColor
 	
 	j = 0;
 	i = 3;
-	while (i < 3*size) {
+	while (i < 3 * size) {
 		ex = line[i];    er = colors[i];   i++;
 		ey = line[i];    eg = colors[i];   i++;
 		ez = line[i];    eb = colors[i];   i++;

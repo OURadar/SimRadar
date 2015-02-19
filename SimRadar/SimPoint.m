@@ -41,11 +41,14 @@
         
 		L = LES_init_with_config_path(LESConfigSuctionVortices, [resourcePath UTF8String]);
         
-        if (L == NULL || S == NULL) {
-            NSLog(@"Some error(s) in RS_init() or LES_init() occurred.");
+        A = ADM_init_with_config_path(ADMConfigSquarePlate, [resourcePath UTF8String]);
+
+        if (A == NULL || L == NULL || S == NULL) {
+            NSLog(@"Some error(s) in RS_init() or LES_init() ADM_init() occurred.");
             return nil;
         }
 		
+        
 		#ifdef DEBUG
 		RS_set_verbosity(S, 2);
 		#endif
@@ -57,6 +60,10 @@
 						-12.0f, 12.0f, 2.0f,            // Azimuth
 						0.0f, 6.0f, 1.0f);              // Elevation
 	
+//        RS_set_debris_collection(S, A);
+        
+        
+        
 		//RS_set_physics_data_to_cube125(S);
 		//RS_set_physics_data_to_cube27(S);
 		

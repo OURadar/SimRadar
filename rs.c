@@ -66,12 +66,12 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
 	}
 	
 #define CHECK_CL_CREATE_KERNEL                                                                          \
-if (ret != CL_SUCCESS) {                                                                            \
-fprintf(stderr, "%s : RS : Error creating OpenCL kernel scat_mov().  ret = %d\n", now(), ret);  \
-clReleaseProgram(C->prog);                                                                      \
-clReleaseContext(C->context);                                                                   \
-return;                                                                                         \
-}
+    if (ret != CL_SUCCESS) {                                                                            \
+        fprintf(stderr, "%s : RS : Error creating OpenCL kernel scat_mov().  ret = %d\n", now(), ret);  \
+        clReleaseProgram(C->prog);                                                                      \
+        clReleaseContext(C->context);                                                                   \
+        return;                                                                                         \
+    }
 	
 	// Tie all kernels to the program
     C->kern_io = clCreateKernel(C->prog, "io", &ret);                                             CHECK_CL_CREATE_KERNEL
@@ -143,9 +143,10 @@ void RS_worker_free(RSWorker *C) {
 void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_scats) {
 	
 	RSWorker *C = &H->worker[worker_id];
-	RSTable *range_weight_table = &H->range_weight_table;
+	RSTable *range_weight_table   = &H->range_weight_table;
 	RSTable *angular_weight_table = &H->angular_weight_table;
-	RSTable3D *physics_table = &H->physics_table;
+    RSTable2D *adm_table          = &H->adm_tables[0];
+	RSTable3D *physics_table      = &H->physics_table;
 	
 	C->num_scats = sub_num_scats;
 	
@@ -165,7 +166,27 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	C->angular_weight_desc.s1 = angular_weight_table->x0;
 	C->angular_weight_desc.s2 = angular_weight_table->xm;
 	C->angular_weight_desc.s3 = 0.0f;
-	
+    
+    // Pretend we only have one table at the moment
+    for (int i=0; i<1; i++) {
+        C->adm_desc[i].s0 = adm_table->xs;
+        C->adm_desc[i].s1 = adm_table->ys;
+        C->adm_desc[i].s2 = 1.0f;
+        C->adm_desc[i].s3 = 1.0f;
+        C->adm_desc[i].s4 = adm_table->xo;
+        C->adm_desc[i].s5 = adm_table->yo;
+        C->adm_desc[i].s6 = 1.0f;
+        C->adm_desc[i].s7 = 1.0f;
+        C->adm_desc[i].s8 = adm_table->xm;
+        C->adm_desc[i].s9 = adm_table->ym;
+        C->adm_desc[i].sa = 1.0f;
+        C->adm_desc[i].sb = 1.0f;
+        C->adm_desc[i].sc = adm_table->xs;
+        C->adm_desc[i].sd = adm_table->ys;
+        C->adm_desc[i].se = 1.0f;
+        C->adm_desc[i].sf = 1.0f;
+    }
+
 	C->physics_desc.s0 = physics_table->xs;
 	C->physics_desc.s1 = physics_table->ys;
 	C->physics_desc.s2 = physics_table->zs;
@@ -210,7 +231,6 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	}
 	
 	C->scat_vel = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
-	//C->scat_ori = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
 	C->scat_att = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
 	C->scat_sig = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
 	C->work = gcl_malloc(RS_MAX_GATES * RS_CL_GROUP_ITEMS * sizeof(cl_float4), NULL, 0);
@@ -225,9 +245,9 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	cl_int ret;
 	
 #define CHECK_CL_CREATE_BUFFER                                                             \
-if (ret != CL_SUCCESS) {                                                               \
-fprintf(stderr, "%s : RS : Error in clCreateBuffer().  ret = %d\n", now(), ret);   \
-return;                                                                            \
+    if (ret != CL_SUCCESS) {                                                               \
+        fprintf(stderr, "%s : RS : Error in clCreateBuffer().  ret = %d\n", now(), ret);   \
+        return;                                                                            \
 }
 	
 	C->scat_pos = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                   CHECK_CL_CREATE_BUFFER
@@ -1715,17 +1735,17 @@ void RS_set_angular_weight_to_standard(RSHandle *H, float beamwidth_rad) {
 }
 
 
-void RS_set_physics_data(RSHandle *H, RSTable3D table) {
+void RS_set_physics_data(RSHandle *H, const RSTable3D table) {
 	
 	int i;
 	
 	const size_t n = table.x_ * table.y_ * table.z_;
 	
-	// Free the old table, if exists, and create a new table
+	// Free the old table if exists; and create a new table
 	RS_table3d_free(H->physics_table);
 	H->physics_table = RS_table3d_init(n);
 	if (H->physics_table.data == NULL) {
-		fprintf(stderr, "%s : RS : RS_set_physics_data() unable to allocate 3d weight table.\n", now());
+		fprintf(stderr, "%s : RS : RS_set_physics_data() failed to allocate 3D table.\n", now());
 		return;
 	}
 	
@@ -1751,7 +1771,7 @@ void RS_set_physics_data(RSHandle *H, RSTable3D table) {
 	cl_image_format format = {CL_RGBA, CL_FLOAT};
 	
 #if defined (CL_VERSION_1_2)
-	
+
 	cl_image_desc desc;
 	desc.image_type = CL_MEM_OBJECT_IMAGE3D;
 	desc.image_width  = H->physics_table.x_;
@@ -1971,6 +1991,133 @@ void RS_set_physics_data_to_cube125(RSHandle *H) {
 	
 	RS_set_physics_data(H, table);
 	
+}
+
+
+void RS_set_adm_data(RSHandle *H, const RSTable2D table) {
+    
+    int i, t;
+    
+    const size_t n = table.x_ * table.y_;
+    
+    t = 0;
+    {
+        // Free the old table if exists; and create a new table
+        RS_table2d_free(H->adm_tables[t]);
+        H->adm_tables[t] = RS_table2d_init(n);
+        if (H->adm_tables[t].data == NULL) {
+            fprintf(stderr, "%s : RS : RS_set_adm_data() failed to allocate 2D table", now());
+            return;
+        }
+        
+        // Set up mapping coefficients
+        H->adm_tables[t].x_ = table.x_;   H->adm_tables[t].xs = table.xs;   H->adm_tables[t].xo = table.xo;   H->adm_tables[t].xm = table.xm;
+        H->adm_tables[t].y_ = table.y_;   H->adm_tables[t].ys = table.ys;   H->adm_tables[t].yo = table.yo;   H->adm_tables[t].ym = table.ym;
+        
+        // Copy over other parameters
+
+        // Copy the table data
+        if (H->verb) {
+            printf("%s : RS : Host ADM table set.  n = %d x %d\n", now(), H->adm_tables[t].x_, H->adm_tables[t].y_);
+        }
+        memcpy(H->adm_tables[t].data, table.data, n * sizeof(cl_float8));
+        
+        // We are done if no GPU acceleration is utilized
+        if (H->method == RS_METHOD_CPU) {
+            return;
+        }
+        
+        // This is the part that we need to create two texture maps for each RSTable2D table
+        cl_image_format format = {CL_RGBA, CL_FLOAT};
+        
+#if defined (CL_VERSION_1_2)
+        
+        cl_image_desc desc;
+        desc.image_type = CL_MEM_OBJECT_IMAGE2D;
+        desc.image_width  = H->adm_tables[t].x_;
+        desc.image_height = H->adm_tables[t].y_;
+        desc.image_depth  = 1;
+        desc.image_array_size = 0;
+        desc.image_row_pitch = desc.image_width * sizeof(cl_float4);
+        desc.image_slice_pitch = desc.image_height * desc.image_row_pitch;
+        desc.num_mip_levels = 0;
+        desc.num_samples = 0;
+        desc.buffer = NULL;
+        
+#endif
+
+#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+
+        for (i=0; i<H->num_workers; i++) {
+            if (H->worker[i].adm[t] != NULL) {
+                if (H->verb > 1) {
+                    printf("%s : RS : worker[%d] setting adm[%d].\n", now(), i, t);
+                }
+                gcl_release_image(H->worker[i].adm[t]);
+            }
+            H->worker[i].adm[t] = gcl_create_image(&format, desc.image_width, desc.image_height, desc.image_depth, NULL);
+            if (H->worker[i].adm[t] == NULL) {
+                fprintf(stderr, "%s : RS : Error creating ADM table on CL device.\n", now());
+                return;
+            }
+            if (H->verb > 1) {
+                printf("%s : RS : Copying ADM table[%d]  %p --> %p  (%u x %u)\n",
+                       now(), i, H->adm_tables[t].data, H->worker[i].adm[t],
+                       H->adm_tables[t].x_, H->adm_tables[t].y_);
+            }
+            dispatch_async(H->worker[i].que, ^{
+                size_t origin[3] = {0, 0, 0};
+                size_t region[3] = {H->adm_tables[t].x_, H->adm_tables[t].y_, 1};
+                gcl_copy_ptr_to_image(H->worker[i].adm[t], H->adm_tables[t].data, origin, region);
+                dispatch_semaphore_signal(H->worker[i].sem);
+            });
+        }
+        
+        for (i=0; i<H->num_workers; i++) {
+            dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+        }
+
+#else
+
+#endif
+
+    } // t = 0
+}
+
+
+void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *adam) {
+    
+    int i;
+    
+    RSTable2D table;
+    
+    if (H->verb > 1) {
+        printf("%s : RS : ADM @ \n", now());
+    }
+    
+    // Set up the mapping coefficients
+    // Assumptions: maps are always in beta in [-180deg, +180deg] and alpha in [0, +180deg]
+    table.x_ = adam->nb;    table.xm = (float)(table.x_ - 1);    table.xs = (float)adam->nb / (2.0f * M_PI);    table.xo = -M_PI;
+    table.y_ = adam->na;    table.ym = (float)(table.y_ - 1);    table.ys = (float)adam->na / M_PI;             table.yo = 0.0f;
+
+    // Temporary buffer for passing data
+    table.data = (cl_float8 *)malloc(adam->nn * sizeof(cl_float8));
+    
+    // Arrange ADM values into float4, getting ready for GPU's global memory
+    for (i=0; i<adam->nn; i++) {
+        table.data[i].x = adam->cdx[i];
+        table.data[i].y = adam->cdy[i];
+        table.data[i].z = adam->cdz[i];
+        table.data[i].w = 1.0f;
+        table.data[i].s4 = adam->cmx[i];
+        table.data[i].s5 = adam->cmy[i];
+        table.data[i].s6 = adam->cmz[i];
+        table.data[i].s7 = 0.0f;
+    }
+    
+    RS_set_adm_data(H, table);
+    
+    free(table.data);
 }
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
@@ -2657,13 +2804,12 @@ void RS_make_pulse_cpu(RSHandle *H) {
 #pragma mark Elements for table lookup
 
 RSTable RS_table_init(size_t numel) {
-	RSTable table = {0.0f, 1.0f, 1.0f, 0, NULL};
+    RSTable table = {0.0f, 1.0f, 1.0f, 0, NULL};
 	
 	if (posix_memalign((void **)&table.data, RS_ALIGN_SIZE, numel * sizeof(float))) {
 		fprintf(stderr, "%s : RS : Error allocating an RSTable->data.\n", now());
 		return table;
 	}
-	//memset(table.data, 0, numel * sizeof(float));
 	
 	return table;
 }
@@ -2672,7 +2818,32 @@ RSTable RS_table_init(size_t numel) {
 void RS_table_free(RSTable T) {
 	if (T.data != NULL) {
 		free(T.data);
+        T.data = NULL;
 	}
+}
+
+
+RSTable2D RS_table2d_init(size_t numel) {
+    RSTable2D table;
+    
+    table.xs = 1.0f;      table.ys = 1.0f;
+    table.xo = 0.0f;      table.yo = 0.0f;
+    table.xm = 1.0f;      table.ym = 1.0f;
+    
+    if (posix_memalign((void **)&table.data, RS_ALIGN_SIZE, numel * sizeof(cl_float4))) {
+        fprintf(stderr, "%s : RS : Error allocating an RSTable2D->data.\n", now());
+        return table;
+    }
+    
+    return table;
+}
+
+
+void RS_table2d_free(RSTable2D T) {
+    if (T.data != NULL) {
+        free(T.data);
+        T.data = NULL;
+    }
 }
 
 
@@ -2687,7 +2858,6 @@ RSTable3D RS_table3d_init(size_t numel) {
 		fprintf(stderr, "%s : RS : Error allocating an RSTable3D->data.\n", now());
 		return table;
 	}
-	//memset(table.data, 0, numel * sizeof(cl_float4));
 	
 	return table;
 }
@@ -2696,6 +2866,7 @@ RSTable3D RS_table3d_init(size_t numel) {
 void RS_table3d_free(RSTable3D T) {
 	if (T.data != NULL) {
 		free(T.data);
+        T.data = NULL;
 	}
 }
 

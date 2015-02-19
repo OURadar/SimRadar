@@ -259,9 +259,10 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
 	char *ctmp = getenv("HOME");
 	if (ctmp != NULL) {
 		//printf("HOME = %s\n", ctmp);
-		snprintf(search_paths[2], 1024, "%s/Desktop/les", ctmp);
-		snprintf(search_paths[3], 1024, "%s/Douments/les", ctmp);
-		snprintf(search_paths[4], 1024, "%s/Downloads/les", ctmp);
+        snprintf(search_paths[2], 1024, "%s/Downloads/tables", ctmp);
+		snprintf(search_paths[3], 1024, "%s/Desktop/les", ctmp);
+		snprintf(search_paths[4], 1024, "%s/Douments/les", ctmp);
+		snprintf(search_paths[5], 1024, "%s/Downloads/les", ctmp);
 	}
 	
     struct stat path_stat;

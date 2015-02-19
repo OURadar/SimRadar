@@ -35,7 +35,6 @@
 		B567F8B21A6D522F00F40660 /* adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B11A6D522F00F40660 /* adm.c */; };
 		B567F8B31A6D522F00F40660 /* adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B11A6D522F00F40660 /* adm.c */; };
 		B567F8B51A6D635100F40660 /* test_adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B41A6D635100F40660 /* test_adm.c */; };
-		B567F8B61A6D635100F40660 /* test_adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B41A6D635100F40660 /* test_adm.c */; };
 		B567F8C41A6D671F00F40660 /* test_adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B41A6D635100F40660 /* test_adm.c */; };
 		B567F8C51A6D672700F40660 /* adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B11A6D522F00F40660 /* adm.c */; };
 		B570B0B118BC5B5500391717 /* rs.cl in Sources */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
@@ -784,7 +783,6 @@
 				B5EF31AE1820526F002DDEFC /* SimGLView.m in Sources */,
 				B5FDCAE519D453B10016C2F7 /* GLText.m in Sources */,
 				B567F8B31A6D522F00F40660 /* adm.c in Sources */,
-				B567F8B61A6D635100F40660 /* test_adm.c in Sources */,
 				B5EF31C51820619E002DDEFC /* RootController.m in Sources */,
 				B5A5142718328A2F00921ACE /* FullscreenWindow.m in Sources */,
 				B5EF318518204B5C002DDEFC /* AppDelegate.m in Sources */,
@@ -1027,6 +1025,7 @@
 					"-D_SHARE_OBJ_",
 					"-DDEBUG_GL",
 				);
+				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
@@ -1574,6 +1573,7 @@
 					"-D_SHARE_OBJ_",
 					"-DGEN_IMG",
 				);
+				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
@@ -1882,6 +1882,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				OTHER_CFLAGS = "-D_SHARE_OBJ_";
+				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
@@ -1936,6 +1937,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = "-D_SHARE_OBJ_";
+				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
@@ -2056,6 +2058,7 @@
 				B567F8C31A6D66E700F40660 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		B5760EA618A938D3008DAF83 /* Build configuration list for PBXNativeTarget "test_clreduce" */ = {
 			isa = XCConfigurationList;
