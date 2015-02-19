@@ -145,7 +145,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	RSWorker *C = &H->worker[worker_id];
 	RSTable *range_weight_table   = &H->range_weight_table;
 	RSTable *angular_weight_table = &H->angular_weight_table;
-    RSTable2D *adm_table          = &H->adm_tables[0];
+    RSTable2D *adm_cd_table       = &H->adm_cd_tables[0];
 	RSTable3D *physics_table      = &H->physics_table;
 	
 	C->num_scats = sub_num_scats;
@@ -169,20 +169,20 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     
     // Pretend we only have one table at the moment
     for (int i=0; i<1; i++) {
-        C->adm_desc[i].s0 = adm_table->xs;
-        C->adm_desc[i].s1 = adm_table->ys;
+        C->adm_desc[i].s0 = adm_cd_table->xs;
+        C->adm_desc[i].s1 = adm_cd_table->ys;
         C->adm_desc[i].s2 = 1.0f;
         C->adm_desc[i].s3 = 1.0f;
-        C->adm_desc[i].s4 = adm_table->xo;
-        C->adm_desc[i].s5 = adm_table->yo;
+        C->adm_desc[i].s4 = adm_cd_table->xo;
+        C->adm_desc[i].s5 = adm_cd_table->yo;
         C->adm_desc[i].s6 = 1.0f;
         C->adm_desc[i].s7 = 1.0f;
-        C->adm_desc[i].s8 = adm_table->xm;
-        C->adm_desc[i].s9 = adm_table->ym;
+        C->adm_desc[i].s8 = adm_cd_table->xm;
+        C->adm_desc[i].s9 = adm_cd_table->ym;
         C->adm_desc[i].sa = 1.0f;
         C->adm_desc[i].sb = 1.0f;
-        C->adm_desc[i].sc = adm_table->xs;
-        C->adm_desc[i].sd = adm_table->ys;
+        C->adm_desc[i].sc = adm_cd_table->xs;
+        C->adm_desc[i].sd = adm_cd_table->ys;
         C->adm_desc[i].se = 1.0f;
         C->adm_desc[i].sf = 1.0f;
     }
@@ -1994,33 +1994,38 @@ void RS_set_physics_data_to_cube125(RSHandle *H) {
 }
 
 
-void RS_set_adm_data(RSHandle *H, const RSTable2D table) {
+void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
     
     int i, t;
     
-    const size_t n = table.x_ * table.y_;
+    const size_t n = cd.x_ * cd.y_;
     
     t = 0;
     {
         // Free the old table if exists; and create a new table
-        RS_table2d_free(H->adm_tables[t]);
-        H->adm_tables[t] = RS_table2d_init(n);
-        if (H->adm_tables[t].data == NULL) {
+        RS_table2d_free(H->adm_cd_tables[t]);
+        RS_table2d_free(H->adm_cm_tables[t]);
+        H->adm_cd_tables[t] = RS_table2d_init(n);
+        H->adm_cm_tables[t] = RS_table2d_init(n);
+        if (H->adm_cd_tables[t].data == NULL || H->adm_cm_tables[t].data == NULL) {
             fprintf(stderr, "%s : RS : RS_set_adm_data() failed to allocate 2D table", now());
             return;
         }
         
         // Set up mapping coefficients
-        H->adm_tables[t].x_ = table.x_;   H->adm_tables[t].xs = table.xs;   H->adm_tables[t].xo = table.xo;   H->adm_tables[t].xm = table.xm;
-        H->adm_tables[t].y_ = table.y_;   H->adm_tables[t].ys = table.ys;   H->adm_tables[t].yo = table.yo;   H->adm_tables[t].ym = table.ym;
+        H->adm_cd_tables[t].x_ = cd.x_;   H->adm_cd_tables[t].xs = cd.xs;   H->adm_cd_tables[t].xo = cd.xo;   H->adm_cd_tables[t].xm = cd.xm;
+        H->adm_cd_tables[t].y_ = cd.y_;   H->adm_cd_tables[t].ys = cd.ys;   H->adm_cd_tables[t].yo = cd.yo;   H->adm_cd_tables[t].ym = cd.ym;
+        H->adm_cm_tables[t].x_ = cm.x_;   H->adm_cm_tables[t].xs = cm.xs;   H->adm_cm_tables[t].xo = cm.xo;   H->adm_cm_tables[t].xm = cm.xm;
+        H->adm_cm_tables[t].y_ = cm.y_;   H->adm_cm_tables[t].ys = cm.ys;   H->adm_cm_tables[t].yo = cm.yo;   H->adm_cm_tables[t].ym = cm.ym;
         
         // Copy over other parameters
 
         // Copy the table data
         if (H->verb) {
-            printf("%s : RS : Host ADM table set.  n = %d x %d\n", now(), H->adm_tables[t].x_, H->adm_tables[t].y_);
+            printf("%s : RS : Host ADM tables set.  n = %d x %d\n", now(), H->adm_cd_tables[t].x_, H->adm_cd_tables[t].y_);
         }
-        memcpy(H->adm_tables[t].data, table.data, n * sizeof(cl_float8));
+        memcpy(H->adm_cd_tables[t].data, cd.data, n * sizeof(cl_float4));
+        memcpy(H->adm_cm_tables[t].data, cm.data, n * sizeof(cl_float4));
         
         // We are done if no GPU acceleration is utilized
         if (H->method == RS_METHOD_CPU) {
@@ -2034,8 +2039,8 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D table) {
         
         cl_image_desc desc;
         desc.image_type = CL_MEM_OBJECT_IMAGE2D;
-        desc.image_width  = H->adm_tables[t].x_;
-        desc.image_height = H->adm_tables[t].y_;
+        desc.image_width  = H->adm_cd_tables[t].x_;
+        desc.image_height = H->adm_cd_tables[t].y_;
         desc.image_depth  = 1;
         desc.image_array_size = 0;
         desc.image_row_pitch = desc.image_width * sizeof(cl_float4);
@@ -2049,26 +2054,33 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D table) {
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 
         for (i=0; i<H->num_workers; i++) {
-            if (H->worker[i].adm[t] != NULL) {
+            if (H->worker[i].adm_cd[t] != NULL || H->worker[i].adm_cm[t] != NULL) {
                 if (H->verb > 1) {
-                    printf("%s : RS : worker[%d] setting adm[%d].\n", now(), i, t);
+                    printf("%s : RS : worker[%d] setting adm_cd[t] & adm_cm[t] for t=%d.\n", now(), i, t);
                 }
-                gcl_release_image(H->worker[i].adm[t]);
+                gcl_release_image(H->worker[i].adm_cd[t]);
+                gcl_release_image(H->worker[i].adm_cm[t]);
             }
-            H->worker[i].adm[t] = gcl_create_image(&format, desc.image_width, desc.image_height, desc.image_depth, NULL);
-            if (H->worker[i].adm[t] == NULL) {
+            //  adm_cd & adm_cm always have the same desc
+            H->worker[i].adm_cd[t] = gcl_create_image(&format, desc.image_width, desc.image_height, desc.image_depth, NULL);
+            H->worker[i].adm_cm[t] = gcl_create_image(&format, desc.image_width, desc.image_height, desc.image_depth, NULL);
+            if (H->worker[i].adm_cd[t] == NULL || H->worker[i].adm_cm[t] == NULL) {
                 fprintf(stderr, "%s : RS : Error creating ADM table on CL device.\n", now());
                 return;
             }
             if (H->verb > 1) {
-                printf("%s : RS : Copying ADM table[%d]  %p --> %p  (%u x %u)\n",
-                       now(), i, H->adm_tables[t].data, H->worker[i].adm[t],
-                       H->adm_tables[t].x_, H->adm_tables[t].y_);
+                printf("%s : RS : Copying ADM_CD table[%d]  %p --> %p  (%u x %u)\n",
+                       now(), i, H->adm_cd_tables[t].data, H->worker[i].adm_cd[t],
+                       H->adm_cd_tables[t].x_, H->adm_cd_tables[t].y_);
+                printf("%s : RS : Copying ADM_CM table[%d]  %p --> %p  (%u x %u)\n",
+                       now(), i, H->adm_cm_tables[t].data, H->worker[i].adm_cm[t],
+                       H->adm_cm_tables[t].x_, H->adm_cm_tables[t].y_);
             }
             dispatch_async(H->worker[i].que, ^{
                 size_t origin[3] = {0, 0, 0};
-                size_t region[3] = {H->adm_tables[t].x_, H->adm_tables[t].y_, 1};
-                gcl_copy_ptr_to_image(H->worker[i].adm[t], H->adm_tables[t].data, origin, region);
+                size_t region[3] = {H->adm_cd_tables[t].x_, H->adm_cd_tables[t].y_, 1};
+                gcl_copy_ptr_to_image(H->worker[i].adm_cd[t], H->adm_cd_tables[t].data, origin, region);
+                gcl_copy_ptr_to_image(H->worker[i].adm_cm[t], H->adm_cm_tables[t].data, origin, region);
                 dispatch_semaphore_signal(H->worker[i].sem);
             });
         }
@@ -2089,7 +2101,7 @@ void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *adam) {
     
     int i;
     
-    RSTable2D table;
+    RSTable2D cd, cm;
     
     if (H->verb > 1) {
         printf("%s : RS : ADM @ \n", now());
@@ -2097,27 +2109,32 @@ void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *adam) {
     
     // Set up the mapping coefficients
     // Assumptions: maps are always in beta in [-180deg, +180deg] and alpha in [0, +180deg]
-    table.x_ = adam->nb;    table.xm = (float)(table.x_ - 1);    table.xs = (float)adam->nb / (2.0f * M_PI);    table.xo = -M_PI;
-    table.y_ = adam->na;    table.ym = (float)(table.y_ - 1);    table.ys = (float)adam->na / M_PI;             table.yo = 0.0f;
+    cd.x_ = adam->nb;    cd.xm = (float)(cd.x_ - 1);    cd.xs = (float)adam->nb / (2.0f * M_PI);    cd.xo = -M_PI;
+    cd.y_ = adam->na;    cd.ym = (float)(cd.y_ - 1);    cd.ys = (float)adam->na / M_PI;             cd.yo = 0.0f;
+
+    cm.x_ = adam->nb;    cm.xm = (float)(cm.x_ - 1);    cm.xs = (float)adam->nb / (2.0f * M_PI);    cm.xo = -M_PI;
+    cm.y_ = adam->na;    cm.ym = (float)(cm.y_ - 1);    cm.ys = (float)adam->na / M_PI;             cm.yo = 0.0f;
 
     // Temporary buffer for passing data
-    table.data = (cl_float8 *)malloc(adam->nn * sizeof(cl_float8));
+    cd.data = (cl_float4 *)malloc(adam->nn * sizeof(cl_float4));
+    cm.data = (cl_float4 *)malloc(adam->nn * sizeof(cl_float4));
     
     // Arrange ADM values into float4, getting ready for GPU's global memory
     for (i=0; i<adam->nn; i++) {
-        table.data[i].x = adam->cdx[i];
-        table.data[i].y = adam->cdy[i];
-        table.data[i].z = adam->cdz[i];
-        table.data[i].w = 1.0f;
-        table.data[i].s4 = adam->cmx[i];
-        table.data[i].s5 = adam->cmy[i];
-        table.data[i].s6 = adam->cmz[i];
-        table.data[i].s7 = 0.0f;
+        cd.data[i].x = adam->cdx[i];
+        cd.data[i].y = adam->cdy[i];
+        cd.data[i].z = adam->cdz[i];
+        cd.data[i].w = 1.0f;
+        cm.data[i].x = adam->cmx[i];
+        cm.data[i].y = adam->cmy[i];
+        cm.data[i].z = adam->cmz[i];
+        cm.data[i].w = 1.0f;
     }
     
-    RS_set_adm_data(H, table);
+    RS_set_adm_data(H, cd, cm);
     
-    free(table.data);
+    free(cd.data);
+    free(cm.data);
 }
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)

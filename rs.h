@@ -134,7 +134,7 @@ typedef struct _rs_table2d {
     float         yo;                 // y offset to the 1st element in the table
     float         ym;                 // y maximum index in float
     uint32_t      y_;
-    cl_float8     *data;              // Data in float8 grid, e.g., x, y, z, u, v, w
+    cl_float4     *data;              // Data in float4 grid, e.g., [x, y, z, _], [u, v, w, _]
 } RSTable2D;
 
 
@@ -190,7 +190,8 @@ typedef struct _rs_worker {
 	cl_mem                 angular_weight;
 	cl_float4              angular_weight_desc;
 	
-    cl_mem                 adm[RS_MAX_ADM_TABLES];
+    cl_mem                 adm_cd[RS_MAX_ADM_TABLES];
+    cl_mem                 adm_cm[RS_MAX_ADM_TABLES];
     cl_float16             adm_desc[RS_MAX_ADM_TABLES];
     
     cl_mem                 rcs[RS_MAX_ADM_TABLES];
@@ -270,7 +271,8 @@ typedef struct _rs_handle {
 	
 	RSTable                range_weight_table;
 	RSTable                angular_weight_table;
-    RSTable2D              adm_tables[RS_MAX_ADM_TABLES];
+    RSTable2D              adm_cd_tables[RS_MAX_ADM_TABLES];
+    RSTable2D              adm_cm_tables[RS_MAX_ADM_TABLES];
     RSTable2D              rcs_tables[RS_MAX_RCS_TABLES];
 	RSTable3D              physics_table;
 	
@@ -343,7 +345,7 @@ void RS_set_physics_data_to_LES_table(RSHandle *H, const LESTable *table);
 void RS_set_physics_data_to_cube27(RSHandle *H);
 void RS_set_physics_data_to_cube125(RSHandle *H);
 
-void RS_set_adm_data(RSHandle *H, const RSTable2D table);
+void RS_set_adm_data(RSHandle *H, const RSTable2D table_cd, const RSTable2D table_cm);
 void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *table);
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
