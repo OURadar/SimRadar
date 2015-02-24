@@ -33,8 +33,8 @@
 {
 	self = [super init];
 	if (self) {
-		S  = RS_init();
-		//S = RS_init_verbose(2);
+		//S  = RS_init();
+		S = RS_init_verbose(2);
 
 		//L = LES_init();
         NSString *resourcePath = [[NSBundle mainBundle] resourcePath];
@@ -68,10 +68,14 @@
 		//RS_set_physics_data_to_cube27(S);
 		
 		table_id = 0;
-		LESTable *table = LES_get_frame(L, table_id);
-		//LES_show_table_summary(table);
-		RS_set_physics_data_to_LES_table(S, table);
+		LESTable *les = LES_get_frame(L, table_id);
+		//LES_show_table_summary(les);
+		RS_set_physics_data_to_LES_table(S, les);
 		
+        ADMTable *adm = ADM_get_frame(A);
+        //ADM_show_table_summary(adm);
+        RS_set_adm_data_to_ADM_table(S, adm);
+        
 		//RS_set_prt(S, 1.0f);
         //RS_set_prt(S, 0.5f);
 		RS_set_prt(S, 0.1f);

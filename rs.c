@@ -145,8 +145,9 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	RSWorker *C = &H->worker[worker_id];
 	RSTable *range_weight_table   = &H->range_weight_table;
 	RSTable *angular_weight_table = &H->angular_weight_table;
+    RSTable3D *physics_table      = &H->physics_table;
     RSTable2D *adm_cd_table       = &H->adm_cd_tables[0];
-	RSTable3D *physics_table      = &H->physics_table;
+    RSTable2D *rcs_table          = &H->rcs_tables[0];
 	
 	C->num_scats = sub_num_scats;
 	
@@ -181,10 +182,27 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
         C->adm_desc[i].s9 = adm_cd_table->ym;
         C->adm_desc[i].sa = 1.0f;
         C->adm_desc[i].sb = 1.0f;
-        C->adm_desc[i].sc = adm_cd_table->xs;
-        C->adm_desc[i].sd = adm_cd_table->ys;
-        C->adm_desc[i].se = 1.0f;
+        C->adm_desc[i].sc = 0.0f;
+        C->adm_desc[i].sd = 0.0f;
+        C->adm_desc[i].se = 0.0f;
         C->adm_desc[i].sf = 1.0f;
+
+        C->rcs_desc[i].s0 = rcs_table->xs;
+        C->rcs_desc[i].s1 = rcs_table->ys;
+        C->rcs_desc[i].s2 = 1.0f;
+        C->rcs_desc[i].s3 = 1.0f;
+        C->rcs_desc[i].s4 = rcs_table->xo;
+        C->rcs_desc[i].s5 = rcs_table->yo;
+        C->rcs_desc[i].s6 = 1.0f;
+        C->rcs_desc[i].s7 = 1.0f;
+        C->rcs_desc[i].s8 = rcs_table->xm;
+        C->rcs_desc[i].s9 = rcs_table->ym;
+        C->rcs_desc[i].sa = 1.0f;
+        C->rcs_desc[i].sb = 1.0f;
+        C->rcs_desc[i].sc = 0.0;
+        C->rcs_desc[i].sd = 0.0;
+        C->rcs_desc[i].se = 0.0f;
+        C->rcs_desc[i].sf = 1.0f;
     }
 
 	C->physics_desc.s0 = physics_table->xs;
@@ -852,6 +870,8 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
 	//RS_set_angular_weight_to_double_cone(H, 2.0f / 180.0f * M_PI);
 
 	RS_set_physics_data_to_cube27(H);
+    
+    RS_set_adm_data_to_unity(H);
 	
 	H->verb = user_verb;
 	
@@ -949,6 +969,9 @@ void RS_free(RSHandle *H) {
 		gcl_free(H->worker[i].range_weight);
 		gcl_free(H->worker[i].angular_weight);
 		gcl_release_image(H->worker[i].physics);
+        gcl_release_image(H->worker[i].adm_cd[0]);
+        gcl_release_image(H->worker[i].adm_cm[0]);
+        gcl_release_image(H->worker[i].rcs[0]);
 	}
 	
 #else
@@ -957,6 +980,9 @@ void RS_free(RSHandle *H) {
 		clReleaseMemObject(H->worker[i].range_weight);
 		clReleaseMemObject(H->worker[i].angular_weight);
 		clReleaseMemObject(H->worker[i].physics);
+        clReleaseMemObject(H->worker[i].adm_cd[0]);
+        clReleaseMemObject(H->worker[i].adm_cm[0]);
+        clReleaseMemObject(H->worker[i].rcs[0]);
 	}
 	
 #endif
@@ -964,7 +990,10 @@ void RS_free(RSHandle *H) {
 	RS_table_free(H->range_weight_table);
 	RS_table_free(H->angular_weight_table);
 	RS_table3d_free(H->physics_table);
-	
+    RS_table2d_free(H->adm_cd_tables[0]);
+    RS_table2d_free(H->adm_cm_tables[0]);
+    RS_table2d_free(H->rcs_tables[0]);
+    
 	free(H->anchor_pos);
 	
 	free(H);
@@ -1077,10 +1106,14 @@ void RS_init_scat_pos(RSHandle *H) {
 		H->scat_vel[i].z = 0.0f;
 		H->scat_vel[i].w = 1.0f;
 		
-		H->scat_ori[i].x = 0.0f;
-		H->scat_ori[i].y = 0.0f;
-		H->scat_ori[i].z = 0.0f;
-		H->scat_ori[i].w = 1.0f;
+//		H->scat_ori[i].x = 0.0f;
+//		H->scat_ori[i].y = 0.0f;
+//		H->scat_ori[i].z = 0.0f;
+//		H->scat_ori[i].w = 1.0f;
+        H->scat_ori[i].x =  0.5f;
+        H->scat_ori[i].y = -0.5f;
+        H->scat_ori[i].z = -0.5f;
+        H->scat_ori[i].w =  0.5f;
 		
 		H->scat_sig[i].s0 = 1.0f;
 		H->scat_sig[i].s1 = 0.0f;
@@ -1305,7 +1338,7 @@ void RS_set_scan_box(RSHandle *H,
 			   el_lo, el_hi,
 			   az_lo, az_hi);
 		
-		printf("%s : RS : Suggested %s bodies\n", now(), commaint(H->num_scats));
+		printf("%s : RS : Using suggested %s bodies\n", now(), commaint(H->num_scats));
 		printf("%s : RS : Using GPU preferred %s (%.2f bodies / resolution cell)\n", now(), commaint(preferred_n), (float)preferred_n / nvol);
 	}
 	
@@ -1999,6 +2032,10 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
     int i, t;
     
     const size_t n = cd.x_ * cd.y_;
+    if (cm.x_ * cm.y_ != n) {
+        fprintf(stderr, "%s : RS : RS_set_adm_data() received inconsistent cd (%d x %d) & cm (%d x %d) dimensions", now(), cd.x_, cd.y_, cm.x_, cm.y_);
+        return;
+    }
     
     t = 0;
     {
@@ -2008,7 +2045,7 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
         H->adm_cd_tables[t] = RS_table2d_init(n);
         H->adm_cm_tables[t] = RS_table2d_init(n);
         if (H->adm_cd_tables[t].data == NULL || H->adm_cm_tables[t].data == NULL) {
-            fprintf(stderr, "%s : RS : RS_set_adm_data() failed to allocate 2D table", now());
+            fprintf(stderr, "%s : RS : RS_set_adm_data() failed to allocate 2D cd and/or cm tables", now());
             return;
         }
         
@@ -2054,7 +2091,7 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 
         for (i=0; i<H->num_workers; i++) {
-            if (H->worker[i].adm_cd[t] != NULL || H->worker[i].adm_cm[t] != NULL) {
+            if (H->worker[i].adm_cd[t] != NULL && H->worker[i].adm_cm[t] != NULL) {
                 if (H->verb > 1) {
                     printf("%s : RS : worker[%d] setting adm_cd[t] & adm_cm[t] for t=%d.\n", now(), i, t);
                 }
@@ -2069,10 +2106,10 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
                 return;
             }
             if (H->verb > 1) {
-                printf("%s : RS : Copying ADM_CD table[%d]  %p --> %p  (%u x %u)\n",
+                printf("%s : RS : Copying adm_cd table[%d]  %p --> %p  (%u x %u)\n",
                        now(), i, H->adm_cd_tables[t].data, H->worker[i].adm_cd[t],
                        H->adm_cd_tables[t].x_, H->adm_cd_tables[t].y_);
-                printf("%s : RS : Copying ADM_CM table[%d]  %p --> %p  (%u x %u)\n",
+                printf("%s : RS : Copying adm_cm table[%d]  %p --> %p  (%u x %u)\n",
                        now(), i, H->adm_cm_tables[t].data, H->worker[i].adm_cm[t],
                        H->adm_cm_tables[t].x_, H->adm_cm_tables[t].y_);
             }
@@ -2104,7 +2141,7 @@ void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *adam) {
     RSTable2D cd, cm;
     
     if (H->verb > 1) {
-        printf("%s : RS : ADM @ \n", now());
+        printf("%s : RS : ADM @ X:[ -M_PI - M_PI ]  Y:[ 0 - M_PI ]\n", now());
     }
     
     // Set up the mapping coefficients
@@ -2135,6 +2172,32 @@ void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *adam) {
     
     free(cd.data);
     free(cm.data);
+}
+
+void RS_set_adm_data_to_unity(RSHandle *H) {
+    
+    int i;
+    
+    RSTable2D table;
+    
+    if (H->verb > 1) {
+        printf("%s : RS : Unity @ X:[ -M_PI - M_PI ]  Y:[ 0 - M_PI ]\n", now());
+    }
+    
+    table.x_ = 3;    table.xm = 2.0f;    table.xs = 3.0f / (2.0f * M_PI);    table.xo = -M_PI * table.xs;
+    table.y_ = 3;    table.ym = 2.0f;    table.ys = 3.0f / M_PI;             table.xo = -M_PI * table.ys;
+    
+    cl_float4 data[9];
+    
+    for (i=0; i<9; i++) {
+        data[i].x = 1.0f;
+        data[i].y = 1.0f;
+        data[i].z = 1.0f;
+        data[i].w = 0.0f;
+    }
+    
+    RS_set_adm_data(H, table, table);
+    
 }
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
@@ -2276,7 +2339,7 @@ void RS_populate(RSHandle *H) {
 	posix_memalign((void **)&H->scat_ori, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
 	posix_memalign((void **)&H->scat_att, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
 	posix_memalign((void **)&H->scat_sig, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
-	
+
 	posix_memalign((void **)&H->work, RS_ALIGN_SIZE, RS_MAX_GATES * RS_CL_GROUP_ITEMS * sizeof(cl_float4));
 	posix_memalign((void **)&H->pulse, RS_ALIGN_SIZE, RS_MAX_GATES * sizeof(cl_float4));
 	
@@ -2547,12 +2610,30 @@ void RS_advance_time(RSHandle *H) {
 		H->sim_toc = H->sim_tic + (size_t)(5.0f / H->params.prt);
 		for (i=0; i<H->num_workers; i++) {
 			dispatch_async(H->worker[i].que, ^{
-				scat_physics_kernel(&H->worker[i].ndrange_scat,
-									(cl_float4 *)H->worker[i].scat_pos,
-									(cl_float4 *)H->worker[i].scat_vel,
-									(cl_image)H->worker[i].physics,
-									H->worker[i].physics_desc);
-				dispatch_semaphore_signal(H->worker[i].sem);
+//				scat_physics_kernel(&H->worker[i].ndrange_scat,
+//									(cl_float4 *)H->worker[i].scat_pos,
+//									(cl_float4 *)H->worker[i].scat_vel,
+//									(cl_image)H->worker[i].physics,
+//									H->worker[i].physics_desc);
+//                printf("%p %p  %.2f %.2f  %.2f %.2f\n",
+//                       H->worker[i].scat_ori, H->worker[i].scat_sig,
+//                       H->worker[i].adm_desc[0].s0, H->worker[i].adm_desc[0].s1,
+//                       H->worker[i].adm_desc[0].s4, H->worker[i].adm_desc[0].s5);
+
+                scat_atts_kernel(&H->worker[i].ndrange_scat,
+                                 (cl_float4 *)H->worker[i].scat_pos,
+                                 (cl_float4 *)H->worker[i].scat_ori,
+                                 (cl_float4 *)H->worker[i].scat_vel,
+                                 (cl_float4 *)H->worker[i].scat_sig,
+                                 (cl_image)H->worker[i].physics,
+                                 H->worker[i].physics_desc,
+                                 (cl_image)H->worker[i].adm_cd[0],
+                                 (cl_image)H->worker[i].adm_cm[0],
+                                 H->worker[i].adm_desc[0],
+                                 (cl_image)H->worker[i].adm_cd[0],
+                                 H->worker[i].rcs_desc[0]);
+				
+                dispatch_semaphore_signal(H->worker[i].sem);
 			});
 		}
 		for (i=0; i<H->num_workers; i++) {

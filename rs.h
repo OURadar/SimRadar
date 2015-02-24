@@ -194,8 +194,8 @@ typedef struct _rs_worker {
     cl_mem                 adm_cm[RS_MAX_ADM_TABLES];
     cl_float16             adm_desc[RS_MAX_ADM_TABLES];
     
-    cl_mem                 rcs[RS_MAX_ADM_TABLES];
-    cl_float16             rcs_desc[RS_MAX_ADM_TABLES];
+    cl_mem                 rcs[RS_MAX_RCS_TABLES];
+    cl_float16             rcs_desc[RS_MAX_RCS_TABLES];
     
 	cl_mem                 physics;
 	cl_float16             physics_desc;
@@ -347,6 +347,7 @@ void RS_set_physics_data_to_cube125(RSHandle *H);
 
 void RS_set_adm_data(RSHandle *H, const RSTable2D table_cd, const RSTable2D table_cm);
 void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *table);
+void RS_set_adm_data_to_unity(RSHandle *H);
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 #pragma mark -

@@ -29,18 +29,30 @@ float4 rand(uint4 *seed)
 float4 quat_mult(float4 left,
                  float4 right)
 {
-    return (float4) (left.x * right.x - left.y * right.y - left.z * right.z - left.w * right.w,
-                     left.x * right.y + left.y * right.x + left.z * right.w - left.w * right.z,
-                     left.x * right.z + left.z * right.x + left.w * right.y - left.y * right.w,
-                     left.x * right.w + left.w * right.x + left.y * right.z - left.z * right.y);
+    return (float4) (left.w * right.x - left.z * right.y + left.y * right.z + left.w * right.w,
+                     left.w * right.y + left.z * right.x + left.y * right.w - left.w * right.z,
+                     left.w * right.z + left.z * right.w - left.y * right.x + left.y * right.y,
+                     left.w * right.w - left.z * right.z - left.y * right.y - left.z * right.x);
 }
 
-float4 quat_sq(float4 quat)
+float4 quat_conj(float4 quat)
 {
-    return (float4) (quat.x * quat.x - quat.y * quat.y - quat.z * quat.z - quat.w * quat.w,
-                     2.0f * quat.x * quat.y,
-                     2.0f * quat.x * quat.z,
-                     2.0f * quat.x * quat.w);
+    return (float4)(-quat.x, -quat.y, -quat.z, quat.w);
+}
+
+float4 quat_get_x(float4 quat)
+{
+    return quat_mult(quat, (float4)(quat.w, quat.z, -quat.y, quat.x));
+}
+
+float4 quat_get_y(float4 quat)
+{
+    return quat_mult(quat, (float4)(-quat.z, quat.w, quat.x, quat.y));
+}
+
+float4 quat_get_z(float4 quat)
+{
+    return quat_mult(quat, (float4)(quat.y, -quat.x, quat.w, quat.z));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -92,6 +104,60 @@ __kernel void io(__global float4 *i,
 {
     unsigned int k = get_global_id(0);
     o[k] = i[k];
+}
+
+// Scatterer attributes - assign VEL (from LES or any physical models), ADM and RCS attributes
+//
+// p - position
+// o - orientation
+// v - velocity
+// a - amplitude (RCS)
+//
+__kernel void scat_atts(__global float4 *p,
+                        __global float4 *o,
+                        __global float4 *v,
+                        __global float4 *a,
+                        __read_only image3d_t physics,
+                        const float16 physics_desc,
+                        __read_only image2d_t adm_cd,
+                        __read_only image2d_t adm_cm,
+                        const float16 adm_desc,
+                        __read_only image2d_t rcs,
+                        const float16 rcs_desc)
+{
+    unsigned int i = get_global_id(0);
+
+    float4 pos = p[i];
+    float4 ori = o[i];
+    
+    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
+    float4 coord = fma(pos, physics_desc.s0123, physics_desc.s4567);
+    v[i] = read_imagef(physics, sampler, coord);
+
+    // For DEBUG: Override 1-st particle's velocity so it does not move.
+    if (i == 0) {
+        v[i] = (float4)(10.0f, 0.0f, 0.0f, 0.0f);
+    }
+
+    // derive alpha & beta of ADM for ADM table lookup
+    float4 v_hat = v[i];
+    v_hat = normalize(v_hat);
+    
+    // xp, yp, zp - x, y, z axis of the particle
+    float4 xp = quat_get_x(ori);
+    float4 yp = quat_get_y(ori);
+    float4 zp = quat_get_z(ori);
+    
+//    if (i == 0) {
+//        printf("v = %.2f %.2f %.2f   xp = %.2f %.2f %.2f   yp = %.2f %.2f %.2f   zp = %.2f %.2f %.2f\n",
+//               v_hat.x, v_hat.y, v_hat.z,
+//               xp.x, xp.y, xp.z,
+//               yp.x, yp.y, yp.z,
+//               zp.x, zp.y, zp.z);
+//    }
+    // derive alpha, beta & gamma of RCS for RCS table lookup
+    
+
 }
 
 // Scatterer physics - assign physical parameters based on position
@@ -188,20 +254,20 @@ __kernel void scat_mov(__global float4 *p,
 	iidx_int = convert_uint2(fidx_int);
 	a[i].s3 = mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
 
-	const float4 ages = (float4)(a[i].s1, a[i].s1, a[i].s1, 0.0f);
-	const float4 offsets = (float4)(0.125f, 0.375f, 0.625f, 0.0f);
-	const float4 a_max = (float4)(M_PI_2_F, M_PI_2_F, 1.4f * M_PI_2_F, 0.0f) * 8.0f;
+//	const float4 ages = (float4)(a[i].s1, a[i].s1, a[i].s1, 0.0f);
+//	const float4 offsets = (float4)(0.125f, 0.375f, 0.625f, 0.0f);
+//	const float4 a_max = (float4)(M_PI_2_F, M_PI_2_F, 1.4f * M_PI_2_F, 0.0f) * 8.0f;
 
-	float4 lo = o[i];
-	
-	lo = clamp(ages - offsets, 0.0f, 0.125f);
-//	if (i == 9) {
-//		printf("i=%3d   %6.4f  o = [ %6.3f, %6.3f, %6.3f ]\n",
-//			   i, a[i].s1, lo.x, lo.y, lo.z);
-//	}
-	lo *= a_max;
-
-	o[i] = lo;
+//	float4 lo = o[i];
+//	
+//	lo = clamp(ages - offsets, 0.0f, 0.125f);
+////	if (i == 9) {
+////		printf("i=%3d   %6.4f  o = [ %6.3f, %6.3f, %6.3f ]\n",
+////			   i, a[i].s1, lo.x, lo.y, lo.z);
+////	}
+//	lo *= a_max;
+//
+//	o[i] = lo;
 
 	
     // Future position

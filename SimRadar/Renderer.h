@@ -28,6 +28,7 @@ typedef struct _draw_resource {
 	GLuint *indices;     // CPU side indexing for instancing
     GLint positionAI;
 	GLint rotationAI;
+    GLint quaternionAI;
 	GLint translationAI;
 	GLint colorAI;
     GLKTextureInfo *texture;
