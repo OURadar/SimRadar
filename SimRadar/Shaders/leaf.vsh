@@ -9,10 +9,10 @@ out vec4 varColor;
 
 vec4 quat_mult(vec4 left, vec4 right)
 {
-    return vec4(left.w * right.x - left.z * right.y + left.y * right.z + left.w * right.w,
-                left.w * right.y + left.z * right.x + left.y * right.w - left.w * right.z,
-                left.w * right.z + left.z * right.w - left.y * right.x + left.y * right.y,
-                left.w * right.w - left.z * right.z - left.y * right.y - left.z * right.x);
+    return vec4(left.w * right.x - left.z * right.y + left.y * right.z + left.x * right.w,
+                left.w * right.y + left.z * right.x + left.y * right.w - left.x * right.z,
+                left.w * right.z + left.z * right.w - left.y * right.x + left.x * right.y,
+                left.w * right.w - left.z * right.z - left.y * right.y - left.x * right.x);
 }
 
 void main (void)
@@ -26,6 +26,8 @@ void main (void)
     
     // This works.
     //gl_Position = modelViewProjectionMatrix * vec4(inPosition + inTranslation, 1.0);
+    
+    pos = quat_mult(quat_mult(quat_left, pos), quat_right);
 
     gl_Position = modelViewProjectionMatrix * (pos + vec4(inTranslation, 1.0));
 

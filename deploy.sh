@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ -z $1 ]; then
-	hosts="boomer tiffany";
+	hosts="boomer";
 else
 	hosts=$@;
 fi

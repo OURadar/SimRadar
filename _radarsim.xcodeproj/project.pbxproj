@@ -34,7 +34,6 @@
 		B56077F717E356B10068C6BE /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
 		B567F8B21A6D522F00F40660 /* adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B11A6D522F00F40660 /* adm.c */; };
 		B567F8B31A6D522F00F40660 /* adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B11A6D522F00F40660 /* adm.c */; };
-		B567F8B51A6D635100F40660 /* test_adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B41A6D635100F40660 /* test_adm.c */; };
 		B567F8C41A6D671F00F40660 /* test_adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B41A6D635100F40660 /* test_adm.c */; };
 		B567F8C51A6D672700F40660 /* adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B11A6D522F00F40660 /* adm.c */; };
 		B570B0B118BC5B5500391717 /* rs.cl in Sources */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
@@ -722,7 +721,6 @@
 				B567F8B21A6D522F00F40660 /* adm.c in Sources */,
 				B5F3C31D18F2F86700092A72 /* les.c in Sources */,
 				B527893118A13C4400650679 /* radarsim.c in Sources */,
-				B567F8B51A6D635100F40660 /* test_adm.c in Sources */,
 				B527893318A13C5F00650679 /* rs.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
