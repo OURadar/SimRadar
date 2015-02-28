@@ -44,6 +44,7 @@
 #define RS_MAX_NUM_SCATS      4000000
 #define RS_BODY_PER_CELL           50.0
 #define RS_CL_GROUP_ITEMS          32
+#define RS_MAX_VEL_TABLES          20
 #define RS_MAX_ADM_TABLES           4
 #define RS_MAX_RCS_TABLES           4
 
@@ -138,7 +139,7 @@ typedef struct _rs_table2d {
 } RSTable2D;
 
 
-// A table (texture) for 3D physics paramters
+// A table (texture) for 3D wind parameters
 typedef struct _rs_table3d {
 	float         xs;                 // x scaling to map to table index
 	float         xo;                 // x offset to the 1st element in the table
@@ -178,6 +179,7 @@ typedef struct _rs_worker {
 	cl_mem                 scat_pos;   // x, y, z coordinates
 	cl_mem                 scat_vel;   // u, v, w wind components
 	cl_mem                 scat_ori;   // alpha, beta, gamma angles
+    cl_mem                 scat_tum;   // alpha, beta, gamma tumbling
 	cl_mem                 scat_att;   // type, dot products, range, etc.
 	cl_mem                 scat_sig;   // signal: Ih Qh Iv Qv
 	cl_mem                 scat_rnd;   // random seed
@@ -197,8 +199,8 @@ typedef struct _rs_worker {
     cl_mem                 rcs[RS_MAX_RCS_TABLES];
     cl_float16             rcs_desc[RS_MAX_RCS_TABLES];
     
-	cl_mem                 physics;
-	cl_float16             physics_desc;
+	cl_mem                 vel[RS_MAX_VEL_TABLES];
+	cl_float16             vel_desc;
 
     cl_uint                mem_size;
 
@@ -263,6 +265,7 @@ typedef struct _rs_handle {
 	cl_float4              *scat_pos;       // position
 	cl_float4              *scat_vel;       // velocity
 	cl_float4              *scat_ori;       // orientation
+    cl_float4              *scat_tum;       // tumble
 	cl_float4              *scat_att;       // attributes
 	cl_float4              *scat_sig;       // signal
 	cl_float4              *work;
@@ -270,12 +273,12 @@ typedef struct _rs_handle {
 
 	cl_float4              *pulse_tmp[RS_MAX_GPU_DEVICE];
 	
-	RSTable                range_weight_table;
-	RSTable                angular_weight_table;
-    RSTable2D              adm_cd_tables[RS_MAX_ADM_TABLES];
-    RSTable2D              adm_cm_tables[RS_MAX_ADM_TABLES];
-    RSTable2D              rcs_tables[RS_MAX_RCS_TABLES];
-	RSTable3D              physics_table;
+//    RSTable                range_weight_table;
+//    RSTable                angular_weight_table;
+//    RSTable2D              adm_cd_table;
+//    RSTable2D              adm_cm_table;
+//    RSTable2D              rcs_table;
+//    RSTable3D              vel_table;
 	
 	// OpenCL device
 	cl_uint                num_devs;
@@ -335,16 +338,16 @@ void RS_set_beam_pos(RSHandle *H, RSfloat az_deg, RSfloat el_deg);
 void RS_set_verbosity(RSHandle *H, const char verb);
 void RS_set_worker_count(RSHandle *H, char count);
 
-void RS_set_range_weight(RSHandle *H, const float *table, const float table_index_start, const float table_index_delta, unsigned int table_size);
+void RS_set_range_weight(RSHandle *H, const float *weights, const float table_index_start, const float table_index_delta, unsigned int table_size);
 void RS_set_range_weight_to_triangle(RSHandle *H, float pulse_width_m);
-void RS_set_angular_weight(RSHandle *H, const float *table, const float table_index_start, const float table_index_delta, unsigned int table_size);
+void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_index_start, const float table_index_delta, unsigned int table_size);
 void RS_set_angular_weight_to_standard(RSHandle *H, float beamwidth_deg);
 void RS_set_angular_weight_to_double_cone(RSHandle *H, float beamwidth_deg);
 
-void RS_set_physics_data(RSHandle *H, const RSTable3D table);
-void RS_set_physics_data_to_LES_table(RSHandle *H, const LESTable *table);
-void RS_set_physics_data_to_cube27(RSHandle *H);
-void RS_set_physics_data_to_cube125(RSHandle *H);
+void RS_set_wind_data(RSHandle *H, const RSTable3D table);
+void RS_set_wind_data_to_LES_table(RSHandle *H, const LESTable *table);
+void RS_set_wind_data_to_cube27(RSHandle *H);
+void RS_set_wind_data_to_cube125(RSHandle *H);
 
 void RS_set_adm_data(RSHandle *H, const RSTable2D table_cd, const RSTable2D table_cm);
 void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *table);
@@ -369,10 +372,10 @@ void RS_download_position_only(RSHandle *H);
 void RS_download_pulse_only(RSHandle *H);
 
 void RS_advance_time(RSHandle *H);
-void RS_advance_time_cpu(RSHandle *H);
+//void RS_advance_time_cpu(RSHandle *H);
 
 void RS_make_pulse(RSHandle *H);
-void RS_make_pulse_cpu(RSHandle *H);
+//void RS_make_pulse_cpu(RSHandle *H);
 
 #pragma mark -
 

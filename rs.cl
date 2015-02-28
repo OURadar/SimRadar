@@ -5,6 +5,8 @@ float4 quat_conj(float4 quat);
 float4 quat_get_x(float4 quat);
 float4 quat_get_y(float4 quat);
 float4 quat_get_z(float4 quat);
+float4 quat_rotate(float4 vector, float4 quat);
+float4 quat_identity(void);
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -37,7 +39,8 @@ float4 set_clr(float4 att)
     c.x = clamp(0.4f * att.s1, 0.0f, 1.0f) + 0.6f * g;
     c.y = 0.9f * g;
     c.z = clamp(1.0f - c.x - 3.5f * g, 0.0f, 1.0f) + 0.2f * (g - 0.1f);
-    c.w = 0.3f;
+    //c.w = 0.3f;
+    c.w = 1.0f;
     
     return c;
 }
@@ -73,6 +76,16 @@ float4 quat_get_y(float4 quat)
 float4 quat_get_z(float4 quat)
 {
     return quat_mult(quat, (float4)(quat.y, -quat.x, quat.w, quat.z));
+}
+
+float4 quat_rotate(float4 vector, float4 quat)
+{
+    return quat_mult(quat_mult(quat, vector), quat_conj(quat));
+}
+
+float4 quat_identity()
+{
+    return (float4)(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -115,44 +128,69 @@ __kernel void scat_physics(__global float4 *p,
 __kernel void scat_atts(__global float4 *p,
                         __global float4 *o,
                         __global float4 *v,
+                        __global float4 *w,
                         __global float4 *a,
-                        __read_only image3d_t physics,
-                        const float16 physics_desc,
+                        __read_only image3d_t wind_uvw,
+                        const float16 wind_desc,
                         __read_only image2d_t adm_cd,
                         __read_only image2d_t adm_cm,
                         const float16 adm_desc,
                         __read_only image2d_t rcs,
                         const float16 rcs_desc)
 {
-    unsigned int i = get_global_id(0);
+    const unsigned int i = get_global_id(0);
     
     float4 pos = p[i];
     float4 ori = o[i];
+    float4 ud = v[i];
+    float4 dt = (float4)(adm_desc.s2, adm_desc.s2, adm_desc.s2, 0.0f);
     
     const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
-    float4 coord4 = fma(pos, physics_desc.s0123, physics_desc.s4567);
-    float4 u = read_imagef(physics, sampler, coord4);
+    float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
+    float4 u = read_imagef(wind_uvw, sampler, wind_coord);
     
-    // For DEBUG: Override 1-st particle's velocity
-    if (i == 0) {
-        v[i] = (float4)(10.0f, 0.0f, 0.0f, 0.0f);
+    if (i > 10000) {
+        v[i] = u;
+        return;
+    } else if (i == 0) {
+        u = (float4)(0.0f, 10.0f, 0.0f, 0.0f);
     }
+
+    // For DEBUG: Override 1-st particle's velocity
+    /*
+    if (i == 0) {
+        if (a[i].s2 > 5.0f) {
+            u = (float4)(10.0f, 0.0f, 0.0f, 0.0f);
+        } else if (a[i].s2 > 4.0f) {
+            u = (float4)(0.0f, 10.0f, 0.0f, 0.0f);
+        } else if (a[i].s2 > 3.0f) {
+            u = (float4)(0.0f, 0.0f, 10.0f, 0.0f);
+        } else if (a[i].s2 > 2.0f) {
+            u = (float4)(10.0f, -10.0f, 0.0f, 0.0f);
+        } else {
+            u = (float4)(10.0f, 0.0f, -10.0f, 0.0f);
+        }
+        a[i].s2 += 1.0f;
+    }
+    */
     
     //
     // derive alpha & beta of ADM for ADM table lookup ---------------------------------
     //
     float alpha, beta;
 
-    float4 u_hat = normalize(u);
-    float4 ur = u - v[i];
+    float4 ur = u - ud;
     
-
+    //float4 u_hat = normalize(u);
+    float4 u_hat = normalize(ur);
+    
     // xp, yp, zp - x, y, z axis of the particle
     float4 xp = quat_get_x(ori);
     float4 yp = quat_get_y(ori);
     float4 zp = quat_get_z(ori);
 
-    
+
+    /*
     beta = acos(dot(xp, u_hat));
     
     float4 d = cross(u_hat, xp);
@@ -173,31 +211,101 @@ __kernel void scat_atts(__global float4 *p,
             beta = -beta;
         }
     }
+    */
     
-//    if (i == 0) {
-//        printf("xp = %5.2f %5.2f %5.2f %5.2f   yp = %5.2f %5.2f %5.2f %5.2f   zp = %5.2f %5.2f %5.2f %5.2f   alpha = %5.2f   beta = %5.2f   d = %5.2f %5.2f %5.2f %5.2f\n",
-//               xp.x, xp.y, xp.z, xp.w,
-//               yp.x, yp.y, yp.z, yp.w,
-//               zp.x, zp.y, zp.z, zp.w,
-//               alpha, beta,
-//               d.x, d.y, d.z, d.w);
-//    }
+    beta = acos(dot(xp, u_hat));
     
-    float2 angles = (float2)(alpha, beta);
-    float2 coord2 = fma(angles, adm_desc.s01, adm_desc.s45);
-    float4 cd = read_imagef(adm_cd, sampler, coord2);
-    float4 cm = read_imagef(adm_cm, sampler, coord2);
-
-    if (i == 0) {
-        printf("alpha = %5.2f   beta = %5.2f   cd = %5.2f %5.2f %5.2f %5.2f   cm = %5.2f %5.2f %5.2f %5.2f\n",
-               alpha, beta,
-               cd.x, cd.y, cd.z, cd.w,
-               cm.x, cm.y, cm.z, cm.w);
+    float u_zp = dot(zp, u_hat);
+    float u_yp = dot(yp, u_hat);
+    alpha = atan2(u_zp, u_yp);
+    if (alpha < 0.0f) {
+        alpha = M_PI_F + alpha;
+        beta = -beta;
     }
+    
+    float2 adm_coord = fma((float2)(beta, alpha), adm_desc.s01, adm_desc.s45);
+    float4 cd = read_imagef(adm_cd, sampler, adm_coord);
+    float4 cm = read_imagef(adm_cm, sampler, adm_coord);
+
+    const float Ta = 62.0103f;
+//    const float4 inv_inln = (float4)(1.0f / 0.00002904f, 1.0f / 0.00001455f, 1.0f / 0.00001455f, 0.0f);
+//    const float4 inv_inln = (float4)(34438.77510f, 68705.786554f, 68705.786554f, 0.0f);
+    const float4 inv_inln = (float4)(0.551020408163265f, 1.099292584864369f, 1.099292584864369, 0.0f);
+    
+    cd = quat_rotate(cd, ori);
+
+//    if (i == 0)
+//        printf("ur = %5.2f %5.2f %5.2f %5.2f  cdr = %5.2f %5.2f %5.2f %5.2f\n",
+//               ur.x, ur.y, ur.z, ur.w,
+//               cd.x, cd.y, cd.z, cd.w);
+    
+    float ur_norm = length(ur) / 250.0f * 9.8f;
+    float ur_norm_sq = ur_norm * ur_norm;
+    
+    float4 dudt = Ta * ur_norm_sq * cd;
+    
+    dudt.z -= 9.8f;
+
+    ud += dudt * dt;
+
+    float4 dwdt = cm * (Ta * inv_inln) * ur_norm_sq * dt * 0.017453292519943f;
+//    float4 dwdt = 0.02f * cm * dt * ur_norm_sq;
+    
+    float4 c = cos(dwdt);
+    float4 s = sin(dwdt);
+    float4 q = (float4)(c.x * s.y * s.z + s.x * c.y * c.z,
+                        c.x * s.y * c.z - s.x * c.y * s.z,
+                        c.x * c.y * s.z + s.x * s.y * c.z,
+                        c.x * c.y * c.z - s.x * s.y * s.z);
+        
     //
     // derive alpha, beta & gamma of RCS for RCS table lookup --------------------------
     //
-    v[i] = u;
+
+    
+    v[i] = ud;
+    w[i] = q;
+//    w[i] = quat_identity();
+
+//    if (i == 0) {
+        //        printf("xyz = (%5.2f %5.2f %5.2f %5.2f ; %5.2f %5.2f %5.2f %5.2f ; %5.2f %5.2f %5.2f %5.2f)   s2 = %3.1f   u = %5.2f %5.2f %5.2f %5.2f   ang = %5.2f/%5.2f   c =(%5.2f %5.2f %5.2f %5.2f ; %5.2f %5.2f %5.2f %5.2f)\n",
+        //               xp.x, xp.y, xp.z, xp.w,
+        //               yp.x, yp.y, yp.z, yp.w,
+        //               zp.x, zp.y, zp.z, zp.w,
+        //               a[i].s2,
+        //               u.x, u.y, u.z, u.w,
+        //               alpha, beta,
+        //               cd.x, cd.y, cd.z, cd.w,
+        //               cm.x, cm.y, cm.z, cm.w);
+
+//        printf("xyz = (%5.2f %5.2f %5.2f ; %5.2f %5.2f %5.2f ; %5.2f %5.2f %5.2f)   u = %5.2f %5.2f %5.2f   v = %5.2f %5.2f %5.2f   ur = %5.2f %5.2f %5.2f   ang = %5.2f/%5.2f   c = (%5.2f %5.2f %5.2f ; %5.2f %5.2f %5.2f)  d/dt = (%5.2f %5.2f %5.2f ; %5.2f %5.2f %5.2f)  %5.2f\n",
+//               xp.x, xp.y, xp.z,
+//               yp.x, yp.y, yp.z,
+//               zp.x, zp.y, zp.z,
+//               u.x, u.y, u.z,
+//               vel.x, vel.y, vel.z,
+//               ur.x, ur.y, ur.z,
+//               alpha, beta,
+//               cd.x, cd.y, cd.z,
+//               cm.x, cm.y, cm.z,
+//               dudt.x, dudt.y, dudt.z,
+//               dwdt.x, dwdt.y, dwdt.z,
+//               dt.y);
+
+//    if (i == 0) {
+//        printf("%3.0f   u = %5.2f %5.2f %5.2f   ud = %5.2f %5.2f %5.2f   ur = %5.2f %5.2f %5.2f   ang = %5.2f/%5.2f   c = (%5.2f %5.2f %5.2f ; %5.2f %5.2f %5.2f)  d/dt = (%5.2f %5.2f %5.2f ; %5.2f %5.2f %5.2f)  %5.2f\n",
+//               adm_desc.s3,
+//               u.x, u.y, u.z,
+//               ud.x, ud.y, ud.z,
+//               ur.x, ur.y, ur.z,
+//               alpha, beta,
+//               cd.x, cd.y, cd.z,
+//               cm.x, cm.y, cm.z,
+//               dudt.x, dudt.y, dudt.z,
+//               dwdt.x, dwdt.y, dwdt.z,
+//               dt.x);
+//    }
+    
 }
 
 //
@@ -217,6 +325,7 @@ __kernel void scat_atts(__global float4 *p,
 // p - position
 // v - velocity
 // o - orientation
+// w - tumble
 // a - attributes
 // angular_weight      - beam weighting function
 // angular_weight_desc - description of the indexing of angular_weight
@@ -224,8 +333,9 @@ __kernel void scat_atts(__global float4 *p,
 // t - time constantss (prt, life delta, ___, ___)
 //
 __kernel void scat_mov(__global float4 *p,
-                       __global float4 *v,
                        __global float4 *o,
+                       __global float4 *v,
+                       __global float4 *w,
                        __global float4 *a,
                        __constant float *angular_weight,
                        const float4 angular_weight_desc,
@@ -259,6 +369,7 @@ __kernel void scat_mov(__global float4 *p,
     fidx_dec = fract(fidx_raw, &fidx_int);
     iidx_int = convert_uint2(fidx_int);
     a[i].s3 = mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
+    //a[i].s3 = 0.5f;
     
     //	const float4 ages = (float4)(a[i].s1, a[i].s1, a[i].s1, 0.0f);
     //	const float4 offsets = (float4)(0.125f, 0.375f, 0.625f, 0.0f);
@@ -280,6 +391,9 @@ __kernel void scat_mov(__global float4 *p,
     pos += v[i] * dt;
     p[i] = pos;
     
+    // Future orientation
+    o[i] = quat_mult(o[i], w[i]);
+    
     //	if (i < 3) {
     //		printf("i=%3d  angle=%6.3f --> %6.3f, %6.3f, %6.3f --> w=%6.3f\n",
     //			   i, angle, fidx_int.s0, fidx_int.s1, fidx_dec.s0, a[i].s3);
@@ -295,6 +409,7 @@ __kernel void scat_mov(__global float4 *p,
 // box - enclosing box - xmin, ymin, zmin, ____, xlen, ylen, zlen, ____
 //
 __kernel void scat_chk(__global float4 *p,
+                       __global float4 *v,
                        __global float4 *a,
                        __global uint4 *s,
                        const float8 box
@@ -307,16 +422,18 @@ __kernel void scat_chk(__global float4 *p,
     // Check for bounding constraints
     //if (any(isless(pos, box.s0123) | isgreater(pos, box.s0123 + box.s4567))) {
     //if (any(isless(pos.xyz, box.s012) | isgreater(pos.xyz, box.s012 + box.s456))) {
-    if (any(isless(pos.xyz, box.s012) | isgreater(pos.xyz, box.s012 + box.s456)) | isgreater(a[i].s1, 1.0f)) {
-        //if (isgreater(a[i].s1, 1.0f)) {
-        if (i > 0) {
-            uint4 seed = s[i];
-            float4 r = rand(&seed);
-            s[i] = seed;
-            
-            p[i].xyz = r.xyz * box.s456 + box.s012;
-        }
+    
+    int is_outside = any(isless(pos.xyz, box.s012) | isgreater(pos.xyz, box.s012 + box.s456));
+    
+    if (((i > 10000) & (is_outside | isgreater(a[i].s1, 1.0f))) |
+        ((i <= 10000) & is_outside)) {
+        uint4 seed = s[i];
+        float4 r = rand(&seed);
+        s[i] = seed;
+
+        p[i].xyz = r.xyz * box.s456 + box.s012;
         a[i].s1 = 0.0f;
+        v[i].xyzw = 0.0f;
     }
 }
 
@@ -330,8 +447,8 @@ __kernel void scat_chk(__global float4 *p,
 //
 __kernel void scat_clr(__global float4 *c,
                        __global float4 *p,
-                       __global float4 *v,
                        __global float4 *o,
+                       __global float4 *v,
                        __global float4 *a,
                        const unsigned int n)
 {

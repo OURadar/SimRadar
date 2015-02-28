@@ -22,7 +22,6 @@ void main (void)
     vec4 pos = vec4(inPosition, 0.0);
     vec4 quat_left = inQuaternion;
     vec4 quat_right = vec4(-quat_left.x, -quat_left.y, -quat_left.z, quat_left.w);
-//    pos = quat_mult(quat_left, quat_mult(pos, quat_right));
     
     // This works.
     //gl_Position = modelViewProjectionMatrix * vec4(inPosition + inTranslation, 1.0);

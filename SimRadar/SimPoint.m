@@ -70,7 +70,7 @@
 		table_id = 0;
 		LESTable *les = LES_get_frame(L, table_id);
 		//LES_show_table_summary(les);
-		RS_set_physics_data_to_LES_table(S, les);
+		RS_set_wind_data_to_LES_table(S, les);
 		
         ADMTable *adm = ADM_get_frame(A);
         //ADM_show_table_summary(adm);
@@ -78,7 +78,7 @@
         
 		//RS_set_prt(S, 1.0f);
         //RS_set_prt(S, 0.5f);
-		RS_set_prt(S, 0.1f);
+		RS_set_prt(S, 0.05f);
 
 		az_deg = 0.0f;
         el_deg = 4.9f;
@@ -131,7 +131,7 @@
 	if (S->sim_tic >= S->sim_toc) {
 		LESTable *table = LES_get_frame(L, table_id);
 		if (table != NULL) {
-			RS_set_physics_data_to_LES_table(S, table);
+			RS_set_wind_data_to_LES_table(S, table);
 			//NSLog(@"table_id = %d", table_id);
 		}
 		table_id = (table_id + 1) % 20;

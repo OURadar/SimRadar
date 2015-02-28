@@ -32,6 +32,7 @@
 		B55A0B5519D0B93E00875832 /* disc64.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B5419D0B93E00875832 /* disc64.png */; };
 		B56077F617E356A70068C6BE /* cldemo.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A280617D7B1EC00E4DE66 /* cldemo.c */; };
 		B56077F717E356B10068C6BE /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
+		B567270E1AA11B2C00FF4436 /* spot256.png in Resources */ = {isa = PBXBuildFile; fileRef = B567270D1AA11B2C00FF4436 /* spot256.png */; };
 		B567F8B21A6D522F00F40660 /* adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B11A6D522F00F40660 /* adm.c */; };
 		B567F8B31A6D522F00F40660 /* adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B11A6D522F00F40660 /* adm.c */; };
 		B567F8C41A6D671F00F40660 /* test_adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B41A6D635100F40660 /* test_adm.c */; };
@@ -182,6 +183,7 @@
 		B55A0B5219D0B00400875832 /* sphere64.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = sphere64.png; sourceTree = "<group>"; };
 		B55A0B5419D0B93E00875832 /* disc64.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = disc64.png; sourceTree = "<group>"; };
 		B56077EF17E356910068C6BE /* cldemo */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = cldemo; sourceTree = BUILT_PRODUCTS_DIR; };
+		B567270D1AA11B2C00FF4436 /* spot256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = spot256.png; sourceTree = "<group>"; };
 		B567F8B01A6D520C00F40660 /* adm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = adm.h; sourceTree = "<group>"; };
 		B567F8B11A6D522F00F40660 /* adm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = adm.c; sourceTree = "<group>"; };
 		B567F8B41A6D635100F40660 /* test_adm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = test_adm.c; sourceTree = "<group>"; };
@@ -402,6 +404,7 @@
 				B55A0B4C19D0AD4300875832 /* texture_32.png */,
 				B55A0B5219D0B00400875832 /* sphere64.png */,
 				B55A0B5419D0B93E00875832 /* disc64.png */,
+				B567270D1AA11B2C00FF4436 /* spot256.png */,
 			);
 			name = images;
 			path = SimRadar/images;
@@ -680,6 +683,7 @@
 				B55A0B5319D0B00400875832 /* sphere64.png in Resources */,
 				B55A0B4E19D0AD4300875832 /* sphere1.png in Resources */,
 				B5EF31BB18205AA8002DDEFC /* shape.fsh in Resources */,
+				B567270E1AA11B2C00FF4436 /* spot256.png in Resources */,
 				B5D1B11019D0EE8300769416 /* leaf.fsh in Resources */,
 				B5EF31BC18205AAD002DDEFC /* shape.vsh in Resources */,
 				B5EF317C18204B5C002DDEFC /* InfoPlist.strings in Resources */,

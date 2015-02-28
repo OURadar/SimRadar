@@ -211,14 +211,6 @@
 	if (leafRenderer.positions == NULL) {
 		leafRenderer.positions = (GLfloat *)malloc(6 * sizeof(cl_float4));
 	}
-	
-//	leafRenderer.positions[0]  =  1.0f;   leafRenderer.positions[1]  =  0.0f;   leafRenderer.positions[2]  = 0.0f;   leafRenderer.positions[3]  = 0.0f;
-//	leafRenderer.positions[4]  = -1.0f;   leafRenderer.positions[5]  =  0.0f;   leafRenderer.positions[6]  = 0.0f;   leafRenderer.positions[7]  = 0.0f;
-//	leafRenderer.positions[8]  =  0.0f;   leafRenderer.positions[9]  =  2.0f;   leafRenderer.positions[10] = 0.0f;   leafRenderer.positions[11] = 0.0f;
-//	leafRenderer.positions[12] =  0.0f;   leafRenderer.positions[13] = -1.0f;   leafRenderer.positions[14] = 0.0f;   leafRenderer.positions[15] = 0.0f;
-//	leafRenderer.positions[16] =  0.0f;   leafRenderer.positions[17] = -1.0f;   leafRenderer.positions[18] = 0.5f;   leafRenderer.positions[19] = 0.0f;
-//	leafRenderer.positions[20] =  0.0f;   leafRenderer.positions[21] =  0.0f;   leafRenderer.positions[22] = 0.0f;   leafRenderer.positions[23] = 0.0f;
-
     leafRenderer.positions[0]  =  0.0f;   leafRenderer.positions[1]  =  0.0f;   leafRenderer.positions[2]  =  1.0f;   leafRenderer.positions[3]  = 0.0f;
     leafRenderer.positions[4]  =  0.0f;   leafRenderer.positions[5]  =  0.0f;   leafRenderer.positions[6]  = -1.0f;   leafRenderer.positions[7]  = 0.0f;
     leafRenderer.positions[8]  =  0.0f;   leafRenderer.positions[9]  = -2.0f;   leafRenderer.positions[10] =  0.0f;   leafRenderer.positions[11] = 0.0f;
@@ -420,7 +412,8 @@
         //resource.texture = [self loadTexture:@"sphere1.png"];
         //resource.texture = [self loadTexture:@"depth.png"];
         //resource.texture = [self loadTexture:@"sphere64.png"];
-		resource.texture = [self loadTexture:@"disc64.png"];
+		//resource.texture = [self loadTexture:@"disc64.png"];
+        resource.texture = [self loadTexture:@"spot256.png"];
         resource.textureID = [resource.texture name];
         glUniform1i(resource.textureUI, resource.textureID);
     }
@@ -485,7 +478,12 @@
 		height = 1;
         spinModel = 1;
 		aspectRatio = 1.0f;
+        
+        #ifdef GEN_IMG
+        showHud = FALSE;
+        #else
         showHud = TRUE;
+        #endif
         
         hudModelViewProjection = GLKMatrix4Identity;
         beamModelViewProjection = GLKMatrix4Identity;
@@ -624,10 +622,10 @@
 	// Debris
 	glBindVertexArray(leafRenderer.vao);
 	
-	glGenBuffers(3, leafRenderer.vbo);
+	glGenBuffers(4, leafRenderer.vbo);
 	
-	glBindBuffer(GL_ARRAY_BUFFER, leafRenderer.vbo[0]);  // Debris primitive
-	glBufferData(GL_ARRAY_BUFFER, 5 * sizeof(cl_float4), leafRenderer.positions, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, leafRenderer.vbo[0]);  // Debris primitive (6 points)
+	glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(cl_float4), leafRenderer.positions, GL_STATIC_DRAW);
 	glVertexAttribPointer(leafRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
 	glEnableVertexAttribArray(leafRenderer.positionAI);
 	
@@ -640,7 +638,7 @@
 //    glVertexAttribPointer(leafRenderer.rotationAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
 //    glVertexAttribDivisor(leafRenderer.rotationAI, 1);
 //    glEnableVertexAttribArray(leafRenderer.rotationAI);
-    NSLog(@"quaternionAI @ %d", leafRenderer.quaternionAI);
+//    NSLog(@"quaternionAI @ %d", leafRenderer.quaternionAI);
     glVertexAttribPointer(leafRenderer.quaternionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
 	glVertexAttribDivisor(leafRenderer.quaternionAI, 1);
     glEnableVertexAttribArray(leafRenderer.quaternionAI);
@@ -740,9 +738,10 @@
 	// The scatter bodies
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 	glBindVertexArray(bodyRenderer.vao);
-	glPointSize(MIN(MAX(15.0f * pixelsPerUnit, 1.0f), 32.0f));
+	//glPointSize(MIN(MAX(15.0f * pixelsPerUnit, 1.0f), 64.0f));
+    glPointSize(MIN(MAX(35.0f * pixelsPerUnit, 2.0f), 256.0f));
 	glUseProgram(bodyRenderer.program);
-	glUniform4f(bodyRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
+	glUniform4f(bodyRenderer.colorUI, 1.0f, 1.0f, 1.0f, 0.5f);
 	glUniformMatrix4fv(bodyRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
     glUniform1i(bodyRenderer.textureUI, 0);
     glBindTexture(GL_TEXTURE_2D, bodyRenderer.textureID);
@@ -752,7 +751,7 @@
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBindVertexArray(leafRenderer.vao);
 	glUseProgram(leafRenderer.program);
-	glUniform4f(leafRenderer.colorUI, 0.3f, 1.0f, 0.0f, 1.0f);
+	glUniform4f(leafRenderer.colorUI, 0.0f, 1.0f, 0.0f, 1.0f);
     glUniformMatrix4fv(leafRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
 	glDrawElementsInstanced(GL_LINE_STRIP, 7, GL_UNSIGNED_INT, NULL, leafRenderer.count);
 	

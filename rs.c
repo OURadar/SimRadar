@@ -161,7 +161,12 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 												H->params.range_start,
 												H->params.range_delta,
 												H->params.range_count);
-	
+
+    for (int t=0; t<RS_MAX_ADM_TABLES; t++) {
+        C->adm_desc[t].s2 = H->params.prt;
+    }
+
+/*
 	C->range_weight_desc.s0 = H->range_weight_table.dx;
 	C->range_weight_desc.s1 = H->range_weight_table.x0;
 	C->range_weight_desc.s2 = H->range_weight_table.xm;
@@ -177,7 +182,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     for (i=0; i<RS_MAX_ADM_TABLES; i++) {
         C->adm_desc[i].s0 = H->adm_cd_tables[i].xs;
         C->adm_desc[i].s1 = H->adm_cd_tables[i].ys;
-        C->adm_desc[i].s2 = 0.0f;
+        C->adm_desc[i].s2 = H->params.prt;
         C->adm_desc[i].s3 = 0.0f;
         C->adm_desc[i].s4 = H->adm_cd_tables[i].xo;
         C->adm_desc[i].s5 = H->adm_cd_tables[i].yo;
@@ -228,7 +233,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	C->physics_desc.sd = 0.0f;
 	C->physics_desc.se = 0.0f;
 	C->physics_desc.sf = 0.0f;
-	
+*/
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 	
 	C->ndrange_scat.work_dim = 1;
@@ -250,12 +255,14 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	C->scat_pos = gcl_gl_create_ptr_from_buffer(C->vbo_scat_pos);
 	C->scat_clr = gcl_gl_create_ptr_from_buffer(C->vbo_scat_clr);
 	C->scat_ori = gcl_gl_create_ptr_from_buffer(C->vbo_scat_ori);
+//    C->scat_tum = gcl_gl_create_ptr_from_buffer(C->vbo_scat_tum);
 	if (C->scat_pos == NULL || C->scat_clr == NULL || C->scat_ori == NULL) {
 		fprintf(stderr, "%s : RS : Error in gcl_gl_create_ptr_from_buffer().\n", now());
 		return;
 	}
 	
 	C->scat_vel = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
+    C->scat_tum = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
 	C->scat_att = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
 	C->scat_sig = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
 	C->work = gcl_malloc(RS_MAX_GATES * RS_CL_GROUP_ITEMS * sizeof(cl_float4), NULL, 0);
@@ -278,6 +285,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	C->scat_pos = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                   CHECK_CL_CREATE_BUFFER
 	C->scat_vel = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                   CHECK_CL_CREATE_BUFFER
 	C->scat_ori = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                   CHECK_CL_CREATE_BUFFER
+    C->scat_tum = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                   CHECK_CL_CREATE_BUFFER
 	C->scat_att = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                   CHECK_CL_CREATE_BUFFER
 	C->scat_sig = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                   CHECK_CL_CREATE_BUFFER
 	C->work = clCreateBuffer(C->context, CL_MEM_READ_WRITE, RS_MAX_GATES * RS_CL_GROUP_ITEMS * sizeof(cl_float4), NULL, &ret);   CHECK_CL_CREATE_BUFFER
@@ -303,13 +311,14 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	
 	ret = CL_SUCCESS;
 	ret |= clSetKernelArg(C->kern_scat_mov, 0, sizeof(cl_mem), &C->scat_pos);
-	ret |= clSetKernelArg(C->kern_scat_mov, 1, sizeof(cl_mem), &C->scat_vel);
-	ret |= clSetKernelArg(C->kern_scat_mov, 2, sizeof(cl_mem), &C->scat_ori);
-	ret |= clSetKernelArg(C->kern_scat_mov, 3, sizeof(cl_mem), &C->scat_att);
-	ret |= clSetKernelArg(C->kern_scat_mov, 4, sizeof(cl_mem), &C->angular_weight);
-	ret |= clSetKernelArg(C->kern_scat_mov, 5, sizeof(cl_float4), &C->angular_weight_desc);
-	ret |= clSetKernelArg(C->kern_scat_mov, 6, sizeof(cl_float4), &beam_pos);
-	ret |= clSetKernelArg(C->kern_scat_mov, 7, sizeof(float), &prt);
+	ret |= clSetKernelArg(C->kern_scat_mov, 1, sizeof(cl_mem), &C->scat_ori);
+    ret |= clSetKernelArg(C->kern_scat_mov, 2, sizeof(cl_mem), &C->scat_vel);
+    ret |= clSetKernelArg(C->kern_scat_mov, 3, sizeof(cl_mem), &C->scat_tum);
+	ret |= clSetKernelArg(C->kern_scat_mov, 4, sizeof(cl_mem), &C->scat_att);
+	ret |= clSetKernelArg(C->kern_scat_mov, 5, sizeof(cl_mem), &C->angular_weight);
+	ret |= clSetKernelArg(C->kern_scat_mov, 6, sizeof(cl_float4), &C->angular_weight_desc);
+	ret |= clSetKernelArg(C->kern_scat_mov, 7, sizeof(cl_float4), &beam_pos);
+	ret |= clSetKernelArg(C->kern_scat_mov, 8, sizeof(float), &prt);
 	if (ret != CL_SUCCESS) {
 		fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel scat_mov().\n", now());
 		exit(EXIT_FAILURE);
@@ -318,8 +327,9 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	
 	ret = CL_SUCCESS;
 	ret |= clSetKernelArg(C->kern_scat_chk, 0, sizeof(cl_mem), &C->scat_pos);
-	ret |= clSetKernelArg(C->kern_scat_chk, 1, sizeof(cl_mem), &C->scat_att);
-	ret |= clSetKernelArg(C->kern_scat_chk, 2, sizeof(cl_mem), &C->scat_rnd);
+    ret |= clSetKernelArg(C->kern_scat_chk, 1, sizeof(cl_mem), &C->scat_vel);
+	ret |= clSetKernelArg(C->kern_scat_chk, 2, sizeof(cl_mem), &C->scat_att);
+	ret |= clSetKernelArg(C->kern_scat_chk, 3, sizeof(cl_mem), &C->scat_rnd);
 	if (ret != CL_SUCCESS) {
 		fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel scat_chk().\n", now());
 		exit(EXIT_FAILURE);
@@ -329,14 +339,15 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret |= clSetKernelArg(C->kern_scat_atts, 0, sizeof(cl_mem), &C->scat_pos);
     ret |= clSetKernelArg(C->kern_scat_atts, 1, sizeof(cl_mem), &C->scat_ori);
     ret |= clSetKernelArg(C->kern_scat_atts, 2, sizeof(cl_mem), &C->scat_vel);
-    ret |= clSetKernelArg(C->kern_scat_atts, 3, sizeof(cl_mem), &C->scat_att);
-    ret |= clSetKernelArg(C->kern_scat_atts, 4, sizeof(cl_mem), &C->physics);
-    ret |= clSetKernelArg(C->kern_scat_atts, 5, sizeof(cl_float16), &C->physics_desc);
-    ret |= clSetKernelArg(C->kern_scat_atts, 6, sizeof(cl_mem), &C->adm_cd);
-    ret |= clSetKernelArg(C->kern_scat_atts, 7, sizeof(cl_mem), &C->adm_cm);
-    ret |= clSetKernelArg(C->kern_scat_atts, 8, sizeof(cl_float16), &C->adm_desc);
-    ret |= clSetKernelArg(C->kern_scat_atts, 9, sizeof(cl_mem), &C->adm_cd);           // will come back for you rcs
-    ret |= clSetKernelArg(C->kern_scat_atts, 10, sizeof(cl_float16), &C->adm_desc);
+    ret |= clSetKernelArg(C->kern_scat_atts, 3, sizeof(cl_mem), &C->scat_tum);
+    ret |= clSetKernelArg(C->kern_scat_atts, 4, sizeof(cl_mem), &C->scat_att);
+    ret |= clSetKernelArg(C->kern_scat_atts, 5, sizeof(cl_mem), &C->physics);
+    ret |= clSetKernelArg(C->kern_scat_atts, 6, sizeof(cl_float16), &C->physics_desc);
+    ret |= clSetKernelArg(C->kern_scat_atts, 7, sizeof(cl_mem), &C->adm_cd);
+    ret |= clSetKernelArg(C->kern_scat_atts, 8, sizeof(cl_mem), &C->adm_cm);
+    ret |= clSetKernelArg(C->kern_scat_atts, 9, sizeof(cl_float16), &C->adm_desc);
+    ret |= clSetKernelArg(C->kern_scat_atts, 10, sizeof(cl_mem), &C->adm_cd);           // will come back for you rcs
+    ret |= clSetKernelArg(C->kern_scat_atts, 11, sizeof(cl_float16), &C->adm_desc);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_atts().\n", now());
         exit(EXIT_FAILURE);
@@ -787,7 +798,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
 	// Default non-zero parameters
 	H->status = RS_STATUS_DOMAIN_NULL;
 	H->params.c = 3.0e8f;
-	H->params.body_per_cell = 50.0f;
+	H->params.body_per_cell = 20.0f;
 	H->params.domain_pad_factor = RS_DOMAIN_PAD;
 	H->params.prt = 0.0f;
 	H->num_workers = 1;
@@ -895,7 +906,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
 	RS_set_angular_weight_to_standard(H, 2.0f / 180.0f * M_PI);
 	//RS_set_angular_weight_to_double_cone(H, 2.0f / 180.0f * M_PI);
 
-	RS_set_physics_data_to_cube27(H);
+	RS_set_wind_data_to_cube27(H);
     
     RS_set_adm_data_to_unity(H);
 	
@@ -938,6 +949,7 @@ void RS_free_scat_memory(RSHandle *H) {
 		gcl_free(H->worker[i].scat_clr);  // Only the GUI version has this
 		gcl_free(H->worker[i].scat_vel);
 		gcl_free(H->worker[i].scat_ori);
+        gcl_free(H->worker[i].scat_tum);
 		gcl_free(H->worker[i].scat_att);
 		gcl_free(H->worker[i].scat_sig);
 		gcl_free(H->worker[i].work);
@@ -951,6 +963,7 @@ void RS_free_scat_memory(RSHandle *H) {
 		clReleaseMemObject(H->worker[i].scat_pos);
 		clReleaseMemObject(H->worker[i].scat_vel);
 		clReleaseMemObject(H->worker[i].scat_ori);
+        clReleaseMemObject(H->worker[i].scat_tum);
 		clReleaseMemObject(H->worker[i].scat_att);
 		clReleaseMemObject(H->worker[i].scat_sig);
 		clReleaseMemObject(H->worker[i].work);
@@ -967,6 +980,7 @@ void RS_free_scat_memory(RSHandle *H) {
 	free(H->scat_pos);
 	free(H->scat_vel);
 	free(H->scat_ori);
+    free(H->scat_tum);
 	free(H->scat_att);
 	free(H->scat_sig);
 	
@@ -989,14 +1003,16 @@ void RS_free(RSHandle *H) {
 	
 	RS_free_scat_memory(H);
 	
+    int t = 0;
+
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
-	
+
 	for (int i=0; i<H->num_workers; i++) {
 		gcl_free(H->worker[i].range_weight);
 		gcl_free(H->worker[i].angular_weight);
-		gcl_release_image(H->worker[i].physics);
-        gcl_release_image(H->worker[i].adm_cd[0]);
-        gcl_release_image(H->worker[i].adm_cm[0]);
+		gcl_release_image(H->worker[i].vel[t]);
+        gcl_release_image(H->worker[i].adm_cd[t]);
+        gcl_release_image(H->worker[i].adm_cm[t]);
 //        gcl_release_image(H->worker[i].rcs[0]);
 	}
 	
@@ -1005,19 +1021,19 @@ void RS_free(RSHandle *H) {
 	for (int i=0; i<H->num_workers; i++) {
 		clReleaseMemObject(H->worker[i].range_weight);
 		clReleaseMemObject(H->worker[i].angular_weight);
-		clReleaseMemObject(H->worker[i].physics);
-        clReleaseMemObject(H->worker[i].adm_cd[0]);
-        clReleaseMemObject(H->worker[i].adm_cm[0]);
+		clReleaseMemObject(H->worker[i].vel[t]);
+        clReleaseMemObject(H->worker[i].adm_cd[t]);
+        clReleaseMemObject(H->worker[i].adm_cm[t]);
 //        clReleaseMemObject(H->worker[i].rcs[0]);
 	}
 	
 #endif
 	
-	RS_table_free(H->range_weight_table);
-	RS_table_free(H->angular_weight_table);
-	RS_table3d_free(H->physics_table);
-    RS_table2d_free(H->adm_cd_tables[0]);
-    RS_table2d_free(H->adm_cm_tables[0]);
+//    RS_table_free(H->range_weight_table);
+//    RS_table_free(H->angular_weight_table);
+//    RS_table3d_free(H->physics_table);
+//    RS_table2d_free(H->adm_cd_tables[0]);
+//    RS_table2d_free(H->adm_cm_tables[0]);
 //    RS_table2d_free(H->rcs_tables[0]);
     
 	free(H->anchor_pos);
@@ -1123,11 +1139,11 @@ void RS_init_scat_pos(RSHandle *H) {
 		H->scat_pos[i].w = 1.0f;
 		
 		H->scat_att[i].s0 = 0.0f;
-		H->scat_att[i].s1 = (float)rand() / RAND_MAX;
-		H->scat_att[i].s2 = 0.0f;
-		H->scat_att[i].s3 = 0.0f;
+        H->scat_att[i].s1 = (float)rand() / RAND_MAX;
+		H->scat_att[i].s2 = (float)rand() / RAND_MAX;
+		H->scat_att[i].s3 = (float)rand() / RAND_MAX;
 		
-		H->scat_vel[i].x = 1.0f;
+		H->scat_vel[i].x = 0.0f;
 		H->scat_vel[i].y = 0.0f;
 		H->scat_vel[i].z = 0.0f;
 		H->scat_vel[i].w = 0.0f;
@@ -1137,7 +1153,12 @@ void RS_init_scat_pos(RSHandle *H) {
         H->scat_ori[i].z = -0.5f;
         H->scat_ori[i].w =  0.5f;
 		
-		H->scat_sig[i].s0 = 1.0f;
+        H->scat_tum[i].x = 0.0f;
+        H->scat_tum[i].y = 0.0f;
+        H->scat_tum[i].z = 0.0f;
+        H->scat_tum[i].w = 0.0f;
+
+        H->scat_sig[i].s0 = 1.0f;
 		H->scat_sig[i].s1 = 0.0f;
 		H->scat_sig[i].s2 = 1.0f;
 		H->scat_sig[i].s3 = 0.0f;
@@ -1165,10 +1186,15 @@ void RS_init_scat_pos(RSHandle *H) {
 	H->scat_pos[7280].z = H->domain.origin.z + H->domain.size.z;
 	
 	// Advance the point by dt = 0.0f so that all attributes are computed.
-	float prt = H->params.prt;
-	H->params.prt = 0.0f;
-	RS_advance_time_cpu(H);
-	H->params.prt = prt;
+//	float prt = H->params.prt;
+//	H->params.prt = 0.0f;
+//	RS_advance_time_cpu(H);
+//	H->params.prt = prt;
+    for (int i=0; i<H->num_workers; i++) {
+        for (int t=0; t<RS_MAX_ADM_TABLES; t++) {
+            H->worker[i].adm_desc[t].s2 = H->params.prt;
+        }
+    }
 	
 	// Restore simulation time
 	H->sim_tic = 0;
@@ -1618,24 +1644,25 @@ void RS_set_worker_count(RSHandle *H, char count) {
 }
 
 
-void RS_set_range_weight(RSHandle *H, const float *table, const float table_index_start, const float table_index_delta, unsigned int table_size) {
+void RS_set_range_weight(RSHandle *H, const float *weights, const float table_index_start, const float table_index_delta, unsigned int table_size) {
 	
 	int i;
 	
-	RS_table_free(H->range_weight_table);
-	H->range_weight_table = RS_table_init(table_size);
-	if (H->range_weight_table.data == NULL) {
-		fprintf(stderr, "%s : RS : Unable to allocate weight table.\n", now());
-		return;
-	}
+//	RS_table_free(H->range_weight_table);
+//	H->range_weight_table = RS_table_init(table_size);
+    RSTable table = RS_table_init(table_size);
+    if (table.data == NULL) {
+        return;
+    }
 	// Set up the coefficients for FMA(a, b, c) in the CL kernel
-	H->range_weight_table.dx = 1.0f / table_index_delta;
-	H->range_weight_table.x0 = -table_index_start * H->range_weight_table.dx;
-	H->range_weight_table.xm = (float)table_size - 1.0f;
-	if (H->verb) {
-		printf("%s : RS : Host range weight table set.  n = %d\n", now(), table_size);
-	}
-	memcpy(H->range_weight_table.data, table, table_size * sizeof(float));
+	table.dx = 1.0f / table_index_delta;
+	table.x0 = -table_index_start * table.dx;
+	table.xm = (float)table_size - 1.0f;
+    memcpy(table.data, weights, table_size * sizeof(float));
+    if (H->verb > 1) {
+        printf("%s : RS : Host range weight table received.  dx = %.4f   x0 = %.1f   xm = %.0f  n = %d\n", now(),
+               table.dx, table.x0, table.xm, table_size);
+    }
 	
 	if (H->method == RS_METHOD_GPU) {
 		
@@ -1648,11 +1675,16 @@ void RS_set_range_weight(RSHandle *H, const float *table, const float table_inde
 				}
 				gcl_free(H->worker[i].range_weight);
 			}
-			H->worker[i].range_weight = gcl_malloc(table_size * sizeof(float), H->range_weight_table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+			H->worker[i].range_weight = gcl_malloc(table_size * sizeof(float), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
 			if (H->worker[i].range_weight == NULL) {
 				fprintf(stderr, "%s : RS : Error creating range weight table on CL device.\n", now());
 				return;
 			}
+            // Copy over to CL worker. I know it's a bit wasteful but the codes are easier to ready this way.
+            H->worker[i].range_weight_desc.s0 = table.dx;
+            H->worker[i].range_weight_desc.s1 = table.x0;
+            H->worker[i].range_weight_desc.s2 = table.xm;
+            H->worker[i].range_weight_desc.s3 = 0.0f;
 		}
 		
 #else
@@ -1668,7 +1700,7 @@ void RS_set_range_weight(RSHandle *H, const float *table, const float table_inde
 			if (H->verb > 1) {
 				printf("%s : RS : worker[%d] creating range weight (cl_mem) & copying data from %p.\n", now(), i, H->range_weight_table.data);
 			}
-			H->worker[i].range_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), H->range_weight_table.data, &ret);
+			H->worker[i].range_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), weights.data, &ret);
 			if (ret != CL_SUCCESS) {
 				fprintf(stderr, "%s : RS : Error creating range weight table on CL device.\n", now());
 				return;
@@ -1676,11 +1708,20 @@ void RS_set_range_weight(RSHandle *H, const float *table, const float table_inde
 			if (H->verb > 1) {
 				printf("%s : RS : worker[%d] created range weight @ %p.\n", now(), i, H->worker[i].range_weight);
 			}
+            // Copy over to CL worker. I know it's a bit wasteful but the codes are easier to ready this way.
+            H->worker[i].range_weight_desc.s0 = table.dx;
+            H->worker[i].range_weight_desc.s1 = table.x0;
+            H->worker[i].range_weight_desc.s2 = table.xm;
+            H->worker[i].range_weight_desc.s3 = 0.0f;
 		}
 		
 #endif
-		
-	}
+
+    } else {
+        fprintf(stderr, "%s : RS : Non-GPU codes are not implemented.\n", now());
+    }
+    
+    RS_table_free(table);
 }
 
 
@@ -1690,26 +1731,23 @@ void RS_set_range_weight_to_triangle(RSHandle *H, float pulse_width_m) {
 }
 
 
-void RS_set_angular_weight(RSHandle *H, const float *table, const float table_index_start, const float table_index_delta, unsigned int table_size) {
+void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_index_start, const float table_index_delta, unsigned int table_size) {
 	
 	int i;
 	
-	RS_table_free(H->angular_weight_table);
-	H->angular_weight_table = RS_table_init(table_size);
-	//	printf("table_size = %d\n", table_size);
-	if (H->angular_weight_table.data == NULL) {
-		fprintf(stderr, "%s : RS : Unable to allocate weight table.\n", now());
-		return;
-	}
+    RSTable table = RS_table_init(table_size);
+    if (table.data == NULL) {
+        return;
+    }
 	// Set up the coefficients for FMA(a, b, c) in the CL kernel
-	H->angular_weight_table.dx = 1.0f / table_index_delta;
-	H->angular_weight_table.x0 = -table_index_start * H->angular_weight_table.dx;
-	H->angular_weight_table.xm = (float)table_size - 1.0f;
-	if (H->verb > 1) {
-		printf("%s : RS : Host angular weight table set.  dx = %.4f   x0 = %.1f   xm = %.0f\n", now(),
-			   H->angular_weight_table.dx, H->angular_weight_table.x0, H->angular_weight_table.xm);
-	}
-	memcpy(H->angular_weight_table.data, table, table_size * sizeof(float));
+	table.dx = 1.0f / table_index_delta;
+	table.x0 = -table_index_start * table.dx;
+	table.xm = (float)table_size - 1.0f;
+	memcpy(table.data, weights, table_size * sizeof(float));
+    if (H->verb > 1) {
+        printf("%s : RS : Host angular weight table received.  dx = %.4f   x0 = %.1f   xm = %.0f  n = %d\n", now(),
+               table.dx, table.x0, table.xm, table_size);
+    }
 	
 	if (H->method == RS_METHOD_GPU) {
 		
@@ -1723,11 +1761,16 @@ void RS_set_angular_weight(RSHandle *H, const float *table, const float table_in
 				}
 				gcl_free(H->worker[i].angular_weight);
 			}
-			H->worker[i].angular_weight = gcl_malloc(table_size * sizeof(float), H->angular_weight_table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+			H->worker[i].angular_weight = gcl_malloc(table_size * sizeof(float), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
 			if (H->worker[i].angular_weight == NULL) {
 				fprintf(stderr, "%s : RS : Error creating angular weight table on CL device.\n", now());
 				return;
 			}
+            // Copy over to CL worker. I know it's a bit wasteful but the codes are easier to ready this way.
+            H->worker[i].angular_weight_desc.s0 = table.dx;
+            H->worker[i].angular_weight_desc.s1 = table.x0;
+            H->worker[i].angular_weight_desc.s2 = table.xm;
+            H->worker[i].angular_weight_desc.s3 = 0.0f;
 		}
 		
 #else
@@ -1741,9 +1784,9 @@ void RS_set_angular_weight(RSHandle *H, const float *table, const float table_in
 				clReleaseMemObject(H->worker[i].angular_weight);
 			}
 			if (H->verb > 1) {
-				printf("%s : RS : worker[%d] creating angular weight (cl_mem) & copying data from %p.\n", now(), i, H->angular_weight_table.data);
+				printf("%s : RS : worker[%d] creating angular weight (cl_mem) & copying data from %p.\n", now(), i, table.data);
 			}
-			H->worker[i].angular_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), H->angular_weight_table.data, &ret);
+			H->worker[i].angular_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), table.data, &ret);
 			if (ret != CL_SUCCESS) {
 				fprintf(stderr, "%s : RS : Error creating angular weight table on CL device.\n", now());
 				return;
@@ -1751,11 +1794,20 @@ void RS_set_angular_weight(RSHandle *H, const float *table, const float table_in
 			if (H->verb > 1) {
 				printf("%s : RS : worker[%d] created angular weight.\n", now(), i);
 			}
+            // Copy over to CL worker. I know it's a bit wasteful but the codes are easier to ready this way.
+            H->worker[i].angular_weight_desc.s0 = table.dx;
+            H->worker[i].angular_weight_desc.s1 = table.x0;
+            H->worker[i].angular_weight_desc.s2 = table.xm;
+            H->worker[i].angular_weight_desc.s3 = 0.0f;
 		}
 		
 #endif
-		
-	}
+
+    } else {
+        fprintf(stderr, "%s : RS : Non-GPU codes are not implemented.\n", now());
+    }
+    
+    RS_table_free(table);
 }
 
 
@@ -1773,8 +1825,10 @@ void RS_set_angular_weight_to_standard(RSHandle *H, float beamwidth_rad) {
 	float c;
 	float w[n];
 	
+    float delta = 1.0f / 360.0f * M_PI;
+    
 	for (int i=0; i<n; i++) {
-		a = (float)i / 360.0f * M_PI;
+		a = (float)i * delta;
 		c = b * sinf(a);
 		if (i == 0) {
 			w[i] = 1.0f;
@@ -1786,52 +1840,54 @@ void RS_set_angular_weight_to_standard(RSHandle *H, float beamwidth_rad) {
 		}
 		//printf("angle=%.4f deg  w[%d] = %.4f dB\n", a / M_PI * 180.0f, i, 10.0f * log10f(w[i]));
 	}
-	RS_set_angular_weight(H, w, 0.0f, 0.5f / 180.0f * M_PI, n);
+	RS_set_angular_weight(H, w, 0.0f, delta, n);
 }
 
 
-void RS_set_physics_data(RSHandle *H, const RSTable3D table) {
+void RS_set_wind_data(RSHandle *H, const RSTable3D table) {
 	
 	int i;
 	
-	const size_t n = table.x_ * table.y_ * table.z_;
+//	const size_t n = table.x_ * table.y_ * table.z_;
 	
 	// Free the old table if exists; and create a new table
-	RS_table3d_free(H->physics_table);
-	H->physics_table = RS_table3d_init(n);
-	if (H->physics_table.data == NULL) {
-		fprintf(stderr, "%s : RS : RS_set_physics_data() failed to allocate 3D table.\n", now());
-		return;
-	}
+//	RS_table3d_free(H->physics_table);
+//	H->physics_table = RS_table3d_init(n);
+    
+//	if (H->physics_table.data == NULL) {
+//		fprintf(stderr, "%s : RS : RS_set_physics_data() failed to allocate 3D table.\n", now());
+//		return;
+//	}
 	
 	// Set up the mapping coefficients
-	H->physics_table.x_ = table.x_;   H->physics_table.xs = table.xs;   H->physics_table.xo = table.xo;    H->physics_table.xm = table.xm;
-	H->physics_table.y_ = table.y_;   H->physics_table.ys = table.ys;   H->physics_table.yo = table.yo;    H->physics_table.ym = table.ym;
-	H->physics_table.z_ = table.z_;   H->physics_table.zs = table.zs;   H->physics_table.zo = table.zo;    H->physics_table.zm = table.zm;
+//	H->physics_table.x_ = table.x_;   H->physics_table.xs = table.xs;   H->physics_table.xo = table.xo;    H->physics_table.xm = table.xm;
+//	H->physics_table.y_ = table.y_;   H->physics_table.ys = table.ys;   H->physics_table.yo = table.yo;    H->physics_table.ym = table.ym;
+//	H->physics_table.z_ = table.z_;   H->physics_table.zs = table.zs;   H->physics_table.zo = table.zo;    H->physics_table.zm = table.zm;
 	
     // Copy over other parameters
-    H->physics_table.tr = table.tr;
+//    H->physics_table.tr = table.tr;
     
 	// Copy the table data
-	if (H->verb) {
-		printf("%s : RS : Host physics table set.  n = %d x %d x %d\n", now(), H->physics_table.x_, H->physics_table.y_, H->physics_table.z_);
-	}
-	memcpy(H->physics_table.data, table.data, n * sizeof(cl_float4));
+//	if (H->verb) {
+//		printf("%s : RS : Host physics table set.  n = %d x %d x %d\n", now(), H->physics_table.x_, H->physics_table.y_, H->physics_table.z_);
+//	}
+//	memcpy(H->physics_table.data, table.data, n * sizeof(cl_float4));
 	
 	// We are done if no GPU acceleration is utilized
 	if (H->method == RS_METHOD_CPU) {
 		return;
 	}
-	
+    
+    int t = 0;
 	cl_image_format format = {CL_RGBA, CL_FLOAT};
 	
 #if defined (CL_VERSION_1_2)
 
 	cl_image_desc desc;
 	desc.image_type = CL_MEM_OBJECT_IMAGE3D;
-	desc.image_width  = H->physics_table.x_;
-	desc.image_height = H->physics_table.y_;
-	desc.image_depth  = H->physics_table.z_;
+	desc.image_width  = table.x_;
+	desc.image_height = table.y_;
+	desc.image_depth  = table.z_;
 	desc.image_array_size = 0;
 	desc.image_row_pitch = desc.image_width * sizeof(cl_float4);
 	desc.image_slice_pitch = desc.image_height * desc.image_row_pitch;
@@ -1842,34 +1898,51 @@ void RS_set_physics_data(RSHandle *H, const RSTable3D table) {
 #endif
 	
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
-	
+    
 	for (i=0; i<H->num_workers; i++) {
-		if (H->worker[i].physics != NULL) {
+		if (H->worker[i].vel[t] != NULL) {
 			if (H->verb > 1) {
-				printf("%s : RS : worker[%d] setting physics.\n", now(), i);
+				printf("%s : RS : worker[%d] setting wind data.\n", now(), i);
 			}
-			gcl_release_image(H->worker[i].physics);
+			gcl_release_image(H->worker[i].vel[t]);
 		}
-		H->worker[i].physics = gcl_create_image(&format, desc.image_width, desc.image_height, desc.image_depth, NULL);
-		if (H->worker[i].physics == NULL) {
-			fprintf(stderr, "%s : RS : Error creating physics table on CL device.\n", now());
+		H->worker[i].vel[t] = gcl_create_image(&format, desc.image_width, desc.image_height, desc.image_depth, NULL);
+		if (H->worker[i].vel[t] == NULL) {
+			fprintf(stderr, "%s : RS : Error creating wind table on CL device.\n", now());
 			return;
 		}
 		if (H->verb > 1) {
-			printf("%s : RS : Copying physics table[%d]  %p --> %p  (%u x %u x %u)\n",
-				   now(), i, H->physics_table.data, H->worker[i].physics,
-				   H->physics_table.x_, H->physics_table.y_, H->physics_table.z_);
+			printf("%s : RS : Copying wind table[%d]  %p --> %p  (%u x %u x %u)\n",
+				   now(), i, table.data, H->worker[i].vel[t],
+				   table.x_, table.y_, table.z_);
 		}
 		dispatch_async(H->worker[i].que, ^{
 			size_t origin[3] = {0, 0, 0};
-			size_t region[3] = {H->physics_table.x_, H->physics_table.y_, H->physics_table.z_};
-			gcl_copy_ptr_to_image(H->worker[i].physics, H->physics_table.data, origin, region);
+			size_t region[3] = {table.x_, table.y_, table.z_};
+			gcl_copy_ptr_to_image(H->worker[i].vel[t], table.data, origin, region);
 			dispatch_semaphore_signal(H->worker[i].sem);
 		});
-	}
+    }
 	
 	for (i=0; i<H->num_workers; i++) {
 		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+        // Copy over to CL worker
+        H->worker[i].vel_desc.s0 = table.xs;
+        H->worker[i].vel_desc.s1 = table.ys;
+        H->worker[i].vel_desc.s2 = table.zs;
+        H->worker[i].vel_desc.s3 = 0.0f;
+        H->worker[i].vel_desc.s4 = table.xo;
+        H->worker[i].vel_desc.s5 = table.yo;
+        H->worker[i].vel_desc.s6 = table.zo;
+        H->worker[i].vel_desc.s7 = 0.0f;
+        H->worker[i].vel_desc.s8 = table.xm;
+        H->worker[i].vel_desc.s9 = table.ym;
+        H->worker[i].vel_desc.sa = table.zm;
+        H->worker[i].vel_desc.sb = 0.0f;
+        H->worker[i].vel_desc.sc = table.tr;
+        H->worker[i].vel_desc.sd = 0.0f;
+        H->worker[i].vel_desc.se = 0.0f;
+        H->worker[i].vel_desc.sf = 0.0f;
 	}
 	
 #else
@@ -1881,42 +1954,59 @@ void RS_set_physics_data(RSHandle *H, const RSTable3D table) {
 	//		printf("%d - %.4f\n", i/4, f[i]);
 	
 	for (i=0; i<H->num_workers; i++) {
-		if (H->worker[i].physics != NULL) {
+		if (H->worker[i].vel[t] != NULL) {
 			if (H->verb > 1) {
-				printf("%s : RS : worker[%d] setting physics table.\n", now(), i);
+				printf("%s : RS : worker[%d] setting wind table.\n", now(), i);
 			}
-			clReleaseMemObject(H->worker[i].physics);
+			clReleaseMemObject(H->worker[i].vel[t]);
 		}
 		if (H->verb > 1) {
-			printf("%s : RS : worker[%d] creating physics (image3d_t) & copying from %p.\n", now(), i, H->physics_table.data);
+			printf("%s : RS : worker[%d] creating wind (image3d_t) & copying from %p.\n", now(), i, table.data);
 		}
 		
 #if defined (CL_VERSION_1_2)
 		
-		H->worker[i].physics = clCreateImage(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, &format, &desc, H->physics_table.data, &ret);
+		H->worker[i].vel[t] = clCreateImage(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, &format, &desc, table.data, &ret);
 		
 #else
 		
-		H->worker[i].physics = clCreateImage3D(H->worker[i].context,
-                                               CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                                               &format,
-											   H->physics_table.x_,
-                                               H->physics_table.y_,
-                                               H->physics_table.z_,
-											   H->physics_table.x_ * sizeof(cl_float4),
-											   H->physics_table.y_ * H->physics_table.x_ * sizeof(cl_float4),
-											   H->physics_table.data,
-											   &ret);
+        H->worker[i].vel[t] = clCreateImage3D(H->worker[i].context,
+                                              CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+                                              &format,
+                                              table.x_,
+                                              table.y_,
+                                              table.z_,
+                                              table.x_ * sizeof(cl_float4),
+                                              table.y_ * table.x_ * sizeof(cl_float4),
+                                              table.data,
+                                              &ret);
 		
 #endif
 		
 		if (ret != CL_SUCCESS) {
-			fprintf(stderr, "%s : RS : Error creating physics table on CL device.\n", now());
+			fprintf(stderr, "%s : RS : Error creating wind table on CL device.\n", now());
 			return;
 		}
 		if (H->verb > 1) {
-			printf("%s : RS : worker[%d] created physics @ %p\n", now(), i, H->worker[i].physics);
+			printf("%s : RS : worker[%d] created wind table @ %p\n", now(), i, H->worker[i].vel[t]);
 		}
+        // Copy over to CL worker
+        H->worker[i].vel_desc.s0 = table.xs;
+        H->worker[i].vel_desc.s1 = table.ys;
+        H->worker[i].vel_desc.s2 = table.zs;
+        H->worker[i].vel_desc.s3 = 0.0f;
+        H->worker[i].vel_desc.s4 = table.xo;
+        H->worker[i].vel_desc.s5 = table.yo;
+        H->worker[i].vel_desc.s6 = table.zo;
+        H->worker[i].vel_desc.s7 = 0.0f;
+        H->worker[i].vel_desc.s8 = table.xm;
+        H->worker[i].vel_desc.s9 = table.ym;
+        H->worker[i].vel_desc.sa = table.zm;
+        H->worker[i].vel_desc.sb = 0.0f;
+        H->worker[i].vel_desc.sc = 0.0f;
+        H->worker[i].vel_desc.sd = 0.0f;
+        H->worker[i].vel_desc.se = 0.0f;
+        H->worker[i].vel_desc.sf = 0.0f;
 	}
 	
 #endif
@@ -1924,13 +2014,14 @@ void RS_set_physics_data(RSHandle *H, const RSTable3D table) {
 }
 
 
-void RS_set_physics_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
+void RS_set_wind_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
 	
 	int i;
 	
-	RSTable3D table;
-	
-	if (H->verb > 1) {
+	RSTable3D table = RS_table3d_init(leslie->nn);
+    if (table.data == NULL) {
+        return;
+    } else if (H->verb > 1) {
 		printf("%s : RS : LES @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
 			   now(),
 			   H->domain.origin.x, H->domain.origin.x + H->domain.size.x,
@@ -1943,31 +2034,28 @@ void RS_set_physics_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
 	table.y_ = leslie->ny;    table.ym = (float)(table.y_ - 1);    table.ys = (float)leslie->ny / H->domain.size.y;    table.yo = -H->domain.origin.y * table.ys;
 	table.z_ = leslie->nz;    table.zm = (float)(table.z_ - 1);    table.zs = (float)leslie->nz / H->domain.size.z;    table.zo = -H->domain.origin.z * table.zs;
 	
-	// Copy over other important parameters
-	table.tr = leslie->tr;
-	
-	// Temporary buffer for passing data
-	table.data = (cl_float4 *)malloc(leslie->nn * sizeof(cl_float4));
-	
+    // Some other parameters
+    table.tr = leslie->tr;
+
 	// Need to arrange LES values into float4, then upload to GPU's global memory
 	for (i=0; i<leslie->nn; i++) {
 		table.data[i].x = leslie->u[i];
 		table.data[i].y = leslie->v[i];
 		table.data[i].z = leslie->w[i];
-		table.data[i].w = 1.0f;
+		table.data[i].w = 0.0f;
 	}
 	
-	RS_set_physics_data(H, table);
+	RS_set_wind_data(H, table);
 	
-	free(table.data);
+    RS_table3d_free(table);
 }
 
 
-void RS_set_physics_data_to_cube27(RSHandle *H) {
+void RS_set_wind_data_to_cube27(RSHandle *H) {
 	
 	int i;
 	
-	RSTable3D table;
+	RSTable3D table = RS_table3d_init(27);
 	
 	if (H->verb > 1) {
 		printf("%s : RS : Cube27 @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
@@ -1991,29 +2079,26 @@ void RS_set_physics_data_to_cube27(RSHandle *H) {
 	//	printf(" %.2f x %.2f = %.2f\n", -H->domain.origin.x, H->physics_table.xs, -H->domain.origin.x / H->domain.size.x * 2.0f);
 	//	printf("o = [%.2f, %.2f, %.2f]\n", table.xo, table.yo, table.zo);
 	
-	cl_float4 data[27];
-	
-	table.data = data;
-	
 	const float v = 1.0f;
 	
 	for (i=0; i<27; i++) {
-		data[i].x = (float) (i % 3)      * v - v;
-		data[i].y = (float)((i % 9) / 3) * v - v;
-		data[i].z = (float) (i / 9)      * v - v;
-		data[i].w = 0.0f;
+		table.data[i].x = (float) (i % 3)      * v - v;
+		table.data[i].y = (float)((i % 9) / 3) * v - v;
+		table.data[i].z = (float) (i / 9)      * v - v;
+		table.data[i].w = 0.0f;
 	}
 	
-	RS_set_physics_data(H, table);
+	RS_set_wind_data(H, table);
 	
+    RS_table3d_free(table);
 }
 
 
-void RS_set_physics_data_to_cube125(RSHandle *H) {
+void RS_set_wind_data_to_cube125(RSHandle *H) {
 	
 	int i;
 	
-	RSTable3D table;
+	RSTable3D table = RS_table3d_init(125);
 	
 	if (H->verb > 1) {
 		printf("%s : RS : Cube125 @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
@@ -2034,21 +2119,18 @@ void RS_set_physics_data_to_cube125(RSHandle *H) {
 	
 	table.tr = 1000.0f;
 	
-	cl_float4 data[125];
-	
-	table.data = data;
-	
 	const float v = 0.5f;
 	
 	for (i=0; i<125; i++) {
-		data[i].x = (float) (i %  5)      * v - 2.0f * v;
-		data[i].y = (float)((i % 25) / 5) * v - 2.0f * v;
-		data[i].z = (float) (i / 25)      * v - 2.0f * v;
-		data[i].w = 0.0f;
-		// printf("i=%3d  (%+.2f, %+.2f, %+.2f)\n", i, data[i].x, data[i].y, data[i].z);
+		table.data[i].x = (float) (i %  5)      * v - 2.0f * v;
+		table.data[i].y = (float)((i % 25) / 5) * v - 2.0f * v;
+		table.data[i].z = (float) (i / 25)      * v - 2.0f * v;
+		table.data[i].w = 0.0f;
 	}
 	
-	RS_set_physics_data(H, table);
+	RS_set_wind_data(H, table);
+    
+    RS_table3d_free(table);
 	
 }
 
@@ -2066,34 +2148,34 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
     t = 0;
     {
         // Free the old table if exists; and create a new table
-        RS_table2d_free(H->adm_cd_tables[t]);
-        RS_table2d_free(H->adm_cm_tables[t]);
-        H->adm_cd_tables[t] = RS_table2d_init(n);
-        H->adm_cm_tables[t] = RS_table2d_init(n);
-        if (H->adm_cd_tables[t].data == NULL || H->adm_cm_tables[t].data == NULL) {
-            fprintf(stderr, "%s : RS : RS_set_adm_data() failed to allocate 2D cd and/or cm tables", now());
-            return;
-        }
-        
-        // Set up mapping coefficients
-        H->adm_cd_tables[t].x_ = cd.x_;   H->adm_cd_tables[t].xs = cd.xs;   H->adm_cd_tables[t].xo = cd.xo;   H->adm_cd_tables[t].xm = cd.xm;
-        H->adm_cd_tables[t].y_ = cd.y_;   H->adm_cd_tables[t].ys = cd.ys;   H->adm_cd_tables[t].yo = cd.yo;   H->adm_cd_tables[t].ym = cd.ym;
-        H->adm_cm_tables[t].x_ = cm.x_;   H->adm_cm_tables[t].xs = cm.xs;   H->adm_cm_tables[t].xo = cm.xo;   H->adm_cm_tables[t].xm = cm.xm;
-        H->adm_cm_tables[t].y_ = cm.y_;   H->adm_cm_tables[t].ys = cm.ys;   H->adm_cm_tables[t].yo = cm.yo;   H->adm_cm_tables[t].ym = cm.ym;
-        
-        // Copy over other parameters
-
-        // Copy the table data
-        if (H->verb) {
-            printf("%s : RS : Host ADM tables set.  n = %d x %d\n", now(), H->adm_cd_tables[t].x_, H->adm_cd_tables[t].y_);
-        }
-        memcpy(H->adm_cd_tables[t].data, cd.data, n * sizeof(cl_float4));
-        memcpy(H->adm_cm_tables[t].data, cm.data, n * sizeof(cl_float4));
-        
-        // We are done if no GPU acceleration is utilized
-        if (H->method == RS_METHOD_CPU) {
-            return;
-        }
+//        RS_table2d_free(H->adm_cd_tables[t]);
+//        RS_table2d_free(H->adm_cm_tables[t]);
+//        H->adm_cd_tables[t] = RS_table2d_init(n);
+//        H->adm_cm_tables[t] = RS_table2d_init(n);
+//        if (H->adm_cd_tables[t].data == NULL || H->adm_cm_tables[t].data == NULL) {
+//            fprintf(stderr, "%s : RS : RS_set_adm_data() failed to allocate 2D cd and/or cm tables", now());
+//            return;
+//        }
+//        
+//        // Set up mapping coefficients
+//        H->adm_cd_tables[t].x_ = cd.x_;   H->adm_cd_tables[t].xs = cd.xs;   H->adm_cd_tables[t].xo = cd.xo;   H->adm_cd_tables[t].xm = cd.xm;
+//        H->adm_cd_tables[t].y_ = cd.y_;   H->adm_cd_tables[t].ys = cd.ys;   H->adm_cd_tables[t].yo = cd.yo;   H->adm_cd_tables[t].ym = cd.ym;
+//        H->adm_cm_tables[t].x_ = cm.x_;   H->adm_cm_tables[t].xs = cm.xs;   H->adm_cm_tables[t].xo = cm.xo;   H->adm_cm_tables[t].xm = cm.xm;
+//        H->adm_cm_tables[t].y_ = cm.y_;   H->adm_cm_tables[t].ys = cm.ys;   H->adm_cm_tables[t].yo = cm.yo;   H->adm_cm_tables[t].ym = cm.ym;
+//        
+//        // Copy over other parameters
+//
+//        // Copy the table data
+//        if (H->verb) {
+//            printf("%s : RS : Host ADM tables set.  n = %d x %d\n", now(), H->adm_cd_tables[t].x_, H->adm_cd_tables[t].y_);
+//        }
+//        memcpy(H->adm_cd_tables[t].data, cd.data, n * sizeof(cl_float4));
+//        memcpy(H->adm_cm_tables[t].data, cm.data, n * sizeof(cl_float4));
+//        
+//        // We are done if no GPU acceleration is utilized
+//        if (H->method == RS_METHOD_CPU) {
+//            return;
+//        }
         
         // This is the part that we need to create two texture maps for each RSTable2D table
         cl_image_format format = {CL_RGBA, CL_FLOAT};
@@ -2102,8 +2184,8 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
         
         cl_image_desc desc;
         desc.image_type = CL_MEM_OBJECT_IMAGE2D;
-        desc.image_width  = H->adm_cd_tables[t].x_;
-        desc.image_height = H->adm_cd_tables[t].y_;
+        desc.image_width  = cd.x_;
+        desc.image_height = cd.y_;
         desc.image_depth  = 1;
         desc.image_array_size = 0;
         desc.image_row_pitch = desc.image_width * sizeof(cl_float4);
@@ -2125,31 +2207,46 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
                 gcl_release_image(H->worker[i].adm_cm[t]);
             }
             //  adm_cd & adm_cm always have the same desc
-            H->worker[i].adm_cd[t] = gcl_create_image(&format, H->adm_cd_tables[t].x_, H->adm_cd_tables[t].y_, 1, NULL);
-            H->worker[i].adm_cm[t] = gcl_create_image(&format, H->adm_cm_tables[t].x_, H->adm_cm_tables[t].y_, 1, NULL);
+            H->worker[i].adm_cd[t] = gcl_create_image(&format, cd.x_, cd.y_, 1, NULL);
+            H->worker[i].adm_cm[t] = gcl_create_image(&format, cm.x_, cd.y_, 1, NULL);
             if (H->worker[i].adm_cd[t] == NULL || H->worker[i].adm_cm[t] == NULL) {
                 fprintf(stderr, "%s : RS : Error creating ADM table on CL device.\n", now());
                 return;
             }
             if (H->verb > 1) {
                 printf("%s : RS : Copying adm_cd table[%d]  %p --> %p  (%u x %u)\n",
-                       now(), i, H->adm_cd_tables[t].data, H->worker[i].adm_cd[t],
-                       H->adm_cd_tables[t].x_, H->adm_cd_tables[t].y_);
+                       now(), i, cd.data, H->worker[i].adm_cd[t], cd.x_, cd.y_);
                 printf("%s : RS : Copying adm_cm table[%d]  %p --> %p  (%u x %u)\n",
-                       now(), i, H->adm_cm_tables[t].data, H->worker[i].adm_cm[t],
-                       H->adm_cm_tables[t].x_, H->adm_cm_tables[t].y_);
+                       now(), i, cm.data, H->worker[i].adm_cm[t], cm.x_, cm.y_);
             }
             dispatch_async(H->worker[i].que, ^{
                 size_t origin[3] = {0, 0, 0};
-                size_t region[3] = {H->adm_cd_tables[t].x_, H->adm_cd_tables[t].y_, 1};
-                gcl_copy_ptr_to_image(H->worker[i].adm_cd[t], H->adm_cd_tables[t].data, origin, region);
-                gcl_copy_ptr_to_image(H->worker[i].adm_cm[t], H->adm_cm_tables[t].data, origin, region);
+                size_t region[3] = {cd.x_, cd.y_, 1};
+                gcl_copy_ptr_to_image(H->worker[i].adm_cd[t], cd.data, origin, region);
+                gcl_copy_ptr_to_image(H->worker[i].adm_cm[t], cm.data, origin, region);
                 dispatch_semaphore_signal(H->worker[i].sem);
             });
         }
         
         for (i=0; i<H->num_workers; i++) {
             dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+            // Copy over CL parameters
+            H->worker[i].adm_desc[t].s0 = cd.xs;
+            H->worker[i].adm_desc[t].s1 = cd.ys;
+            H->worker[i].adm_desc[t].s2 = 0.0f;
+            H->worker[i].adm_desc[t].s3 = 0.0f;
+            H->worker[i].adm_desc[t].s4 = cd.xo;
+            H->worker[i].adm_desc[t].s5 = cd.yo;
+            H->worker[i].adm_desc[t].s6 = 0.0f;
+            H->worker[i].adm_desc[t].s7 = 0.0f;
+            H->worker[i].adm_desc[t].s8 = cd.xm;
+            H->worker[i].adm_desc[t].s9 = cd.ym;
+            H->worker[i].adm_desc[t].sa = 0.0f;
+            H->worker[i].adm_desc[t].sb = 0.0f;
+            H->worker[i].adm_desc[t].sc = 0.0f;
+            H->worker[i].adm_desc[t].sd = 0.0f;
+            H->worker[i].adm_desc[t].se = 0.0f;
+            H->worker[i].adm_desc[t].sf = 0.0f;
         }
 
 #else
@@ -2170,18 +2267,26 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
 
 #if defined (CL_VERSION_1_2)
 
-            H->worker[i].adm_cd[t] = clCreateImage(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, &format, &desc, H->adm_cd_tables[t].data, &ret);
-            H->worker[i].adm_cm[t] = clCreateImage(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, &format, &desc, H->adm_cm_tables[t].data, &ret);
+            H->worker[i].adm_cd[t] = clCreateImage(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, &format, &desc, cd.data, &ret);
+            H->worker[i].adm_cm[t] = clCreateImage(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, &format, &desc, cm.data, &ret);
 
 #else
 
             H->worker[i].adm_cd[t] = clCreateImage2D(H->worker[i].context,
                                                      CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                                                      &format,
-                                                     H->adm_cd_tables[t].x_,
-                                                     H->adm_cd_tables[t].y_,
-                                                     H->adm_cd_tables[t].x_ * sizeof(cl_float4),
-                                                     H->adm_cd_tables[t].data,
+                                                     cd.x_,
+                                                     cd.y_,
+                                                     cd.x_ * sizeof(cl_float4),
+                                                     cd.data,
+                                                     &ret);
+            H->worker[i].adm_cm[t] = clCreateImage2D(H->worker[i].context,
+                                                     CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+                                                     &format,
+                                                     cm.x_,
+                                                     cm.y_,
+                                                     cm.x_ * sizeof(cl_float4),
+                                                     cm.data,
                                                      &ret);
 
 #endif
@@ -2193,6 +2298,23 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
             if (H->verb > 1) {
                 printf("%s : RS : worker[%d] created adm_cd[%d] & adm_cd[%d] @ %p & %p\n", now(), i, t, t, &H->worker[i].adm_cd[t], &H->worker[i].adm_cm[t]);
             }
+            // Copy over CL parameters
+            H->worker[i].adm_desc[t].s0 = cd.xs;
+            H->worker[i].adm_desc[t].s1 = cd.ys;
+            H->worker[i].adm_desc[t].s2 = 0.0f;
+            H->worker[i].adm_desc[t].s3 = 0.0f;
+            H->worker[i].adm_desc[t].s4 = cd.xo;
+            H->worker[i].adm_desc[t].s5 = cd.yo;
+            H->worker[i].adm_desc[t].s6 = 0.0f;
+            H->worker[i].adm_desc[t].s7 = 0.0f;
+            H->worker[i].adm_desc[t].s8 = cd.xm;
+            H->worker[i].adm_desc[t].s9 = cd.ym;
+            H->worker[i].adm_desc[t].sa = 0.0f;
+            H->worker[i].adm_desc[t].sb = 0.0f;
+            H->worker[i].adm_desc[t].sc = 0.0f;
+            H->worker[i].adm_desc[t].sd = 0.0f;
+            H->worker[i].adm_desc[t].se = 0.0f;
+            H->worker[i].adm_desc[t].sf = 0.0f;
         }
 
 #endif
@@ -2205,23 +2327,26 @@ void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *adam) {
     
     int i;
     
-    RSTable2D cd, cm;
+    RSTable2D cd = RS_table2d_init(adam->nn);
+    RSTable2D cm = RS_table2d_init(adam->nn);
     
-    if (H->verb > 1) {
+    if (cd.data == NULL || cm.data == NULL) {
+        return;
+    } else if (H->verb > 1) {
         printf("%s : RS : ADM @ X:[ -M_PI - M_PI ]  Y:[ 0 - M_PI ]\n", now());
     }
-    
+
     // Set up the mapping coefficients
     // Assumptions: maps are always in beta in [-180deg, +180deg] and alpha in [0, +180deg]
-    cd.x_ = adam->nb;    cd.xm = (float)(cd.x_ - 1);    cd.xs = (float)adam->nb / (2.0f * M_PI);    cd.xo = -M_PI;
+    cd.x_ = adam->nb;    cd.xm = (float)(cd.x_ - 1);    cd.xs = (float)adam->nb / (2.0f * M_PI);    cd.xo = -(-M_PI) * cd.xs;
     cd.y_ = adam->na;    cd.ym = (float)(cd.y_ - 1);    cd.ys = (float)adam->na / M_PI;             cd.yo = 0.0f;
 
-    cm.x_ = adam->nb;    cm.xm = (float)(cm.x_ - 1);    cm.xs = (float)adam->nb / (2.0f * M_PI);    cm.xo = -M_PI;
+    cm.x_ = adam->nb;    cm.xm = (float)(cm.x_ - 1);    cm.xs = (float)adam->nb / (2.0f * M_PI);    cm.xo = -(-M_PI) * cd.xs;
     cm.y_ = adam->na;    cm.ym = (float)(cm.y_ - 1);    cm.ys = (float)adam->na / M_PI;             cm.yo = 0.0f;
 
     // Temporary buffer for passing data
-    cd.data = (cl_float4 *)malloc(adam->nn * sizeof(cl_float4));
-    cm.data = (cl_float4 *)malloc(adam->nn * sizeof(cl_float4));
+//    cd.data = (cl_float4 *)malloc(adam->nn * sizeof(cl_float4));
+//    cm.data = (cl_float4 *)malloc(adam->nn * sizeof(cl_float4));
     
     // Arrange ADM values into float4, getting ready for GPU's global memory
     for (i=0; i<adam->nn; i++) {
@@ -2237,36 +2362,33 @@ void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *adam) {
     
     RS_set_adm_data(H, cd, cm);
     
-    free(cd.data);
-    free(cm.data);
+    RS_table2d_free(cd);
+    RS_table2d_free(cm);
 }
 
 void RS_set_adm_data_to_unity(RSHandle *H) {
     
     int i;
     
-    RSTable2D table;
+    RSTable2D table = RS_table2d_init(9);
     
     if (H->verb > 1) {
         printf("%s : RS : Unity @ X:[ -M_PI - M_PI ]  Y:[ 0 - M_PI ]\n", now());
     }
     
-    table.x_ = 3;    table.xm = 2.0f;    table.xs = 3.0f / (2.0f * M_PI);    table.xo = -M_PI * table.xs;
-    table.y_ = 3;    table.ym = 2.0f;    table.ys = 3.0f / M_PI;             table.xo = -M_PI * table.ys;
-
-    cl_float4 data[9];
-    
-    table.data = data;
+    table.x_ = 3;    table.xm = 2.0f;    table.xs = 3.0f / (2.0f * M_PI);    table.xo = -(-M_PI) * table.xs;
+    table.y_ = 3;    table.ym = 2.0f;    table.ys = 3.0f / M_PI;             table.yo = 0.0f;
 
     for (i=0; i<9; i++) {
-        data[i].x = 1.0f;
-        data[i].y = 1.0f;
-        data[i].z = 1.0f;
-        data[i].w = 0.0f;
+        table.data[i].x = 1.0f;
+        table.data[i].y = 1.0f;
+        table.data[i].z = 1.0f;
+        table.data[i].w = 0.0f;
     }
     
     RS_set_adm_data(H, table, table);
     
+    RS_table2d_free(table);
 }
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
@@ -2315,6 +2437,7 @@ void RS_explode(RSHandle *H) {
 							(cl_float4 *)H->worker[i].scat_pos,
 							(cl_float4 *)H->worker[i].scat_vel,
 							(cl_float4 *)H->worker[i].scat_ori,
+                            (cl_float4 *)H->worker[i].scat_tum,
 							(cl_float4 *)H->worker[i].scat_att,
 							(cl_float *)H->worker[i].angular_weight,
 							H->worker[i].angular_weight_desc,
@@ -2406,6 +2529,7 @@ void RS_populate(RSHandle *H) {
 	posix_memalign((void **)&H->scat_pos, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
 	posix_memalign((void **)&H->scat_vel, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
 	posix_memalign((void **)&H->scat_ori, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
+    posix_memalign((void **)&H->scat_tum, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
 	posix_memalign((void **)&H->scat_att, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
 	posix_memalign((void **)&H->scat_sig, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
 
@@ -2415,6 +2539,7 @@ void RS_populate(RSHandle *H) {
 	if (H->scat_pos == NULL ||
 		H->scat_vel == NULL ||
 		H->scat_ori == NULL ||
+        H->scat_tum == NULL ||
 		H->scat_att == NULL ||
 		H->scat_sig == NULL ||
 		H->work == NULL ||
@@ -2457,10 +2582,6 @@ void RS_populate(RSHandle *H) {
 	// Initialize the scatter body positions on CPU, then upload
 	RS_init_scat_pos(H);
 
-    printf("v = %.2f %.2f %.2f %.2f   o = %.2f %.2f %.2f %.2f\n",
-           H->scat_vel[0].x, H->scat_vel[0].y, H->scat_vel[0].z, H->scat_vel[0].w,
-           H->scat_ori[0].x, H->scat_ori[0].y, H->scat_ori[0].z, H->scat_ori[0].w);
-    
 	if (H->method == RS_METHOD_GPU) {
 		RS_upload(H);
 		if (H->verb) {
@@ -2481,7 +2602,8 @@ void RS_populate(RSHandle *H) {
 		500.0f
 	}};
 	
-	cl_float4 t4 = {{H->params.prt, H->params.prt / H->physics_table.tr, 0.0f, 0.0f}};
+	//cl_float4 t4 = {{H->params.prt, H->params.prt / H->physics_table.tr, 0.0f, 0.0f}};
+    cl_float4 t4 = {{H->params.prt, H->params.prt / H->worker[0].vel_desc.sc, 0.0f, 0.0f}};
 	
 	// Update kernel arguments
 	cl_int ret = CL_SUCCESS;
@@ -2682,62 +2804,96 @@ void RS_advance_time(RSHandle *H) {
 
     if (H->sim_tic >= H->sim_toc) {
 		H->sim_toc = H->sim_tic + (size_t)(5.0f / H->params.prt);
-		for (i=0; i<H->num_workers; i++) {
-			dispatch_async(H->worker[i].que, ^{
-                int t = 0;
-                scat_atts_kernel(&H->worker[i].ndrange_scat,
-                                 (cl_float4 *)H->worker[i].scat_pos,
-                                 (cl_float4 *)H->worker[i].scat_ori,
-                                 (cl_float4 *)H->worker[i].scat_vel,
-                                 (cl_float4 *)H->worker[i].scat_sig,
-                                 (cl_image)H->worker[i].physics,
-                                 H->worker[i].physics_desc,
-                                 (cl_image)H->worker[i].adm_cd[t],
-                                 (cl_image)H->worker[i].adm_cm[t],
-                                 H->worker[i].adm_desc[t],
-                                 (cl_image)H->worker[i].adm_cd[t],
-                                 H->worker[i].rcs_desc[t]);
-
-//                scat_physics_kernel(&H->worker[i].ndrange_scat,
-//									(cl_float4 *)H->worker[i].scat_pos,
-//									(cl_float4 *)H->worker[i].scat_vel,
-//									(cl_image)H->worker[i].physics,
-//									H->worker[i].physics_desc);
-
-//                printf("%p %p  %.2f %.2f  %.2f %.2f\n",
-//                       H->worker[i].scat_ori, H->worker[i].scat_sig,
-//                       H->worker[i].adm_desc[0].s0, H->worker[i].adm_desc[0].s1,
-//                       H->worker[i].adm_desc[0].s4, H->worker[i].adm_desc[0].s5);
-
-                dispatch_semaphore_signal(H->worker[i].sem);
-			});
-		}
-		for (i=0; i<H->num_workers; i++) {
-			dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
-		}
-	}
+    }
+//        //H->sim_toc = H->sim_tic + (size_t)(0.5f / H->params.prt);
+//        //H->sim_toc = H->sim_tic;
+//		for (i=0; i<H->num_workers; i++) {
+//			dispatch_async(H->worker[i].que, ^{
+//                int t = 0;
+//                scat_atts_kernel(&H->worker[i].ndrange_scat,
+//                                 (cl_float4 *)H->worker[i].scat_pos,
+//                                 (cl_float4 *)H->worker[i].scat_ori,
+//                                 (cl_float4 *)H->worker[i].scat_vel,
+//                                 (cl_float4 *)H->worker[i].scat_tum,
+//                                 (cl_float4 *)H->worker[i].scat_sig,
+//                                 (cl_image)H->worker[i].physics,
+//                                 H->worker[i].physics_desc,
+//                                 (cl_image)H->worker[i].adm_cd[t],
+//                                 (cl_image)H->worker[i].adm_cm[t],
+//                                 H->worker[i].adm_desc[t],
+//                                 (cl_image)H->worker[i].adm_cd[t],
+//                                 H->worker[i].rcs_desc[t]);
+//
+////                scat_physics_kernel(&H->worker[i].ndrange_scat,
+////									(cl_float4 *)H->worker[i].scat_pos,
+////									(cl_float4 *)H->worker[i].scat_vel,
+////									(cl_image)H->worker[i].physics,
+////									H->worker[i].physics_desc);
+//
+////                printf("%p %p  %.2f %.2f  %.2f %.2f\n",
+////                       H->worker[i].scat_ori, H->worker[i].scat_sig,
+////                       H->worker[i].adm_desc[0].s0, H->worker[i].adm_desc[0].s1,
+////                       H->worker[i].adm_desc[0].s4, H->worker[i].adm_desc[0].s5);
+//
+//                dispatch_semaphore_signal(H->worker[i].sem);
+//			});
+//		}
+//		for (i=0; i<H->num_workers; i++) {
+//			dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+//		}
+//	}
     
-	for (i=0; i<H->num_workers; i++) {
-		dispatch_async(H->worker[i].que, ^{
-			scat_chk_kernel(&H->worker[i].ndrange_scat,
-							(cl_float4 *)H->worker[i].scat_pos,
-							(cl_float4 *)H->worker[i].scat_att,
-							(cl_uint4 *)H->worker[i].scat_rnd,
-							domain_bounds);
+//    printf("sim_tic = %d\n", (int)H->sim_tic);
+    H->worker[0].adm_desc[0].s3 = (float)H->sim_tic;
+    
+    int t = 0;
+    int iv = 0;
+    for (i=0; i<H->num_workers; i++) {
+        dispatch_async(H->worker[i].que, ^{
+            scat_atts_kernel(&H->worker[i].ndrange_scat,
+                             (cl_float4 *)H->worker[i].scat_pos,
+                             (cl_float4 *)H->worker[i].scat_ori,
+                             (cl_float4 *)H->worker[i].scat_vel,
+                             (cl_float4 *)H->worker[i].scat_tum,
+                             (cl_float4 *)H->worker[i].scat_sig,
+                             (cl_image)H->worker[i].vel[iv],
+                             H->worker[i].vel_desc,
+                             (cl_image)H->worker[i].adm_cd[t],
+                             (cl_image)H->worker[i].adm_cm[t],
+                             H->worker[i].adm_desc[t],
+                             (cl_image)H->worker[i].adm_cd[t],
+                             H->worker[i].rcs_desc[t]);
+//            dispatch_semaphore_signal(H->worker[i].sem);
+//        });
+//    }
+//    
+//    for (i=0; i<H->num_workers; i++) {
+//        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+//    }
+//
+//    for (i=0; i<H->num_workers; i++) {
+//		dispatch_async(H->worker[i].que, ^{
 			scat_mov_kernel(&H->worker[i].ndrange_scat,
 							(cl_float4 *)H->worker[i].scat_pos,
-							(cl_float4 *)H->worker[i].scat_vel,
 							(cl_float4 *)H->worker[i].scat_ori,
+                            (cl_float4 *)H->worker[i].scat_vel,
+                            (cl_float4 *)H->worker[i].scat_tum,
 							(cl_float4 *)H->worker[i].scat_att,
 							(cl_float *)H->worker[i].angular_weight,
 							H->worker[i].angular_weight_desc,
 							H->beam_pos,
-							(cl_float4){{H->params.prt, H->params.prt / H->physics_table.tr, 0.0f, 0.0f}});
+							(cl_float4){{H->params.prt, H->params.prt / H->worker[i].vel_desc.sc, 0.0f, 0.0f}});
+            scat_chk_kernel(&H->worker[i].ndrange_scat,
+                            (cl_float4 *)H->worker[i].scat_pos,
+                            (cl_float4 *)H->worker[i].scat_vel,
+                            (cl_float4 *)H->worker[i].scat_att,
+                            (cl_uint4 *)H->worker[i].scat_rnd,
+                            domain_bounds);
 			scat_clr_kernel(&H->worker[i].ndrange_scat,
 							(cl_float4 *)H->worker[i].scat_clr,
 							(cl_float4 *)H->worker[i].scat_pos,
-							(cl_float4 *)H->worker[i].scat_vel,
 							(cl_float4 *)H->worker[i].scat_ori,
+                            (cl_float4 *)H->worker[i].scat_vel,
 							(cl_float4 *)H->worker[i].scat_att,
 							(unsigned int)H->worker[i].num_scats);
 			dispatch_semaphore_signal(H->worker[i].sem);
@@ -2755,6 +2911,7 @@ void RS_advance_time(RSHandle *H) {
 	
 	if (H->sim_tic >= H->sim_toc) {
 		H->sim_toc = H->sim_tic + (size_t)(1.0f / H->params.prt);
+        //H->sim_toc = H->sim_tic;
 		if (H->verb) {
 			printf("%s : RS : Setting physics ...\n", now());
 		}
@@ -2799,6 +2956,7 @@ void RS_advance_time(RSHandle *H) {
 }
 
 
+/*
 void RS_advance_time_cpu(RSHandle *H) {
 	for (int i=0; i<H->num_scats; i++) {
 		H->scat_pos[i].x += H->scat_vel[i].x * H->params.prt;
@@ -2820,6 +2978,7 @@ void RS_advance_time_cpu(RSHandle *H) {
 	H->sim_tic++;
 	H->sim_time = H->sim_tic * H->params.prt;
 }
+*/
 
 
 void RS_make_pulse(RSHandle *H) {
@@ -2915,7 +3074,7 @@ typedef struct _cpu_worker_input {
 	RSHandle *H;
 } RSCPUWorkerInput;
 
-
+/*
 void *RS_make_pulse_cpu_worker(void *input) {
 	
 	RSCPUWorkerInput *C = (RSCPUWorkerInput *)input;
@@ -2969,6 +3128,7 @@ void RS_make_pulse_cpu(RSHandle *H) {
 	for (i=0; i<H->num_workers; i++)
 		pthread_join(tid[i], NULL);
 }
+ */
 
 #pragma mark -
 #pragma mark Elements for table lookup
