@@ -317,8 +317,9 @@
 	resource.colorUI = glGetUniformLocation(resource.program, "drawColor");
 	if (resource.colorUI < 0) {
 		NSLog(@"No drawColor %d", resource.colorUI);
-	}
-	glUniform4f(resource.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
+    } else {
+        glUniform4f(resource.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
+    }
 	
 	// Get attributes
 	resource.colorAI = glGetAttribLocation(resource.program, "inColor");
@@ -403,6 +404,13 @@
         glUniform4f(resource.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
     }
 	
+    // Get size location
+    resource.sizeUI = glGetUniformLocation(resource.program, "drawSize");
+    if (resource.sizeUI >= 0) {
+        NSLog(@"has drawSize");
+        glUniform4f(resource.sizeUI, 1.0f, 1.0f, 1.0f, 1.0f);
+    }
+    
 	// Get texture location
 	resource.textureUI = glGetUniformLocation(resource.program, "drawTexture");
 	if (resource.textureUI < 0) {
@@ -412,12 +420,12 @@
         //resource.texture = [self loadTexture:@"sphere1.png"];
         //resource.texture = [self loadTexture:@"depth.png"];
         //resource.texture = [self loadTexture:@"sphere64.png"];
-		//resource.texture = [self loadTexture:@"disc64.png"];
+//		resource.texture = [self loadTexture:@"disc64.png"];
         resource.texture = [self loadTexture:@"spot256.png"];
         resource.textureID = [resource.texture name];
         glUniform1i(resource.textureUI, resource.textureID);
     }
-	
+
 	// Get attributes
 	resource.colorAI = glGetAttribLocation(resource.program, "inColor");
     resource.positionAI = glGetAttribLocation(resource.program, "inPosition");
@@ -487,6 +495,7 @@
         
         hudModelViewProjection = GLKMatrix4Identity;
         beamModelViewProjection = GLKMatrix4Identity;
+        backgroundOpacity = 1.0;
         
 		// View parameters
 		[self resetViewParameters];
@@ -549,6 +558,7 @@
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
 	[self makeOneLeaf];
+    leafRenderer.count = 301;
     
     // Tell whatever controller that the OpenGL context is ready for sharing and set up renderer's body count
 	[delegate glContextVAOPrepared];
@@ -738,10 +748,15 @@
 	// The scatter bodies
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 	glBindVertexArray(bodyRenderer.vao);
-	//glPointSize(MIN(MAX(15.0f * pixelsPerUnit, 1.0f), 64.0f));
+//	glPointSize(MIN(MAX(15.0f * pixelsPerUnit, 1.0f), 64.0f));
     glPointSize(MIN(MAX(35.0f * pixelsPerUnit, 2.0f), 256.0f));
 	glUseProgram(bodyRenderer.program);
-	glUniform4f(bodyRenderer.colorUI, 1.0f, 1.0f, 1.0f, 0.5f);
+	//glUniform4f(bodyRenderer.colorUI, 1.0f, 1.0f, 1.0f, 0.6f);
+    if (range < 1000.0f) {
+        glUniform4f(bodyRenderer.colorUI, 1.0f, 1.0f, 1.0f, MIN(1.0f, backgroundOpacity * 1000.0f / range));
+    } else {
+        glUniform4f(bodyRenderer.colorUI, 1.0f, 1.0f, 1.0f, backgroundOpacity);
+    }
 	glUniformMatrix4fv(bodyRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
     glUniform1i(bodyRenderer.textureUI, 0);
     glBindTexture(GL_TEXTURE_2D, bodyRenderer.textureID);
@@ -751,6 +766,11 @@
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBindVertexArray(leafRenderer.vao);
 	glUseProgram(leafRenderer.program);
+    if (leafRenderer.count > 1000) {
+        glUniform4f(leafRenderer.sizeUI, 0.5f, 0.5f, 0.5f, 0.5f);
+    } else {
+        glUniform4f(leafRenderer.sizeUI, 1.0f, 1.0f, 1.0f, 1.0f);
+    }
 	glUniform4f(leafRenderer.colorUI, 0.0f, 1.0f, 0.0f, 1.0f);
     glUniformMatrix4fv(leafRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
 	glDrawElementsInstanced(GL_LINE_STRIP, 7, GL_UNSIGNED_INT, NULL, leafRenderer.count);
@@ -924,12 +944,22 @@
 
 - (void)decreaseLeafCount
 {
-    if (leafRenderer.count > 1000) {
+    if (leafRenderer.count > 2000) {
         leafRenderer.count -= 1000;
     } else if (leafRenderer.count > 100) {
 		leafRenderer.count -= 100;
 	}
     [self updateStatusMessage];
+}
+
+- (void)increaseBackgroundOpacity
+{
+    backgroundOpacity = MIN(1.0f, backgroundOpacity + 0.1f);
+}
+
+- (void)decreaseBackgroundOpacity
+{
+    backgroundOpacity = MAX(0.1f, backgroundOpacity - 0.1f);
 }
 
 @end

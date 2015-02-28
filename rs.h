@@ -159,6 +159,47 @@ typedef struct _rs_table3d {
 } RSTable3D;
 
 
+// A typical convention for table description, which is a set of parameters
+// along with a table
+enum {
+    RSTableDescriptionScaleX      =  0,
+    RSTableDescriptionOriginX     =  1,
+    RSTableDescriptionMaximumX    =  2,
+    RSTableDescriptionReserved1   =  3,
+    RSTableDescriptionScaleY      =  4,
+    RSTableDescriptionOriginY     =  5,
+    RSTableDescriptionMaximumY    =  6,
+    RSTableDescriptionReserved2   =  7,
+    RSTableDescriptionScaleZ      =  8,
+    RSTableDescriptionOriginZ     =  9,
+    RSTableDescriptionMaximumZ    = 10,
+    RSTableDescriptionReserved3   = 11,
+    RSTableDescriptionRefreshTime = 12,  // sc
+    RSTableDescriptionReserved4   = 13,
+    RSTableDescriptionReserved5   = 14,
+    RSTableDescriptionReserved6   = 15,
+};
+
+enum {
+    RSSimulationParameterBeamUnitX     =  0,
+    RSSimulationParameterBeamUnitY     =  1,
+    RSSimulationParameterBeamUnitZ     =  2,
+    RSSimulationParameter3             =  3,
+    RSSimulationParameterPRT           =  4,
+    RSSimulationParameterAgeIncrement  =  5,  // PRT / vel_desc.tr
+    RSSimulationParameterDebrisCount   =  6,
+    RSSimulationParameter7             =  7,
+    RSSimulationParameterBoundOriginX  =  8,
+    RSSimulationParameterBoundOriginY  =  9,
+    RSSimulationParameterBoundOriginZ  =  10,
+    RSSimulationParameter11            =  11,
+    RSSimulationParameterBoundSizeX    =  12, // hi.s4
+    RSSimulationParameterBoundSizeY    =  13, // hi.s5
+    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
+    RSSimulationParameter15            =  15,
+};
+
+//
 //
 //  Worker (per GPU) handle
 //
@@ -257,11 +298,17 @@ typedef struct _rs_handle {
 	size_t                 sim_tic;
 	size_t                 sim_toc;
 	RSfloat                sim_time;
-	
+    uint32_t               vel_idx;
+    uint32_t               vel_count;
+    uint32_t               adm_idx;
+    uint32_t               adm_count;
+    uint32_t               rcs_idx;
+    uint32_t               rcs_count;
+
 	// Scatter bodies
 	size_t                 num_scats;
 
-	// CPU side memory
+	// CPU side memory (for upload/download)
 	cl_float4              *scat_pos;       // position
 	cl_float4              *scat_vel;       // velocity
 	cl_float4              *scat_ori;       // orientation
@@ -272,13 +319,6 @@ typedef struct _rs_handle {
 	cl_float4              *pulse;
 
 	cl_float4              *pulse_tmp[RS_MAX_GPU_DEVICE];
-	
-//    RSTable                range_weight_table;
-//    RSTable                angular_weight_table;
-//    RSTable2D              adm_cd_table;
-//    RSTable2D              adm_cm_table;
-//    RSTable2D              rcs_table;
-//    RSTable3D              vel_table;
 	
 	// OpenCL device
 	cl_uint                num_devs;
@@ -348,10 +388,12 @@ void RS_set_wind_data(RSHandle *H, const RSTable3D table);
 void RS_set_wind_data_to_LES_table(RSHandle *H, const LESTable *table);
 void RS_set_wind_data_to_cube27(RSHandle *H);
 void RS_set_wind_data_to_cube125(RSHandle *H);
+void RS_clear_wind_data(RSHandle *H);
 
 void RS_set_adm_data(RSHandle *H, const RSTable2D table_cd, const RSTable2D table_cm);
 void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *table);
 void RS_set_adm_data_to_unity(RSHandle *H);
+void RS_clear_adm_data(RSHandle *H);
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 #pragma mark -

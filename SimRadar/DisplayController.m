@@ -254,6 +254,13 @@ NSWindow *standardWindow;
             [glView.renderer setBeamElevation:sim.elevationInDegrees azimuth:sim.azimuthInDegrees];
             break;
             
+        case 'o':
+            [glView.renderer decreaseBackgroundOpacity];
+            break;
+        case 'O':
+            [glView.renderer increaseBackgroundOpacity];
+            break;
+            
 		default:
 			// Allow other character to be handled by how the superclass defined it
 			[super keyDown:event];
@@ -317,7 +324,7 @@ NSWindow *standardWindow;
 	
 	[NSCursor setHiddenUntilMouseMoves:YES];
 
-	inputMonitorTimer = [NSTimer scheduledTimerWithTimeInterval:0.2
+	inputMonitorTimer = [NSTimer scheduledTimerWithTimeInterval:0.5
 														 target:self
 													   selector:@selector(checkInputIdling)
 													   userInfo:nil

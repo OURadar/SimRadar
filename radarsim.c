@@ -121,7 +121,7 @@ int main(int argc, char *argv[]) {
 	
 	RS_set_range_weight_to_triangle(S, 120.0f);
 	
-	RS_set_physics_data_to_cube125(S);
+	RS_set_wind_data_to_cube125(S);
 
 	// Populate the domain with scatter bodies.
 	// This is also the function that triggers kernel compilation, GPU memory allocation and
@@ -152,15 +152,15 @@ int main(int argc, char *argv[]) {
 			RS_advance_time(S);
 		}
 	} else {
-		printf("%s : Using CPU functions\n", now());
-		for (k=0; k<num_frames; k++) {
-			RS_make_pulse_cpu(S);
-//			if (k < 10) {
-//				RS_show_pulse(S);
-//			}
-			RS_set_beam_pos(S, -2.0f, 1.0f);
-			RS_advance_time_cpu(S);
-		}
+		printf("%s : No CPU functions\n", now());
+//		for (k=0; k<num_frames; k++) {
+//			RS_make_pulse_cpu(S);
+////			if (k < 10) {
+////				RS_show_pulse(S);
+////			}
+//			RS_set_beam_pos(S, -2.0f, 1.0f);
+//			RS_advance_time_cpu(S);
+//		}
 	}
 
 	gettimeofday(&t2, NULL);

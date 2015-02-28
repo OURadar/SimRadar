@@ -82,10 +82,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
 	
 	// Tie all kernels to the program
     C->kern_io = clCreateKernel(C->prog, "io", &ret);                                             CHECK_CL_CREATE_KERNEL
-	C->kern_scat_mov = clCreateKernel(C->prog, "scat_mov", &ret);                                 CHECK_CL_CREATE_KERNEL
-	C->kern_scat_chk = clCreateKernel(C->prog, "scat_chk", &ret);                                 CHECK_CL_CREATE_KERNEL
     C->kern_scat_atts = clCreateKernel(C->prog, "scat_atts", &ret);                               CHECK_CL_CREATE_KERNEL
-    C->kern_scat_physics = clCreateKernel(C->prog, "scat_physics", &ret);                         CHECK_CL_CREATE_KERNEL
 	C->kern_make_pulse_pass_1 = clCreateKernel(C->prog, "make_pulse_pass_1", &ret);               CHECK_CL_CREATE_KERNEL
 	C->kern_make_pulse_pass_2_group = clCreateKernel(C->prog, "make_pulse_pass_2_group", &ret);   CHECK_CL_CREATE_KERNEL
 	C->kern_make_pulse_pass_2_local = clCreateKernel(C->prog, "make_pulse_pass_2_range", &ret);   CHECK_CL_CREATE_KERNEL
@@ -166,74 +163,6 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
         C->adm_desc[t].s2 = H->params.prt;
     }
 
-/*
-	C->range_weight_desc.s0 = H->range_weight_table.dx;
-	C->range_weight_desc.s1 = H->range_weight_table.x0;
-	C->range_weight_desc.s2 = H->range_weight_table.xm;
-	C->range_weight_desc.s3 = 0.0f;
-	
-	C->angular_weight_desc.s0 = H->angular_weight_table.dx;
-	C->angular_weight_desc.s1 = H->angular_weight_table.x0;
-	C->angular_weight_desc.s2 = H->angular_weight_table.xm;
-	C->angular_weight_desc.s3 = 0.0f;
-    
-    int i;
-
-    for (i=0; i<RS_MAX_ADM_TABLES; i++) {
-        C->adm_desc[i].s0 = H->adm_cd_tables[i].xs;
-        C->adm_desc[i].s1 = H->adm_cd_tables[i].ys;
-        C->adm_desc[i].s2 = H->params.prt;
-        C->adm_desc[i].s3 = 0.0f;
-        C->adm_desc[i].s4 = H->adm_cd_tables[i].xo;
-        C->adm_desc[i].s5 = H->adm_cd_tables[i].yo;
-        C->adm_desc[i].s6 = 0.0f;
-        C->adm_desc[i].s7 = 0.0f;
-        C->adm_desc[i].s8 = H->adm_cd_tables[i].xm;
-        C->adm_desc[i].s9 = H->adm_cd_tables[i].ym;
-        C->adm_desc[i].sa = 0.0f;
-        C->adm_desc[i].sb = 0.0f;
-        C->adm_desc[i].sc = 0.0f;
-        C->adm_desc[i].sd = 0.0f;
-        C->adm_desc[i].se = 0.0f;
-        C->adm_desc[i].sf = 0.0f;
-    }
-
-    for (i=0; i<RS_MAX_RCS_TABLES; i++) {
-        C->rcs_desc[i].s0 = H->rcs_tables[i].xs;
-        C->rcs_desc[i].s1 = H->rcs_tables[i].ys;
-        C->rcs_desc[i].s2 = 0.0f;
-        C->rcs_desc[i].s3 = 0.0f;
-        C->rcs_desc[i].s4 = H->rcs_tables[i].xo;
-        C->rcs_desc[i].s5 = H->rcs_tables[i].yo;
-        C->rcs_desc[i].s6 = 0.0f;
-        C->rcs_desc[i].s7 = 0.0f;
-        C->rcs_desc[i].s8 = H->rcs_tables[i].xm;
-        C->rcs_desc[i].s9 = H->rcs_tables[i].ym;
-        C->rcs_desc[i].sa = 0.0f;
-        C->rcs_desc[i].sb = 0.0f;
-        C->rcs_desc[i].sc = 0.0;
-        C->rcs_desc[i].sd = 0.0;
-        C->rcs_desc[i].se = 0.0f;
-        C->rcs_desc[i].sf = 0.0f;
-    }
-
-	C->physics_desc.s0 = H->physics_table.xs;
-	C->physics_desc.s1 = H->physics_table.ys;
-	C->physics_desc.s2 = H->physics_table.zs;
-	C->physics_desc.s3 = 0.0f;
-	C->physics_desc.s4 = H->physics_table.xo;
-	C->physics_desc.s5 = H->physics_table.yo;
-	C->physics_desc.s6 = H->physics_table.zo;
-	C->physics_desc.s7 = 0.0f;
-	C->physics_desc.s8 = H->physics_table.xm;
-	C->physics_desc.s9 = H->physics_table.ym;
-	C->physics_desc.sa = H->physics_table.zm;
-	C->physics_desc.sb = 0.0f;
-	C->physics_desc.sc = 0.0f;
-	C->physics_desc.sd = 0.0f;
-	C->physics_desc.se = 0.0f;
-	C->physics_desc.sf = 0.0f;
-*/
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 	
 	C->ndrange_scat.work_dim = 1;
@@ -255,7 +184,6 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	C->scat_pos = gcl_gl_create_ptr_from_buffer(C->vbo_scat_pos);
 	C->scat_clr = gcl_gl_create_ptr_from_buffer(C->vbo_scat_clr);
 	C->scat_ori = gcl_gl_create_ptr_from_buffer(C->vbo_scat_ori);
-//    C->scat_tum = gcl_gl_create_ptr_from_buffer(C->vbo_scat_tum);
 	if (C->scat_pos == NULL || C->scat_clr == NULL || C->scat_ori == NULL) {
 		fprintf(stderr, "%s : RS : Error in gcl_gl_create_ptr_from_buffer().\n", now());
 		return;
@@ -306,54 +234,53 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 		exit(EXIT_FAILURE);
 	}
 	
-	cl_float4 beam_pos = {{0.0f, 1.0f, 0.0f, 0.0f}};
-	float prt = 0.0f;
-	
-	ret = CL_SUCCESS;
-	ret |= clSetKernelArg(C->kern_scat_mov, 0, sizeof(cl_mem), &C->scat_pos);
-	ret |= clSetKernelArg(C->kern_scat_mov, 1, sizeof(cl_mem), &C->scat_ori);
-    ret |= clSetKernelArg(C->kern_scat_mov, 2, sizeof(cl_mem), &C->scat_vel);
-    ret |= clSetKernelArg(C->kern_scat_mov, 3, sizeof(cl_mem), &C->scat_tum);
-	ret |= clSetKernelArg(C->kern_scat_mov, 4, sizeof(cl_mem), &C->scat_att);
-	ret |= clSetKernelArg(C->kern_scat_mov, 5, sizeof(cl_mem), &C->angular_weight);
-	ret |= clSetKernelArg(C->kern_scat_mov, 6, sizeof(cl_float4), &C->angular_weight_desc);
-	ret |= clSetKernelArg(C->kern_scat_mov, 7, sizeof(cl_float4), &beam_pos);
-	ret |= clSetKernelArg(C->kern_scat_mov, 8, sizeof(float), &prt);
-	if (ret != CL_SUCCESS) {
-		fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel scat_mov().\n", now());
-		exit(EXIT_FAILURE);
-	}
-	C->mem_size += (cl_uint)(H->angular_weight_table.xm + 1.0f) * sizeof(float);
-	
-	ret = CL_SUCCESS;
-	ret |= clSetKernelArg(C->kern_scat_chk, 0, sizeof(cl_mem), &C->scat_pos);
-    ret |= clSetKernelArg(C->kern_scat_chk, 1, sizeof(cl_mem), &C->scat_vel);
-	ret |= clSetKernelArg(C->kern_scat_chk, 2, sizeof(cl_mem), &C->scat_att);
-	ret |= clSetKernelArg(C->kern_scat_chk, 3, sizeof(cl_mem), &C->scat_rnd);
-	if (ret != CL_SUCCESS) {
-		fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel scat_chk().\n", now());
-		exit(EXIT_FAILURE);
-	}
-	
+    cl_float16 sim_desc = {{
+        H->beam_pos.x,
+        H->beam_pos.y,
+        H->beam_pos.z,
+        0.0f,
+        H->params.prt,
+        H->params.prt / H->worker[0].vel_desc.sc,
+        0.0f,
+        0.0f,
+        H->domain.origin.x,
+        H->domain.origin.y,
+        H->domain.origin.z,
+        0.0f,
+        H->domain.size.x,
+        H->domain.size.y,
+        H->domain.size.z,
+        0.0f
+    }};
+
     ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_scat_atts, 0, sizeof(cl_mem), &C->scat_pos);
     ret |= clSetKernelArg(C->kern_scat_atts, 1, sizeof(cl_mem), &C->scat_ori);
     ret |= clSetKernelArg(C->kern_scat_atts, 2, sizeof(cl_mem), &C->scat_vel);
     ret |= clSetKernelArg(C->kern_scat_atts, 3, sizeof(cl_mem), &C->scat_tum);
     ret |= clSetKernelArg(C->kern_scat_atts, 4, sizeof(cl_mem), &C->scat_att);
-    ret |= clSetKernelArg(C->kern_scat_atts, 5, sizeof(cl_mem), &C->physics);
-    ret |= clSetKernelArg(C->kern_scat_atts, 6, sizeof(cl_float16), &C->physics_desc);
-    ret |= clSetKernelArg(C->kern_scat_atts, 7, sizeof(cl_mem), &C->adm_cd);
-    ret |= clSetKernelArg(C->kern_scat_atts, 8, sizeof(cl_mem), &C->adm_cm);
-    ret |= clSetKernelArg(C->kern_scat_atts, 9, sizeof(cl_float16), &C->adm_desc);
-    ret |= clSetKernelArg(C->kern_scat_atts, 10, sizeof(cl_mem), &C->adm_cd);           // will come back for you rcs
+    ret |= clSetKernelArg(C->kern_scat_atts, 5, sizeof(cl_mem), &C->scat_sig);
+    ret |= clSetKernelArg(C->kern_scat_atts, 6, sizeof(cl_mem), &C->scat_rnd);
+    ret |= clSetKernelArg(C->kern_scat_atts, 7, sizeof(cl_mem), &C->vel[0]);
+    ret |= clSetKernelArg(C->kern_scat_atts, 8, sizeof(cl_float16), &C->vel_desc);
+    ret |= clSetKernelArg(C->kern_scat_atts, 9, sizeof(cl_mem), &C->adm_cd[0]);
+    ret |= clSetKernelArg(C->kern_scat_atts, 10, sizeof(cl_image), &C->adm_cm[0]);
     ret |= clSetKernelArg(C->kern_scat_atts, 11, sizeof(cl_float16), &C->adm_desc);
+    ret |= clSetKernelArg(C->kern_scat_atts, 12, sizeof(cl_mem), &C->adm_cd[0]);           // will come back for you rcs
+    ret |= clSetKernelArg(C->kern_scat_atts, 13, sizeof(cl_float16), &C->adm_desc);
+	ret |= clSetKernelArg(C->kern_scat_atts, 14, sizeof(cl_mem), &C->angular_weight);
+	ret |= clSetKernelArg(C->kern_scat_atts, 15, sizeof(cl_float4), &C->angular_weight_desc);
+    ret |= clSetKernelArg(C->kern_scat_atts, 16, sizeof(cl_float16), &sim_desc);
+
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_atts().\n", now());
         exit(EXIT_FAILURE);
     }
-    C->mem_size += (cl_uint)((H->physics_table.xm + 1.0f) * (H->physics_table.ym + 1.0f) * (H->physics_table.zm + 1.0f)) * sizeof(cl_float4);
-    C->mem_size += (cl_uint)((H->adm_cd_tables[0].xm + 1.0f) * (H->adm_cd_tables[0].ym + 1.0f)) * 2 * sizeof(cl_float4);
+//    C->mem_size += (cl_uint)((H->physics_table.xm + 1.0f) * (H->physics_table.ym + 1.0f) * (H->physics_table.zm + 1.0f)) * sizeof(cl_float4);
+//    C->mem_size += (cl_uint)((H->adm_cd_tables[0].xm + 1.0f) * (H->adm_cd_tables[0].ym + 1.0f)) * 2 * sizeof(cl_float4);
+    C->mem_size += (cl_uint)((C->vel_desc.s2 + 1.0f) * (C->vel_desc.s6 + 1.0f) * (C->vel_desc.sa + 1.0f)) * sizeof(float);
+    C->mem_size += (cl_uint)((C->adm_desc[0].s2 + 1.0f) * (C->adm_desc[0].s6 + 1.0f) * (C->adm_desc[0].sa + 1.0f)) * 2 * sizeof(float);
+    C->mem_size += (cl_uint)(C->range_weight_desc.s2 + 1.0f) * sizeof(float);
 
     //	printf("C->physics        @ %p\n", C->physics);
     //	printf("C->range_weight   @ %p\n", C->range_weight);
@@ -361,16 +288,17 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     //	printf("C->scat_pos       @ %p\n", C->scat_pos);
     //	printf("C->scat_vel       @ %p\n", C->scat_vel);
     
-    ret = CL_SUCCESS;
-    ret |= clSetKernelArg(C->kern_scat_physics, 0, sizeof(cl_mem), &C->scat_pos);
-    ret |= clSetKernelArg(C->kern_scat_physics, 1, sizeof(cl_mem), &C->scat_vel);
-    ret |= clSetKernelArg(C->kern_scat_physics, 2, sizeof(cl_mem), &C->physics);
-    ret |= clSetKernelArg(C->kern_scat_physics, 3, sizeof(cl_float16), &C->physics_desc);
-    if (ret != CL_SUCCESS) {
-        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_physics().\n", now());
-        exit(EXIT_FAILURE);
-    }
-    C->mem_size += (cl_uint)((H->physics_table.xm + 1.0f) * (H->physics_table.ym + 1.0f) * (H->physics_table.zm + 1.0f)) * sizeof(cl_float4);
+//    ret = CL_SUCCESS;
+//    ret |= clSetKernelArg(C->kern_scat_physics, 0, sizeof(cl_mem), &C->scat_pos);
+//    ret |= clSetKernelArg(C->kern_scat_physics, 1, sizeof(cl_mem), &C->scat_vel);
+//    ret |= clSetKernelArg(C->kern_scat_physics, 2, sizeof(cl_mem), &C->physics);
+//    ret |= clSetKernelArg(C->kern_scat_physics, 3, sizeof(cl_float16), &C->physics_desc);
+//    if (ret != CL_SUCCESS) {
+//        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_physics().\n", now());
+//        exit(EXIT_FAILURE);
+//    }
+//    C->mem_size += (cl_uint)((H->physics_table.xm + 1.0f) * (H->physics_table.ym + 1.0f) * (H->physics_table.zm + 1.0f)) * sizeof(cl_float4);
+//    C->mem_size += (cl_uint)((C->vel_desc.s2 + 1.0f) * (C->vel_desc.s6 + 1.0f) * (C->vel_desc.sa + 1.0f)) * sizeof(float);
     
 	if (C->verb > 1) {
 		printf("%s : RS : Pass 1   global = %5s   local =%3zu x %2d = %6s B   groups =%3d   N = %9s\n",
@@ -388,9 +316,12 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 2, sizeof(cl_mem), &C->scat_att);
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 3, C->make_pulse_params.local_mem_size[0], NULL);
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 4, sizeof(cl_mem), &C->range_weight);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 5, sizeof(float), &H->range_weight_table.x0);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 6, sizeof(float), &H->range_weight_table.xm);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 7, sizeof(float), &H->range_weight_table.dx);
+//	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 5, sizeof(float), &H->range_weight_table.x0);
+//	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 6, sizeof(float), &H->range_weight_table.xm);
+//	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 7, sizeof(float), &H->range_weight_table.dx);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 5, sizeof(float), &C->range_weight_desc.s0);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 6, sizeof(float), &C->range_weight_desc.s1);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 7, sizeof(float), &C->range_weight_desc.s2);
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 8, sizeof(float), &C->make_pulse_params.range_start);
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 9, sizeof(float), &C->make_pulse_params.range_delta);
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 10, sizeof(unsigned int), &C->make_pulse_params.range_count);
@@ -400,7 +331,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 		fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel make_pulse_pass_1().\n", now());
 		exit(EXIT_FAILURE);
 	}
-	C->mem_size += (cl_uint)(H->range_weight_table.xm + 1.0f) * sizeof(float);
+	//C->mem_size += (cl_uint)(H->range_weight_table.xm + 1.0f) * sizeof(float);
 	
 	if (C->make_pulse_params.cl_pass_2_method == RS_CL_PASS_2_IN_LOCAL) {
 		C->kern_make_pulse_pass_2 = C->kern_make_pulse_pass_2_local;
@@ -1698,9 +1629,9 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
 				clReleaseMemObject(H->worker[i].range_weight);
 			}
 			if (H->verb > 1) {
-				printf("%s : RS : worker[%d] creating range weight (cl_mem) & copying data from %p.\n", now(), i, H->range_weight_table.data);
+				printf("%s : RS : worker[%d] creating range weight (cl_mem) & copying data from %p.\n", now(), i, table.data);
 			}
-			H->worker[i].range_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), weights.data, &ret);
+			H->worker[i].range_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), table.data, &ret);
 			if (ret != CL_SUCCESS) {
 				fprintf(stderr, "%s : RS : Error creating range weight table on CL device.\n", now());
 				return;
@@ -1847,38 +1778,14 @@ void RS_set_angular_weight_to_standard(RSHandle *H, float beamwidth_rad) {
 void RS_set_wind_data(RSHandle *H, const RSTable3D table) {
 	
 	int i;
-	
-//	const size_t n = table.x_ * table.y_ * table.z_;
-	
-	// Free the old table if exists; and create a new table
-//	RS_table3d_free(H->physics_table);
-//	H->physics_table = RS_table3d_init(n);
-    
-//	if (H->physics_table.data == NULL) {
-//		fprintf(stderr, "%s : RS : RS_set_physics_data() failed to allocate 3D table.\n", now());
-//		return;
-//	}
-	
-	// Set up the mapping coefficients
-//	H->physics_table.x_ = table.x_;   H->physics_table.xs = table.xs;   H->physics_table.xo = table.xo;    H->physics_table.xm = table.xm;
-//	H->physics_table.y_ = table.y_;   H->physics_table.ys = table.ys;   H->physics_table.yo = table.yo;    H->physics_table.ym = table.ym;
-//	H->physics_table.z_ = table.z_;   H->physics_table.zs = table.zs;   H->physics_table.zo = table.zo;    H->physics_table.zm = table.zm;
-	
-    // Copy over other parameters
-//    H->physics_table.tr = table.tr;
-    
-	// Copy the table data
-//	if (H->verb) {
-//		printf("%s : RS : Host physics table set.  n = %d x %d x %d\n", now(), H->physics_table.x_, H->physics_table.y_, H->physics_table.z_);
-//	}
-//	memcpy(H->physics_table.data, table.data, n * sizeof(cl_float4));
-	
+		
 	// We are done if no GPU acceleration is utilized
 	if (H->method == RS_METHOD_CPU) {
 		return;
 	}
+
+    int t = H->vel_count;
     
-    int t = 0;
 	cl_image_format format = {CL_RGBA, CL_FLOAT};
 	
 #if defined (CL_VERSION_1_2)
@@ -1897,31 +1804,61 @@ void RS_set_wind_data(RSHandle *H, const RSTable3D table) {
 	
 #endif
 	
-#if defined (__APPLE__) && defined (_SHARE_OBJ_)
     
 	for (i=0; i<H->num_workers; i++) {
 		if (H->worker[i].vel[t] != NULL) {
-			if (H->verb > 1) {
-				printf("%s : RS : worker[%d] setting wind data.\n", now(), i);
-			}
-			gcl_release_image(H->worker[i].vel[t]);
-		}
-		H->worker[i].vel[t] = gcl_create_image(&format, desc.image_width, desc.image_height, desc.image_depth, NULL);
-		if (H->worker[i].vel[t] == NULL) {
-			fprintf(stderr, "%s : RS : Error creating wind table on CL device.\n", now());
+
+#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+
+            gcl_release_image(H->worker[i].vel[t]);
+
+#else
+            
+            clReleaseMemObject(H->worker[i].vel[t]);
+            
+#endif
+
+        }
+
+#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+
+        H->worker[i].vel[t] = gcl_create_image(&format, desc.image_width, desc.image_height, desc.image_depth, NULL);
+
+#else
+        
+        cl_mem_flags flags = CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR;
+        
+#if defined (CL_VERSION_1_2)
+        
+        H->worker[i].vel[t] = clCreateImage(H->worker[i].context, flags, &format, &desc, table.data, &ret);
+        
+#else
+        
+        H->worker[i].vel[t] = clCreateImage3D(H->worker[i].context, flags, &format, table.x_, table.y_, table.z_,
+                                              table.x_ * sizeof(cl_float4), table.y_ * table.x_ * sizeof(cl_float4), table.data, &ret);
+        
+#endif
+        
+#endif
+        
+        if (H->worker[i].vel[t] == NULL) {
+			fprintf(stderr, "%s : RS : worker[%d] encountered error creating wind table on CL device.\n", now(), i);
 			return;
-		}
-		if (H->verb > 1) {
-			printf("%s : RS : Copying wind table[%d]  %p --> %p  (%u x %u x %u)\n",
-				   now(), i, table.data, H->worker[i].vel[t],
-				   table.x_, table.y_, table.z_);
-		}
-		dispatch_async(H->worker[i].que, ^{
+        } else if (H->verb > 2) {
+            printf("%s : RS : worker[%d] created vel[%d] @ %p\n", now(), i, t, &H->worker[i].vel[t]);
+        }
+
+#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+
+        dispatch_async(H->worker[i].que, ^{
 			size_t origin[3] = {0, 0, 0};
 			size_t region[3] = {table.x_, table.y_, table.z_};
 			gcl_copy_ptr_to_image(H->worker[i].vel[t], table.data, origin, region);
 			dispatch_semaphore_signal(H->worker[i].sem);
 		});
+
+#endif
+
     }
 	
 	for (i=0; i<H->num_workers; i++) {
@@ -1944,73 +1881,7 @@ void RS_set_wind_data(RSHandle *H, const RSTable3D table) {
         H->worker[i].vel_desc.se = 0.0f;
         H->worker[i].vel_desc.sf = 0.0f;
 	}
-	
-#else
-	
-	cl_int ret;
-	
-	//	float *f = (float *)H->physics_table.data;
-	//	for (i=0; i<27 * 4; i+=4)
-	//		printf("%d - %.4f\n", i/4, f[i]);
-	
-	for (i=0; i<H->num_workers; i++) {
-		if (H->worker[i].vel[t] != NULL) {
-			if (H->verb > 1) {
-				printf("%s : RS : worker[%d] setting wind table.\n", now(), i);
-			}
-			clReleaseMemObject(H->worker[i].vel[t]);
-		}
-		if (H->verb > 1) {
-			printf("%s : RS : worker[%d] creating wind (image3d_t) & copying from %p.\n", now(), i, table.data);
-		}
-		
-#if defined (CL_VERSION_1_2)
-		
-		H->worker[i].vel[t] = clCreateImage(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, &format, &desc, table.data, &ret);
-		
-#else
-		
-        H->worker[i].vel[t] = clCreateImage3D(H->worker[i].context,
-                                              CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                                              &format,
-                                              table.x_,
-                                              table.y_,
-                                              table.z_,
-                                              table.x_ * sizeof(cl_float4),
-                                              table.y_ * table.x_ * sizeof(cl_float4),
-                                              table.data,
-                                              &ret);
-		
-#endif
-		
-		if (ret != CL_SUCCESS) {
-			fprintf(stderr, "%s : RS : Error creating wind table on CL device.\n", now());
-			return;
-		}
-		if (H->verb > 1) {
-			printf("%s : RS : worker[%d] created wind table @ %p\n", now(), i, H->worker[i].vel[t]);
-		}
-        // Copy over to CL worker
-        H->worker[i].vel_desc.s0 = table.xs;
-        H->worker[i].vel_desc.s1 = table.ys;
-        H->worker[i].vel_desc.s2 = table.zs;
-        H->worker[i].vel_desc.s3 = 0.0f;
-        H->worker[i].vel_desc.s4 = table.xo;
-        H->worker[i].vel_desc.s5 = table.yo;
-        H->worker[i].vel_desc.s6 = table.zo;
-        H->worker[i].vel_desc.s7 = 0.0f;
-        H->worker[i].vel_desc.s8 = table.xm;
-        H->worker[i].vel_desc.s9 = table.ym;
-        H->worker[i].vel_desc.sa = table.zm;
-        H->worker[i].vel_desc.sb = 0.0f;
-        H->worker[i].vel_desc.sc = 0.0f;
-        H->worker[i].vel_desc.sd = 0.0f;
-        H->worker[i].vel_desc.se = 0.0f;
-        H->worker[i].vel_desc.sf = 0.0f;
-	}
-	
-#endif
-	
+    H->vel_count++;
 }
 
 
@@ -2021,7 +1892,7 @@ void RS_set_wind_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
 	RSTable3D table = RS_table3d_init(leslie->nn);
     if (table.data == NULL) {
         return;
-    } else if (H->verb > 1) {
+    } else if (H->verb > 2) {
 		printf("%s : RS : LES @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
 			   now(),
 			   H->domain.origin.x, H->domain.origin.x + H->domain.size.x,
@@ -2135,9 +2006,16 @@ void RS_set_wind_data_to_cube125(RSHandle *H) {
 }
 
 
+void RS_clear_wind_data(RSHandle *H) {
+    H->vel_count = 0;
+}
+
+
 void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
     
-    int i, t;
+    int i;
+    
+    const int t = H->adm_count;
     
     const size_t n = cd.x_ * cd.y_;
     if (cm.x_ * cm.y_ != n) {
@@ -2145,181 +2023,112 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
         return;
     }
     
-    t = 0;
-    {
-        // Free the old table if exists; and create a new table
-//        RS_table2d_free(H->adm_cd_tables[t]);
-//        RS_table2d_free(H->adm_cm_tables[t]);
-//        H->adm_cd_tables[t] = RS_table2d_init(n);
-//        H->adm_cm_tables[t] = RS_table2d_init(n);
-//        if (H->adm_cd_tables[t].data == NULL || H->adm_cm_tables[t].data == NULL) {
-//            fprintf(stderr, "%s : RS : RS_set_adm_data() failed to allocate 2D cd and/or cm tables", now());
-//            return;
-//        }
-//        
-//        // Set up mapping coefficients
-//        H->adm_cd_tables[t].x_ = cd.x_;   H->adm_cd_tables[t].xs = cd.xs;   H->adm_cd_tables[t].xo = cd.xo;   H->adm_cd_tables[t].xm = cd.xm;
-//        H->adm_cd_tables[t].y_ = cd.y_;   H->adm_cd_tables[t].ys = cd.ys;   H->adm_cd_tables[t].yo = cd.yo;   H->adm_cd_tables[t].ym = cd.ym;
-//        H->adm_cm_tables[t].x_ = cm.x_;   H->adm_cm_tables[t].xs = cm.xs;   H->adm_cm_tables[t].xo = cm.xo;   H->adm_cm_tables[t].xm = cm.xm;
-//        H->adm_cm_tables[t].y_ = cm.y_;   H->adm_cm_tables[t].ys = cm.ys;   H->adm_cm_tables[t].yo = cm.yo;   H->adm_cm_tables[t].ym = cm.ym;
-//        
-//        // Copy over other parameters
-//
-//        // Copy the table data
-//        if (H->verb) {
-//            printf("%s : RS : Host ADM tables set.  n = %d x %d\n", now(), H->adm_cd_tables[t].x_, H->adm_cd_tables[t].y_);
-//        }
-//        memcpy(H->adm_cd_tables[t].data, cd.data, n * sizeof(cl_float4));
-//        memcpy(H->adm_cm_tables[t].data, cm.data, n * sizeof(cl_float4));
-//        
-//        // We are done if no GPU acceleration is utilized
-//        if (H->method == RS_METHOD_CPU) {
-//            return;
-//        }
-        
-        // This is the part that we need to create two texture maps for each RSTable2D table
-        cl_image_format format = {CL_RGBA, CL_FLOAT};
-        
+    // This is the part that we need to create two texture maps for each RSTable2D table
+    cl_image_format format = {CL_RGBA, CL_FLOAT};
+    
 #if defined (CL_VERSION_1_2)
-        
-        cl_image_desc desc;
-        desc.image_type = CL_MEM_OBJECT_IMAGE2D;
-        desc.image_width  = cd.x_;
-        desc.image_height = cd.y_;
-        desc.image_depth  = 1;
-        desc.image_array_size = 0;
-        desc.image_row_pitch = desc.image_width * sizeof(cl_float4);
-        desc.image_slice_pitch = desc.image_height * desc.image_row_pitch;
-        desc.num_mip_levels = 0;
-        desc.num_samples = 0;
-        desc.buffer = NULL;
-        
+    
+    cl_image_desc desc;
+    desc.image_type = CL_MEM_OBJECT_IMAGE2D;
+    desc.image_width  = cd.x_;
+    desc.image_height = cd.y_;
+    desc.image_depth  = 1;
+    desc.image_array_size = 0;
+    desc.image_row_pitch = desc.image_width * sizeof(cl_float4);
+    desc.image_slice_pitch = desc.image_height * desc.image_row_pitch;
+    desc.num_mip_levels = 0;
+    desc.num_samples = 0;
+    desc.buffer = NULL;
+    
 #endif
-
+    
+    
+    for (i=0; i<H->num_workers; i++) {
+        if (H->worker[i].adm_cd[t] != NULL && H->worker[i].adm_cm[t] != NULL) {
+            
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
-
-        for (i=0; i<H->num_workers; i++) {
-            if (H->worker[i].adm_cd[t] != NULL && H->worker[i].adm_cm[t] != NULL) {
-                if (H->verb > 1) {
-                    printf("%s : RS : worker[%d] setting adm_cd[t] & adm_cm[t] for t=%d.\n", now(), i, t);
-                }
-                gcl_release_image(H->worker[i].adm_cd[t]);
-                gcl_release_image(H->worker[i].adm_cm[t]);
-            }
-            //  adm_cd & adm_cm always have the same desc
-            H->worker[i].adm_cd[t] = gcl_create_image(&format, cd.x_, cd.y_, 1, NULL);
-            H->worker[i].adm_cm[t] = gcl_create_image(&format, cm.x_, cd.y_, 1, NULL);
-            if (H->worker[i].adm_cd[t] == NULL || H->worker[i].adm_cm[t] == NULL) {
-                fprintf(stderr, "%s : RS : Error creating ADM table on CL device.\n", now());
-                return;
-            }
-            if (H->verb > 1) {
-                printf("%s : RS : Copying adm_cd table[%d]  %p --> %p  (%u x %u)\n",
-                       now(), i, cd.data, H->worker[i].adm_cd[t], cd.x_, cd.y_);
-                printf("%s : RS : Copying adm_cm table[%d]  %p --> %p  (%u x %u)\n",
-                       now(), i, cm.data, H->worker[i].adm_cm[t], cm.x_, cm.y_);
-            }
-            dispatch_async(H->worker[i].que, ^{
-                size_t origin[3] = {0, 0, 0};
-                size_t region[3] = {cd.x_, cd.y_, 1};
-                gcl_copy_ptr_to_image(H->worker[i].adm_cd[t], cd.data, origin, region);
-                gcl_copy_ptr_to_image(H->worker[i].adm_cm[t], cm.data, origin, region);
-                dispatch_semaphore_signal(H->worker[i].sem);
-            });
-        }
-        
-        for (i=0; i<H->num_workers; i++) {
-            dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
-            // Copy over CL parameters
-            H->worker[i].adm_desc[t].s0 = cd.xs;
-            H->worker[i].adm_desc[t].s1 = cd.ys;
-            H->worker[i].adm_desc[t].s2 = 0.0f;
-            H->worker[i].adm_desc[t].s3 = 0.0f;
-            H->worker[i].adm_desc[t].s4 = cd.xo;
-            H->worker[i].adm_desc[t].s5 = cd.yo;
-            H->worker[i].adm_desc[t].s6 = 0.0f;
-            H->worker[i].adm_desc[t].s7 = 0.0f;
-            H->worker[i].adm_desc[t].s8 = cd.xm;
-            H->worker[i].adm_desc[t].s9 = cd.ym;
-            H->worker[i].adm_desc[t].sa = 0.0f;
-            H->worker[i].adm_desc[t].sb = 0.0f;
-            H->worker[i].adm_desc[t].sc = 0.0f;
-            H->worker[i].adm_desc[t].sd = 0.0f;
-            H->worker[i].adm_desc[t].se = 0.0f;
-            H->worker[i].adm_desc[t].sf = 0.0f;
-        }
-
+            
+            gcl_release_image(H->worker[i].adm_cd[t]);
+            gcl_release_image(H->worker[i].adm_cm[t]);
+            
 #else
-
-        cl_int ret;
+            
+            clReleaseMemObject(H->worker[i].adm_cd[t]);
+            clReleaseMemObject(H->worker[i].adm_cm[t]);
+            
+#endif
+            
+            H->worker[i].mem_size -= ((cl_uint)(H->worker[i].adm_desc[t].s8 + 1.0f) * (H->worker[i].adm_desc[t].s9 + 1.0f)) * 2 * sizeof(cl_float4);
+        }
+        //  adm_cd & adm_cm always have the same desc
         
-        for (i=0; i<H->num_workers; i++) {
-            if (H->worker[i].adm_cd != NULL && H->worker[i].adm_cm != NULL) {
-                if (H->verb > 1) {
-                    printf("%s : RS : worker[%d] setting adm_cd[] + adm_cm[] tables.\n", now(), i);
-                }
-                clReleaseMemObject(H->worker[i].adm_cd[t]);
-                clReleaseMemObject(H->worker[i].adm_cm[t]);
-            }
-            if (H->verb > 1) {
-                printf("%s : RS : worker[%d] creating adm_cd[%d] + adm_cm[%d] (image2d_t) & copying from %p + %p.\n", now(), i, t, t, H->adm_cd_tables[t].data, H->adm_cm_tables[t].data);
-            }
-
+        
+#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+        
+        H->worker[i].adm_cd[t] = gcl_create_image(&format, cd.x_, cd.y_, 1, NULL);
+        H->worker[i].adm_cm[t] = gcl_create_image(&format, cm.x_, cd.y_, 1, NULL);
+        
+#else
+        
+        cl_int retd, retm;
+        cl_mem_flags flags = CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR;
+        
 #if defined (CL_VERSION_1_2)
-
-            H->worker[i].adm_cd[t] = clCreateImage(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, &format, &desc, cd.data, &ret);
-            H->worker[i].adm_cm[t] = clCreateImage(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, &format, &desc, cm.data, &ret);
-
+        
+        H->worker[i].adm_cd[t] = clCreateImage(H->worker[i].context, flags, &format, &desc, cd.data, &retd);
+        H->worker[i].adm_cm[t] = clCreateImage(H->worker[i].context, flags, &format, &desc, cm.data, &retm);
+        
 #else
-
-            H->worker[i].adm_cd[t] = clCreateImage2D(H->worker[i].context,
-                                                     CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                                                     &format,
-                                                     cd.x_,
-                                                     cd.y_,
-                                                     cd.x_ * sizeof(cl_float4),
-                                                     cd.data,
-                                                     &ret);
-            H->worker[i].adm_cm[t] = clCreateImage2D(H->worker[i].context,
-                                                     CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                                                     &format,
-                                                     cm.x_,
-                                                     cm.y_,
-                                                     cm.x_ * sizeof(cl_float4),
-                                                     cm.data,
-                                                     &ret);
-
+        
+        H->worker[i].adm_cd[t] = clCreateImage2D(H->worker[i].context, flags, &format, cd.x_, cd.y_, cd.x_ * sizeof(cl_float4), cd.data, &retd);
+        H->worker[i].adm_cm[t] = clCreateImage2D(H->worker[i].context, flags, &format, cm.x_, cm.y_, cm.x_ * sizeof(cl_float4), cm.data, &retm);
+        
 #endif
-
-            if (ret != CL_SUCCESS) {
-                fprintf(stderr, "%s : RS : Error creating adm_cd & adm_cm tables on CL device.\n", now());
-                return;
-            }
-            if (H->verb > 1) {
-                printf("%s : RS : worker[%d] created adm_cd[%d] & adm_cd[%d] @ %p & %p\n", now(), i, t, t, &H->worker[i].adm_cd[t], &H->worker[i].adm_cm[t]);
-            }
-            // Copy over CL parameters
-            H->worker[i].adm_desc[t].s0 = cd.xs;
-            H->worker[i].adm_desc[t].s1 = cd.ys;
-            H->worker[i].adm_desc[t].s2 = 0.0f;
-            H->worker[i].adm_desc[t].s3 = 0.0f;
-            H->worker[i].adm_desc[t].s4 = cd.xo;
-            H->worker[i].adm_desc[t].s5 = cd.yo;
-            H->worker[i].adm_desc[t].s6 = 0.0f;
-            H->worker[i].adm_desc[t].s7 = 0.0f;
-            H->worker[i].adm_desc[t].s8 = cd.xm;
-            H->worker[i].adm_desc[t].s9 = cd.ym;
-            H->worker[i].adm_desc[t].sa = 0.0f;
-            H->worker[i].adm_desc[t].sb = 0.0f;
-            H->worker[i].adm_desc[t].sc = 0.0f;
-            H->worker[i].adm_desc[t].sd = 0.0f;
-            H->worker[i].adm_desc[t].se = 0.0f;
-            H->worker[i].adm_desc[t].sf = 0.0f;
+        
+#endif
+        if (H->worker[i].adm_cd[t] == NULL || H->worker[i].adm_cm[t] == NULL) {
+            fprintf(stderr, "%s : RS : worker[%d] encountered error creating ADM table on CL device.\n", now(), i);
+            return;
+        } else if (H->verb > 2) {
+            printf("%s : RS : worker[%d] created adm_cd[%d] & adm_cd[%d] @ %p & %p\n", now(), i, t, t, &H->worker[i].adm_cd[t], &H->worker[i].adm_cm[t]);
         }
-
+        
+#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+        
+        dispatch_async(H->worker[i].que, ^{
+            size_t origin[3] = {0, 0, 0};
+            size_t region[3] = {cd.x_, cd.y_, 1};
+            gcl_copy_ptr_to_image(H->worker[i].adm_cd[t], cd.data, origin, region);
+            gcl_copy_ptr_to_image(H->worker[i].adm_cm[t], cm.data, origin, region);
+            dispatch_semaphore_signal(H->worker[i].sem);
+        });
+        
 #endif
-
-    } // t = 0
+        
+    }
+    
+    for (i=0; i<H->num_workers; i++) {
+        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+        // Copy over CL parameters
+        H->worker[i].adm_desc[t].s0 = cd.xs;
+        H->worker[i].adm_desc[t].s1 = cd.ys;
+        H->worker[i].adm_desc[t].s2 = 0.0f;
+        H->worker[i].adm_desc[t].s3 = 0.0f;
+        H->worker[i].adm_desc[t].s4 = cd.xo;
+        H->worker[i].adm_desc[t].s5 = cd.yo;
+        H->worker[i].adm_desc[t].s6 = 0.0f;
+        H->worker[i].adm_desc[t].s7 = 0.0f;
+        H->worker[i].adm_desc[t].s8 = cd.xm;
+        H->worker[i].adm_desc[t].s9 = cd.ym;
+        H->worker[i].adm_desc[t].sa = 0.0f;
+        H->worker[i].adm_desc[t].sb = 0.0f;
+        H->worker[i].adm_desc[t].sc = 0.0f;
+        H->worker[i].adm_desc[t].sd = 0.0f;
+        H->worker[i].adm_desc[t].se = 0.0f;
+        H->worker[i].adm_desc[t].sf = 0.0f;
+        H->worker[i].mem_size += ((cl_uint)(H->worker[i].adm_desc[t].s8 + 1.0f) * (H->worker[i].adm_desc[t].s9 + 1.0f)) * 2 * sizeof(cl_float4);
+    }
+    H->adm_count++;
 }
 
 
@@ -2391,6 +2200,12 @@ void RS_set_adm_data_to_unity(RSHandle *H) {
     RS_table2d_free(table);
 }
 
+
+void RS_clear_adm_data(RSHandle *H) {
+    H->adm_count = 0;
+}
+
+
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 
 #pragma mark -
@@ -2430,26 +2245,58 @@ void RS_update_colors_only(RSHandle *H) {
 void RS_explode(RSHandle *H) {
 	
 	int i;
-	
-	for (i=0; i<H->num_workers; i++) {
-		dispatch_async(H->worker[i].que, ^{
-			scat_mov_kernel(&H->worker[i].ndrange_scat,
-							(cl_float4 *)H->worker[i].scat_pos,
-							(cl_float4 *)H->worker[i].scat_vel,
-							(cl_float4 *)H->worker[i].scat_ori,
-                            (cl_float4 *)H->worker[i].scat_tum,
-							(cl_float4 *)H->worker[i].scat_att,
-							(cl_float *)H->worker[i].angular_weight,
-							H->worker[i].angular_weight_desc,
-							H->beam_pos,
-							(cl_float4){{10000.0f, 0.0f, 0.0f, 0.0f}});
-			scat_clr_kernel(&H->worker[i].ndrange_scat,
-							(cl_float4 *)H->worker[i].scat_clr,
-							(cl_float4 *)H->worker[i].scat_pos,
-							(cl_float4 *)H->worker[i].scat_vel,
-							(cl_float4 *)H->worker[i].scat_ori,
-							(cl_float4 *)H->worker[i].scat_att,
-							(unsigned int)H->worker[i].num_scats * 3 / 4);
+    int v = 0;
+    int t = 0;
+    
+    cl_float16 sim_desc = {{
+        H->beam_pos.x,
+        H->beam_pos.y,
+        H->beam_pos.z,
+        0.0f,
+        10000.0f,
+        1.0f,
+        0.0f,
+        0.0f,
+        H->domain.origin.x,
+        H->domain.origin.y,
+        H->domain.origin.z,
+        0.0f,
+        H->domain.size.x,
+        H->domain.size.y,
+        H->domain.size.z,
+        0.0f
+    }};
+    
+    if (H->sim_tic >= H->sim_toc) {
+        H->sim_toc = H->sim_tic + (size_t)(5.0f / H->params.prt);
+    }
+    
+    for (i=0; i<H->num_workers; i++) {
+        dispatch_async(H->worker[i].que, ^{
+            scat_atts_kernel(&H->worker[i].ndrange_scat,
+                             (cl_float4 *)H->worker[i].scat_pos,
+                             (cl_float4 *)H->worker[i].scat_ori,
+                             (cl_float4 *)H->worker[i].scat_vel,
+                             (cl_float4 *)H->worker[i].scat_tum,
+                             (cl_float4 *)H->worker[i].scat_att,
+                             (cl_float4 *)H->worker[i].scat_sig,
+                             (cl_uint4 *)H->worker[i].scat_rnd,
+                             (cl_image)H->worker[i].vel[v],
+                             H->worker[i].vel_desc,
+                             (cl_image)H->worker[i].adm_cd[t],
+                             (cl_image)H->worker[i].adm_cm[t],
+                             H->worker[i].adm_desc[t],
+                             (cl_image)H->worker[i].adm_cd[t],
+                             H->worker[i].rcs_desc[t],
+                             (cl_float *)H->worker[i].angular_weight,
+                             H->worker[i].angular_weight_desc,
+                             sim_desc);
+            
+            scat_clr_kernel(&H->worker[i].ndrange_scat,
+                            (cl_float4 *)H->worker[i].scat_clr,
+                            (cl_float4 *)H->worker[i].scat_att,
+                            (unsigned int)H->worker[i].num_scats);
+
 			dispatch_semaphore_signal(H->worker[i].sem);
 		});
 	}
@@ -2591,28 +2438,48 @@ void RS_populate(RSHandle *H) {
 	
 #if !defined (__APPLE__) || !defined (_SHARE_OBJ_)
 
-	cl_float8 domain_bounds = {{
-		H->domain.origin.x,
-		H->domain.origin.y,
-		H->domain.origin.z,
-		0.0f,
-		H->domain.size.x,
-		H->domain.size.y,
-		H->domain.size.z,
-		500.0f
-	}};
+//	cl_float8 domain_bounds = {{
+//		H->domain.origin.x,
+//		H->domain.origin.y,
+//		H->domain.origin.z,
+//		0.0f,
+//		H->domain.size.x,
+//		H->domain.size.y,
+//		H->domain.size.z,
+//		500.0f
+//	}};
 	
-	//cl_float4 t4 = {{H->params.prt, H->params.prt / H->physics_table.tr, 0.0f, 0.0f}};
-    cl_float4 t4 = {{H->params.prt, H->params.prt / H->worker[0].vel_desc.sc, 0.0f, 0.0f}};
+    cl_float16 sim_desc = {{
+        H->beam_pos.x,
+        H->beam_pos.y,
+        H->beam_pos.z,
+        0.0f,
+        H->params.prt,
+        H->params.prt / H->worker[0].vel_desc.sc,
+        0.0f,
+        0.0f,
+        H->domain.origin.x,
+        H->domain.origin.y,
+        H->domain.origin.z,
+        0.0f,
+        H->domain.size.x,
+        H->domain.size.y,
+        H->domain.size.z,
+        0.0f
+    }};
+
+    //cl_float4 t4 = {{H->params.prt, H->params.prt / H->physics_table.tr, 0.0f, 0.0f}};
+    //cl_float4 t4 = {{H->params.prt, H->params.prt / H->worker[0].vel_desc.sc, 0.0f, 0.0f}};
 	
 	// Update kernel arguments
 	cl_int ret = CL_SUCCESS;
 	for (i=0; i<H->num_workers; i++) {
 		// Domain bounds for scat_chk()
-		ret |= clSetKernelArg(H->worker[i].kern_scat_chk, 3, sizeof(cl_float8), &domain_bounds);
+		//ret |= clSetKernelArg(H->worker[i].kern_scat_chk, 3, sizeof(cl_float8), &domain_bounds);
 		
 		// PRT for scat_mov()
-		ret |= clSetKernelArg(H->worker[i].kern_scat_mov, 7, sizeof(float), &t4);
+		//ret |= clSetKernelArg(H->worker[i].kern_scat_mov, 7, sizeof(float), &t4);
+        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, 16, sizeof(cl_float16), &sim_desc);
 	}
 
 	if (ret != CL_SUCCESS) {
@@ -2782,72 +2649,43 @@ void RS_upload(RSHandle *H) {
 void RS_advance_time(RSHandle *H) {
 	
 	int i;
-	
+
 	if (!(H->status & RS_STATUS_DOMAIN_POPULATED)) {
 		fprintf(stderr, "%s : RS : Simulation domain not populated.\n", now());
 		return;
 	}
 
+    cl_float16 sim_desc = {{
+        H->beam_pos.x,
+        H->beam_pos.y,
+        H->beam_pos.z,
+        0.0f,
+        H->params.prt,
+        H->params.prt / H->worker[0].vel_desc.sc,
+        0.0f,
+        0.0f,
+        H->domain.origin.x,
+        H->domain.origin.y,
+        H->domain.origin.z,
+        0.0f,
+        H->domain.size.x,
+        H->domain.size.y,
+        H->domain.size.z,
+        0.0f
+    }};
+
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 
-	cl_float8 domain_bounds = {{
-		H->domain.origin.x,
-		H->domain.origin.y,
-		H->domain.origin.z,
-		0.0f,
-		H->domain.size.x,
-		H->domain.size.y,
-		H->domain.size.z,
-		0.0f
-	}};
-	
+    const int t = 0;
 
     if (H->sim_tic >= H->sim_toc) {
 		H->sim_toc = H->sim_tic + (size_t)(5.0f / H->params.prt);
+        H->vel_idx = H->vel_idx == H->vel_count - 1 ? 0 : H->vel_idx + 1;
+        printf("%s : RS : Wind table advanced. vel_idx = %d\n", now(), H->vel_idx);
     }
-//        //H->sim_toc = H->sim_tic + (size_t)(0.5f / H->params.prt);
-//        //H->sim_toc = H->sim_tic;
-//		for (i=0; i<H->num_workers; i++) {
-//			dispatch_async(H->worker[i].que, ^{
-//                int t = 0;
-//                scat_atts_kernel(&H->worker[i].ndrange_scat,
-//                                 (cl_float4 *)H->worker[i].scat_pos,
-//                                 (cl_float4 *)H->worker[i].scat_ori,
-//                                 (cl_float4 *)H->worker[i].scat_vel,
-//                                 (cl_float4 *)H->worker[i].scat_tum,
-//                                 (cl_float4 *)H->worker[i].scat_sig,
-//                                 (cl_image)H->worker[i].physics,
-//                                 H->worker[i].physics_desc,
-//                                 (cl_image)H->worker[i].adm_cd[t],
-//                                 (cl_image)H->worker[i].adm_cm[t],
-//                                 H->worker[i].adm_desc[t],
-//                                 (cl_image)H->worker[i].adm_cd[t],
-//                                 H->worker[i].rcs_desc[t]);
-//
-////                scat_physics_kernel(&H->worker[i].ndrange_scat,
-////									(cl_float4 *)H->worker[i].scat_pos,
-////									(cl_float4 *)H->worker[i].scat_vel,
-////									(cl_image)H->worker[i].physics,
-////									H->worker[i].physics_desc);
-//
-////                printf("%p %p  %.2f %.2f  %.2f %.2f\n",
-////                       H->worker[i].scat_ori, H->worker[i].scat_sig,
-////                       H->worker[i].adm_desc[0].s0, H->worker[i].adm_desc[0].s1,
-////                       H->worker[i].adm_desc[0].s4, H->worker[i].adm_desc[0].s5);
-//
-//                dispatch_semaphore_signal(H->worker[i].sem);
-//			});
-//		}
-//		for (i=0; i<H->num_workers; i++) {
-//			dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
-//		}
-//	}
     
-//    printf("sim_tic = %d\n", (int)H->sim_tic);
-    H->worker[0].adm_desc[0].s3 = (float)H->sim_tic;
-    
-    int t = 0;
-    int iv = 0;
+    int v = H->vel_idx;
+
     for (i=0; i<H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
             scat_atts_kernel(&H->worker[i].ndrange_scat,
@@ -2855,48 +2693,26 @@ void RS_advance_time(RSHandle *H) {
                              (cl_float4 *)H->worker[i].scat_ori,
                              (cl_float4 *)H->worker[i].scat_vel,
                              (cl_float4 *)H->worker[i].scat_tum,
+                             (cl_float4 *)H->worker[i].scat_att,
                              (cl_float4 *)H->worker[i].scat_sig,
-                             (cl_image)H->worker[i].vel[iv],
+                             (cl_uint4 *)H->worker[i].scat_rnd,
+                             (cl_image)H->worker[i].vel[v],
                              H->worker[i].vel_desc,
                              (cl_image)H->worker[i].adm_cd[t],
                              (cl_image)H->worker[i].adm_cm[t],
                              H->worker[i].adm_desc[t],
                              (cl_image)H->worker[i].adm_cd[t],
-                             H->worker[i].rcs_desc[t]);
-//            dispatch_semaphore_signal(H->worker[i].sem);
-//        });
-//    }
-//    
-//    for (i=0; i<H->num_workers; i++) {
-//        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
-//    }
-//
-//    for (i=0; i<H->num_workers; i++) {
-//		dispatch_async(H->worker[i].que, ^{
-			scat_mov_kernel(&H->worker[i].ndrange_scat,
-							(cl_float4 *)H->worker[i].scat_pos,
-							(cl_float4 *)H->worker[i].scat_ori,
-                            (cl_float4 *)H->worker[i].scat_vel,
-                            (cl_float4 *)H->worker[i].scat_tum,
-							(cl_float4 *)H->worker[i].scat_att,
-							(cl_float *)H->worker[i].angular_weight,
-							H->worker[i].angular_weight_desc,
-							H->beam_pos,
-							(cl_float4){{H->params.prt, H->params.prt / H->worker[i].vel_desc.sc, 0.0f, 0.0f}});
-            scat_chk_kernel(&H->worker[i].ndrange_scat,
-                            (cl_float4 *)H->worker[i].scat_pos,
-                            (cl_float4 *)H->worker[i].scat_vel,
-                            (cl_float4 *)H->worker[i].scat_att,
-                            (cl_uint4 *)H->worker[i].scat_rnd,
-                            domain_bounds);
-			scat_clr_kernel(&H->worker[i].ndrange_scat,
+                             H->worker[i].rcs_desc[t],
+                             (cl_float *)H->worker[i].angular_weight,
+                             H->worker[i].angular_weight_desc,
+                             sim_desc);
+
+            scat_clr_kernel(&H->worker[i].ndrange_scat,
 							(cl_float4 *)H->worker[i].scat_clr,
-							(cl_float4 *)H->worker[i].scat_pos,
-							(cl_float4 *)H->worker[i].scat_ori,
-                            (cl_float4 *)H->worker[i].scat_vel,
 							(cl_float4 *)H->worker[i].scat_att,
 							(unsigned int)H->worker[i].num_scats);
-			dispatch_semaphore_signal(H->worker[i].sem);
+
+            dispatch_semaphore_signal(H->worker[i].sem);
 		});
 	}
 	
@@ -2906,47 +2722,38 @@ void RS_advance_time(RSHandle *H) {
 
 #else
 
-	cl_event event1s[RS_MAX_GPU_DEVICE];
-	cl_event event2s[RS_MAX_GPU_DEVICE];
+	cl_event events[RS_MAX_GPU_DEVICE];
 	
 	if (H->sim_tic >= H->sim_toc) {
 		H->sim_toc = H->sim_tic + (size_t)(1.0f / H->params.prt);
-        //H->sim_toc = H->sim_tic;
-		if (H->verb) {
-			printf("%s : RS : Setting physics ...\n", now());
-		}
-		for (i=0; i<H->num_workers; i++) {
-			clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_physics, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, &event1s[i]);
-			clFlush(H->worker[i].que);
-		}
-		for (i=0; i<H->num_workers; i++) {
-			clWaitForEvents(1, &event1s[i]);
-			clReleaseEvent(event1s[i]);
-		}
 	}
 	
 	for (i=0; i<H->num_workers; i++) {
 		// Need to refresh some parameters at each time update
-		clSetKernelArg(H->worker[i].kern_scat_mov, 6, sizeof(cl_float4), &H->beam_pos);
+        clSetKernelArg(H->worker[i].kern_scat_atts, 16, sizeof(cl_float16), &sim_desc);
+        
+        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_atts, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, &events[i]);
+        
+		//clSetKernelArg(H->worker[i].kern_scat_mov, 6, sizeof(cl_float4), &H->beam_pos);
 		//clSetKernelArg(H->worker[i].kern_scat_mov, 7, sizeof(float), &H->params.prt);
 
 		//clSetKernelArg(H->worker[i].kern_scat_chk, 3, sizeof(cl_float8), &domain_bounds);
 		
-		clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_chk, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, &event1s[i]);
-		clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_mov, 1, NULL, &H->worker[i].num_scats, NULL, 1, &event1s[i], &event2s[i]);
-	}
+//		clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_chk, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, &event1s[i]);
+//		clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_mov, 1, NULL, &H->worker[i].num_scats, NULL, 1, &event1s[i], &event2s[i]);
+
+    }
 
     for (i=0; i<H->num_workers; i++) {
         clFlush(H->worker[i].que);
     }
     
     for (i=0; i<H->num_workers; i++) {
-        clWaitForEvents(1, &event2s[i]);
+        clWaitForEvents(1, &events[i]);
     }
 	
     for (i=0; i<H->num_workers; i++) {
-		clReleaseEvent(event1s[i]);
-		clReleaseEvent(event2s[i]);
+		clReleaseEvent(events[i]);
     }
 	
 #endif

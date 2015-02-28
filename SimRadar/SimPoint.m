@@ -39,7 +39,8 @@
 		//L = LES_init();
         NSString *resourcePath = [[NSBundle mainBundle] resourcePath];
         
-		L = LES_init_with_config_path(LESConfigSuctionVortices, [resourcePath UTF8String]);
+		//L = LES_init_with_config_path(LESConfigSuctionVortices, [resourcePath UTF8String]);
+        L = LES_init_with_config_path(LESConfigTwoCell, [resourcePath UTF8String]);
         
         A = ADM_init_with_config_path(ADMConfigSquarePlate, [resourcePath UTF8String]);
 
@@ -67,13 +68,16 @@
 		//RS_set_physics_data_to_cube125(S);
 		//RS_set_physics_data_to_cube27(S);
 		
-		table_id = 0;
-		LESTable *les = LES_get_frame(L, table_id);
-		//LES_show_table_summary(les);
-		RS_set_wind_data_to_LES_table(S, les);
+        RS_clear_wind_data(S);
+        for (table_id=0; table_id<RS_MAX_VEL_TABLES; table_id++) {
+            LESTable *les = LES_get_frame(L, table_id);
+            //LES_show_table_summary(les);
+            RS_set_wind_data_to_LES_table(S, les);
+        }
 		
         ADMTable *adm = ADM_get_frame(A);
         //ADM_show_table_summary(adm);
+        RS_clear_adm_data(S);
         RS_set_adm_data_to_ADM_table(S, adm);
         
 		//RS_set_prt(S, 1.0f);
@@ -127,15 +131,6 @@
 {
 	RS_advance_time(S);
 	//RS_make_pulse(S);
-    
-	if (S->sim_tic >= S->sim_toc) {
-		LESTable *table = LES_get_frame(L, table_id);
-		if (table != NULL) {
-			RS_set_wind_data_to_LES_table(S, table);
-			//NSLog(@"table_id = %d", table_id);
-		}
-		table_id = (table_id + 1) % 20;
-	}
 }
 
 - (void)advanceBeamPosition

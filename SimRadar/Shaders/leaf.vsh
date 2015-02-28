@@ -1,5 +1,6 @@
 uniform mat4 modelViewProjectionMatrix;
 uniform vec4 drawColor;
+uniform vec4 drawSize;
 
 in vec3 inPosition;
 in vec4 inQuaternion;
@@ -26,6 +27,7 @@ void main (void)
     // This works.
     //gl_Position = modelViewProjectionMatrix * vec4(inPosition + inTranslation, 1.0);
     
+    pos = pos * drawSize;
     pos = quat_mult(quat_mult(quat_left, pos), quat_right);
 
     gl_Position = modelViewProjectionMatrix * (pos + vec4(inTranslation, 1.0));

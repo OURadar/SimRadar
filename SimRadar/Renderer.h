@@ -20,6 +20,7 @@ typedef struct _draw_resource {
 	GLuint vao;
 	GLuint vbo[5];       // positions, colors, tex_coord, wvp_mat
 	GLint mvpUI;
+    GLint sizeUI;
 	GLint colorUI;
     GLint textureUI;
 	GLuint count;
@@ -87,6 +88,8 @@ typedef struct _draw_resource {
     RenderResource leafRenderer;
     RenderResource hudRenderer;
     
+    GLfloat backgroundOpacity;
+    
     GLText *textRenderer;
     
     char statusMessage[10][256];
@@ -126,5 +129,7 @@ typedef struct _draw_resource {
 - (void)increaseLeafCount;
 - (void)decreaseLeafCount;
 
+- (void)increaseBackgroundOpacity;
+- (void)decreaseBackgroundOpacity;
 
 @end
