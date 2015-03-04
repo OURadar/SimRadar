@@ -35,6 +35,8 @@
 	if (self) {
 		//S  = RS_init();
 		S = RS_init_verbose(2);
+        
+        RS_set_density(S, 25.0f);
 
 		//L = LES_init();
         NSString *resourcePath = [[NSBundle mainBundle] resourcePath];

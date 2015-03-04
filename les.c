@@ -20,6 +20,7 @@ typedef struct _les_mem {
 	LESGrid *data_grid;
 	int ibuf;
 	float tr;
+    float v0;
 	size_t data_id[LES_num];
 	LESTable *data_boxes[LES_num];
 } LESMem;
@@ -278,6 +279,9 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
 		snprintf(les_file_path, 1024, "%s/twocell/fort.10_2", les_path);
         dir_ret = stat(les_path, &path_stat);
 		file_ret = stat(les_file_path, &file_stat);
+        if (dir_ret < 0 || file_ret < 0) {
+            continue;
+        }
         if (dir_ret == 0 && S_ISDIR(path_stat.st_mode) && S_ISREG(file_stat.st_mode)) {
 
             #ifdef DEBUG
@@ -303,6 +307,11 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
     snprintf(h->data_path, sizeof(h->data_path), "%s/%s", les_path, config);
 	h->ibuf = 0;
 	h->tr = 50.0f;
+    if (!strcmp(config, LESConfigSuctionVortices)) {
+        h->v0 = 250.0f;
+    } else if (!strcmp(config, LESConfigTwoCell)) {
+        h->v0 = 150.0f;
+    }
     
     char grid_file[1024];
     snprintf(grid_file, 1024, "%s/fort.10_2", h->data_path);
@@ -323,6 +332,10 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
 	// Allocate data boxes
 	for (int i=0; i<LES_num; i++) {
 		h->data_boxes[i] = LES_table_create(h->data_grid);
+        if (h->data_boxes[i] == NULL) {
+            fprintf(stderr, "[LES] LES_table_create() returned a NULL.\n");
+            return NULL;
+        }
 		h->data_boxes[i]->tr = h->tr;
 		h->data_id[i] = (size_t)-1;
 	}
@@ -338,7 +351,7 @@ LESTable *LES_get_frame(const LESHandle *i, const int n) {
 	LESTable *table;
 	LESMem *h = (LESMem *)i;
 
-	const float v0 = 250.0f;
+	const float v0 = h->v0;
 	
 	int k = 0;
 	while (n != h->data_id[k] && k < LES_num) {

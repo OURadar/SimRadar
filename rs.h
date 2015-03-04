@@ -38,7 +38,7 @@
 #define RS_MAX_GPU_PLATFORM        10
 #define RS_MAX_GPU_DEVICE           8
 #define RS_MAX_KERNEL_LINES      1024
-#define RS_MAX_KERNEL_SRC       32768
+#define RS_MAX_KERNEL_SRC       65536
 #define RS_ALIGN_SIZE             128     // Align size. Be sure to have a least 32 for AVX
 #define RS_MAX_GATES              512
 #define RS_MAX_NUM_SCATS      4000000
@@ -163,40 +163,40 @@ typedef struct _rs_table3d {
 // along with a table
 enum {
     RSTableDescriptionScaleX      =  0,
-    RSTableDescriptionOriginX     =  1,
-    RSTableDescriptionMaximumX    =  2,
-    RSTableDescriptionReserved1   =  3,
-    RSTableDescriptionScaleY      =  4,
+    RSTableDescriptionScaleY      =  1,
+    RSTableDescriptionScaleZ      =  2,
+    RSTableDescriptionRefreshTime =  3,
+    RSTableDescriptionOriginX     =  4,
     RSTableDescriptionOriginY     =  5,
-    RSTableDescriptionMaximumY    =  6,
-    RSTableDescriptionReserved2   =  7,
-    RSTableDescriptionScaleZ      =  8,
-    RSTableDescriptionOriginZ     =  9,
+    RSTableDescriptionOriginZ     =  6,
+    RSTableDescription7           =  7,
+    RSTableDescriptionMaximumX    =  8,
+    RSTableDescriptionMaximumY    =  9,
     RSTableDescriptionMaximumZ    = 10,
-    RSTableDescriptionReserved3   = 11,
-    RSTableDescriptionRefreshTime = 12,  // sc
-    RSTableDescriptionReserved4   = 13,
-    RSTableDescriptionReserved5   = 14,
-    RSTableDescriptionReserved6   = 15,
+    RSTableDescription11          = 11,
+    RSTableDescriptionRecipInLnX  = 12,
+    RSTableDescriptionRecipInLnY  = 13,
+    RSTableDescriptionRecipInLnZ  = 14,
+    RSTableDescriptionTachikawa   = 15,
 };
 
 enum {
     RSSimulationParameterBeamUnitX     =  0,
     RSSimulationParameterBeamUnitY     =  1,
     RSSimulationParameterBeamUnitZ     =  2,
-    RSSimulationParameter3             =  3,
-    RSSimulationParameterPRT           =  4,
-    RSSimulationParameterAgeIncrement  =  5,  // PRT / vel_desc.tr
-    RSSimulationParameterDebrisCount   =  6,
+    RSSimulationParameterDebrisCount   =  3,
+    RSSimulationParameter4             =  4,
+    RSSimulationParameter5             =  5,
+    RSSimulationParameter6             =  6,
     RSSimulationParameter7             =  7,
-    RSSimulationParameterBoundOriginX  =  8,
-    RSSimulationParameterBoundOriginY  =  9,
-    RSSimulationParameterBoundOriginZ  =  10,
-    RSSimulationParameter11            =  11,
+    RSSimulationParameterBoundOriginX  =  8,  // hi.s0
+    RSSimulationParameterBoundOriginY  =  9,  // hi.s1
+    RSSimulationParameterBoundOriginZ  =  10, // hi.s2
+    RSSimulationParameterPRT           =  11,
     RSSimulationParameterBoundSizeX    =  12, // hi.s4
     RSSimulationParameterBoundSizeY    =  13, // hi.s5
     RSSimulationParameterBoundSizeZ    =  14, // hi.s6
-    RSSimulationParameter15            =  15,
+    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
 };
 
 //
@@ -298,12 +298,17 @@ typedef struct _rs_handle {
 	size_t                 sim_tic;
 	size_t                 sim_toc;
 	RSfloat                sim_time;
+    cl_float16             sim_desc;
+
+    // Table related variables
     uint32_t               vel_idx;
     uint32_t               vel_count;
     uint32_t               adm_idx;
     uint32_t               adm_count;
     uint32_t               rcs_idx;
     uint32_t               rcs_count;
+    cl_float4              inv_inln;
+    cl_float               Ta;
 
 	// Scatter bodies
 	size_t                 num_scats;

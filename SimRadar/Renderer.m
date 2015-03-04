@@ -420,8 +420,8 @@
         //resource.texture = [self loadTexture:@"sphere1.png"];
         //resource.texture = [self loadTexture:@"depth.png"];
         //resource.texture = [self loadTexture:@"sphere64.png"];
-//		resource.texture = [self loadTexture:@"disc64.png"];
-        resource.texture = [self loadTexture:@"spot256.png"];
+		resource.texture = [self loadTexture:@"disc64.png"];
+//        resource.texture = [self loadTexture:@"spot256.png"];
         resource.textureID = [resource.texture name];
         glUniform1i(resource.textureUI, resource.textureID);
     }
@@ -487,15 +487,11 @@
         spinModel = 1;
 		aspectRatio = 1.0f;
         
-        #ifdef GEN_IMG
-        showHud = FALSE;
-        #else
         showHud = TRUE;
-        #endif
         
         hudModelViewProjection = GLKMatrix4Identity;
         beamModelViewProjection = GLKMatrix4Identity;
-        backgroundOpacity = 1.0;
+        backgroundOpacity = 0.3;
         
 		// View parameters
 		[self resetViewParameters];
@@ -558,7 +554,7 @@
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
 	[self makeOneLeaf];
-    leafRenderer.count = 301;
+    leafRenderer.count = 3001;
     
     // Tell whatever controller that the OpenGL context is ready for sharing and set up renderer's body count
 	[delegate glContextVAOPrepared];
@@ -748,8 +744,8 @@
 	// The scatter bodies
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 	glBindVertexArray(bodyRenderer.vao);
-//	glPointSize(MIN(MAX(15.0f * pixelsPerUnit, 1.0f), 64.0f));
-    glPointSize(MIN(MAX(35.0f * pixelsPerUnit, 2.0f), 256.0f));
+	glPointSize(MIN(MAX(15.0f * pixelsPerUnit, 1.0f), 64.0f));
+//    glPointSize(MIN(MAX(35.0f * pixelsPerUnit, 2.0f), 256.0f));
 	glUseProgram(bodyRenderer.program);
 	//glUniform4f(bodyRenderer.colorUI, 1.0f, 1.0f, 1.0f, 0.6f);
     if (range < 1000.0f) {
@@ -820,7 +816,8 @@
     //[textRenderer drawText:"SimRadar" origin:NSMakePoint(25.0f, height - 150.0f) scale:1.0f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
     [textRenderer drawText:statusMessage[0] origin:NSMakePoint(25.0f, height - 90.0f) scale:0.333f];
     [textRenderer drawText:statusMessage[1] origin:NSMakePoint(25.0f, height - 120.0f) scale:0.333f];
-    //    [textRenderer drawText:fpsString origin:NSMakePoint(width - 25.0f, height - 49.0f) scale:0.333f red:1.0f green:0.9f blue:0.2f alpha:1.0f align:GLTextAlignmentRight];
+
+    [textRenderer drawText:fpsString origin:NSMakePoint(width - 30.0f, hudOrigin.y - 40.0f) scale:0.333f red:1.0f green:0.9f blue:0.2f alpha:1.0f align:GLTextAlignmentRight];
     
     if (showHud) {
         snprintf(statusMessage[2], 128, "EL %.2f   AZ %.2f", beamElevation / M_PI * 180.0f, beamAzimuth / M_PI * 180.0f);

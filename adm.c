@@ -70,7 +70,7 @@ ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path) {
     
     char *ctmp = getenv("HOME");
     if (ctmp != NULL) {
-        //printf("HOME = %s\n", ctmp);
+        //printf("[ADM] HOME = %s\n", ctmp);
         snprintf(search_paths[2], 1024, "%s/Downloads/tables", ctmp);
         snprintf(search_paths[3], 1024, "%s/Desktop/les", ctmp);
         snprintf(search_paths[4], 1024, "%s/Douments/les", ctmp);
@@ -90,6 +90,9 @@ ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path) {
         snprintf(dat_file_path, 1024, "%s/%s.adm", dat_path, ADMConfigSquarePlate);
         dir_ret = stat(dat_path, &path_stat);
         file_ret = stat(dat_file_path, &file_stat);
+        if (dir_ret < 0 || file_ret < 0) {
+            continue;
+        }
         //printf("testing %s (%d)  %s (%d)\n", dat_path, S_ISDIR(path_stat.st_mode), dat_file_path, S_ISREG(file_stat.st_mode));
         if (dir_ret == 0 && S_ISDIR(path_stat.st_mode) && S_ISREG(file_stat.st_mode)) {
             
@@ -129,8 +132,15 @@ ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path) {
         return NULL;
     }
     h->data_grid->rev = 1;
-    fread(&h->data_grid->nb, sizeof(uint16_t), 1, fid);
-    fread(&h->data_grid->na, sizeof(uint16_t), 1, fid);
+    uint16_t nbna[2];
+    fread(nbna, sizeof(uint16_t), 2, fid);
+    h->data_grid->nb = nbna[0];
+    h->data_grid->na = nbna[1];
+
+    #ifdef DEBUG
+    printf("%s    nb = %d    na = %d\n", h->data_path, h->data_grid->nb, h->data_grid->na);
+    #endif
+    
     h->data_grid->b = (float *)malloc(h->data_grid->nb * sizeof(float));
     h->data_grid->a = (float *)malloc(h->data_grid->na * sizeof(float));
     
@@ -143,10 +153,6 @@ ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path) {
         h->data_grid->a[i] = (float)i / (float)(h->data_grid->na - 1) * 180.0f;
     }
 
-#ifdef DEBUG
-    printf("%s    nb = %d    na = %d\n", h->data_path, h->data_grid->nb, h->data_grid->na);
-#endif
-    
     // Allocate data table
     h->data_value = (ADMTable *)malloc(sizeof(ADMTable));
     if (h->data_value == NULL) {

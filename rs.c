@@ -234,24 +234,19 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 		exit(EXIT_FAILURE);
 	}
 	
-    cl_float16 sim_desc = {{
-        H->beam_pos.x,
-        H->beam_pos.y,
-        H->beam_pos.z,
-        0.0f,
-        H->params.prt,
-        H->params.prt / H->worker[0].vel_desc.sc,
-        0.0f,
-        0.0f,
-        H->domain.origin.x,
-        H->domain.origin.y,
-        H->domain.origin.z,
-        0.0f,
-        H->domain.size.x,
-        H->domain.size.y,
-        H->domain.size.z,
-        0.0f
-    }};
+    cl_float16 sim_desc;
+    sim_desc.s[RSSimulationParameterBeamUnitX] = H->beam_pos.x;
+    sim_desc.s[RSSimulationParameterBeamUnitY] = H->beam_pos.y;
+    sim_desc.s[RSSimulationParameterBeamUnitZ] = H->beam_pos.z;
+    sim_desc.s[RSSimulationParameterBoundSizeX] = H->domain.size.x;
+    sim_desc.s[RSSimulationParameterBoundSizeY] = H->domain.size.y;
+    sim_desc.s[RSSimulationParameterBoundSizeZ] = H->domain.size.z;
+    sim_desc.s[RSSimulationParameterBoundOriginX] = H->domain.origin.x;
+    sim_desc.s[RSSimulationParameterBoundOriginY] = H->domain.origin.y;
+    sim_desc.s[RSSimulationParameterBoundOriginZ] = H->domain.origin.z;
+    sim_desc.s[RSSimulationParameterPRT] = H->params.prt;
+    sim_desc.s[RSSimulationParameterDebrisCount] = H->num_scats;
+    sim_desc.s[RSSimulationParameterAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTableDescriptionRefreshTime];
 
     ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_scat_atts, 0, sizeof(cl_mem), &C->scat_pos);
@@ -729,7 +724,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
 	// Default non-zero parameters
 	H->status = RS_STATUS_DOMAIN_NULL;
 	H->params.c = 3.0e8f;
-	H->params.body_per_cell = 20.0f;
+	H->params.body_per_cell = RS_BODY_PER_CELL;
 	H->params.domain_pad_factor = RS_DOMAIN_PAD;
 	H->params.prt = 0.0f;
 	H->num_workers = 1;
@@ -1079,10 +1074,17 @@ void RS_init_scat_pos(RSHandle *H) {
 		H->scat_vel[i].z = 0.0f;
 		H->scat_vel[i].w = 0.0f;
 
-        H->scat_ori[i].x =  0.5f;
-        H->scat_ori[i].y = -0.5f;
-        H->scat_ori[i].z = -0.5f;
-        H->scat_ori[i].w =  0.5f;
+        // Facing the sky
+        H->scat_ori[i].x =  0.0f;
+        H->scat_ori[i].y = -0.707106781186547f;
+        H->scat_ori[i].z =  0.0f;
+        H->scat_ori[i].w =  0.707106781186548f;
+
+        // Facing the beam
+//        H->scat_ori[i].x =  0.5f;
+//        H->scat_ori[i].y = -0.5f;
+//        H->scat_ori[i].z = -0.5f;
+//        H->scat_ori[i].w =  0.5f;
 		
         H->scat_tum[i].x = 0.0f;
         H->scat_tum[i].y = 0.0f;
@@ -1116,21 +1118,77 @@ void RS_init_scat_pos(RSHandle *H) {
 	H->scat_pos[7280].y = H->domain.origin.y + H->domain.size.y;
 	H->scat_pos[7280].z = H->domain.origin.z + H->domain.size.z;
 	
-	// Advance the point by dt = 0.0f so that all attributes are computed.
-//	float prt = H->params.prt;
-//	H->params.prt = 0.0f;
-//	RS_advance_time_cpu(H);
-//	H->params.prt = prt;
-    for (int i=0; i<H->num_workers; i++) {
-        for (int t=0; t<RS_MAX_ADM_TABLES; t++) {
-            H->worker[i].adm_desc[t].s2 = H->params.prt;
-        }
-    }
-	
 	// Restore simulation time
 	H->sim_tic = 0;
 	H->sim_toc = 0;
 	H->sim_time = 0.0f;
+    H->sim_desc.s[RSSimulationParameterBeamUnitX] = H->beam_pos.x;
+    H->sim_desc.s[RSSimulationParameterBeamUnitY] = H->beam_pos.y;
+    H->sim_desc.s[RSSimulationParameterBeamUnitZ] = H->beam_pos.z;
+    H->sim_desc.s[RSSimulationParameterBoundSizeX] = H->domain.size.x;
+    H->sim_desc.s[RSSimulationParameterBoundSizeY] = H->domain.size.y;
+    H->sim_desc.s[RSSimulationParameterBoundSizeZ] = H->domain.size.z;
+    H->sim_desc.s[RSSimulationParameterBoundOriginX] = H->domain.origin.x;
+    H->sim_desc.s[RSSimulationParameterBoundOriginY] = H->domain.origin.y;
+    H->sim_desc.s[RSSimulationParameterBoundOriginZ] = H->domain.origin.z;
+    H->sim_desc.s[RSSimulationParameterPRT] = H->params.prt;
+    H->sim_desc.s[RSSimulationParameterDebrisCount] = H->num_scats;
+    H->sim_desc.s[RSSimulationParameterAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTableDescriptionRefreshTime];
+
+    // Plate dimension in meters
+    float v0 = 150.0f;
+    const float rho = 1.21f;
+    const float g = 9.8f;
+    
+    float len = 0.04f;
+    float thi = 0.002f;
+    float rhod = 1120.0f;
+    float mass = len * len * thi * rhod;
+
+    cl_float4 ii = {{
+        (len * len + len * len) * mass / 12.0f,
+        (len * len + thi * thi) * mass / 12.0f,
+        (thi * thi + len * len) * mass / 12.0f,
+        0.0f
+    }};
+    cl_float4 inln = {{
+        ii.x * g * len / (mass * len * len * v0 * v0),
+        ii.y * g * len / (mass * len * len * v0 * v0),
+        ii.z * g * len / (mass * len * len * v0 * v0)
+    }};
+    H->inv_inln = (cl_float4) {{
+        1.0f / inln.x,
+        1.0f / inln.y,
+        1.0f / inln.z,
+        0.0f
+    }};
+    H->Ta = rho * (len * len * v0 * v0) / (2.0f * mass * g);
+
+    // De-dimensionalize
+    // Velocity should have v0 * v0 / g whenever velocity is retrieved but pre-done here
+    // Angular momentum's len needs to be dimensionalized by v0 * v0 / g
+    H->inv_inln.x *= 1.0f / (v0 * v0) / g;
+    H->inv_inln.y *= 1.0f / (v0 * v0) / g;
+    H->inv_inln.z *= 1.0f / (v0 * v0) / g;
+//    H->inv_inln.x *= g / (v0 * v0);
+//    H->inv_inln.y *= g / (v0 * v0);
+//    H->inv_inln.z *= g / (v0 * v0);
+    H->Ta *= g / (v0 * v0);
+
+    printf("Ta = %.4f  inv_inln = %.4f %.4f %.4f   mass=%.4f kg\n",
+           H->Ta, H->inv_inln.x, H->inv_inln.y, H->inv_inln.z, mass);
+//    H->sim_desc.s[RSSimulationParameter7] = H->Ta;
+//    H->sim_desc.s[RSSimulationParameter4] = H->inv_inln.x;
+//    H->sim_desc.s[RSSimulationParameter5] = H->inv_inln.y;
+//    H->sim_desc.s[RSSimulationParameter6] = H->inv_inln.z;
+    
+    int t = 0;
+    for (int i=0; i<H->num_workers; i++) {
+        H->worker[i].adm_desc[t].s[RSTableDescriptionRecipInLnX] = H->inv_inln.x;
+        H->worker[i].adm_desc[t].s[RSTableDescriptionRecipInLnY] = H->inv_inln.y;
+        H->worker[i].adm_desc[t].s[RSTableDescriptionRecipInLnZ] = H->inv_inln.z;
+        H->worker[i].adm_desc[t].s[RSTableDescriptionTachikawa] = H->Ta;
+    }
 }
 
 #pragma mark -
@@ -1217,7 +1275,12 @@ void RS_set_scan_box(RSHandle *H,
 	while (el <= el_hi) {
 		el += H->params.elevation_delta_deg;
 		nel++;
-	}
+    }
+    // Zero volume
+    if (naz == 0 || nel == 0) {
+        printf("%s : RS : NEL = %d and/or NAZ = %d resulted in a zero volumne.\n", now(), naz, nel);
+        return;
+    }
 	H->num_anchors  = 2 * naz * nel + 1;  // Save one for radar origin
 	//printf("%s : RS : Number of anchors needed = %d\n", now(), (int)H->num_anchors);
 	if (H->anchor_pos) {
@@ -1543,6 +1606,9 @@ void RS_set_beam_pos(RSHandle *H, RSfloat az_deg, RSfloat el_deg) {
 	H->beam_pos.y = cosf(el_deg / 180.0f * M_PI) * cosf(az_deg / 180.0f * M_PI);
 	H->beam_pos.z = sinf(el_deg / 180.0f * M_PI);
 	H->beam_pos.w = 0.0f;
+    H->sim_desc.s[RSSimulationParameterBeamUnitX] = H->beam_pos.x;
+    H->sim_desc.s[RSSimulationParameterBeamUnitY] = H->beam_pos.y;
+    H->sim_desc.s[RSSimulationParameterBeamUnitZ] = H->beam_pos.z;
 }
 
 
@@ -1826,6 +1892,7 @@ void RS_set_wind_data(RSHandle *H, const RSTable3D table) {
 
 #else
         
+        cl_int ret;
         cl_mem_flags flags = CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR;
         
 #if defined (CL_VERSION_1_2)
@@ -1862,24 +1929,23 @@ void RS_set_wind_data(RSHandle *H, const RSTable3D table) {
     }
 	
 	for (i=0; i<H->num_workers; i++) {
-		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+
+#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+
+        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+#endif
+
         // Copy over to CL worker
-        H->worker[i].vel_desc.s0 = table.xs;
-        H->worker[i].vel_desc.s1 = table.ys;
-        H->worker[i].vel_desc.s2 = table.zs;
-        H->worker[i].vel_desc.s3 = 0.0f;
-        H->worker[i].vel_desc.s4 = table.xo;
-        H->worker[i].vel_desc.s5 = table.yo;
-        H->worker[i].vel_desc.s6 = table.zo;
-        H->worker[i].vel_desc.s7 = 0.0f;
-        H->worker[i].vel_desc.s8 = table.xm;
-        H->worker[i].vel_desc.s9 = table.ym;
-        H->worker[i].vel_desc.sa = table.zm;
-        H->worker[i].vel_desc.sb = 0.0f;
-        H->worker[i].vel_desc.sc = table.tr;
-        H->worker[i].vel_desc.sd = 0.0f;
-        H->worker[i].vel_desc.se = 0.0f;
-        H->worker[i].vel_desc.sf = 0.0f;
+        H->worker[i].vel_desc.s[RSTableDescriptionScaleX] = table.xs;
+        H->worker[i].vel_desc.s[RSTableDescriptionScaleY] = table.ys;
+        H->worker[i].vel_desc.s[RSTableDescriptionScaleZ] = table.zs;
+        H->worker[i].vel_desc.s[RSTableDescriptionOriginX] = table.xo;
+        H->worker[i].vel_desc.s[RSTableDescriptionOriginY] = table.yo;
+        H->worker[i].vel_desc.s[RSTableDescriptionOriginZ] = table.zo;
+        H->worker[i].vel_desc.s[RSTableDescriptionMaximumX] = table.xm;
+        H->worker[i].vel_desc.s[RSTableDescriptionMaximumY] = table.ym;
+        H->worker[i].vel_desc.s[RSTableDescriptionMaximumZ] = table.zm;
+        H->worker[i].vel_desc.s[RSTableDescriptionRefreshTime] = table.tr;
 	}
     H->vel_count++;
 }
@@ -2108,25 +2174,24 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
     }
     
     for (i=0; i<H->num_workers; i++) {
+
+#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+
         dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+        
+#endif
+        
         // Copy over CL parameters
-        H->worker[i].adm_desc[t].s0 = cd.xs;
-        H->worker[i].adm_desc[t].s1 = cd.ys;
-        H->worker[i].adm_desc[t].s2 = 0.0f;
-        H->worker[i].adm_desc[t].s3 = 0.0f;
-        H->worker[i].adm_desc[t].s4 = cd.xo;
-        H->worker[i].adm_desc[t].s5 = cd.yo;
-        H->worker[i].adm_desc[t].s6 = 0.0f;
-        H->worker[i].adm_desc[t].s7 = 0.0f;
-        H->worker[i].adm_desc[t].s8 = cd.xm;
-        H->worker[i].adm_desc[t].s9 = cd.ym;
-        H->worker[i].adm_desc[t].sa = 0.0f;
-        H->worker[i].adm_desc[t].sb = 0.0f;
-        H->worker[i].adm_desc[t].sc = 0.0f;
-        H->worker[i].adm_desc[t].sd = 0.0f;
-        H->worker[i].adm_desc[t].se = 0.0f;
-        H->worker[i].adm_desc[t].sf = 0.0f;
-        H->worker[i].mem_size += ((cl_uint)(H->worker[i].adm_desc[t].s8 + 1.0f) * (H->worker[i].adm_desc[t].s9 + 1.0f)) * 2 * sizeof(cl_float4);
+        H->worker[i].adm_desc[t].s[RSTableDescriptionScaleX] = cd.xs;
+        H->worker[i].adm_desc[t].s[RSTableDescriptionScaleY] = cd.ys;
+        H->worker[i].adm_desc[t].s[RSTableDescriptionScaleZ] = 0.0f;
+        H->worker[i].adm_desc[t].s[RSTableDescriptionOriginX] = cd.xo;
+        H->worker[i].adm_desc[t].s[RSTableDescriptionOriginY] = cd.yo;
+        H->worker[i].adm_desc[t].s[RSTableDescriptionOriginZ] = 0.0f;
+        H->worker[i].adm_desc[t].s[RSTableDescriptionMaximumX] = cd.xm;
+        H->worker[i].adm_desc[t].s[RSTableDescriptionMaximumY] = cd.ym;
+        H->worker[i].adm_desc[t].s[RSTableDescriptionMaximumZ] = 0.0f;
+        H->worker[i].mem_size += ((cl_uint)(cd.xm + 1.0f) * (cd.ym + 1.0f)) * 2 * sizeof(cl_float4);
     }
     H->adm_count++;
 }
@@ -2153,10 +2218,6 @@ void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *adam) {
     cm.x_ = adam->nb;    cm.xm = (float)(cm.x_ - 1);    cm.xs = (float)adam->nb / (2.0f * M_PI);    cm.xo = -(-M_PI) * cd.xs;
     cm.y_ = adam->na;    cm.ym = (float)(cm.y_ - 1);    cm.ys = (float)adam->na / M_PI;             cm.yo = 0.0f;
 
-    // Temporary buffer for passing data
-//    cd.data = (cl_float4 *)malloc(adam->nn * sizeof(cl_float4));
-//    cm.data = (cl_float4 *)malloc(adam->nn * sizeof(cl_float4));
-    
     // Arrange ADM values into float4, getting ready for GPU's global memory
     for (i=0; i<adam->nn; i++) {
         cd.data[i].x = adam->cdx[i];
@@ -2248,24 +2309,8 @@ void RS_explode(RSHandle *H) {
     int v = 0;
     int t = 0;
     
-    cl_float16 sim_desc = {{
-        H->beam_pos.x,
-        H->beam_pos.y,
-        H->beam_pos.z,
-        0.0f,
-        10000.0f,
-        1.0f,
-        0.0f,
-        0.0f,
-        H->domain.origin.x,
-        H->domain.origin.y,
-        H->domain.origin.z,
-        0.0f,
-        H->domain.size.x,
-        H->domain.size.y,
-        H->domain.size.z,
-        0.0f
-    }};
+    cl_float16 sim_desc = H->sim_desc;
+    sim_desc.s[RSSimulationParameterPRT] = 10000.0f;
     
     if (H->sim_tic >= H->sim_toc) {
         H->sim_toc = H->sim_tic + (size_t)(5.0f / H->params.prt);
@@ -2438,48 +2483,10 @@ void RS_populate(RSHandle *H) {
 	
 #if !defined (__APPLE__) || !defined (_SHARE_OBJ_)
 
-//	cl_float8 domain_bounds = {{
-//		H->domain.origin.x,
-//		H->domain.origin.y,
-//		H->domain.origin.z,
-//		0.0f,
-//		H->domain.size.x,
-//		H->domain.size.y,
-//		H->domain.size.z,
-//		500.0f
-//	}};
-	
-    cl_float16 sim_desc = {{
-        H->beam_pos.x,
-        H->beam_pos.y,
-        H->beam_pos.z,
-        0.0f,
-        H->params.prt,
-        H->params.prt / H->worker[0].vel_desc.sc,
-        0.0f,
-        0.0f,
-        H->domain.origin.x,
-        H->domain.origin.y,
-        H->domain.origin.z,
-        0.0f,
-        H->domain.size.x,
-        H->domain.size.y,
-        H->domain.size.z,
-        0.0f
-    }};
-
-    //cl_float4 t4 = {{H->params.prt, H->params.prt / H->physics_table.tr, 0.0f, 0.0f}};
-    //cl_float4 t4 = {{H->params.prt, H->params.prt / H->worker[0].vel_desc.sc, 0.0f, 0.0f}};
-	
 	// Update kernel arguments
 	cl_int ret = CL_SUCCESS;
 	for (i=0; i<H->num_workers; i++) {
-		// Domain bounds for scat_chk()
-		//ret |= clSetKernelArg(H->worker[i].kern_scat_chk, 3, sizeof(cl_float8), &domain_bounds);
-		
-		// PRT for scat_mov()
-		//ret |= clSetKernelArg(H->worker[i].kern_scat_mov, 7, sizeof(float), &t4);
-        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, 16, sizeof(cl_float16), &sim_desc);
+        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, 16, sizeof(cl_float16), &H->sim_desc);
 	}
 
 	if (ret != CL_SUCCESS) {
@@ -2655,25 +2662,6 @@ void RS_advance_time(RSHandle *H) {
 		return;
 	}
 
-    cl_float16 sim_desc = {{
-        H->beam_pos.x,
-        H->beam_pos.y,
-        H->beam_pos.z,
-        0.0f,
-        H->params.prt,
-        H->params.prt / H->worker[0].vel_desc.sc,
-        0.0f,
-        0.0f,
-        H->domain.origin.x,
-        H->domain.origin.y,
-        H->domain.origin.z,
-        0.0f,
-        H->domain.size.x,
-        H->domain.size.y,
-        H->domain.size.z,
-        0.0f
-    }};
-
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 
     const int t = 0;
@@ -2681,7 +2669,9 @@ void RS_advance_time(RSHandle *H) {
     if (H->sim_tic >= H->sim_toc) {
 		H->sim_toc = H->sim_tic + (size_t)(5.0f / H->params.prt);
         H->vel_idx = H->vel_idx == H->vel_count - 1 ? 0 : H->vel_idx + 1;
-        printf("%s : RS : Wind table advanced. vel_idx = %d\n", now(), H->vel_idx);
+        if (H->verb > 2) {
+            printf("%s : RS : Wind table advanced. vel_idx = %d\n", now(), H->vel_idx);
+        }
     }
     
     int v = H->vel_idx;
@@ -2705,7 +2695,7 @@ void RS_advance_time(RSHandle *H) {
                              H->worker[i].rcs_desc[t],
                              (cl_float *)H->worker[i].angular_weight,
                              H->worker[i].angular_weight_desc,
-                             sim_desc);
+                             H->sim_desc);
 
             scat_clr_kernel(&H->worker[i].ndrange_scat,
 							(cl_float4 *)H->worker[i].scat_clr,
@@ -2730,7 +2720,7 @@ void RS_advance_time(RSHandle *H) {
 	
 	for (i=0; i<H->num_workers; i++) {
 		// Need to refresh some parameters at each time update
-        clSetKernelArg(H->worker[i].kern_scat_atts, 16, sizeof(cl_float16), &sim_desc);
+        clSetKernelArg(H->worker[i].kern_scat_atts, 16, sizeof(cl_float16), &H->sim_desc);
         
         clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_atts, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, &events[i]);
         
@@ -2760,6 +2750,7 @@ void RS_advance_time(RSHandle *H) {
 	
 	H->sim_tic++;
 	H->sim_time = H->sim_tic * H->params.prt;
+    //H->sim_desc.s[RSSimulationParameterSimTic] = H->sim_tic;
 }
 
 

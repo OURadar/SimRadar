@@ -1,3 +1,22 @@
+enum RSSimulationParameter {
+    RSSimulationParameterBeamUnitX     =  0,
+    RSSimulationParameterBeamUnitY     =  1,
+    RSSimulationParameterBeamUnitZ     =  2,
+    RSSimulationParameterDebrisCount   =  3,
+    RSSimulationParameter4             =  4,
+    RSSimulationParameter5             =  5,
+    RSSimulationParameter6             =  6,
+    RSSimulationParameter7             =  7,
+    RSSimulationParameterBoundOriginX  =  8,
+    RSSimulationParameterBoundOriginY  =  9,
+    RSSimulationParameterBoundOriginZ  =  10,
+    RSSimulationParameterPRT           =  11,
+    RSSimulationParameterBoundSizeX    =  12, // hi.s4
+    RSSimulationParameterBoundSizeY    =  13, // hi.s5
+    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
+    RSSimulationParameterAgeIncrement  =  15  // PRT / vel_desc.tr
+};
+
 float4 rand(uint4 *seed);
 float4 set_clr(float4 att);
 float4 quat_mult(float4 left, float4 right);
@@ -32,7 +51,8 @@ float4 rand(uint4 *seed)
 // Set colors
 float4 set_clr(float4 att)
 {
-    float g = clamp(fma(log10(att.s3), 0.3f, 1.5f), 0.05f, 0.3f);
+    //float g = clamp(fma(log10(att.s3), 0.3f, 1.5f), 0.05f, 0.3f);
+    float g = clamp(fma(log10(att.s3), 1.6f, 6.0f), 0.05f, 0.3f);
     
     float4 c;
     
@@ -83,10 +103,11 @@ float4 quat_rotate(float4 vector, float4 quat)
     return quat_mult(quat_mult(quat, vector), quat_conj(quat));
 }
 
-float4 quat_identity()
-{
-    return (float4)(0.0f, 0.0f, 0.0f, 1.0f);
-}
+//float4 quat_identity()
+//{
+//    return (float4)(0.0f, 0.0f, 0.0f, 1.0f);
+//}
+#define quat_identity  (float4)(0.0f, 0.0f, 0.0f, 1.0f)
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -142,9 +163,9 @@ __kernel void scat_atts(__global float4 *p,
     float4 ud = v[i];
     float4 q = w[i];
     
-    //float4 dt = (float4)(adm_desc.s2, adm_desc.s2, adm_desc.s2, 0.0f);
-    const float4 dt = (float4)(sim_desc.s4, sim_desc.s4, sim_desc.s4, 0.0f);
-
+    // sim_desc.s[11] = RSSimulationParameterPRT
+    const float4 dt = (float4)(sim_desc.sb, sim_desc.sb, sim_desc.sb, 0.0f);
+    
     const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
     float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
     float4 u = read_imagef(wind_uvw, sampler, wind_coord);
@@ -176,7 +197,7 @@ __kernel void scat_atts(__global float4 *p,
         //
         // derive alpha & beta of ADM for ADM table lookup ---------------------------------
         //
-        float alpha, beta;
+        float alpha, beta, gamma;
         
         float4 ur = u - ud;
         
@@ -226,11 +247,13 @@ __kernel void scat_atts(__global float4 *p,
         float4 cd = read_imagef(adm_cd, sampler, adm_coord);
         float4 cm = read_imagef(adm_cm, sampler, adm_coord);
         
-        const float Ta = 62.0103f;
-        //    const float4 inv_inln = (float4)(1.0f / 0.00002904f, 1.0f / 0.00001455f, 1.0f / 0.00001455f, 0.0f);
-        //    const float4 inv_inln = (float4)(34438.77510f, 68705.786554f, 68705.786554f, 0.0f);
-        const float4 inv_inln = (float4)(0.551020408163265f, 1.099292584864369f, 1.099292584864369f, 0.0f);
-        
+        //    RSTableDescriptionRecipInLnX  = 12,
+        //    RSTableDescriptionRecipInLnY  = 13,
+        //    RSTableDescriptionRecipInLnZ  = 14,
+        //    RSTableDescriptionTachikawa   = 15,
+        const float Ta = adm_desc.sf;
+        const float4 inv_inln = (float4)(adm_desc.scde, 0.0f);
+
         cd = quat_rotate(cd, ori);
         
         //    if (i == 0)
@@ -238,7 +261,7 @@ __kernel void scat_atts(__global float4 *p,
         //               ur.x, ur.y, ur.z, ur.w,
         //               cd.x, cd.y, cd.z, cd.w);
         
-        float ur_norm = length(ur) / 250.0f * 9.8f;
+        float ur_norm = length(ur);
         float ur_norm_sq = ur_norm * ur_norm;
         
         float4 dudt = Ta * ur_norm_sq * cd;
@@ -248,7 +271,6 @@ __kernel void scat_atts(__global float4 *p,
         ud += dudt * dt;
         
         float4 dwdt = 2.0f * cm * (Ta * inv_inln) * ur_norm_sq * dt * 0.017453292519943f;
-        //    float4 dwdt = 0.02f * cm * dt * ur_norm_sq;
         
         float4 c = cos(dwdt);
         float4 s = sin(dwdt);
@@ -256,12 +278,7 @@ __kernel void scat_atts(__global float4 *p,
                      c.x * s.y * c.z - s.x * c.y * s.z,
                      c.x * c.y * s.z + s.x * s.y * c.z,
                      c.x * c.y * c.z - s.x * s.y * s.z);
-        
-        //
-        // derive alpha, beta & gamma of RCS for RCS table lookup --------------------------
-        //
-        
-        
+
         //    w[i] = quat_identity();
         
         //    if (i == 0) {
@@ -303,7 +320,59 @@ __kernel void scat_atts(__global float4 *p,
         //               dt.x);
         //    }
 
-        ori = quat_mult(ori, q);
+        if (i > 0) {
+            ori = quat_mult(ori, q);
+        }
+        
+        //
+        // derive alpha, beta & gamma of RCS for RCS table lookup --------------------------
+        //
+        float el = atan2(sim_desc.s2, length(sim_desc.s01));
+        float az = atan2(sim_desc.s0, sim_desc.s1);
+
+        // original codes:
+        //    float4 quat_beam = quat_mult((float4)(sin(0.5f * el), 0.0f, 0.0f, cos(0.5f * el)),
+        //                                 (float4)(0.0f, 0.0f, sin(0.5f * (-M_PI_2_F + az)), cos(0.5f * (-M_PI_2_F + az))));
+        //    float4 quat_coord_change = (float4)(-sin(0.5f * M_PI_2_F), 0.0f, 0.0f, cos(0.5f * M_PI_2_F));
+        //    float4 quat_new_frame = quat_mult(quat_coord_change, quat_conj(quat_beam));
+
+        // simplified codes:
+        float4 quat_new_frame = (float4)(-0.5f * cos(0.5f * (az - el)) - 0.5f * sin(0.5f * (az + el)),
+                                          0.5f * cos(0.5f * (az - el)) - 0.5f * sin(0.5f * (az + el)),
+                                          0.5f * cos(0.5f * (az + el)) - 0.5f * sin(0.5f * (az - el)),
+                                          0.5f * cos(0.5f * (az + el)) + 0.5f * sin(0.5f * (az - el)));
+
+        // quaternion relative to the new frame of reference
+        float4 quat_rel = quat_mult(ori, quat_new_frame);
+
+        if (fabs(quat_rel.w) < 1.0e-6f) {
+            alpha = 0.0f;
+            beta  = 0.0f;
+            gamma = 0.0f;
+        } else if (fabs(quat_rel.x) < 1.0e-6f && fabs(quat_rel.y) < 1.0e-6f) {
+            // Pure azimuth: multiple solutions if we combine alpha & gamma so just lump everything to alpha
+            alpha = 2.0f * acos(quat_rel.w);
+            beta  = 0.0f;
+            gamma = 0.0f;
+        } else if (fabs(quat_rel.y) < 1.0e-6f && fabs(quat_rel.z) < 1.0e-6f) {
+            // Pure elevation: cos^2 + sin^2 = 1 for all angles, ill-conditioned
+            alpha = 0.0f;
+            beta  = quat_rel.x < 0.0f ? -2.0f * acos(quat_rel.w) : 2.0f * acos(quat_rel.w);
+            gamma = 0.0f;
+        } else {
+            alpha = atan2(quat_rel.y * quat_rel.z - quat_rel.x * quat_rel.w , quat_rel.x * quat_rel.z + quat_rel.y * quat_rel.w);
+            beta  =  acos(quat_rel.w * quat_rel.w + quat_rel.z * quat_rel.z - quat_rel.y * quat_rel.y - quat_rel.x * quat_rel.x);
+            gamma = atan2(quat_rel.x * quat_rel.w + quat_rel.y * quat_rel.z , quat_rel.y * quat_rel.w - quat_rel.x * quat_rel.z);
+        }
+
+
+//#define RAD2DEG(X)  (X * 57.295779513082323f)
+//        if (i == 0) {
+//            printf("el/az = %5.2f %5.2f   alpha/beta/gamma = %5.2f %5.2f %5.2f   quat_rel = %5.2f %5.2f %5.2f %5.2f\n",
+//                   RAD2DEG(el), RAD2DEG(az),
+//                   RAD2DEG(alpha), RAD2DEG(beta), RAD2DEG(gamma),
+//                   quat_rel.x, quat_rel.y, quat_rel.z, quat_rel.w);
+//        }
         
         // Check for bounding constraints
         int is_outside = any(isless(pos.xyz, sim_desc.hi.s012) | isgreater(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
@@ -313,7 +382,7 @@ __kernel void scat_atts(__global float4 *p,
             y[i] = seed;
             
             pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
-            //pos.z = 20.0f;
+            pos.z = 20.0f;
             
             v[i].xyzw = 0.0f;
         }
@@ -331,7 +400,6 @@ __kernel void scat_atts(__global float4 *p,
             float4 r = rand(&seed);
             y[i] = seed;
             
-            //p[i].xyz = r.xyz * box.s456 + box.s012;
             pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
             a[i].s1 = 0.0f;
             v[i].xyzw = 0.0f;
@@ -339,11 +407,16 @@ __kernel void scat_atts(__global float4 *p,
         
     }
     
+    //    RSSimulationParameterBeamUnitX     =  0,
+    //    RSSimulationParameterBeamUnitY     =  1,
+    //    RSSimulationParameterBeamUnitZ     =  2,
     float dprod = dot(sim_desc.s012, normalize(pos.xyz));
     float angle = acos(dprod);
     
     a[i].s0 = length(pos);                                 // Range of the point
-    a[i].s1 += sim_desc.s5;
+    
+    //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
+    a[i].s1 += sim_desc.sf;
     
     const float2 table_s = (float2)(angular_weight_desc.s0, angular_weight_desc.s0);
     const float2 table_o = (float2)(angular_weight_desc.s1, angular_weight_desc.s1) + (float2)(0.0f, 1.0f);

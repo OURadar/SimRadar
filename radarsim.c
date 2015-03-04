@@ -148,7 +148,8 @@ int main(int argc, char *argv[]) {
 //				RS_download_pulse_only(S);
 //				RS_show_pulse(S);
 //			}
-			RS_set_beam_pos(S, -2.0f, 1.0f);
+//			RS_set_beam_pos(S, -20.0f, 0.0f);
+			RS_set_beam_pos(S, 15.0f, 10.0f);
 			RS_advance_time(S);
 		}
 	} else {
