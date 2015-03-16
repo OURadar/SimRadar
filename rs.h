@@ -267,10 +267,8 @@ typedef struct _rs_worker {
 	cl_program             prog;
 	
     cl_kernel              kern_io;
-	cl_kernel              kern_scat_mov;
-	cl_kernel              kern_scat_chk;
+    cl_kernel              kern_dummy;
     cl_kernel              kern_scat_atts;
-	cl_kernel              kern_scat_physics;
 	cl_kernel              kern_make_pulse_pass_1;
 	cl_kernel              kern_make_pulse_pass_2;
 	cl_kernel              kern_make_pulse_pass_2_group;
@@ -410,6 +408,7 @@ void RS_explode(RSHandle *H);
 #endif
 
 void RS_io_test(RSHandle *H);
+void RS_dummy_test(RSHandle *H);
 
 void RS_populate(RSHandle *H);
 

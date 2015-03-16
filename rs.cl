@@ -126,6 +126,31 @@ __kernel void io(__global float4 *i,
     o[k] = i[k];
 }
 
+__kernel void dummy(__global float4 *i)
+{
+    float az = 0.0f;
+    float el = 0.0f;
+
+    float4 quat_new_frame
+    = (float4)(-0.5f * cos(0.5f * (az - el)) - 0.5f * sin(0.5f * (az + el)),
+               +0.5f * cos(0.5f * (az - el)) - 0.5f * sin(0.5f * (az + el)),
+               +0.5f * cos(0.5f * (az + el)) - 0.5f * sin(0.5f * (az - el)),
+               +0.5f * cos(0.5f * (az + el)) + 0.5f * sin(0.5f * (az - el)));
+
+//    float4 quat_new_frame
+//    = (float4)(-0.5f,  0.5f,  0.5f, 0.5f) * cos(0.5f * (float4)(az - el, az - el, az + el, az + el))
+//    + (float4)(-0.5f, -0.5f, -0.5f, 0.5f) * sin(0.5f * (float4)(az + el, az + el, az - el, az - el));
+
+    quat_new_frame = quat_mult(quat_new_frame, quat_new_frame);
+    
+    
+    //    float4 az4 = (float4)( az,  az, az, az);
+    //    float4 el4 = (float4)(-el, -el, el, el);
+    //    float4 quat_new_frame
+    //    = (float4)(-0.5f,  0.5f,  0.5f, 0.5f) * cos(0.5f * (az4 + el4))
+    //    + (float4)(-0.5f, -0.5f, -0.5f, 0.5f) * sin(0.5f * (az4 - el4));   
+}
+
 //
 // p - position
 // o - orientation
@@ -134,14 +159,15 @@ __kernel void io(__global float4 *i,
 // a - auxiliary info
 // x - signal
 // y - random seed
-// sim_desc - (prt, beam_pos,
+// wind_uvw            - wind table cube for u, v, w components
+// sim_desc            - (prt, beam_pos,
 // angular_weight      - beam weighting function
 // angular_weight_desc - description of the indexing of angular_weight
 //
 __kernel void scat_atts(__global float4 *p,
                         __global float4 *o,
                         __global float4 *v,
-                        __global float4 *w,
+                        __global float4 *t,
                         __global float4 *a,
                         __global float4 *x,
                         __global uint4 *y,
@@ -160,87 +186,87 @@ __kernel void scat_atts(__global float4 *p,
     
     float4 pos = p[i];
     float4 ori = o[i];
-    float4 ud = v[i];
-    float4 q = w[i];
-    
-    // sim_desc.s[11] = RSSimulationParameterPRT
-    const float4 dt = (float4)(sim_desc.sb, sim_desc.sb, sim_desc.sb, 0.0f);
+    float4 vel = v[i];
+    float4 tum = t[i];
+    float4 aux = a[i];
     
     const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
-    float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
-    float4 u = read_imagef(wind_uvw, sampler, wind_coord);
-    
-    if (i < 10001) {
 
-        if (i == 0) {
-            u = (float4)(0.0f, 10.0f, 0.0f, 0.0f);
-        }
-        
-        // For DEBUG: Override 1-st particle's velocity
-        /*
-         if (i == 0) {
-         if (a[i].s2 > 5.0f) {
-         u = (float4)(10.0f, 0.0f, 0.0f, 0.0f);
-         } else if (a[i].s2 > 4.0f) {
-         u = (float4)(0.0f, 10.0f, 0.0f, 0.0f);
-         } else if (a[i].s2 > 3.0f) {
-         u = (float4)(0.0f, 0.0f, 10.0f, 0.0f);
-         } else if (a[i].s2 > 2.0f) {
-         u = (float4)(10.0f, -10.0f, 0.0f, 0.0f);
-         } else {
-         u = (float4)(10.0f, 0.0f, -10.0f, 0.0f);
-         }
-         a[i].s2 += 1.0f;
-         }
-         */
+    //    RSSimulationParameterBeamUnitX     =  0,
+    //    RSSimulationParameterBeamUnitY     =  1,
+    //    RSSimulationParameterBeamUnitZ     =  2,
+    //    RSSimulationParameterDebrisCount   =  3,
+    //    RSSimulationParameter4             =  4,
+    //    RSSimulationParameter5             =  5,
+    //    RSSimulationParameter6             =  6,
+    //    RSSimulationParameter7             =  7,
+    //    RSSimulationParameterBoundOriginX  =  8,  // hi.s0
+    //    RSSimulationParameterBoundOriginY  =  9,  // hi.s1
+    //    RSSimulationParameterBoundOriginZ  =  10, // hi.s2
+    //    RSSimulationParameterPRT           =  11,
+    //    RSSimulationParameterBoundSizeX    =  12, // hi.s4
+    //    RSSimulationParameterBoundSizeY    =  13, // hi.s5
+    //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
+    //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
+    const float4 dt = (float4)(sim_desc.sb, sim_desc.sb, sim_desc.sb, 0.0f);
+    const float el = atan2(sim_desc.s2, length(sim_desc.s01));
+    const float az = atan2(sim_desc.s0, sim_desc.s1);
+    const int is_debris = i < (unsigned int)sim_desc.s3;
+//    const int is_debris = i < 10001;
+
+    // Background wind
+    float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
+    float4 vel_bg = read_imagef(wind_uvw, sampler, wind_coord);
+    
+    if (is_debris) {
+
+        // For DEBUG: Override 1-st particle's parameters
+//        if (i == 0) {
+//            vel = (float4)(0.0f, 10.0f, 0.0f, 0.0f);
+//            if (a[i].s2 > 5.0f) {
+//                vel = (float4)(10.0f, 0.0f, 0.0f, 0.0f);
+//            } else if (aux.s2 > 4.0f) {
+//                vel = (float4)(0.0f, 10.0f, 0.0f, 0.0f);
+//            } else if (aux.s2 > 3.0f) {
+//                vel = (float4)(0.0f, 0.0f, 10.0f, 0.0f);
+//            } else if (aux.s2 > 2.0f) {
+//                vel = (float4)(10.0f, -10.0f, 0.0f, 0.0f);
+//            } else {
+//                vel = (float4)(10.0f, 0.0f, -10.0f, 0.0f);
+//            }
+//        }
         
         //
         // derive alpha & beta of ADM for ADM table lookup ---------------------------------
         //
         float alpha, beta, gamma;
         
-        float4 ur = u - ud;
-        
-        //float4 u_hat = normalize(u);
-        float4 u_hat = normalize(ur);
-        
-        // xp, yp, zp - x, y, z axis of the particle
-        float4 xp = quat_get_x(ori);
-        float4 yp = quat_get_y(ori);
-        float4 zp = quat_get_z(ori);
-        
-        
-        /*
-         beta = acos(dot(xp, u_hat));
-         
-         float4 d = cross(u_hat, xp);
-         
-         if (length(d) < 1.0e-6f) {
-         if (all(isequal(xp, u_hat))) {
-         alpha = M_PI_2_F;
-         } else {
-         alpha = 0.0f;
-         }
-         } else {
-         d = normalize(d);
-         float4 d_zp = dot(d, zp) * zp;
-         float4 d_yp = d - d_zp;
-         alpha = acos(dot(d, zp));
-         if (dot(d_yp, yp) < 0) {
-         alpha = M_PI_F - alpha;
-         beta = -beta;
-         }
-         }
-         */
-        
-        beta = acos(dot(xp, u_hat));
-        
-        float u_zp = dot(zp, u_hat);
-        float u_yp = dot(yp, u_hat);
-        alpha = atan2(u_zp, u_yp);
-        if (alpha < 0.0f) {
-            alpha = M_PI_F + alpha;
-            beta = -beta;
+        float4 ur = vel_bg - vel;
+
+        if (length(ur.xyz) > 1.0e-3f) {
+            float4 u_hat = normalize(ur);
+            
+//            // xp, yp, zp - x, y, z axis of the particle
+//            float4 xp = quat_get_x(ori);
+//            float4 yp = quat_get_y(ori);
+//            float4 zp = quat_get_z(ori);
+//            
+//            beta = acos(dot(u_hat, xp));
+//            
+//            alpha = atan2(dot(u_hat, zp), dot(u_hat, yp));
+//            
+            u_hat = quat_rotate(u_hat, quat_conj(ori));
+            
+            beta = acos(u_hat.x);
+            alpha = atan2(u_hat.z, u_hat.y);
+            
+            if (alpha < 0.0f) {
+                alpha = M_PI_F + alpha;
+                beta = -beta;
+            }
+        } else {
+            alpha = M_PI_2_F;
+            beta = 0.0f;
         }
         
         float2 adm_coord = fma((float2)(beta, alpha), adm_desc.s01, adm_desc.s45);
@@ -254,93 +280,79 @@ __kernel void scat_atts(__global float4 *p,
         const float Ta = adm_desc.sf;
         const float4 inv_inln = (float4)(adm_desc.scde, 0.0f);
 
+        float4 cdo = cd;
         cd = quat_rotate(cd, ori);
-        
+    
         //    if (i == 0)
         //        printf("ur = %5.2f %5.2f %5.2f %5.2f  cdr = %5.2f %5.2f %5.2f %5.2f\n",
         //               ur.x, ur.y, ur.z, ur.w,
         //               cd.x, cd.y, cd.z, cd.w);
         
-        float ur_norm = length(ur);
+        float ur_norm = length(ur.xyz);
         float ur_norm_sq = ur_norm * ur_norm;
         
         float4 dudt = Ta * ur_norm_sq * cd;
         
         dudt.z -= 9.8f;
         
-        ud += dudt * dt;
+//        if (length(vel) > length(vel_bg)) {
+//            printf("vel = [%5.2f %5.2f %5.2f %5.2f]  vel_bg = [%5.2f %5.2f %5.2f %5.2f]   %5.2f\n",
+//                   vel.x, vel.y, vel.z, vel.w,
+//                   vel_bg.x, vel_bg.y, vel_bg.z, vel_bg.w,
+//                   ur_norm_sq
+//                   );
+//        }
+    
+#define DEG2RAD(x)  (x * 0.017453292519943f)
+#define RAD2DEG(x)  (x * 57.295779513082323f)
+    
+        float4 dw = DEG2RAD(dt * Ta * ur_norm_sq * cm * inv_inln);
         
-        float4 dwdt = 2.0f * cm * (Ta * inv_inln) * ur_norm_sq * dt * 0.017453292519943f;
-        
-        float4 c = cos(dwdt);
-        float4 s = sin(dwdt);
-        q = (float4)(c.x * s.y * s.z + s.x * c.y * c.z,
-                     c.x * s.y * c.z - s.x * c.y * s.z,
-                     c.x * c.y * s.z + s.x * s.y * c.z,
-                     c.x * c.y * c.z - s.x * s.y * s.z);
+        float4 c = cos(dw);
+        float4 s = sin(dw);
+        tum = (float4)(c.x * s.y * s.z + s.x * c.y * c.z,
+                       c.x * s.y * c.z - s.x * c.y * s.z,
+                       c.x * c.y * s.z + s.x * s.y * c.z,
+                       c.x * c.y * c.z - s.x * s.y * s.z);
 
-        //    w[i] = quat_identity();
-        
-        //    if (i == 0) {
-        //        printf("xyz = (%5.2f %5.2f %5.2f %5.2f ; %5.2f %5.2f %5.2f %5.2f ; %5.2f %5.2f %5.2f %5.2f)   s2 = %3.1f   u = %5.2f %5.2f %5.2f %5.2f   ang = %5.2f/%5.2f   c =(%5.2f %5.2f %5.2f %5.2f ; %5.2f %5.2f %5.2f %5.2f)\n",
-        //               xp.x, xp.y, xp.z, xp.w,
-        //               yp.x, yp.y, yp.z, yp.w,
-        //               zp.x, zp.y, zp.z, zp.w,
-        //               a[i].s2,
-        //               u.x, u.y, u.z, u.w,
-        //               alpha, beta,
-        //               cd.x, cd.y, cd.z, cd.w,
-        //               cm.x, cm.y, cm.z, cm.w);
-        
-        //        printf("xyz = (%5.2f %5.2f %5.2f ; %5.2f %5.2f %5.2f ; %5.2f %5.2f %5.2f)   u = %5.2f %5.2f %5.2f   v = %5.2f %5.2f %5.2f   ur = %5.2f %5.2f %5.2f   ang = %5.2f/%5.2f   c = (%5.2f %5.2f %5.2f ; %5.2f %5.2f %5.2f)  d/dt = (%5.2f %5.2f %5.2f ; %5.2f %5.2f %5.2f)  %5.2f\n",
-        //               xp.x, xp.y, xp.z,
-        //               yp.x, yp.y, yp.z,
-        //               zp.x, zp.y, zp.z,
-        //               u.x, u.y, u.z,
-        //               vel.x, vel.y, vel.z,
-        //               ur.x, ur.y, ur.z,
-        //               alpha, beta,
-        //               cd.x, cd.y, cd.z,
-        //               cm.x, cm.y, cm.z,
-        //               dudt.x, dudt.y, dudt.z,
-        //               dwdt.x, dwdt.y, dwdt.z,
-        //               dt.y);
-        
-        //    if (i == 0) {
-        //        printf("%3.0f   u = %5.2f %5.2f %5.2f   ud = %5.2f %5.2f %5.2f   ur = %5.2f %5.2f %5.2f   ang = %5.2f/%5.2f   c = (%5.2f %5.2f %5.2f ; %5.2f %5.2f %5.2f)  d/dt = (%5.2f %5.2f %5.2f ; %5.2f %5.2f %5.2f)  %5.2f\n",
-        //               adm_desc.s3,
-        //               u.x, u.y, u.z,
-        //               ud.x, ud.y, ud.z,
-        //               ur.x, ur.y, ur.z,
-        //               alpha, beta,
-        //               cd.x, cd.y, cd.z,
-        //               cm.x, cm.y, cm.z,
-        //               dudt.x, dudt.y, dudt.z,
-        //               dwdt.x, dwdt.y, dwdt.z,
-        //               dt.x);
-        //    }
+//        if (any(!isfinite(pos)) || any(!isfinite(vel)) || any(!isfinite(ori)) || any(!isfinite(tum)) || any(isgreater(dw, M_PI_4_F)) || length(vel_bg) > 100.0f) {
+//            float4 du = dudt * dt;
+//            printf("%u  p = [%5.2f %5.2f %5.2f %5.2f]  v = [%5.2f %5.2f %5.2f %5.2f]  vbg = [%5.2f %5.2f %5.2f %5.2f]  o = [%5.2f %5.2f %5.2f %5.2f]  du = [%5.2f %5.2f %5.2f %5.2f]  dw = [%5.2f %5.2f %5.2f %5.2f]  cd(%5.2f, %5.2f) = [%5.2f %5.2f %5.2f %5.2f] --> [%5.2f %5.2f %5.2f %5.2f]  %5.2f\n",
+//                   i,
+//                   pos.x, pos.y, pos.z, pos.w,
+//                   vel.x, vel.y, vel.z, vel.w,
+//                   //ori.x, ori.y, ori.z, ori.w,
+//                   vel_bg.x, vel_bg.y, vel_bg.z, vel_bg.w,
+//                   //tum.x, tum.y, tum.z, tum.w,
+//                   ori.x, ori.y, ori.z, ori.w,
+//                   du.x, du.y, du.z, du.w,
+//                   dw.x, dw.y, dw.z, dw.w,
+//                   RAD2DEG(beta), RAD2DEG(alpha),
+//                   cdo.x, cdo.y, cdo.z, cdo.w,
+//                   cd.x, cd.y, cd.z, cd.w,
+//                   ur_norm_sq
+//                   );
+//        }
 
-        if (i > 0) {
-            ori = quat_mult(ori, q);
-        }
+        vel += dudt * dt;
         
+        ori = quat_mult(ori, tum);
+
         //
         // derive alpha, beta & gamma of RCS for RCS table lookup --------------------------
         //
-        float el = atan2(sim_desc.s2, length(sim_desc.s01));
-        float az = atan2(sim_desc.s0, sim_desc.s1);
 
         // original codes:
         //    float4 quat_beam = quat_mult((float4)(sin(0.5f * el), 0.0f, 0.0f, cos(0.5f * el)),
         //                                 (float4)(0.0f, 0.0f, sin(0.5f * (-M_PI_2_F + az)), cos(0.5f * (-M_PI_2_F + az))));
-        //    float4 quat_coord_change = (float4)(-sin(0.5f * M_PI_2_F), 0.0f, 0.0f, cos(0.5f * M_PI_2_F));
-        //    float4 quat_new_frame = quat_mult(quat_coord_change, quat_conj(quat_beam));
+        //    float4 quat_coord_change = (float4)(sin(0.5f * M_PI_2_F), 0.0f, 0.0f, cos(0.5f * M_PI_2_F));
+        //    float4 quat_new_frame = quat_conj(quat_mult(quat_beam, quat_coord_chang));
 
         // simplified codes:
         float4 quat_new_frame = (float4)(-0.5f * cos(0.5f * (az - el)) - 0.5f * sin(0.5f * (az + el)),
-                                          0.5f * cos(0.5f * (az - el)) - 0.5f * sin(0.5f * (az + el)),
-                                          0.5f * cos(0.5f * (az + el)) - 0.5f * sin(0.5f * (az - el)),
-                                          0.5f * cos(0.5f * (az + el)) + 0.5f * sin(0.5f * (az - el)));
+                                         +0.5f * cos(0.5f * (az - el)) - 0.5f * sin(0.5f * (az + el)),
+                                         +0.5f * cos(0.5f * (az + el)) - 0.5f * sin(0.5f * (az - el)),
+                                         +0.5f * cos(0.5f * (az + el)) + 0.5f * sin(0.5f * (az - el)));
 
         // quaternion relative to the new frame of reference
         float4 quat_rel = quat_mult(ori, quat_new_frame);
@@ -374,72 +386,84 @@ __kernel void scat_atts(__global float4 *p,
 //                   quat_rel.x, quat_rel.y, quat_rel.z, quat_rel.w);
 //        }
         
-        // Check for bounding constraints
-        int is_outside = any(isless(pos.xyz, sim_desc.hi.s012) | isgreater(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
-        if (is_outside) {
-            uint4 seed = y[i];
-            float4 r = rand(&seed);
-            y[i] = seed;
-            
-            pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
-            pos.z = 20.0f;
-            
-            v[i].xyzw = 0.0f;
-        }
+        // Debris never ages
+        aux.s1 = 0.0f;
 
     } else {
         
-        // Background
-        ud = u;
+        // Particle velocity = background velocity
+        vel = vel_bg;
 
-        // Check for bounding constraints
-        int is_outside = any(isless(pos.xyz, sim_desc.hi.s012) | isgreater(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
-        
-        if (is_outside | isgreater(a[i].s1, 1.0f)) {
-            uint4 seed = y[i];
-            float4 r = rand(&seed);
-            y[i] = seed;
-            
-            pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
-            a[i].s1 = 0.0f;
-            v[i].xyzw = 0.0f;
-        }
-        
+        //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
+        aux.s1 += sim_desc.sf;
     }
     
+    // Future position, orientation, etc.
+    pos += vel * dt;
+//    if (any(!isfinite(pos))) {
+//        printf("pos = [%5.2f %5.2f %5.2f %5.2f]  vel = [%5.2f %5.2f %5.2f %5.2f]  ori = [%5.2f %5.2f %5.2f %5.2f]\n",
+//               pos.x, pos.y, pos.z, pos.w,
+//               vel.x, vel.y, vel.z, vel.w,
+//               ori.x, ori.y, ori.z, ori.z
+//               );
+//    }
+    
+    // Check for bounding constraints
+    //    RSSimulationParameterBoundOriginX  =  8,  // hi.s0
+    //    RSSimulationParameterBoundOriginY  =  9,  // hi.s1
+    //    RSSimulationParameterBoundOriginZ  =  10, // hi.s2
+    //    RSSimulationParameterPRT           =  11,
+    //    RSSimulationParameterBoundSizeX    =  12, // hi.s4
+    //    RSSimulationParameterBoundSizeY    =  13, // hi.s5
+    //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
+    //    RSSimulationParameterAgeIncrement  =  15
+    int is_outside = any(isless(pos.xyz, sim_desc.hi.s012) | isgreater(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
+    if (is_outside | isgreater(aux.s1, 1.0f)) {
+        uint4 seed = y[i];
+        float4 r = rand(&seed);
+        y[i] = seed;
+        
+        pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
+        
+        //  RSSimulationParameterDebrisCount   =  3,
+//        if (is_debris) {
+//            pos.z = 20.0f;
+//        }
+        
+        // reset the age and velocity
+        aux.s1 = 0.0f;
+        vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
+    }
+
     //    RSSimulationParameterBeamUnitX     =  0,
     //    RSSimulationParameterBeamUnitY     =  1,
     //    RSSimulationParameterBeamUnitZ     =  2,
     float dprod = dot(sim_desc.s012, normalize(pos.xyz));
     float angle = acos(dprod);
     
-    a[i].s0 = length(pos);                                 // Range of the point
+    // Range of the point
+    aux.s0 = length(pos);
     
-    //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
-    a[i].s1 += sim_desc.sf;
+    float2 table_s = (float2)(angular_weight_desc.s0, angular_weight_desc.s0);
+    float2 table_o = (float2)(angular_weight_desc.s1, angular_weight_desc.s1) + (float2)(0.0f, 1.0f);
+    float2 angle_2 = (float2)(angle, angle);
     
-    const float2 table_s = (float2)(angular_weight_desc.s0, angular_weight_desc.s0);
-    const float2 table_o = (float2)(angular_weight_desc.s1, angular_weight_desc.s1) + (float2)(0.0f, 1.0f);
-    const float2 angle_2 = (float2)(angle, angle);
-    
-    float2 fidx_raw;
-    float2 fidx_dec;
-    float2 fidx_int;
+    // scale, offset, clampp to edge
     uint2  iidx_int;
-    
-    fidx_raw = clamp(fma(angle_2, table_s, table_o), 0.0f, angular_weight_desc.s2);  // clamp to edge
-    fidx_dec = fract(fidx_raw, &fidx_int);
-    iidx_int = convert_uint2(fidx_int);
-    a[i].s3 = mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
+    float2 fidx_int;
+    float2 fidx_raw = clamp(fma(angle_2, table_s, table_o), 0.0f, angular_weight_desc.s2);
+    float2 fidx_dec = fract(fidx_raw, &fidx_int);
 
-    // Future position, orientation, etc.
-    pos += ud * dt;
+    iidx_int = convert_uint2(fidx_int);
+    aux.s3 = mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
 
     p[i] = pos;
     o[i] = ori;
-    v[i] = ud;
-    w[i] = q;
+    v[i] = vel;
+    t[i] = tum;
+    a[i] = aux;
 }
+
 
 __kernel void scat_clr(__global float4 *c,
                        __global float4 *a,

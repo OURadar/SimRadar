@@ -366,9 +366,9 @@ LESTable *LES_get_frame(const LESHandle *i, const int n) {
 		int file_id = n / LES_file_nblock;
 
 
-//#ifdef DEBUG
+        #ifdef DEBUG
 		printf("Ingest from file %s ...\n", h->files[file_id]);
-//#endif
+        #endif
 
 		// Derive filename to ingest a set of LESTables
         FILE *fid = fopen(h->files[file_id], "r");
@@ -387,9 +387,9 @@ LESTable *LES_get_frame(const LESHandle *i, const int n) {
 		// Read in all blocks since there is only a small number of them.
 		for (int b=0; b<LES_file_nblock; b++) {
 
-#ifdef DEBUG
+            #ifdef DEBUG
 			printf("Reading new LES table in data_boxes[%d] ...\n", h->ibuf);
-#endif
+            #endif
 
 			h->data_id[h->ibuf] = file_id * LES_file_nblock + b;
 			

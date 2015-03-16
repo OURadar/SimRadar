@@ -82,6 +82,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
 	
 	// Tie all kernels to the program
     C->kern_io = clCreateKernel(C->prog, "io", &ret);                                             CHECK_CL_CREATE_KERNEL
+    C->kern_dummy = clCreateKernel(C->prog, "dummy", &ret);                                       CHECK_CL_CREATE_KERNEL
     C->kern_scat_atts = clCreateKernel(C->prog, "scat_atts", &ret);                               CHECK_CL_CREATE_KERNEL
 	C->kern_make_pulse_pass_1 = clCreateKernel(C->prog, "make_pulse_pass_1", &ret);               CHECK_CL_CREATE_KERNEL
 	C->kern_make_pulse_pass_2_group = clCreateKernel(C->prog, "make_pulse_pass_2_group", &ret);   CHECK_CL_CREATE_KERNEL
@@ -91,8 +92,8 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
 	
 	if (C->verb > 3) {
 		size_t pref_size;
-		CL_CHECK(clGetKernelWorkGroupInfo(C->kern_scat_mov, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
-		printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   scat_mov()\n", now(), pref_size);
+		CL_CHECK(clGetKernelWorkGroupInfo(C->kern_scat_atts, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
+		printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   scat_atts()\n", now(), pref_size);
 		
 		CL_CHECK(clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_1, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
 		printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_1()\n", now(), pref_size);
@@ -127,10 +128,8 @@ void RS_worker_free(RSWorker *C) {
 	clReleaseCommandQueue(C->que);
 	
     clReleaseKernel(C->kern_io);
-	clReleaseKernel(C->kern_scat_mov);
-	clReleaseKernel(C->kern_scat_chk);
+    clReleaseKernel(C->kern_dummy);
     clReleaseKernel(C->kern_scat_atts);
-    clReleaseKernel(C->kern_scat_physics);
 	clReleaseKernel(C->kern_make_pulse_pass_1);
 	clReleaseKernel(C->kern_make_pulse_pass_2_group);
 	clReleaseKernel(C->kern_make_pulse_pass_2_local);
@@ -159,9 +158,9 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 												H->params.range_delta,
 												H->params.range_count);
 
-    for (int t=0; t<RS_MAX_ADM_TABLES; t++) {
-        C->adm_desc[t].s2 = H->params.prt;
-    }
+//    for (int t=0; t<RS_MAX_ADM_TABLES; t++) {
+//        C->adm_desc[t].s2 = H->params.prt;
+//    }
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 	
@@ -198,8 +197,8 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	
 	C->scat_rnd = gcl_malloc(C->num_scats * sizeof(cl_int4), NULL, 0);
 	
-	C->mem_size = (cl_uint)( (4 * C->num_scats + RS_MAX_GATES * RS_CL_GROUP_ITEMS + RS_MAX_GATES) * sizeof(cl_float4) + C->num_scats * sizeof(cl_int4) );
-	
+	C->mem_size += (cl_uint)( (7 * C->num_scats + RS_MAX_GATES * RS_CL_GROUP_ITEMS + RS_MAX_GATES) * sizeof(cl_float4) + C->num_scats * sizeof(cl_int4) );
+
 #else
 	
 	cl_int ret;
@@ -221,7 +220,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	
 	C->scat_rnd = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_int4), NULL, &ret);                     CHECK_CL_CREATE_BUFFER
 	
-	C->mem_size = (cl_uint)( (5 * C->num_scats + RS_MAX_GATES * RS_CL_GROUP_ITEMS + RS_MAX_GATES) * sizeof(cl_float4) + C->num_scats * sizeof(cl_int4) );
+	C->mem_size += (cl_uint)( (6 * C->num_scats + RS_MAX_GATES * RS_CL_GROUP_ITEMS + RS_MAX_GATES) * sizeof(cl_float4) + C->num_scats * sizeof(cl_int4) );
 	
 	//
 	// Set up kernel's input / output arguments
@@ -234,6 +233,13 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 		exit(EXIT_FAILURE);
 	}
 	
+    ret = CL_SUCCESS;
+    ret |= clSetKernelArg(C->kern_dummy, 0, sizeof(cl_mem), &C->scat_pos);
+    if (ret != CL_SUCCESS) {
+        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel dummy().\n", now());
+        exit(EXIT_FAILURE);
+    }
+    
     cl_float16 sim_desc;
     sim_desc.s[RSSimulationParameterBeamUnitX] = H->beam_pos.x;
     sim_desc.s[RSSimulationParameterBeamUnitY] = H->beam_pos.y;
@@ -245,7 +251,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     sim_desc.s[RSSimulationParameterBoundOriginY] = H->domain.origin.y;
     sim_desc.s[RSSimulationParameterBoundOriginZ] = H->domain.origin.z;
     sim_desc.s[RSSimulationParameterPRT] = H->params.prt;
-    sim_desc.s[RSSimulationParameterDebrisCount] = H->num_scats;
+    sim_desc.s[RSSimulationParameterDebrisCount] = 10001.0f;
     sim_desc.s[RSSimulationParameterAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTableDescriptionRefreshTime];
 
     ret = CL_SUCCESS;
@@ -271,11 +277,6 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_atts().\n", now());
         exit(EXIT_FAILURE);
     }
-//    C->mem_size += (cl_uint)((H->physics_table.xm + 1.0f) * (H->physics_table.ym + 1.0f) * (H->physics_table.zm + 1.0f)) * sizeof(cl_float4);
-//    C->mem_size += (cl_uint)((H->adm_cd_tables[0].xm + 1.0f) * (H->adm_cd_tables[0].ym + 1.0f)) * 2 * sizeof(cl_float4);
-    C->mem_size += (cl_uint)((C->vel_desc.s2 + 1.0f) * (C->vel_desc.s6 + 1.0f) * (C->vel_desc.sa + 1.0f)) * sizeof(float);
-    C->mem_size += (cl_uint)((C->adm_desc[0].s2 + 1.0f) * (C->adm_desc[0].s6 + 1.0f) * (C->adm_desc[0].sa + 1.0f)) * 2 * sizeof(float);
-    C->mem_size += (cl_uint)(C->range_weight_desc.s2 + 1.0f) * sizeof(float);
 
     //	printf("C->physics        @ %p\n", C->physics);
     //	printf("C->range_weight   @ %p\n", C->range_weight);
@@ -311,9 +312,6 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 2, sizeof(cl_mem), &C->scat_att);
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 3, C->make_pulse_params.local_mem_size[0], NULL);
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 4, sizeof(cl_mem), &C->range_weight);
-//	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 5, sizeof(float), &H->range_weight_table.x0);
-//	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 6, sizeof(float), &H->range_weight_table.xm);
-//	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 7, sizeof(float), &H->range_weight_table.dx);
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 5, sizeof(float), &C->range_weight_desc.s0);
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 6, sizeof(float), &C->range_weight_desc.s1);
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 7, sizeof(float), &C->range_weight_desc.s2);
@@ -326,7 +324,6 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 		fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel make_pulse_pass_1().\n", now());
 		exit(EXIT_FAILURE);
 	}
-	//C->mem_size += (cl_uint)(H->range_weight_table.xm + 1.0f) * sizeof(float);
 	
 	if (C->make_pulse_params.cl_pass_2_method == RS_CL_PASS_2_IN_LOCAL) {
 		C->kern_make_pulse_pass_2 = C->kern_make_pulse_pass_2_local;
@@ -360,12 +357,11 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 		exit(EXIT_FAILURE);
 	}
 	
-	if (C->verb) {
-		printf("%s : RS : worker[%d] memory access = %s B\n", now(), C->name, commaint(C->mem_size));
-	}
-	
 #endif
 	
+    if (C->verb) {
+        printf("%s : RS : worker[%d] memory usage = %s B\n", now(), C->name, commaint(C->mem_size));
+    }
 }
 
 #pragma mark -
@@ -1132,7 +1128,7 @@ void RS_init_scat_pos(RSHandle *H) {
     H->sim_desc.s[RSSimulationParameterBoundOriginY] = H->domain.origin.y;
     H->sim_desc.s[RSSimulationParameterBoundOriginZ] = H->domain.origin.z;
     H->sim_desc.s[RSSimulationParameterPRT] = H->params.prt;
-    H->sim_desc.s[RSSimulationParameterDebrisCount] = H->num_scats;
+    H->sim_desc.s[RSSimulationParameterDebrisCount] = 10001.0f;
     H->sim_desc.s[RSSimulationParameterAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTableDescriptionRefreshTime];
 
     // Plate dimension in meters
@@ -1167,20 +1163,19 @@ void RS_init_scat_pos(RSHandle *H) {
     // De-dimensionalize
     // Velocity should have v0 * v0 / g whenever velocity is retrieved but pre-done here
     // Angular momentum's len needs to be dimensionalized by v0 * v0 / g
-    H->inv_inln.x *= 1.0f / (v0 * v0) / g;
-    H->inv_inln.y *= 1.0f / (v0 * v0) / g;
-    H->inv_inln.z *= 1.0f / (v0 * v0) / g;
-//    H->inv_inln.x *= g / (v0 * v0);
-//    H->inv_inln.y *= g / (v0 * v0);
-//    H->inv_inln.z *= g / (v0 * v0);
+    //H->inv_inln.x *= 1.0f / (v0 * v0) / g;
+    //H->inv_inln.y *= 1.0f / (v0 * v0) / g;
+    //H->inv_inln.z *= 1.0f / (v0 * v0) / g;
+    //    H->inv_inln.x *= g / (v0 * v0);
+    //    H->inv_inln.y *= g / (v0 * v0);
+    //    H->inv_inln.z *= g / (v0 * v0);
+    H->inv_inln.x = (mass * len) / (ii.x * g * g);
+    H->inv_inln.y = (mass * len) / (ii.y * g * g);
+    H->inv_inln.z = (mass * len) / (ii.z * g * g);
     H->Ta *= g / (v0 * v0);
 
-    printf("Ta = %.4f  inv_inln = %.4f %.4f %.4f   mass=%.4f kg\n",
+    printf("Ta = %.4f;  inv_inln = [%.4f %.4f %.4f];   mass = %.4f kg\n",
            H->Ta, H->inv_inln.x, H->inv_inln.y, H->inv_inln.z, mass);
-//    H->sim_desc.s[RSSimulationParameter7] = H->Ta;
-//    H->sim_desc.s[RSSimulationParameter4] = H->inv_inln.x;
-//    H->sim_desc.s[RSSimulationParameter5] = H->inv_inln.y;
-//    H->sim_desc.s[RSSimulationParameter6] = H->inv_inln.z;
     
     int t = 0;
     for (int i=0; i<H->num_workers; i++) {
@@ -1200,6 +1195,8 @@ void RS_set_prt(RSHandle *H, const float prt) {
 //	for (int i=0; i<H->num_scats; i++) {
 //		H->scat_att[i].s1 = (float)rand() / RAND_MAX * 1000.0f;
 //	}
+//    H->sim_desc.s[RSSimulationParameterPRT] = H->params.prt;
+//    H->sim_desc.s[RSSimulationParameterAgeIncrement] = H->sim_desc.s[RSSimulationParameterPRT] / H->worker[0].vel_desc.s[RSTableDescriptionRefreshTime];
 }
 
 void RS_set_density(RSHandle *H, const float density) {
@@ -1682,6 +1679,7 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
             H->worker[i].range_weight_desc.s1 = table.x0;
             H->worker[i].range_weight_desc.s2 = table.xm;
             H->worker[i].range_weight_desc.s3 = 0.0f;
+            H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
 		}
 		
 #else
@@ -1710,6 +1708,7 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
             H->worker[i].range_weight_desc.s1 = table.x0;
             H->worker[i].range_weight_desc.s2 = table.xm;
             H->worker[i].range_weight_desc.s3 = 0.0f;
+            H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
 		}
 		
 #endif
@@ -1768,6 +1767,7 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
             H->worker[i].angular_weight_desc.s1 = table.x0;
             H->worker[i].angular_weight_desc.s2 = table.xm;
             H->worker[i].angular_weight_desc.s3 = 0.0f;
+            H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
 		}
 		
 #else
@@ -1796,6 +1796,7 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
             H->worker[i].angular_weight_desc.s1 = table.x0;
             H->worker[i].angular_weight_desc.s2 = table.xm;
             H->worker[i].angular_weight_desc.s3 = 0.0f;
+            H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
 		}
 		
 #endif
@@ -1946,6 +1947,9 @@ void RS_set_wind_data(RSHandle *H, const RSTable3D table) {
         H->worker[i].vel_desc.s[RSTableDescriptionMaximumY] = table.ym;
         H->worker[i].vel_desc.s[RSTableDescriptionMaximumZ] = table.zm;
         H->worker[i].vel_desc.s[RSTableDescriptionRefreshTime] = table.tr;
+        H->worker[i].mem_size += (cl_uint)((table.xm + 1.0f) * (table.ym + 1.0f) * (table.zm + 1.0f)) * sizeof(cl_float4);
+        
+        //H->sim_desc.s[RSSimulationParameterAgeIncrement] = H->sim_desc.s[RSSimulationParameterPRT] / table.tr;
 	}
     H->vel_count++;
 }
@@ -2073,6 +2077,13 @@ void RS_set_wind_data_to_cube125(RSHandle *H) {
 
 
 void RS_clear_wind_data(RSHandle *H) {
+    // Technically the video RAM hasn't been freed but we will assume there is enough room and this memory gets freed when a new table comes in
+    for (int i=0; i<H->num_workers; i++) {
+        cl_uint nx = (cl_uint)H->worker[i].vel_desc.s[RSTableDescriptionMaximumX] + 1;
+        cl_uint ny = (cl_uint)H->worker[i].vel_desc.s[RSTableDescriptionMaximumY] + 1;
+        cl_uint nz = (cl_uint)H->worker[i].vel_desc.s[RSTableDescriptionMaximumZ] + 1;
+        H->worker[i].mem_size -= nx * ny * nz * H->vel_count * sizeof(cl_float4);
+    }
     H->vel_count = 0;
 }
 
@@ -2181,7 +2192,7 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
         
 #endif
         
-        // Copy over CL parameters
+        // Copy over to CL worker
         H->worker[i].adm_desc[t].s[RSTableDescriptionScaleX] = cd.xs;
         H->worker[i].adm_desc[t].s[RSTableDescriptionScaleY] = cd.ys;
         H->worker[i].adm_desc[t].s[RSTableDescriptionScaleZ] = 0.0f;
@@ -2263,6 +2274,13 @@ void RS_set_adm_data_to_unity(RSHandle *H) {
 
 
 void RS_clear_adm_data(RSHandle *H) {
+    for (int i=0; i<H->num_workers; i++) {
+        for (int t=0; t<H->adm_count; t++) {
+            cl_uint nx = (cl_uint)H->worker[i].adm_desc[t].s[RSTableDescriptionMaximumX] + 1;
+            cl_uint ny = (cl_uint)H->worker[i].adm_desc[t].s[RSTableDescriptionMaximumY] + 1;
+            H->worker[i].mem_size -= nx * ny * 2 * sizeof(cl_float4);
+        }
+    }
     H->adm_count = 0;
 }
 
@@ -2403,6 +2421,45 @@ void RS_io_test(RSHandle *H) {
     
 #endif
 	
+}
+
+
+void RS_dummy_test(RSHandle *H) {
+    
+    int i;
+    
+#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+    
+    for (i=0; i<H->num_workers; i++) {
+        dispatch_async(H->worker[i].que, ^{
+            dummy_kernel(&H->worker[i].ndrange_scat,
+                         (cl_float4 *)H->worker[i].scat_pos);
+            dispatch_semaphore_signal(H->worker[i].sem);
+        });
+    }
+    
+    for (i=0; i<H->num_workers; i++) {
+        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+    }
+    
+#else
+    
+    //	cl_event events[RS_MAX_GPU_DEVICE];
+    
+    for (i=0; i<H->num_workers; i++) {
+        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_dummy, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, NULL);
+    }
+    
+    for (i=0; i<H->num_workers; i++) {
+        clFlush(H->worker[i].que);
+    }
+    
+    for (i=0; i<H->num_workers; i++) {
+        clFinish(H->worker[i].que);
+    }
+    
+#endif
+
 }
 
 

@@ -470,7 +470,7 @@
     int otic = itic;
     tics[itic] = [NSDate timeIntervalSinceReferenceDate];
     itic = itic == RENDERER_TIC_COUNT - 1 ? 0 : itic + 1;
-    fps = (float)RENDERER_TIC_COUNT / (tics[otic] - tics[itic]);
+    fps = (float)(RENDERER_TIC_COUNT - 1) / (tics[otic] - tics[itic]);
     snprintf(fpsString, sizeof(fpsString), "%.0f FPS", fps);
 }
 
@@ -756,7 +756,7 @@
 	glUniformMatrix4fv(bodyRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
     glUniform1i(bodyRenderer.textureUI, 0);
     glBindTexture(GL_TEXTURE_2D, bodyRenderer.textureID);
-	glDrawArrays(GL_POINTS, 0, bodyRenderer.count);
+	glDrawArrays(GL_POINTS, leafRenderer.count, bodyRenderer.count);
 	
 	// Leaves
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
