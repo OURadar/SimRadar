@@ -3,7 +3,7 @@ Requirements
 
 On Linux:
 
-* [GNU C Compiler]
+* [GNU C Compiler](http://gcc.gnu.org)
 * [OpenCL] version 1.1 or 1.2
 
 On Mac:
