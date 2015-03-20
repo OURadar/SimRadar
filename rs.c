@@ -241,36 +241,36 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     }
     
     cl_float16 sim_desc;
-    sim_desc.s[RSSimulationParameterBeamUnitX] = H->beam_pos.x;
-    sim_desc.s[RSSimulationParameterBeamUnitY] = H->beam_pos.y;
-    sim_desc.s[RSSimulationParameterBeamUnitZ] = H->beam_pos.z;
-    sim_desc.s[RSSimulationParameterBoundSizeX] = H->domain.size.x;
-    sim_desc.s[RSSimulationParameterBoundSizeY] = H->domain.size.y;
-    sim_desc.s[RSSimulationParameterBoundSizeZ] = H->domain.size.z;
+    sim_desc.s[RSSimulationParameterBeamUnitX]    = H->beam_pos.x;
+    sim_desc.s[RSSimulationParameterBeamUnitY]    = H->beam_pos.y;
+    sim_desc.s[RSSimulationParameterBeamUnitZ]    = H->beam_pos.z;
+    sim_desc.s[RSSimulationParameterBoundSizeX]   = H->domain.size.x;
+    sim_desc.s[RSSimulationParameterBoundSizeY]   = H->domain.size.y;
+    sim_desc.s[RSSimulationParameterBoundSizeZ]   = H->domain.size.z;
     sim_desc.s[RSSimulationParameterBoundOriginX] = H->domain.origin.x;
     sim_desc.s[RSSimulationParameterBoundOriginY] = H->domain.origin.y;
     sim_desc.s[RSSimulationParameterBoundOriginZ] = H->domain.origin.z;
-    sim_desc.s[RSSimulationParameterPRT] = H->params.prt;
-    sim_desc.s[RSSimulationParameterDebrisCount] = 10001.0f;
+    sim_desc.s[RSSimulationParameterPRT]          = H->params.prt;
+    sim_desc.s[RSSimulationParameterDebrisCount]  = 10001.0f;
     sim_desc.s[RSSimulationParameterAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTableDescriptionRefreshTime];
 
     ret = CL_SUCCESS;
-    ret |= clSetKernelArg(C->kern_scat_atts, 0, sizeof(cl_mem), &C->scat_pos);
-    ret |= clSetKernelArg(C->kern_scat_atts, 1, sizeof(cl_mem), &C->scat_ori);
-    ret |= clSetKernelArg(C->kern_scat_atts, 2, sizeof(cl_mem), &C->scat_vel);
-    ret |= clSetKernelArg(C->kern_scat_atts, 3, sizeof(cl_mem), &C->scat_tum);
-    ret |= clSetKernelArg(C->kern_scat_atts, 4, sizeof(cl_mem), &C->scat_att);
-    ret |= clSetKernelArg(C->kern_scat_atts, 5, sizeof(cl_mem), &C->scat_sig);
-    ret |= clSetKernelArg(C->kern_scat_atts, 6, sizeof(cl_mem), &C->scat_rnd);
-    ret |= clSetKernelArg(C->kern_scat_atts, 7, sizeof(cl_mem), &C->vel[0]);
-    ret |= clSetKernelArg(C->kern_scat_atts, 8, sizeof(cl_float16), &C->vel_desc);
-    ret |= clSetKernelArg(C->kern_scat_atts, 9, sizeof(cl_mem), &C->adm_cd[0]);
-    ret |= clSetKernelArg(C->kern_scat_atts, 10, sizeof(cl_image), &C->adm_cm[0]);
+    ret |= clSetKernelArg(C->kern_scat_atts,  0, sizeof(cl_mem),     &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_scat_atts,  1, sizeof(cl_mem),     &C->scat_ori);
+    ret |= clSetKernelArg(C->kern_scat_atts,  2, sizeof(cl_mem),     &C->scat_vel);
+    ret |= clSetKernelArg(C->kern_scat_atts,  3, sizeof(cl_mem),     &C->scat_tum);
+    ret |= clSetKernelArg(C->kern_scat_atts,  4, sizeof(cl_mem),     &C->scat_att);
+    ret |= clSetKernelArg(C->kern_scat_atts,  5, sizeof(cl_mem),     &C->scat_sig);
+    ret |= clSetKernelArg(C->kern_scat_atts,  6, sizeof(cl_mem),     &C->scat_rnd);
+    ret |= clSetKernelArg(C->kern_scat_atts,  7, sizeof(cl_mem),     &C->vel[0]);
+    ret |= clSetKernelArg(C->kern_scat_atts,  8, sizeof(cl_float16), &C->vel_desc);
+    ret |= clSetKernelArg(C->kern_scat_atts,  9, sizeof(cl_mem),     &C->adm_cd[0]);
+    ret |= clSetKernelArg(C->kern_scat_atts, 10, sizeof(cl_mem),     &C->adm_cm[0]);
     ret |= clSetKernelArg(C->kern_scat_atts, 11, sizeof(cl_float16), &C->adm_desc);
-    ret |= clSetKernelArg(C->kern_scat_atts, 12, sizeof(cl_mem), &C->adm_cd[0]);           // will come back for you rcs
+    ret |= clSetKernelArg(C->kern_scat_atts, 12, sizeof(cl_mem),     &C->adm_cd[0]);           // will come back for you rcs
     ret |= clSetKernelArg(C->kern_scat_atts, 13, sizeof(cl_float16), &C->adm_desc);
-	ret |= clSetKernelArg(C->kern_scat_atts, 14, sizeof(cl_mem), &C->angular_weight);
-	ret |= clSetKernelArg(C->kern_scat_atts, 15, sizeof(cl_float4), &C->angular_weight_desc);
+	ret |= clSetKernelArg(C->kern_scat_atts, 14, sizeof(cl_mem),     &C->angular_weight);
+	ret |= clSetKernelArg(C->kern_scat_atts, 15, sizeof(cl_float4),  &C->angular_weight_desc);
     ret |= clSetKernelArg(C->kern_scat_atts, 16, sizeof(cl_float16), &sim_desc);
 
     if (ret != CL_SUCCESS) {
@@ -307,19 +307,19 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 			   commaint(C->make_pulse_params.entry_counts[0]));
 	}
 	ret = CL_SUCCESS;
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 0, sizeof(cl_mem), &C->work);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 1, sizeof(cl_mem), &C->scat_sig);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 2, sizeof(cl_mem), &C->scat_att);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 0, sizeof(cl_mem),                         &C->work);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 1, sizeof(cl_mem),                         &C->scat_sig);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 2, sizeof(cl_mem),                         &C->scat_att);
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 3, C->make_pulse_params.local_mem_size[0], NULL);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 4, sizeof(cl_mem), &C->range_weight);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 5, sizeof(float), &C->range_weight_desc.s0);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 6, sizeof(float), &C->range_weight_desc.s1);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 7, sizeof(float), &C->range_weight_desc.s2);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 8, sizeof(float), &C->make_pulse_params.range_start);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 9, sizeof(float), &C->make_pulse_params.range_delta);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 10, sizeof(unsigned int), &C->make_pulse_params.range_count);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 11, sizeof(unsigned int), &C->make_pulse_params.group_counts[0]);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 12, sizeof(unsigned int), &C->make_pulse_params.entry_counts[0]);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 4, sizeof(cl_mem),                         &C->range_weight);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 5, sizeof(float),                          &C->range_weight_desc.s0);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 6, sizeof(float),                          &C->range_weight_desc.s1);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 7, sizeof(float),                          &C->range_weight_desc.s2);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 8, sizeof(float),                          &C->make_pulse_params.range_start);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 9, sizeof(float),                          &C->make_pulse_params.range_delta);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 10, sizeof(unsigned int),                  &C->make_pulse_params.range_count);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 11, sizeof(unsigned int),                  &C->make_pulse_params.group_counts[0]);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 12, sizeof(unsigned int),                  &C->make_pulse_params.entry_counts[0]);
 	if (ret != CL_SUCCESS) {
 		fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel make_pulse_pass_1().\n", now());
 		exit(EXIT_FAILURE);
@@ -347,11 +347,11 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	}
 	
 	ret = CL_SUCCESS;
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_2, 0, sizeof(cl_mem), &C->pulse);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_2, 1, sizeof(cl_mem), &C->work);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_2, 0, sizeof(cl_mem),                         &C->pulse);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_2, 1, sizeof(cl_mem),                         &C->work);
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_2, 2, C->make_pulse_params.local_mem_size[1], NULL);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_2, 3, sizeof(unsigned int), &C->make_pulse_params.range_count);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_2, 4, sizeof(unsigned int), &C->make_pulse_params.entry_counts[1]);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_2, 3, sizeof(unsigned int),                   &C->make_pulse_params.range_count);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_2, 4, sizeof(unsigned int),                   &C->make_pulse_params.entry_counts[1]);
 	if (ret != CL_SUCCESS) {
 		fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel make_pulse_pass_2().\n", now());
 		exit(EXIT_FAILURE);
