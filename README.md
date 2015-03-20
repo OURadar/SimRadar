@@ -9,5 +9,5 @@ On Linux:
 On Mac:
 * [XCode 6]
 
-[Open CL]: https://www.khronos.org/opencl
+[OpenCL]: https://www.khronos.org/opencl
 [XCode 6]: https://developer.apple.com/xcode
