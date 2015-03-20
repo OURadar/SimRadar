@@ -85,7 +85,7 @@ ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path) {
     int file_ret;
     int found_dir = 0;
     
-    for (int i=0; i<5; i++) {
+    for (int i=0; i<6; i++) {
         dat_path = search_paths[i];
         snprintf(dat_file_path, 1024, "%s/%s.adm", dat_path, ADMConfigSquarePlate);
         dir_ret = stat(dat_path, &path_stat);

@@ -22,6 +22,7 @@
 		B54DEB4218A5746E00EBEC07 /* versions.html in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB4118A5746E00EBEC07 /* versions.html */; };
 		B54DEB4318A5748100EBEC07 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = B5EF318618204B5C002DDEFC /* MainMenu.xib */; };
 		B54DEB4518A582F100EBEC07 /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB4418A582F100EBEC07 /* dsa_pub.pem */; };
+		B55716861AB7519D001984E0 /* rcs.c in Sources */ = {isa = PBXBuildFile; fileRef = B55716851AB7519D001984E0 /* rcs.c */; };
 		B5576B8B18315B3B0012E6F5 /* SimPoint.m in Sources */ = {isa = PBXBuildFile; fileRef = B5576B8A18315B3B0012E6F5 /* SimPoint.m */; };
 		B5576B8E1831612A0012E6F5 /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
 		B55A0B4E19D0AD4300875832 /* sphere1.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B4919D0AD4300875832 /* sphere1.png */; };
@@ -174,6 +175,8 @@
 		B54DEB3F18A5742300EBEC07 /* SimRadar-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SimRadar-Prefix.pch"; sourceTree = "<group>"; };
 		B54DEB4118A5746E00EBEC07 /* versions.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = versions.html; path = delivery/versions.html; sourceTree = "<group>"; };
 		B54DEB4418A582F100EBEC07 /* dsa_pub.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = dsa_pub.pem; sourceTree = "<group>"; };
+		B55716841AB75186001984E0 /* rcs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rcs.h; sourceTree = "<group>"; };
+		B55716851AB7519D001984E0 /* rcs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rcs.c; sourceTree = "<group>"; };
 		B5576B8918315B3B0012E6F5 /* SimPoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SimPoint.h; sourceTree = "<group>"; };
 		B5576B8A18315B3B0012E6F5 /* SimPoint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SimPoint.m; sourceTree = "<group>"; };
 		B55A0B4919D0AD4300875832 /* sphere1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = sphere1.png; sourceTree = "<group>"; };
@@ -366,6 +369,8 @@
 				B50A281617D7C21F00E4DE66 /* rs.h */,
 				B5F3C31C18F2F86700092A72 /* les.c */,
 				B5F3C31B18F2F85C00092A72 /* les.h */,
+				B55716851AB7519D001984E0 /* rcs.c */,
+				B55716841AB75186001984E0 /* rcs.h */,
 				B567F8B11A6D522F00F40660 /* adm.c */,
 				B567F8B01A6D520C00F40660 /* adm.h */,
 			);
@@ -733,6 +738,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B55716861AB7519D001984E0 /* rcs.c in Sources */,
 				B56077F617E356A70068C6BE /* cldemo.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
