@@ -10,4 +10,4 @@ On Mac:
 * [XCode 6]
 
 [Open CL]: https://www.khronos.org/opencl
-[XCode]: https://developer.apple.com/xcode
+[XCode 6]: https://developer.apple.com/xcode
