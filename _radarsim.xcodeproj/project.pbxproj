@@ -169,6 +169,7 @@
 		B51767C018A2DFB700D47C27 /* Curious-Minion-Icon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = "Curious-Minion-Icon.icns"; sourceTree = "<group>"; };
 		B52609D019D665E800709AFD /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		B527892C18A13C0100650679 /* radarsim */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = radarsim; sourceTree = BUILT_PRODUCTS_DIR; };
+		B535159B1AD31E12004C0F50 /* versions.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = versions.html; path = delivery/versions.html; sourceTree = "<group>"; };
 		B54DEB3618A5453800EBEC07 /* Minion-Icons */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "Minion-Icons"; sourceTree = "<group>"; };
 		B54DEB3818A56A5700EBEC07 /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Sparkle.framework; sourceTree = "<group>"; };
 		B54DEB3E18A5742300EBEC07 /* SimRadar-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "SimRadar-Info.plist"; sourceTree = "<group>"; };
@@ -207,7 +208,6 @@
 		B5D1420F18AA72F80041566E /* test_make_pulse */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_make_pulse; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5D1B10E19D0EE8300769416 /* leaf.fsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = leaf.fsh; sourceTree = "<group>"; };
 		B5D1B10F19D0EE8300769416 /* leaf.vsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = leaf.vsh; sourceTree = "<group>"; };
-		B5D661FB1AD319BF00EE72CD /* versions.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = versions.html; path = delivery/versions.html; sourceTree = "<group>"; };
 		B5EF317018204B5C002DDEFC /* SimRadar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimRadar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5EF317118204B5C002DDEFC /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		B5EF317418204B5C002DDEFC /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
@@ -321,7 +321,7 @@
 			children = (
 				B5916CC51ABC7069007EA0B9 /* README.md */,
 				B57ADA6117E225EE00B03074 /* Makefile */,
-				B5D661FB1AD319BF00EE72CD /* versions.html */,
+				B535159B1AD31E12004C0F50 /* versions.html */,
 				B55A0B4719D0AD4300875832 /* images */,
 				B57ADA5F17E2068F00B03074 /* Kernels */,
 				B50A281517D7BF0900E4DE66 /* Sources */,
