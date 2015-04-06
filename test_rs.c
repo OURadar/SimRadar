@@ -127,9 +127,6 @@ int main(int argc, char **argv)
 	
 	RS_advance_time(H);
     
-    print("Hello there.\n");
-    printf("What's up?\n");
-
 #define FMT   "%30s  %8.4f ms\n"
 #define FMT2  "%30s  %8.4f ms  (%.2f GB/s)\n"
 	
