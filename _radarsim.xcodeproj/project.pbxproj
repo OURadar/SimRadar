@@ -19,7 +19,6 @@
 		B54DEB3718A5453800EBEC07 /* Minion-Icons in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB3618A5453800EBEC07 /* Minion-Icons */; };
 		B54DEB3918A56A5700EBEC07 /* Sparkle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B54DEB3818A56A5700EBEC07 /* Sparkle.framework */; };
 		B54DEB3C18A572EB00EBEC07 /* Sparkle.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = B54DEB3818A56A5700EBEC07 /* Sparkle.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		B54DEB4218A5746E00EBEC07 /* versions.html in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB4118A5746E00EBEC07 /* versions.html */; };
 		B54DEB4318A5748100EBEC07 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = B5EF318618204B5C002DDEFC /* MainMenu.xib */; };
 		B54DEB4518A582F100EBEC07 /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB4418A582F100EBEC07 /* dsa_pub.pem */; };
 		B55716861AB7519D001984E0 /* rcs.c in Sources */ = {isa = PBXBuildFile; fileRef = B55716851AB7519D001984E0 /* rcs.c */; };
@@ -174,7 +173,6 @@
 		B54DEB3818A56A5700EBEC07 /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Sparkle.framework; sourceTree = "<group>"; };
 		B54DEB3E18A5742300EBEC07 /* SimRadar-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "SimRadar-Info.plist"; sourceTree = "<group>"; };
 		B54DEB3F18A5742300EBEC07 /* SimRadar-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SimRadar-Prefix.pch"; sourceTree = "<group>"; };
-		B54DEB4118A5746E00EBEC07 /* versions.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = versions.html; path = delivery/versions.html; sourceTree = "<group>"; };
 		B54DEB4418A582F100EBEC07 /* dsa_pub.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = dsa_pub.pem; sourceTree = "<group>"; };
 		B55716841AB75186001984E0 /* rcs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rcs.h; sourceTree = "<group>"; };
 		B55716851AB7519D001984E0 /* rcs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rcs.c; sourceTree = "<group>"; };
@@ -209,6 +207,7 @@
 		B5D1420F18AA72F80041566E /* test_make_pulse */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_make_pulse; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5D1B10E19D0EE8300769416 /* leaf.fsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = leaf.fsh; sourceTree = "<group>"; };
 		B5D1B10F19D0EE8300769416 /* leaf.vsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = leaf.vsh; sourceTree = "<group>"; };
+		B5D661FB1AD319BF00EE72CD /* versions.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = versions.html; path = delivery/versions.html; sourceTree = "<group>"; };
 		B5EF317018204B5C002DDEFC /* SimRadar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimRadar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5EF317118204B5C002DDEFC /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		B5EF317418204B5C002DDEFC /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
@@ -322,7 +321,7 @@
 			children = (
 				B5916CC51ABC7069007EA0B9 /* README.md */,
 				B57ADA6117E225EE00B03074 /* Makefile */,
-				B54DEB4118A5746E00EBEC07 /* versions.html */,
+				B5D661FB1AD319BF00EE72CD /* versions.html */,
 				B55A0B4719D0AD4300875832 /* images */,
 				B57ADA5F17E2068F00B03074 /* Kernels */,
 				B50A281517D7BF0900E4DE66 /* Sources */,
@@ -695,7 +694,6 @@
 				B5D1B11019D0EE8300769416 /* leaf.fsh in Resources */,
 				B5EF31BC18205AAD002DDEFC /* shape.vsh in Resources */,
 				B5EF317C18204B5C002DDEFC /* InfoPlist.strings in Resources */,
-				B54DEB4218A5746E00EBEC07 /* versions.html in Resources */,
 				B55A0B5119D0AD4300875832 /* texture_32.png in Resources */,
 				B5EF318218204B5C002DDEFC /* Credits.rtf in Resources */,
 				B54DEB3718A5453800EBEC07 /* Minion-Icons in Resources */,
