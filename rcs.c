@@ -207,11 +207,11 @@ void RCS_show_table_summary(const RCSTable *T) {
     RCS_show_row("  [ ", " ]\n\n", T->b, T->nb);
     
     printf(" hh =\n");
-    RCS_show_slice(T->cdx, T->na, T->nb);
+    RCS_show_slice(T->hh, T->na, T->nb);
     
     printf(" vv =\n");
-    RCS_show_slice(T->cdy, T->na, T->nb);
+    RCS_show_slice(T->vv, T->na, T->nb);
     
     printf(" hv =\n");
-    RCS_show_slice(T->cdz, T->na, T->nb);
+    RCS_show_slice(T->hv, T->na, T->nb);
 }
