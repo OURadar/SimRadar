@@ -280,7 +280,7 @@ __kernel void scat_atts(__global float4 *p,
         const float Ta = adm_desc.sf;
         const float4 inv_inln = (float4)(adm_desc.scde, 0.0f);
 
-        float4 cdo = cd;
+//        float4 cdo = cd;
         cd = quat_rotate(cd, ori);
     
         //    if (i == 0)

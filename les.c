@@ -310,7 +310,7 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
     if (!strcmp(config, LESConfigSuctionVortices)) {
         h->v0 = 250.0f;
     } else if (!strcmp(config, LESConfigTwoCell)) {
-        h->v0 = 150.0f;
+        h->v0 = 250.0f; // 225
     }
     
     char grid_file[1024];
