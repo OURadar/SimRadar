@@ -16,17 +16,17 @@ On Mac:
 Get the Project
 ---------------
 
-To start working with this project. Create a project folder of your choice, set up git the project git URL at http://git.arrc.ou.edu/cheo4524/simradar.git and pull a branch. An xcodeproj package is included so you can manage the source codes using Xcode. Git can also be set up under Xcode for handling the source control.
+To start working with this project. Create a project folder of your choice, set up git using the HTTPS link on the front page and cone a copy. An xcodeproj package is included so you can manage the source codes using Xcode. Git can also be set up under Xcode for handling the source control.
 
 
-LES Data
---------
+LES, ADM & RCS Data
+-------------------
 
-LES data can be downloaded from
+An archive with sample LES (Large Eddy Simulation), ADM (Air Drag Model) and RCS (Radar Cross Section) data can be downloaded from
 
 http://arrc.ou.edu/~boonleng/simradar/tables.zip
 
-The extracted folder 'les' can be placed at one of the following folders:
-- ~/Desktop
-- ~/Documents
+The extracted folder 'tables' can be placed at one of the following folders:
 - ~/Downloads
+- ~/Documents
+- ~/Desktop
