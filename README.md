@@ -22,6 +22,7 @@ On Mac:
 [OpenCL]: https://www.khronos.org/opencl
 [XCode 6]: https://developer.apple.com/xcode
 
+
 Radar Simulation Framework
 --------------------------
 
@@ -39,14 +40,11 @@ The extracted folder 'tables' can be placed at one of the following folders:
 - ~/Documents
 - ~/Desktop
 
-
 ### Using the Radar Simulation (RS) Framework ###
 
 The simulation framework is written is plain C for performance and portability. All calculations are implemented within RS framework with functions prefix RS. To include the RS framework, there is only one header needed:
 
     #include "rs.h"
-
-
 
 The following codes create a simple simulation domain:
 
@@ -120,14 +118,13 @@ The following codes create a simple simulation domain:
 
 Assuming you already have the library compile successfully and the archived library is placed under `lib/librs.a`, this example can be compiled on a Mac using the following command:
 
-gcc -I./ -L./lib -o program program.c -lrs -framework OpenCL -lm -lpthread
+    gcc -I./ -L./lib -o program program.c -lrs -framework OpenCL -lm -lpthread
 
 Alternatively, if you are on a linux machine, the following should work:
 
-gcc -I./ -L./lib -o program program.c -lrs -lOpenCL -lm -lpthread
+    gcc -I./ -L./lib -o program program.c -lrs -lOpenCL -lm -lpthread
 
 On linux machines, it is important that the GPU driver's include and library paths are also included in the compilation command.
-
 
 
 The SimRadar app for Mac OS X
