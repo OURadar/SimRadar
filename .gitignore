@@ -7,11 +7,7 @@ t
 lib/librs.a
 delivery/*.pem
 delivery/SimRadar.*
-delivery/versions_template.xml
 cldemo
-test_clreduce
-test_les
-test_make_pulse
-test_rs
+test_*
 radarsim
 

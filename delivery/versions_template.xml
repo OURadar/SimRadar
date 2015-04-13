@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://arrc.ou.edu/~boonleng/simradar" xmlns:dc="http://purl.org/dc/elements/1.1/">
+<channel>
+	<title>_APP_NAME</title>
+	<link>http://arrc.ou.edu/~boonleng/_SUB_FOLDER_/versions.xml</link>
+	<description>Most recent changes with links to updates.</description>
+	<language>en</language>
+	<item>
+		<title>_APP_NAME_ for Desktop</title>
+		<sparkle:releaseNotesLink>
+			http://arrc.ou.edu/~boonleng/_SUB_FOLDER_/versions.html
+		</sparkle:releaseNotesLink>
+		<pubDate>_PUB_DATE_</pubDate>
+		<description>_APP_NAME_ for Mac OS X</description>
+		<enclosure url="http://arrc.ou.edu/~boonleng/_SUB_FOLDER_/_APP_NAME_.zip"
+		           sparkle:version="_VERSION_"
+		           sparkle:dsaSignature="_DSA_KEY_"
+		           length="_FILE_SIZE_"
+		           type="application/octet-stream" />
+	</item>
+</channel>
+</rss>
+
