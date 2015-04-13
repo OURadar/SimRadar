@@ -6,7 +6,7 @@ A polarimetric radar time-series emulator utilizing air-drag model for particle 
 
 ## Get the Project ##
 
-To start using or working with this framework, you can just `git clone` the code repository using the HTTPS link on the front page. An `xcodeproj` project is included so you can manage the source codes using Xcode on Mac OS X. Git can be set up under Xcode for the source control to stay up to date. If you would like to contribute to the framework, please me at boonleng@ou.edu.
+To start using or working with this framework, you can just `git clone` the code repository using the HTTPS link on the front page. An `xcodeproj` project is included so you can manage the source codes using Xcode on Mac OS X. Git can be set up under Xcode for the source control to stay up to date. If you would like to contribute to the framework, please me at <boonleng@ou.edu>.
 
 ### Requirements ###
 

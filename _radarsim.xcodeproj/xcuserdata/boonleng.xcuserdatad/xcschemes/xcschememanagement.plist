@@ -54,6 +54,11 @@
 			<key>orderHint</key>
 			<integer>7</integer>
 		</dict>
+		<key>test_rcs.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>11</integer>
+		</dict>
 		<key>test_rs.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
@@ -128,6 +133,11 @@
 			<true/>
 		</dict>
 		<key>B5BAD55718B67E8B007AC15D</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>B5C2D1F21ADC155700DD91B1</key>
 		<dict>
 			<key>primary</key>
 			<true/>

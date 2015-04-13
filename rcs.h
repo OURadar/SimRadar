@@ -33,9 +33,12 @@ typedef struct rcs_grid {
 typedef struct _rcs_data {
     float *a;
     float *b;
-    float *hh;
-    float *vv;
-    float *hv;
+    float *hh_real;
+    float *vv_real;
+    float *hv_real;
+    float *hh_imag;
+    float *vv_imag;
+    float *hv_imag;
 } RCSData;
 
 typedef struct _rcs_table {
@@ -45,9 +48,12 @@ typedef struct _rcs_table {
     uint32_t  nn;             // Number of cells in all directions combined
     float     *a;
     float     *b;
-    float     *hh;
-    float     *vv;
-    float     *hv;
+    float     *hh_real;
+    float     *vv_real;
+    float     *hv_real;
+    float     *hh_imag;
+    float     *vv_imag;
+    float     *hv_imag;
     char      **name;
 } RCSTable;
 

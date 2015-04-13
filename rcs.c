@@ -20,14 +20,19 @@ typedef struct _rcs_mem {
 void RCS_show_blk(const char *prefix, const char *posfix);
 void RCS_show_row(const char *prefix, const char *posfix, const float *f, const int n);
 void RCS_show_slice(const float *values, const int na, const int nb);
+void RCS_show_blk_complex(const char *prefix, const char *posfix);
+void RCS_show_row_complex(const char *prefix, const char *posfix, const float *r, const float *i, const int n);
+void RCS_show_slice_complex(const float *values_real, const float *values_imag, const int nb, const int na);
 
 
-#define RCS_FMT   "%+9.4f"
-#define RCS_CFMT  "%s" RCS_FMT " " RCS_FMT "  " RCS_FMT " ... " RCS_FMT "%s"
+#define RCS_RFMT   "%+9.4f"
+#define RCS_CFMT   "%+9.4f%+9.4fi"
+#define RCS_CRFMT  "%s" RCS_RFMT " " RCS_RFMT "  " RCS_RFMT " ... " RCS_RFMT "%s"
+#define RCS_CCFMT  "%s" RCS_CFMT " " RCS_CFMT "  " RCS_CFMT " ... " RCS_CFMT "%s"
 
 void RCS_show_blk(const char *prefix, const char *posfix) {
     char buf[1024];
-    sprintf(buf, RCS_CFMT, prefix, 1.0f, 1.0f, 1.0f, 1.0f, posfix);
+    sprintf(buf, RCS_CRFMT, prefix, 1.0f, 1.0f, 1.0f, 1.0f, posfix);
     for (int i=(int)strlen(prefix); i<strlen(buf)-strlen(posfix); i++) {
         if (buf[i] == '.' && buf[i+1] == '0') {
             buf[i] = ':';
@@ -40,7 +45,7 @@ void RCS_show_blk(const char *prefix, const char *posfix) {
 
 
 void RCS_show_row(const char *prefix, const char *posfix, const float *f, const int n) {
-    printf(RCS_CFMT, prefix, f[0], f[1], f[2], f[n-1], posfix);
+    printf(RCS_CRFMT, prefix, f[0], f[1], f[2], f[n-1], posfix);
 }
 
 
@@ -50,6 +55,34 @@ void RCS_show_slice(const float *values, const int nb, const int na) {
     RCS_show_row("  [ ", " ]\n", &values[2 * nb], nb);
     RCS_show_blk("  [ ", " ]\n");
     RCS_show_row("  [ ", " ]\n\n", &values[(na - 1) * nb], nb);
+}
+
+
+void RCS_show_blk_complex(const char *prefix, const char *posfix) {
+    char buf[1024];
+    sprintf(buf, RCS_CCFMT, prefix, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, posfix);
+    for (int i=(int)strlen(prefix); i<strlen(buf)-strlen(posfix); i++) {
+        if (buf[i] == '.' && buf[i+1] == '0') {
+            buf[i] = ':';
+        } else {
+            buf[i] = ' ';
+        }
+    }
+    printf("%s", buf);
+}
+
+
+void RCS_show_row_complex(const char *prefix, const char *posfix, const float *r, const float *i, const int n) {
+    printf(RCS_CCFMT, prefix, r[0], i[0], r[1], i[1], r[2], i[2], r[n-1], i[n-1], posfix);
+}
+
+
+void RCS_show_slice_complex(const float *values_real, const float *values_imag, const int nb, const int na) {
+    RCS_show_row_complex("  [ ", " ]\n", &values_real[0], &values_imag[0], nb);
+    RCS_show_row_complex("  [ ", " ]\n", &values_real[nb], &values_real[nb], nb);
+    RCS_show_row_complex("  [ ", " ]\n", &values_real[2 * nb], &values_real[2 * nb], nb);
+    RCS_show_blk_complex("  [ ", " ]\n");
+    RCS_show_row_complex("  [ ", " ]\n\n", &values_real[(na - 1) * nb], &values_real[(na - 1) * nb], nb);
 }
 
 
@@ -160,14 +193,20 @@ RCSHandle *RCS_init_with_config_path(const RCSConfig config, const char *path) {
     h->data_value->nn = h->data_grid->na * h->data_grid->nb;
     h->data_value->a = h->data_grid->a;
     h->data_value->b = h->data_grid->b;
-    h->data_value->hh = (float *)malloc(h->data_value->nn * sizeof(float));
-    h->data_value->vv = (float *)malloc(h->data_value->nn * sizeof(float));
-    h->data_value->hv = (float *)malloc(h->data_value->nn * sizeof(float));
+    h->data_value->hh_real = (float *)malloc(h->data_value->nn * sizeof(float));
+    h->data_value->vv_real = (float *)malloc(h->data_value->nn * sizeof(float));
+    h->data_value->hv_real = (float *)malloc(h->data_value->nn * sizeof(float));
+    h->data_value->hh_imag = (float *)malloc(h->data_value->nn * sizeof(float));
+    h->data_value->vv_imag = (float *)malloc(h->data_value->nn * sizeof(float));
+    h->data_value->hv_imag = (float *)malloc(h->data_value->nn * sizeof(float));
     
     // Fill in the table
-    fread(h->data_value->hh, sizeof(float), h->data_value->nn, fid);
-    fread(h->data_value->vv, sizeof(float), h->data_value->nn, fid);
-    fread(h->data_value->hv, sizeof(float), h->data_value->nn, fid);
+    fread(h->data_value->hh_real, sizeof(float), h->data_value->nn, fid);
+    fread(h->data_value->vv_real, sizeof(float), h->data_value->nn, fid);
+    fread(h->data_value->hv_real, sizeof(float), h->data_value->nn, fid);
+    fread(h->data_value->hh_imag, sizeof(float), h->data_value->nn, fid);
+    fread(h->data_value->vv_imag, sizeof(float), h->data_value->nn, fid);
+    fread(h->data_value->hv_imag, sizeof(float), h->data_value->nn, fid);
     
     fclose(fid);
     
@@ -182,9 +221,12 @@ RCSHandle *RCS_init(void) {
 
 void RCS_free(RCSHandle *i) {
     RCSMem *h = (RCSMem *)i;
-    free(h->data_value->hh);
-    free(h->data_value->vv);
-    free(h->data_value->hv);
+    free(h->data_value->hh_real);
+    free(h->data_value->vv_real);
+    free(h->data_value->hv_real);
+    free(h->data_value->hh_imag);
+    free(h->data_value->vv_imag);
+    free(h->data_value->hv_imag);
     free(h->data_value);
     free(h->data_grid->a);
     free(h->data_grid->b);
@@ -207,11 +249,11 @@ void RCS_show_table_summary(const RCSTable *T) {
     RCS_show_row("  [ ", " ]\n\n", T->b, T->nb);
     
     printf(" hh =\n");
-    RCS_show_slice(T->hh, T->na, T->nb);
+    RCS_show_slice_complex(T->hh_real, T->hh_imag, T->na, T->nb);
     
     printf(" vv =\n");
-    RCS_show_slice(T->vv, T->na, T->nb);
+    RCS_show_slice_complex(T->vv_real, T->vv_imag, T->na, T->nb);
     
     printf(" hv =\n");
-    RCS_show_slice(T->hv, T->na, T->nb);
+    RCS_show_slice_complex(T->hv_real, T->hv_imag, T->na, T->nb);
 }
