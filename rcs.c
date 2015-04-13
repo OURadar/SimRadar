@@ -22,7 +22,7 @@ void RCS_show_row(const char *prefix, const char *posfix, const float *f, const 
 void RCS_show_slice(const float *values, const int na, const int nb);
 void RCS_show_blk_complex(const char *prefix, const char *posfix);
 void RCS_show_row_complex(const char *prefix, const char *posfix, const float *r, const float *i, const int n);
-void RCS_show_slice_complex(const float *values_real, const float *values_imag, const int nb, const int na);
+void RCS_show_slice_complex(const float *values_real, const float *values_imag, const int na, const int nb);
 
 
 #define RCS_RFMT   "%+9.4f"
@@ -49,18 +49,18 @@ void RCS_show_row(const char *prefix, const char *posfix, const float *f, const 
 }
 
 
-void RCS_show_slice(const float *values, const int nb, const int na) {
-    RCS_show_row("  [ ", " ]\n", &values[0], nb);
-    RCS_show_row("  [ ", " ]\n", &values[nb], nb);
-    RCS_show_row("  [ ", " ]\n", &values[2 * nb], nb);
+void RCS_show_slice(const float *values, const int na, const int nb) {
+    RCS_show_row("  [ ", " ]\n", &values[0], na);
+    RCS_show_row("  [ ", " ]\n", &values[na], na);
+    RCS_show_row("  [ ", " ]\n", &values[2 * na], na);
     RCS_show_blk("  [ ", " ]\n");
-    RCS_show_row("  [ ", " ]\n\n", &values[(na - 1) * nb], nb);
+    RCS_show_row("  [ ", " ]\n\n", &values[(nb - 1) * na], na);
 }
 
 
 void RCS_show_blk_complex(const char *prefix, const char *posfix) {
     char buf[1024];
-    sprintf(buf, RCS_CCFMT, prefix, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, posfix);
+    sprintf(buf, RCS_CCFMT, prefix, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, posfix);
     for (int i=(int)strlen(prefix); i<strlen(buf)-strlen(posfix); i++) {
         if (buf[i] == '.' && buf[i+1] == '0') {
             buf[i] = ':';
@@ -77,12 +77,12 @@ void RCS_show_row_complex(const char *prefix, const char *posfix, const float *r
 }
 
 
-void RCS_show_slice_complex(const float *values_real, const float *values_imag, const int nb, const int na) {
-    RCS_show_row_complex("  [ ", " ]\n", &values_real[0], &values_imag[0], nb);
-    RCS_show_row_complex("  [ ", " ]\n", &values_real[nb], &values_real[nb], nb);
-    RCS_show_row_complex("  [ ", " ]\n", &values_real[2 * nb], &values_real[2 * nb], nb);
+void RCS_show_slice_complex(const float *values_real, const float *values_imag, const int na, const int nb) {
+    RCS_show_row_complex("  [ ", " ]\n", &values_real[0], &values_imag[0], na);
+    RCS_show_row_complex("  [ ", " ]\n", &values_real[na], &values_imag[na], na);
+    RCS_show_row_complex("  [ ", " ]\n", &values_real[2 * na], &values_imag[2 * na], na);
     RCS_show_blk_complex("  [ ", " ]\n");
-    RCS_show_row_complex("  [ ", " ]\n\n", &values_real[(na - 1) * nb], &values_real[(na - 1) * nb], nb);
+    RCS_show_row_complex("  [ ", " ]\n\n", &values_real[(nb - 1) * na], &values_imag[(nb - 1) * na], na);
 }
 
 
@@ -163,8 +163,8 @@ RCSHandle *RCS_init_with_config_path(const RCSConfig config, const char *path) {
     h->data_grid->rev = 1;
     uint16_t nbna[2];
     fread(nbna, sizeof(uint16_t), 2, fid);
-    h->data_grid->na = nbna[1];  // x-axis = alpha
-    h->data_grid->nb = nbna[0];  // y-axis = beta
+    h->data_grid->na = nbna[0];  // x-axis = alpha
+    h->data_grid->nb = nbna[1];  // y-axis = beta
     
     #ifdef DEBUG
     printf("%s    na = %d    nb = %d\n", h->data_path, h->data_grid->na, h->data_grid->nb);

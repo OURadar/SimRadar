@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		B5049D701ADC216100C0599F /* SimRadar in Frameworks */ = {isa = PBXBuildFile; fileRef = B5049D6F1ADC216100C0599F /* SimRadar */; settings = {ATTRIBUTES = (Required, ); }; };
 		B5110A4319CCCCE000EE0902 /* square.fsh in Resources */ = {isa = PBXBuildFile; fileRef = B5110A4119CCCCE000EE0902 /* square.fsh */; };
 		B5110A4419CCCCE000EE0902 /* square.vsh in Resources */ = {isa = PBXBuildFile; fileRef = B5110A4219CCCCE000EE0902 /* square.vsh */; };
 		B51767C118A2DFB700D47C27 /* Curious-Minion-Icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = B51767C018A2DFB700D47C27 /* Curious-Minion-Icon.icns */; };
@@ -37,6 +36,8 @@
 		B567F8C41A6D671F00F40660 /* test_adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B41A6D635100F40660 /* test_adm.c */; };
 		B567F8C51A6D672700F40660 /* adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B11A6D522F00F40660 /* adm.c */; };
 		B56C7FA31ADC221500552B1E /* rcs.c in Sources */ = {isa = PBXBuildFile; fileRef = B55716851AB7519D001984E0 /* rcs.c */; };
+		B56C7FA71ADC231400552B1E /* Sparkle.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = B56C7FA41ADC22E300552B1E /* Sparkle.framework */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B56C7FAA1ADC250500552B1E /* Sparkle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B56C7FA41ADC22E300552B1E /* Sparkle.framework */; };
 		B570B0B118BC5B5500391717 /* rs.cl in Sources */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
 		B570B0B418BC5B7900391717 /* rs.cl in CopyFiles */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
 		B570B0B518BC5B8400391717 /* rs.cl in CopyFiles */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
@@ -93,10 +94,11 @@
 		};
 		B54DEB3B18A572D800EBEC07 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
+			buildActionMask = 12;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				B56C7FA71ADC231400552B1E /* Sparkle.framework in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -169,7 +171,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		B5049D6F1ADC216100C0599F /* SimRadar */ = {isa = PBXFileReference; lastKnownFileType = folder; path = SimRadar; sourceTree = "<group>"; };
 		B50A280617D7B1EC00E4DE66 /* cldemo.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = cldemo.c; sourceTree = "<group>"; };
 		B50A281117D7B24500E4DE66 /* OpenCL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenCL.framework; path = System/Library/Frameworks/OpenCL.framework; sourceTree = SDKROOT; };
 		B50A281617D7C21F00E4DE66 /* rs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = rs.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
@@ -202,6 +203,7 @@
 		B567F8B11A6D522F00F40660 /* adm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = adm.c; sourceTree = "<group>"; };
 		B567F8B41A6D635100F40660 /* test_adm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = test_adm.c; sourceTree = "<group>"; };
 		B567F8BB1A6D66E700F40660 /* test_adm */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_adm; sourceTree = BUILT_PRODUCTS_DIR; };
+		B56C7FA41ADC22E300552B1E /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Sparkle.framework; path = SimRadar/Sparkle.framework; sourceTree = "<group>"; };
 		B570B0AF18BC5B5500391717 /* rs.cl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.opencl; path = rs.cl; sourceTree = "<group>"; };
 		B5760E9E18A938D3008DAF83 /* test_clreduce */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_clreduce; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5760EA718A938F2008DAF83 /* test_clreduce.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = test_clreduce.c; sourceTree = "<group>"; };
@@ -316,9 +318,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				B5EF317218204B5C002DDEFC /* Cocoa.framework in Frameworks */,
+				B56C7FAA1ADC250500552B1E /* Sparkle.framework in Frameworks */,
 				B5EF31B5182055D5002DDEFC /* GLKit.framework in Frameworks */,
 				B5576B8E1831612A0012E6F5 /* OpenCL.framework in Frameworks */,
-				B5049D701ADC216100C0599F /* SimRadar in Frameworks */,
 				B5EF31BE18205EC8002DDEFC /* OpenGL.framework in Frameworks */,
 				B5EF31C018205ED1002DDEFC /* QuartzCore.framework in Frameworks */,
 			);
@@ -369,7 +371,7 @@
 		B50A281317D7B27500E4DE66 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				B5049D6F1ADC216100C0599F /* SimRadar */,
+				B56C7FA41ADC22E300552B1E /* Sparkle.framework */,
 				B52609D019D665E800709AFD /* CoreGraphics.framework */,
 				B5EF31BF18205ED1002DDEFC /* QuartzCore.framework */,
 				B5EF31BD18205EC8002DDEFC /* OpenGL.framework */,
@@ -389,10 +391,10 @@
 				B50A281617D7C21F00E4DE66 /* rs.h */,
 				B5F3C31C18F2F86700092A72 /* les.c */,
 				B5F3C31B18F2F85C00092A72 /* les.h */,
-				B55716851AB7519D001984E0 /* rcs.c */,
-				B55716841AB75186001984E0 /* rcs.h */,
 				B567F8B11A6D522F00F40660 /* adm.c */,
 				B567F8B01A6D520C00F40660 /* adm.h */,
+				B55716851AB7519D001984E0 /* rcs.c */,
+				B55716841AB75186001984E0 /* rcs.h */,
 			);
 			name = Sources;
 			sourceTree = "<group>";
@@ -1057,6 +1059,7 @@
 					"$(inherited)",
 					"$(SRCROOT)",
 					"$(PROJECT_DIR)",
+					"$(PROJECT_DIR)/SimRadar",
 				);
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
@@ -1078,7 +1081,7 @@
 					"-D_SHARE_OBJ_",
 					"-DDEBUG_GL",
 				);
-				OTHER_LDFLAGS = "";
+				OTHER_LDFLAGS = "-Wl,-rpath,@loader_path/../Frameworks";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
@@ -1606,6 +1609,7 @@
 					"$(inherited)",
 					"$(SRCROOT)",
 					"$(PROJECT_DIR)",
+					"$(PROJECT_DIR)/SimRadar",
 				);
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
@@ -1627,7 +1631,7 @@
 					"-D_SHARE_OBJ_",
 					"-DGEN_IMG",
 				);
-				OTHER_LDFLAGS = "";
+				OTHER_LDFLAGS = "-Wl,-rpath,@loader_path/../Frameworks";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
@@ -2065,6 +2069,7 @@
 					"$(inherited)",
 					"$(SRCROOT)",
 					"$(PROJECT_DIR)",
+					"$(PROJECT_DIR)/SimRadar",
 				);
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
@@ -2083,7 +2088,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				OTHER_CFLAGS = "-D_SHARE_OBJ_";
-				OTHER_LDFLAGS = "";
+				OTHER_LDFLAGS = "-Wl,-rpath,@loader_path/../Frameworks";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
@@ -2113,6 +2118,7 @@
 					"$(inherited)",
 					"$(SRCROOT)",
 					"$(PROJECT_DIR)",
+					"$(PROJECT_DIR)/SimRadar",
 				);
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -2139,7 +2145,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = "-D_SHARE_OBJ_";
-				OTHER_LDFLAGS = "";
+				OTHER_LDFLAGS = "-Wl,-rpath,@loader_path/../Frameworks";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
