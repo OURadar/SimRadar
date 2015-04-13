@@ -130,4 +130,4 @@ On linux machines, it is important that the GPU driver's include and library pat
 The SimRadar app for Mac OS X
 -----------------------------
 
-A dedicated project SimRadar, which is a Mac OS X implemtation of visualization and graphical user interface, is included. It demonstrates how to wrap the framework in Objective C.
+A dedicated project SimRadar, which is a Mac OS X implemtation of visualization and graphical user interface, is included. It demonstrates how to wrap the framework in Objective C. Boonleng is here.
