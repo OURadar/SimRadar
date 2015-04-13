@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B5049D701ADC216100C0599F /* SimRadar in Frameworks */ = {isa = PBXBuildFile; fileRef = B5049D6F1ADC216100C0599F /* SimRadar */; settings = {ATTRIBUTES = (Required, ); }; };
 		B5110A4319CCCCE000EE0902 /* square.fsh in Resources */ = {isa = PBXBuildFile; fileRef = B5110A4119CCCCE000EE0902 /* square.fsh */; };
 		B5110A4419CCCCE000EE0902 /* square.vsh in Resources */ = {isa = PBXBuildFile; fileRef = B5110A4219CCCCE000EE0902 /* square.vsh */; };
 		B51767C118A2DFB700D47C27 /* Curious-Minion-Icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = B51767C018A2DFB700D47C27 /* Curious-Minion-Icon.icns */; };
@@ -18,8 +19,6 @@
 		B541C630188DF896000AF6DD /* shape_sc.fsh in Resources */ = {isa = PBXBuildFile; fileRef = B593683D188DE4BC00B4106C /* shape_sc.fsh */; };
 		B541C631188DF896000AF6DD /* shape_sc.vsh in Resources */ = {isa = PBXBuildFile; fileRef = B593683E188DE4BC00B4106C /* shape_sc.vsh */; };
 		B54DEB3718A5453800EBEC07 /* Minion-Icons in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB3618A5453800EBEC07 /* Minion-Icons */; };
-		B54DEB3918A56A5700EBEC07 /* Sparkle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B54DEB3818A56A5700EBEC07 /* Sparkle.framework */; };
-		B54DEB3C18A572EB00EBEC07 /* Sparkle.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = B54DEB3818A56A5700EBEC07 /* Sparkle.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		B54DEB4518A582F100EBEC07 /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB4418A582F100EBEC07 /* dsa_pub.pem */; };
 		B55716861AB7519D001984E0 /* rcs.c in Sources */ = {isa = PBXBuildFile; fileRef = B55716851AB7519D001984E0 /* rcs.c */; };
 		B5576B8B18315B3B0012E6F5 /* SimPoint.m in Sources */ = {isa = PBXBuildFile; fileRef = B5576B8A18315B3B0012E6F5 /* SimPoint.m */; };
@@ -37,6 +36,7 @@
 		B567F8B31A6D522F00F40660 /* adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B11A6D522F00F40660 /* adm.c */; };
 		B567F8C41A6D671F00F40660 /* test_adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B41A6D635100F40660 /* test_adm.c */; };
 		B567F8C51A6D672700F40660 /* adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B11A6D522F00F40660 /* adm.c */; };
+		B56C7FA31ADC221500552B1E /* rcs.c in Sources */ = {isa = PBXBuildFile; fileRef = B55716851AB7519D001984E0 /* rcs.c */; };
 		B570B0B118BC5B5500391717 /* rs.cl in Sources */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
 		B570B0B418BC5B7900391717 /* rs.cl in CopyFiles */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
 		B570B0B518BC5B8400391717 /* rs.cl in CopyFiles */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
@@ -97,7 +97,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				B54DEB3C18A572EB00EBEC07 /* Sparkle.framework in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -170,6 +169,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		B5049D6F1ADC216100C0599F /* SimRadar */ = {isa = PBXFileReference; lastKnownFileType = folder; path = SimRadar; sourceTree = "<group>"; };
 		B50A280617D7B1EC00E4DE66 /* cldemo.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = cldemo.c; sourceTree = "<group>"; };
 		B50A281117D7B24500E4DE66 /* OpenCL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenCL.framework; path = System/Library/Frameworks/OpenCL.framework; sourceTree = SDKROOT; };
 		B50A281617D7C21F00E4DE66 /* rs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = rs.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
@@ -183,7 +183,6 @@
 		B535159B1AD31E12004C0F50 /* versions.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = versions.html; path = delivery/versions.html; sourceTree = "<group>"; };
 		B535159C1AD32077004C0F50 /* MainMenu.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
 		B54DEB3618A5453800EBEC07 /* Minion-Icons */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "Minion-Icons"; sourceTree = "<group>"; };
-		B54DEB3818A56A5700EBEC07 /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Sparkle.framework; sourceTree = "<group>"; };
 		B54DEB3E18A5742300EBEC07 /* SimRadar-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "SimRadar-Info.plist"; sourceTree = "<group>"; };
 		B54DEB3F18A5742300EBEC07 /* SimRadar-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SimRadar-Prefix.pch"; sourceTree = "<group>"; };
 		B54DEB4418A582F100EBEC07 /* dsa_pub.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = dsa_pub.pem; sourceTree = "<group>"; };
@@ -232,7 +231,6 @@
 		B5EF318118204B5C002DDEFC /* en */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; name = en; path = en.lproj/Credits.rtf; sourceTree = "<group>"; };
 		B5EF318318204B5C002DDEFC /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		B5EF318418204B5C002DDEFC /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
-		B5EF319018204B5C002DDEFC /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
 		B5EF31A918205244002DDEFC /* DisplayController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DisplayController.h; sourceTree = "<group>"; };
 		B5EF31AA18205244002DDEFC /* DisplayController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DisplayController.m; sourceTree = "<group>"; };
 		B5EF31AC1820526F002DDEFC /* SimGLView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SimGLView.h; sourceTree = "<group>"; };
@@ -320,9 +318,9 @@
 				B5EF317218204B5C002DDEFC /* Cocoa.framework in Frameworks */,
 				B5EF31B5182055D5002DDEFC /* GLKit.framework in Frameworks */,
 				B5576B8E1831612A0012E6F5 /* OpenCL.framework in Frameworks */,
+				B5049D701ADC216100C0599F /* SimRadar in Frameworks */,
 				B5EF31BE18205EC8002DDEFC /* OpenGL.framework in Frameworks */,
 				B5EF31C018205ED1002DDEFC /* QuartzCore.framework in Frameworks */,
-				B54DEB3918A56A5700EBEC07 /* Sparkle.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -371,14 +369,13 @@
 		B50A281317D7B27500E4DE66 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				B5049D6F1ADC216100C0599F /* SimRadar */,
 				B52609D019D665E800709AFD /* CoreGraphics.framework */,
-				B54DEB3818A56A5700EBEC07 /* Sparkle.framework */,
 				B5EF31BF18205ED1002DDEFC /* QuartzCore.framework */,
 				B5EF31BD18205EC8002DDEFC /* OpenGL.framework */,
 				B5EF31B4182055D5002DDEFC /* GLKit.framework */,
 				B50A281117D7B24500E4DE66 /* OpenCL.framework */,
 				B5EF317118204B5C002DDEFC /* Cocoa.framework */,
-				B5EF319018204B5C002DDEFC /* XCTest.framework */,
 				B5EF317318204B5C002DDEFC /* Other Frameworks */,
 			);
 			name = Frameworks;
@@ -681,7 +678,7 @@
 		B50A280017D7B1DC00E4DE66 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0600;
+				LastUpgradeCheck = 0610;
 				ORGANIZATIONNAME = "Boon Leng Cheong";
 				TargetAttributes = {
 					B567F8BA1A6D66E700F40660 = {
@@ -839,17 +836,18 @@
 			files = (
 				B570B0B118BC5B5500391717 /* rs.cl in Sources */,
 				B5C0D40F183178A000564D83 /* rs.c in Sources */,
-				B5576B8B18315B3B0012E6F5 /* SimPoint.m in Sources */,
 				B5F3C31E18F2F86700092A72 /* les.c in Sources */,
+				B567F8B31A6D522F00F40660 /* adm.c in Sources */,
+				B56C7FA31ADC221500552B1E /* rcs.c in Sources */,
+				B5EF317E18204B5C002DDEFC /* main.m in Sources */,
+				B5EF318518204B5C002DDEFC /* AppDelegate.m in Sources */,
+				B5EF31C51820619E002DDEFC /* RootController.m in Sources */,
+				B5576B8B18315B3B0012E6F5 /* SimPoint.m in Sources */,
 				B5EF31AB18205244002DDEFC /* DisplayController.m in Sources */,
+				B5EF31B1182052B8002DDEFC /* Renderer.m in Sources */,
 				B5EF31AE1820526F002DDEFC /* SimGLView.m in Sources */,
 				B5FDCAE519D453B10016C2F7 /* GLText.m in Sources */,
-				B567F8B31A6D522F00F40660 /* adm.c in Sources */,
-				B5EF31C51820619E002DDEFC /* RootController.m in Sources */,
 				B5A5142718328A2F00921ACE /* FullscreenWindow.m in Sources */,
-				B5EF318518204B5C002DDEFC /* AppDelegate.m in Sources */,
-				B5EF31B1182052B8002DDEFC /* Renderer.m in Sources */,
-				B5EF317E18204B5C002DDEFC /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1058,6 +1056,7 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)",
+					"$(PROJECT_DIR)",
 				);
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
@@ -1606,6 +1605,7 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)",
+					"$(PROJECT_DIR)",
 				);
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
@@ -2064,6 +2064,7 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)",
+					"$(PROJECT_DIR)",
 				);
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
@@ -2111,6 +2112,7 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)",
+					"$(PROJECT_DIR)",
 				);
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -2291,6 +2293,7 @@
 				B5C2D1F81ADC155700DD91B1 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		B5D1421518AA72F80041566E /* Build configuration list for PBXNativeTarget "test_make_pulse" */ = {
 			isa = XCConfigurationList;

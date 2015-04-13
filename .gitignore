@@ -10,4 +10,5 @@ delivery/SimRadar.*
 cldemo
 test_*
 radarsim
+Sparkle.framework
 
