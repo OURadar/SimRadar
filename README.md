@@ -4,7 +4,8 @@ Simulation of a Radar
 A polarimetric radar time-series emulator utilizing air-drag model for particle motions and a realistic radar cross library for particle back scattering calculations. Implemented with OpenCL for massively parallel computations. This is awesome!
 
 
-## Get the Project ##
+Get the Project
+---------------
 
 To start using or working with this framework, you can just `git clone` the code repository using the HTTPS link on the front page. An `xcodeproj` project is included so you can manage the source codes using Xcode on Mac OS X. Git can be set up under Xcode for the source control to stay up to date. If you would like to contribute to the framework, please me at <boonleng@ou.edu>.
 
@@ -21,7 +22,8 @@ On Mac:
 [OpenCL]: https://www.khronos.org/opencl
 [XCode 6]: https://developer.apple.com/xcode
 
-## Radar Simulation Framework ##
+Radar Simulation Framework
+--------------------------
 
 A set of C functions are collected in Radar Simulation (RS) framework, which abstracts the low-level interaction witht the GPU for workload parallelization. OpenCL was selected because of the vendor neutral implementation.
 
@@ -44,7 +46,9 @@ The simulation framework is written is plain C for performance and portability. 
 
     #include "rs.h"
 
-The following codes create a simple simulation domain.
+
+
+The following codes create a simple simulation domain:
 
     #include "rs.h"
 
@@ -80,9 +84,9 @@ The following codes create a simple simulation domain.
         RS_set_tx_params(S, 1.0e-6, 50.0e3f);
 
         RS_set_scan_box(S,
-                        10.0e3, 15.0e3, 250.0f,  // Range
-                        -10.0f, 10.0f, 1.0f,     // Azimuth
-                        0.0f, 8.0f, 1.0f);       // Elevation
+            10.0e3, 15.0e3, 250.0f,  // Range
+            -10.0f, 10.0f, 1.0f,     // Azimuth
+            0.0f, 8.0f, 1.0f);       // Elevation
 
         RS_set_range_weight_to_triangle(S, 120.0f);
 
@@ -111,10 +115,22 @@ The following codes create a simple simulation domain.
 
         LES_free(L);
 
-        return EXIT_SUCCESS
+        return EXIT_SUCCESS;
     }
 
+Assuming you already have the library compile successfully and the archived library is placed under `lib/librs.a`, this example can be compiled on a Mac using the following command:
 
-## SimRadar for Mac OS X ##
+gcc -I./ -L./lib -o program program.c -lrs -framework OpenCL -lm -lpthread
+
+Alternatively, if you are on a linux machine, the following should work:
+
+gcc -I./ -L./lib -o program program.c -lrs -lOpenCL -lm -lpthread
+
+On linux machines, it is important that the GPU driver's include and library paths are also included in the compilation command.
+
+
+
+The SimRadar app for Mac OS X
+-----------------------------
 
 A dedicated project SimRadar, which is a Mac OS X implemtation of visualization and graphical user interface, is included. It demonstrates how to wrap the framework in Objective C.
