@@ -118,11 +118,11 @@ The following codes create a simple simulation domain:
 
 Assuming you already have the library compile successfully and the archived library is placed under `lib/librs.a`, this example can be compiled on a Mac using the following command:
 
-    gcc -I./ -L./lib -o program program.c -lrs -framework OpenCL -lm -lpthread
+    gcc -I./ -L./lib -o example example.c -lrs -framework OpenCL -lm -lpthread
 
 Alternatively, if you are on a linux machine, the following should work:
 
-    gcc -I./ -L./lib -o program program.c -lrs -lOpenCL -lm -lpthread
+    gcc -I./ -L./lib -o example example.c -lrs -lOpenCL -lm -lpthread
 
 On linux machines, it is important that the GPU driver's include and library paths are also included in the compilation command.
 
