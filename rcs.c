@@ -83,7 +83,7 @@ RCSHandle *RCS_init_with_config_path(const RCSConfig config, const char *path) {
     
     for (int i=0; i<3; i++) {
         dat_path = search_paths[i];
-        snprintf(dat_file_path, 1024, "%s/%s.rcs", dat_path, RCSConfigSquarePlate);
+        snprintf(dat_file_path, 1024, "%s/%s.rcs", dat_path, config);
         dir_ret = stat(dat_path, &path_stat);
         file_ret = stat(dat_file_path, &file_stat);
         if (dir_ret < 0 || file_ret < 0) {
@@ -113,7 +113,7 @@ RCSHandle *RCS_init_with_config_path(const RCSConfig config, const char *path) {
     }
     
     // Full path of the data file
-    snprintf(h->data_path, sizeof(h->data_path), "%s/%s.adm", dat_path, config);
+    snprintf(h->data_path, sizeof(h->data_path), "%s/%s.rcs", dat_path, config);
     
     FILE *fid = fopen(h->data_path, "r");
     if (fid == NULL) {
@@ -130,8 +130,8 @@ RCSHandle *RCS_init_with_config_path(const RCSConfig config, const char *path) {
     h->data_grid->rev = 1;
     uint16_t nbna[2];
     fread(nbna, sizeof(uint16_t), 2, fid);
-    h->data_grid->na = nbna[1];
-    h->data_grid->nb = nbna[0];
+    h->data_grid->na = nbna[1];  // x-axis = alpha
+    h->data_grid->nb = nbna[0];  // y-axis = beta
     
     #ifdef DEBUG
     printf("%s    na = %d    nb = %d\n", h->data_path, h->data_grid->na, h->data_grid->nb);
@@ -176,7 +176,7 @@ RCSHandle *RCS_init_with_config_path(const RCSConfig config, const char *path) {
 
 
 RCSHandle *RCS_init(void) {
-    return RCS_init_with_config_path(RCSConfigSquarePlate, "rcs");
+    return RCS_init_with_config_path(RCSConfigLeaf, "rcs");
 }
 
 

@@ -17,8 +17,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#define RCSConfigSquarePlate       "square_plate"
-#define RCSConfigRoofTile          "roof_tile"
+#define RCSConfigLeaf              "leaf"
 
 typedef void* RCSHandle;
 typedef char* RCSConfig;

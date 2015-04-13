@@ -3,11 +3,11 @@ UNAME := $(shell uname)
 CFLAGS = -std=gnu99 -Wall -Wno-unknown-pragmas -Os -msse -msse2 -mavx
 LDFLAGS = -L lib -lrs
 
-OBJS = rs.o les.o adm.o
+OBJS = rs.o les.o adm.o rcs.o
 
 MYLIB = lib/librs.a
 
-PROGS = cldemo radarsim test_clreduce test_make_pulse test_rs test_les test_adm
+PROGS = cldemo radarsim test_clreduce test_make_pulse test_rs test_les test_adm test_rcs
 
 ifeq ($(UNAME), Darwin)
 CC = clang

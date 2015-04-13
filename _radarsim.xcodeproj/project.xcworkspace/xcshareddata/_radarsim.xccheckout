@@ -10,14 +10,14 @@
 	<string>_radarsim</string>
 	<key>IDESourceControlProjectOriginsDictionary</key>
 	<dict>
-		<key>AF50673E893261F696C1B1D86090FC3D8CAD5877</key>
+		<key>D3088CD1FB042216D895CA5186B217A4319C5234</key>
 		<string>http://git.arrc.ou.edu/cheo4524/simradar.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
 	<string>_radarsim.xcodeproj</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
-		<key>AF50673E893261F696C1B1D86090FC3D8CAD5877</key>
+		<key>D3088CD1FB042216D895CA5186B217A4319C5234</key>
 		<string>../..</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
@@ -25,14 +25,14 @@
 	<key>IDESourceControlProjectVersion</key>
 	<integer>111</integer>
 	<key>IDESourceControlProjectWCCIdentifier</key>
-	<string>AF50673E893261F696C1B1D86090FC3D8CAD5877</string>
+	<string>D3088CD1FB042216D895CA5186B217A4319C5234</string>
 	<key>IDESourceControlProjectWCConfigurations</key>
 	<array>
 		<dict>
 			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
 			<string>public.vcs.git</string>
 			<key>IDESourceControlWCCIdentifierKey</key>
-			<string>AF50673E893261F696C1B1D86090FC3D8CAD5877</string>
+			<string>D3088CD1FB042216D895CA5186B217A4319C5234</string>
 			<key>IDESourceControlWCCName</key>
 			<string>radarsim</string>
 		</dict>
