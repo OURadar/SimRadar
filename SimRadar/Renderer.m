@@ -493,6 +493,8 @@
         beamModelViewProjection = GLKMatrix4Identity;
         backgroundOpacity = 0.3;
         
+        // Add device pixel ratio here
+        
 		// View parameters
 		[self resetViewParameters];
 	}
