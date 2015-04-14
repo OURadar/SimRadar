@@ -62,6 +62,7 @@ RCSHandle *RCS_init(void);
 void RCS_free(RCSHandle *);
 
 RCSTable *RCS_get_frame(const RCSHandle *);
+char *RCS_data_path(const RCSHandle *);
 
 void RCS_show_table_summary(const RCSTable *);
 

@@ -438,6 +438,12 @@ LESTable *LES_get_frame(const LESHandle *i, const int n) {
 }
 
 
+char *LES_data_path(const LESHandle *i) {
+    LESMem *h = (LESMem *)i;
+    return h->data_path;
+}
+
+
 void LES_free(LESHandle *i) {
 	LESMem *h = (LESMem *)i;
 	LES_grid_free(h->enclosing_grid);

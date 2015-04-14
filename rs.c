@@ -267,11 +267,12 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret |= clSetKernelArg(C->kern_scat_atts,  9, sizeof(cl_mem),     &C->adm_cd[0]);
     ret |= clSetKernelArg(C->kern_scat_atts, 10, sizeof(cl_mem),     &C->adm_cm[0]);
     ret |= clSetKernelArg(C->kern_scat_atts, 11, sizeof(cl_float16), &C->adm_desc);
-    ret |= clSetKernelArg(C->kern_scat_atts, 12, sizeof(cl_mem),     &C->adm_cd[0]);           // will come back for you rcs
-    ret |= clSetKernelArg(C->kern_scat_atts, 13, sizeof(cl_float16), &C->adm_desc);
-	ret |= clSetKernelArg(C->kern_scat_atts, 14, sizeof(cl_mem),     &C->angular_weight);
-	ret |= clSetKernelArg(C->kern_scat_atts, 15, sizeof(cl_float4),  &C->angular_weight_desc);
-    ret |= clSetKernelArg(C->kern_scat_atts, 16, sizeof(cl_float16), &sim_desc);
+    ret |= clSetKernelArg(C->kern_scat_atts, 12, sizeof(cl_mem),     &C->adm_cd[0]);           // will come back for you rcs_real
+    ret |= clSetKernelArg(C->kern_scat_atts, 13, sizeof(cl_mem),     &C->adm_cd[0]);           // will come back for you rcs_imag
+    ret |= clSetKernelArg(C->kern_scat_atts, 14, sizeof(cl_float16), &C->adm_desc);
+	ret |= clSetKernelArg(C->kern_scat_atts, 15, sizeof(cl_mem),     &C->angular_weight);
+	ret |= clSetKernelArg(C->kern_scat_atts, 16, sizeof(cl_float4),  &C->angular_weight_desc);
+    ret |= clSetKernelArg(C->kern_scat_atts, 17, sizeof(cl_float16), &sim_desc);
 
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_atts().\n", now());
@@ -2285,6 +2286,26 @@ void RS_clear_adm_data(RSHandle *H) {
 }
 
 
+void RS_set_rcs_data(RSHandle *H, const RSTable2D table_real, const RSTable2D table_imag) {
+    
+}
+
+
+void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *table) {
+    
+}
+
+
+void RS_set_rcs_data_to_unity(RSHandle *H) {
+    
+}
+
+
+void RS_clear_rcs_data(RSHandle *H) {
+    
+}
+
+
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 
 #pragma mark -
@@ -2350,6 +2371,7 @@ void RS_explode(RSHandle *H) {
                              (cl_image)H->worker[i].adm_cm[t],
                              H->worker[i].adm_desc[t],
                              (cl_image)H->worker[i].adm_cd[t],
+                             (cl_image)H->worker[i].adm_cm[t],
                              H->worker[i].rcs_desc[t],
                              (cl_float *)H->worker[i].angular_weight,
                              H->worker[i].angular_weight_desc,
@@ -2748,6 +2770,7 @@ void RS_advance_time(RSHandle *H) {
                              (cl_image)H->worker[i].adm_cd[t],
                              (cl_image)H->worker[i].adm_cm[t],
                              H->worker[i].adm_desc[t],
+                             (cl_image)H->worker[i].adm_cd[t],
                              (cl_image)H->worker[i].adm_cd[t],
                              H->worker[i].rcs_desc[t],
                              (cl_float *)H->worker[i].angular_weight,

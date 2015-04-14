@@ -46,8 +46,14 @@
         
         A = ADM_init_with_config_path(ADMConfigSquarePlate, [resourcePath UTF8String]);
 
-        if (A == NULL || L == NULL || S == NULL) {
-            NSLog(@"Some error(s) in RS_init() or LES_init() ADM_init() occurred.");
+        R = RCS_init_with_config_path(RCSConfigLeaf, [resourcePath UTF8String]);
+        
+        NSLog(@"LES @ %s", LES_data_path(L));
+        NSLog(@"ADM @ %s", ADM_data_path(A));
+        NSLog(@"RCS @ %s", RCS_data_path(R));
+        
+        if (A == NULL || L == NULL || S == NULL || S == NULL) {
+            NSLog(@"Some error(s) in RS_init(), LES_init(), ADM_init() or RCS_init() occurred.");
             return nil;
         }
 		
@@ -81,6 +87,8 @@
         //ADM_show_table_summary(adm);
         RS_clear_adm_data(S);
         RS_set_adm_data_to_ADM_table(S, adm);
+        
+        //RS_set_rcs_data_to_
         
 		//RS_set_prt(S, 1.0f);
         //RS_set_prt(S, 0.5f);

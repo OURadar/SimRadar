@@ -67,6 +67,7 @@ LESHandle *LES_init(void);
 void LES_free(LESHandle *);
 
 LESTable *LES_get_frame(const LESHandle *, const int n);
+char *LES_data_path(const LESHandle *);
 
 void LES_show_table_summary(const LESTable *table);
 

@@ -241,6 +241,12 @@ RCSTable *RCS_get_frame(const RCSHandle *i) {
 }
 
 
+char *RCS_data_path(const RCSHandle *i) {
+    RCSMem *h = (RCSMem *)i;
+    return h->data_path;
+}
+
+
 void RCS_show_table_summary(const RCSTable *T) {
     printf(" alpha =\n");
     RCS_show_row("  [ ", " ]\n\n", T->a, T->na);

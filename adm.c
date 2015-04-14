@@ -212,6 +212,12 @@ ADMTable *ADM_get_frame(const ADMHandle *i) {
 }
 
 
+char *ADM_data_path(const ADMHandle *i) {
+    ADMMem *h = (ADMMem * )i;
+    return h->data_path;
+}
+
+
 void ADM_show_table_summary(const ADMTable *T) {
     printf(" beta =\n");
     ADM_show_row("  [ ", " ]\n\n", T->b, T->nb);

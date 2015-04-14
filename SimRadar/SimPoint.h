@@ -29,7 +29,7 @@
 	RSHandle *S;
 
     ADMHandle *A;
-//    RCSHandle *R;
+    RCSHandle *R;
 	LESHandle *L;
 	
 	int table_id;

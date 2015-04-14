@@ -22,6 +22,7 @@
 #include "rs_types.h"
 #include "les.h"
 #include "adm.h"
+#include "rcs.h"
 
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
@@ -397,6 +398,11 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D table_cd, const RSTable2D tabl
 void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *table);
 void RS_set_adm_data_to_unity(RSHandle *H);
 void RS_clear_adm_data(RSHandle *H);
+
+void RS_set_rcs_data(RSHandle *H, const RSTable2D table_real, const RSTable2D table_imag);
+void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *table);
+void RS_set_rcs_data_to_unity(RSHandle *H);
+void RS_clear_rcs_data(RSHandle *H);
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 #pragma mark -

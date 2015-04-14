@@ -36,7 +36,7 @@
 		B567F8C41A6D671F00F40660 /* test_adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B41A6D635100F40660 /* test_adm.c */; };
 		B567F8C51A6D672700F40660 /* adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B11A6D522F00F40660 /* adm.c */; };
 		B56C7FA31ADC221500552B1E /* rcs.c in Sources */ = {isa = PBXBuildFile; fileRef = B55716851AB7519D001984E0 /* rcs.c */; };
-		B56C7FA71ADC231400552B1E /* Sparkle.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = B56C7FA41ADC22E300552B1E /* Sparkle.framework */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B56C7FA71ADC231400552B1E /* Sparkle.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = B56C7FA41ADC22E300552B1E /* Sparkle.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		B56C7FAA1ADC250500552B1E /* Sparkle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B56C7FA41ADC22E300552B1E /* Sparkle.framework */; };
 		B570B0B118BC5B5500391717 /* rs.cl in Sources */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
 		B570B0B418BC5B7900391717 /* rs.cl in CopyFiles */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
@@ -680,7 +680,7 @@
 		B50A280017D7B1DC00E4DE66 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0610;
+				LastUpgradeCheck = 0620;
 				ORGANIZATIONNAME = "Boon Leng Cheong";
 				TargetAttributes = {
 					B567F8BA1A6D66E700F40660 = {

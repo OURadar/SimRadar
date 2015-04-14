@@ -63,6 +63,7 @@ ADMHandle *ADM_init(void);
 void ADM_free(ADMHandle *);
 
 ADMTable *ADM_get_frame(const ADMHandle *);
+char *ADM_data_path(const ADMHandle *);
 
 void ADM_show_table_summary(const ADMTable *);
 
