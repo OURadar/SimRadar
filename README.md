@@ -34,7 +34,7 @@ A zip archive with sample LES (Large Eddy Simulation), ADM (Air Drag Model) and 
 
 http://arrc.ou.edu/~boonleng/simradar/tables.zip
 
-The extracted folder 'tables' can be placed at one of the following folders:
+The extracted folder `tables` can be placed in one of the following locations:
 
 - ~/Downloads
 - ~/Documents
@@ -42,11 +42,7 @@ The extracted folder 'tables' can be placed at one of the following folders:
 
 ### Using the Radar Simulation (RS) Framework ###
 
-The simulation framework is written is plain C for performance and portability. All calculations are implemented within RS framework with functions prefix RS. To include the RS framework, there is only one header needed:
-
-    #include "rs.h"
-
-The following codes create a simple simulation domain:
+The simulation framework is written is plain C for performance and portability. All calculations are implemented within RS framework with functions prefix RS. To include the RS framework, there is only one header, i.e., `rs.h` is needed. The following codes create a simple simulation domain:
 
     #include "rs.h"
 
@@ -55,6 +51,7 @@ The following codes create a simple simulation domain:
         RSHandle  *S;
         ADMHandle *A;
         LESHandle *L;
+        RCSHandle *R;
 
         // Initialize the RS framework
         S = RS_init();
@@ -74,6 +71,14 @@ The following codes create a simple simulation domain:
         A = ADM_init();
         if (A == NULL) {
             fprintf(stderr, "%s : Some errors occurred during ADM_init().\n", now());
+            return EXIT_FAILURE;
+        }
+
+        // Initialize the RCS ingest
+        R = RCS_init();
+        if (R == NULL) {
+            fprintf(stderr, "%s : Some errors occurred during RCS_init().\n", now());
+            return EXIT_FAILURE;
         }
 
         // Set up the parameters: use the setter functions to change the state.
@@ -82,9 +87,9 @@ The following codes create a simple simulation domain:
         RS_set_tx_params(S, 1.0e-6, 50.0e3f);
 
         RS_set_scan_box(S,
-            10.0e3, 15.0e3, 250.0f,  // Range
-            -10.0f, 10.0f, 1.0f,     // Azimuth
-            0.0f, 8.0f, 1.0f);       // Elevation
+            10.0e3, 15.0e3, 250.0f,  // Range in between 10,000 and 15,000 m, 250-m spacing
+            -10.0f, 10.0f, 1.0f,     // Azimuth in between -10.0 and +10.0 deg, 1.0-deg spacing
+            0.0f, 8.0f, 1.0f);       // Elevation in between 0.0 and 8.0 deg, 1.0-deg spacing
 
         RS_set_range_weight_to_triangle(S, 120.0f);
 
@@ -102,7 +107,7 @@ The following codes create a simple simulation domain:
             RS_advance_time(S);
         }
 
-        // Retrieve the results from GPU
+        // Retrieve the results from the GPUs
         RS_download(S);
 
         printf("Final scatter body positions:\n");

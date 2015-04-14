@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="6249" systemVersion="14A379a" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="6249" systemVersion="14D130a" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
     <dependencies>
         <deployment identifier="macosx"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="6249"/>
@@ -630,7 +630,12 @@
                                     <action selector="setSizeTo720p:" target="-1" id="9mR-e7-xlc"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="HD 4K" keyEquivalent="4" id="UjU-T6-Lcb">
+                            <menuItem title="HD 1080p" keyEquivalent="4" id="czX-0M-IsQ">
+                                <connections>
+                                    <action selector="setSizeTo1080p:" target="-1" id="1hY-cu-cT7"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="HD 4K" keyEquivalent="5" id="UjU-T6-Lcb">
                                 <connections>
                                     <action selector="setSizeTo4K:" target="-1" id="ONL-eM-fBD"/>
                                 </connections>

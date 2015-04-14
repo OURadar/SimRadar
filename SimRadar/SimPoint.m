@@ -88,6 +88,10 @@
         RS_clear_adm_data(S);
         RS_set_adm_data_to_ADM_table(S, adm);
         
+        RCSTable *rcs = RCS_get_frame(R);
+        RS_clear_rcs_data(S);
+        RS_set_rcs_data_to_RCS_table(S, rcs);
+        
         //RS_set_rcs_data_to_
         
 		//RS_set_prt(S, 1.0f);

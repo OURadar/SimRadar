@@ -25,36 +25,36 @@ void RS_init_scat_pos(RSHandle *H);
 
 void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char **src_ptr, char verb) {
 	
-	C->dev = dev;
-	C->verb = verb;
-	
-	clGetDeviceInfo(C->dev, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &C->num_cus, NULL);
-	
+    C->dev = dev;
+    C->verb = verb;
+    
+    clGetDeviceInfo(C->dev, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &C->num_cus, NULL);
+
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
-	
-	// A queue & semaphore for the CL work
-	C->que = gcl_create_dispatch_queue(CL_DEVICE_TYPE_GPU, NULL);
-	C->sem = dispatch_semaphore_create(0);
-	
+    
+    // A queue & semaphore for the CL work
+    C->que = gcl_create_dispatch_queue(CL_DEVICE_TYPE_GPU, NULL);
+    C->sem = dispatch_semaphore_create(0);
+    
 #else
 	
 	cl_int ret;
 	
-	// The OpenCL context
-	C->context = clCreateContext(NULL, 1, &C->dev, &pfn_notify, NULL, &ret);
-	if (ret != CL_SUCCESS) {
-		fprintf(stderr, "%s : RS : Error creating OpenCL context.  ret = %d\n", now(), ret);
-		exit(EXIT_FAILURE);
+    // The OpenCL context
+    C->context = clCreateContext(NULL, 1, &C->dev, &pfn_notify, NULL, &ret);
+    if (ret != CL_SUCCESS) {
+        fprintf(stderr, "%s : RS : Error creating OpenCL context.  ret = %d\n", now(), ret);
+        exit(EXIT_FAILURE);
     } else if (verb) {
         printf("%s : RS : OpenCL context created.\n", now());
     }
-	
-	// Program
-	C->prog = clCreateProgramWithSource(C->context, src_size, (const char **)src_ptr, NULL, &ret);
-	if (ret != CL_SUCCESS) {
-		fprintf(stderr, "%s : RS : Error creating OpenCL program.  ret = %d\n", now(), ret);
-		clReleaseContext(C->context);
-		return;
+    
+    // Program
+    C->prog = clCreateProgramWithSource(C->context, src_size, (const char **)src_ptr, NULL, &ret);
+    if (ret != CL_SUCCESS) {
+        fprintf(stderr, "%s : RS : Error creating OpenCL program.  ret = %d\n", now(), ret);
+        clReleaseContext(C->context);
+        return;
     } else if (verb) {
         printf("%s : RS : OpenCL program created.\n", now());
     }
@@ -63,14 +63,14 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     } else {
         ret = clBuildProgram(C->prog, 1, &C->dev, "", NULL, NULL);
     }
-	if (ret != CL_SUCCESS) {
-		char char_buf[RS_MAX_STR] = "";
-		clGetProgramBuildInfo(C->prog, C->dev, CL_PROGRAM_BUILD_LOG, RS_MAX_STR, char_buf, NULL);
-		fprintf(stderr, "%s : RS : CL Compilation failed:\n%s", now(), char_buf);
-		clReleaseProgram(C->prog);
-		clReleaseContext(C->context);
-		return;
-	}
+    if (ret != CL_SUCCESS) {
+        char char_buf[RS_MAX_STR] = "";
+        clGetProgramBuildInfo(C->prog, C->dev, CL_PROGRAM_BUILD_LOG, RS_MAX_STR, char_buf, NULL);
+        fprintf(stderr, "%s : RS : CL Compilation failed:\n%s", now(), char_buf);
+        clReleaseProgram(C->prog);
+        clReleaseContext(C->context);
+        return;
+    }
 	
 #define CHECK_CL_CREATE_KERNEL                                                                          \
     if (ret != CL_SUCCESS) {                                                                            \
@@ -80,36 +80,36 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
         return;                                                                                         \
     }
 	
-	// Tie all kernels to the program
+    // Tie all kernels to the program
     C->kern_io = clCreateKernel(C->prog, "io", &ret);                                             CHECK_CL_CREATE_KERNEL
     C->kern_dummy = clCreateKernel(C->prog, "dummy", &ret);                                       CHECK_CL_CREATE_KERNEL
     C->kern_scat_atts = clCreateKernel(C->prog, "scat_atts", &ret);                               CHECK_CL_CREATE_KERNEL
-	C->kern_make_pulse_pass_1 = clCreateKernel(C->prog, "make_pulse_pass_1", &ret);               CHECK_CL_CREATE_KERNEL
-	C->kern_make_pulse_pass_2_group = clCreateKernel(C->prog, "make_pulse_pass_2_group", &ret);   CHECK_CL_CREATE_KERNEL
-	C->kern_make_pulse_pass_2_local = clCreateKernel(C->prog, "make_pulse_pass_2_range", &ret);   CHECK_CL_CREATE_KERNEL
-	C->kern_make_pulse_pass_2_range = clCreateKernel(C->prog, "make_pulse_pass_2_local", &ret);   CHECK_CL_CREATE_KERNEL
-	C->kern_make_pulse_pass_2 = C->kern_make_pulse_pass_2_group;
+    C->kern_make_pulse_pass_1 = clCreateKernel(C->prog, "make_pulse_pass_1", &ret);               CHECK_CL_CREATE_KERNEL
+    C->kern_make_pulse_pass_2_group = clCreateKernel(C->prog, "make_pulse_pass_2_group", &ret);   CHECK_CL_CREATE_KERNEL
+    C->kern_make_pulse_pass_2_local = clCreateKernel(C->prog, "make_pulse_pass_2_range", &ret);   CHECK_CL_CREATE_KERNEL
+    C->kern_make_pulse_pass_2_range = clCreateKernel(C->prog, "make_pulse_pass_2_local", &ret);   CHECK_CL_CREATE_KERNEL
+    C->kern_make_pulse_pass_2 = C->kern_make_pulse_pass_2_group;
+    
+    if (C->verb > 3) {
+        size_t pref_size;
+        CL_CHECK(clGetKernelWorkGroupInfo(C->kern_scat_atts, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
+        printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   scat_atts()\n", now(), pref_size);
+        
+        CL_CHECK(clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_1, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
+        printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_1()\n", now(), pref_size);
+        
+        CL_CHECK(clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_2_group, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
+        printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_2_group()\n", now(), pref_size);
+        
+        CL_CHECK(clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_2_local, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
+        printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_2_local()\n", now(), pref_size);
+        
+        CL_CHECK(clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_2_range, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
+        printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_2_range()\n", now(), pref_size);
+    }
 	
-	if (C->verb > 3) {
-		size_t pref_size;
-		CL_CHECK(clGetKernelWorkGroupInfo(C->kern_scat_atts, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
-		printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   scat_atts()\n", now(), pref_size);
-		
-		CL_CHECK(clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_1, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
-		printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_1()\n", now(), pref_size);
-		
-		CL_CHECK(clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_2_group, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
-		printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_2_group()\n", now(), pref_size);
-		
-		CL_CHECK(clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_2_local, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
-		printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_2_local()\n", now(), pref_size);
-		
-		CL_CHECK(clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_2_range, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
-		printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_2_range()\n", now(), pref_size);
-	}
-	
-	// A queue for the CL work of each device
-	C->que = clCreateCommandQueue(C->context, C->dev, 0, &ret);
+    // A queue for the CL work of each device
+    C->que = clCreateCommandQueue(C->context, C->dev, 0, &ret);
 	
 #endif
 	
@@ -125,19 +125,19 @@ void RS_worker_free(RSWorker *C) {
 	
 #else
 	
-	clReleaseCommandQueue(C->que);
-	
+    clReleaseCommandQueue(C->que);
+    
     clReleaseKernel(C->kern_io);
     clReleaseKernel(C->kern_dummy);
     clReleaseKernel(C->kern_scat_atts);
-	clReleaseKernel(C->kern_make_pulse_pass_1);
-	clReleaseKernel(C->kern_make_pulse_pass_2_group);
-	clReleaseKernel(C->kern_make_pulse_pass_2_local);
-	clReleaseKernel(C->kern_make_pulse_pass_2_range);
-	
-	clReleaseProgram(C->prog);
-	
-	clReleaseContext(C->context);
+    clReleaseKernel(C->kern_make_pulse_pass_1);
+    clReleaseKernel(C->kern_make_pulse_pass_2_group);
+    clReleaseKernel(C->kern_make_pulse_pass_2_local);
+    clReleaseKernel(C->kern_make_pulse_pass_2_range);
+    
+    clReleaseProgram(C->prog);
+    
+    clReleaseContext(C->context);
 	
 #endif
 	
@@ -147,57 +147,53 @@ void RS_worker_free(RSWorker *C) {
 void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_scats) {
 
     RSWorker *C = &H->worker[worker_id];
-	
+    
     // Copy the necessary parameters from host to compute workers
-	C->num_scats = sub_num_scats;
-	
-	C->make_pulse_params = RS_make_pulse_params((cl_uint)C->num_scats,
-												RS_CL_GROUP_ITEMS,
-												C->num_cus * 4,
-												H->params.range_start,
-												H->params.range_delta,
-												H->params.range_count);
-
-//    for (int t=0; t<RS_MAX_ADM_TABLES; t++) {
-//        C->adm_desc[t].s2 = H->params.prt;
-//    }
-
+    C->num_scats = sub_num_scats;
+    
+    C->make_pulse_params = RS_make_pulse_params((cl_uint)C->num_scats,
+                                                RS_CL_GROUP_ITEMS,
+                                                C->num_cus * 4,
+                                                H->params.range_start,
+                                                H->params.range_delta,
+                                                H->params.range_count);
+    
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 	
-	C->ndrange_scat.work_dim = 1;
-	C->ndrange_scat.global_work_offset[0] = 0;
-	C->ndrange_scat.global_work_size[0] = sub_num_scats;
-	C->ndrange_scat.local_work_size[0] = 0;
-	
-	C->ndrange_pulse_pass_1.work_dim = 1;
-	C->ndrange_pulse_pass_1.global_work_offset[0] = 0;
-	C->ndrange_pulse_pass_1.global_work_size[0] = C->make_pulse_params.global[0];
-	C->ndrange_pulse_pass_1.local_work_size[0] = C->make_pulse_params.local[0];
-	
-	C->ndrange_pulse_pass_2.work_dim = 1;
-	C->ndrange_pulse_pass_2.global_work_offset[0] = 0;
-	C->ndrange_pulse_pass_2.global_work_size[0] = C->make_pulse_params.global[1];
-	C->ndrange_pulse_pass_2.local_work_size[0] = C->make_pulse_params.local[1];
-	
-	// printf("Creating cl_mem from vbo ... %d %d\n", C->vbo_scat_pos, C->vbo_scat_clr);
-	C->scat_pos = gcl_gl_create_ptr_from_buffer(C->vbo_scat_pos);
-	C->scat_clr = gcl_gl_create_ptr_from_buffer(C->vbo_scat_clr);
-	C->scat_ori = gcl_gl_create_ptr_from_buffer(C->vbo_scat_ori);
-	if (C->scat_pos == NULL || C->scat_clr == NULL || C->scat_ori == NULL) {
-		fprintf(stderr, "%s : RS : Error in gcl_gl_create_ptr_from_buffer().\n", now());
-		return;
-	}
-	
-	C->scat_vel = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
+    C->ndrange_scat.work_dim = 1;
+    C->ndrange_scat.global_work_offset[0] = 0;
+    C->ndrange_scat.global_work_size[0] = sub_num_scats;
+    C->ndrange_scat.local_work_size[0] = 0;
+    
+    C->ndrange_pulse_pass_1.work_dim = 1;
+    C->ndrange_pulse_pass_1.global_work_offset[0] = 0;
+    C->ndrange_pulse_pass_1.global_work_size[0] = C->make_pulse_params.global[0];
+    C->ndrange_pulse_pass_1.local_work_size[0] = C->make_pulse_params.local[0];
+    
+    C->ndrange_pulse_pass_2.work_dim = 1;
+    C->ndrange_pulse_pass_2.global_work_offset[0] = 0;
+    C->ndrange_pulse_pass_2.global_work_size[0] = C->make_pulse_params.global[1];
+    C->ndrange_pulse_pass_2.local_work_size[0] = C->make_pulse_params.local[1];
+    
+    // printf("Creating cl_mem from vbo ... %d %d\n", C->vbo_scat_pos, C->vbo_scat_clr);
+    C->scat_pos = gcl_gl_create_ptr_from_buffer(C->vbo_scat_pos);
+    C->scat_clr = gcl_gl_create_ptr_from_buffer(C->vbo_scat_clr);
+    C->scat_ori = gcl_gl_create_ptr_from_buffer(C->vbo_scat_ori);
+    if (C->scat_pos == NULL || C->scat_clr == NULL || C->scat_ori == NULL) {
+        fprintf(stderr, "%s : RS : Error in gcl_gl_create_ptr_from_buffer().\n", now());
+        return;
+    }
+    
+    C->scat_vel = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
     C->scat_tum = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
-	C->scat_att = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
-	C->scat_sig = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
-	C->work = gcl_malloc(RS_MAX_GATES * RS_CL_GROUP_ITEMS * sizeof(cl_float4), NULL, 0);
-	C->pulse = gcl_malloc(RS_MAX_GATES * sizeof(cl_float4), NULL, 0);
-	
-	C->scat_rnd = gcl_malloc(C->num_scats * sizeof(cl_int4), NULL, 0);
-	
-	C->mem_size += (cl_uint)( (7 * C->num_scats + RS_MAX_GATES * RS_CL_GROUP_ITEMS + RS_MAX_GATES) * sizeof(cl_float4) + C->num_scats * sizeof(cl_int4) );
+    C->scat_att = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
+    C->scat_sig = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
+    C->work = gcl_malloc(RS_MAX_GATES * RS_CL_GROUP_ITEMS * sizeof(cl_float4), NULL, 0);
+    C->pulse = gcl_malloc(RS_MAX_GATES * sizeof(cl_float4), NULL, 0);
+    
+    C->scat_rnd = gcl_malloc(C->num_scats * sizeof(cl_int4), NULL, 0);
+    
+    C->mem_size += (cl_uint)( (7 * C->num_scats + RS_MAX_GATES * RS_CL_GROUP_ITEMS + RS_MAX_GATES) * sizeof(cl_float4) + C->num_scats * sizeof(cl_int4) );
 
 #else
 	
@@ -267,9 +263,9 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret |= clSetKernelArg(C->kern_scat_atts,  9, sizeof(cl_mem),     &C->adm_cd[0]);
     ret |= clSetKernelArg(C->kern_scat_atts, 10, sizeof(cl_mem),     &C->adm_cm[0]);
     ret |= clSetKernelArg(C->kern_scat_atts, 11, sizeof(cl_float16), &C->adm_desc);
-    ret |= clSetKernelArg(C->kern_scat_atts, 12, sizeof(cl_mem),     &C->adm_cd[0]);           // will come back for you rcs_real
-    ret |= clSetKernelArg(C->kern_scat_atts, 13, sizeof(cl_mem),     &C->adm_cd[0]);           // will come back for you rcs_imag
-    ret |= clSetKernelArg(C->kern_scat_atts, 14, sizeof(cl_float16), &C->adm_desc);
+    ret |= clSetKernelArg(C->kern_scat_atts, 12, sizeof(cl_mem),     &C->rcs_real[0]);
+    ret |= clSetKernelArg(C->kern_scat_atts, 13, sizeof(cl_mem),     &C->rcs_imag[0]);
+    ret |= clSetKernelArg(C->kern_scat_atts, 14, sizeof(cl_float16), &C->rcs_desc);
 	ret |= clSetKernelArg(C->kern_scat_atts, 15, sizeof(cl_mem),     &C->angular_weight);
 	ret |= clSetKernelArg(C->kern_scat_atts, 16, sizeof(cl_float4),  &C->angular_weight_desc);
     ret |= clSetKernelArg(C->kern_scat_atts, 17, sizeof(cl_float16), &sim_desc);
@@ -284,19 +280,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     //	printf("C->angular_weight @ %p\n", C->angular_weight);
     //	printf("C->scat_pos       @ %p\n", C->scat_pos);
     //	printf("C->scat_vel       @ %p\n", C->scat_vel);
-    
-//    ret = CL_SUCCESS;
-//    ret |= clSetKernelArg(C->kern_scat_physics, 0, sizeof(cl_mem), &C->scat_pos);
-//    ret |= clSetKernelArg(C->kern_scat_physics, 1, sizeof(cl_mem), &C->scat_vel);
-//    ret |= clSetKernelArg(C->kern_scat_physics, 2, sizeof(cl_mem), &C->physics);
-//    ret |= clSetKernelArg(C->kern_scat_physics, 3, sizeof(cl_float16), &C->physics_desc);
-//    if (ret != CL_SUCCESS) {
-//        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_physics().\n", now());
-//        exit(EXIT_FAILURE);
-//    }
-//    C->mem_size += (cl_uint)((H->physics_table.xm + 1.0f) * (H->physics_table.ym + 1.0f) * (H->physics_table.zm + 1.0f)) * sizeof(cl_float4);
-//    C->mem_size += (cl_uint)((C->vel_desc.s2 + 1.0f) * (C->vel_desc.s6 + 1.0f) * (C->vel_desc.sa + 1.0f)) * sizeof(float);
-    
+   
 	if (C->verb > 1) {
 		printf("%s : RS : Pass 1   global = %5s   local =%3zu x %2d = %6s B   groups =%3d   N = %9s\n",
 			   now(),
@@ -830,8 +814,10 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
 	//RS_set_angular_weight_to_double_cone(H, 2.0f / 180.0f * M_PI);
 
 	RS_set_wind_data_to_cube27(H);
-    
+
     RS_set_adm_data_to_unity(H);
+    
+    RS_set_rcs_data_to_unity(H);
 	
 	H->verb = user_verb;
 	
@@ -936,7 +922,8 @@ void RS_free(RSHandle *H) {
 		gcl_release_image(H->worker[i].vel[t]);
         gcl_release_image(H->worker[i].adm_cd[t]);
         gcl_release_image(H->worker[i].adm_cm[t]);
-//        gcl_release_image(H->worker[i].rcs[0]);
+        gcl_release_image(H->worker[i].rcs_real[t]);
+        gcl_release_image(H->worker[i].rcs_imag[t]);
 	}
 	
 #else
@@ -947,25 +934,19 @@ void RS_free(RSHandle *H) {
 		clReleaseMemObject(H->worker[i].vel[t]);
         clReleaseMemObject(H->worker[i].adm_cd[t]);
         clReleaseMemObject(H->worker[i].adm_cm[t]);
-//        clReleaseMemObject(H->worker[i].rcs[0]);
+        clReleaseMemObject(H->worker[i].rcs_real[t]);
+        clReleaseMemObject(H->worker[i].rcs_imag[t]);
 	}
 	
 #endif
 	
-//    RS_table_free(H->range_weight_table);
-//    RS_table_free(H->angular_weight_table);
-//    RS_table3d_free(H->physics_table);
-//    RS_table2d_free(H->adm_cd_tables[0]);
-//    RS_table2d_free(H->adm_cm_tables[0]);
-//    RS_table2d_free(H->rcs_tables[0]);
+    free(H->anchor_pos);
     
-	free(H->anchor_pos);
-	
-	free(H);
-	
-	if (v) {
-		printf("%s : RS : Resources released.\n", now());
-	}
+    free(H);
+    
+    if (v) {
+        printf("%s : RS : Resources released.\n", now());
+    }
 }
 
 
@@ -2144,7 +2125,7 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
         
         H->worker[i].adm_cd[t] = gcl_create_image(&format, cd.x_, cd.y_, 1, NULL);
-        H->worker[i].adm_cm[t] = gcl_create_image(&format, cm.x_, cd.y_, 1, NULL);
+        H->worker[i].adm_cm[t] = gcl_create_image(&format, cm.x_, cm.y_, 1, NULL);
         
 #else
         
@@ -2165,7 +2146,7 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
         
 #endif
         if (H->worker[i].adm_cd[t] == NULL || H->worker[i].adm_cm[t] == NULL) {
-            fprintf(stderr, "%s : RS : worker[%d] encountered error creating ADM table on CL device.\n", now(), i);
+            fprintf(stderr, "%s : RS : worker[%d] encountered error creating ADM tables on CL device(s).\n", now(), i);
             return;
         } else if (H->verb > 2) {
             printf("%s : RS : worker[%d] created adm_cd[%d] & adm_cd[%d] @ %p & %p\n", now(), i, t, t, &H->worker[i].adm_cd[t], &H->worker[i].adm_cm[t]);
@@ -2255,7 +2236,7 @@ void RS_set_adm_data_to_unity(RSHandle *H) {
     RSTable2D table = RS_table2d_init(9);
     
     if (H->verb > 1) {
-        printf("%s : RS : Unity @ X:[ -M_PI - M_PI ]  Y:[ 0 - M_PI ]\n", now());
+        printf("%s : RS : ADM to unity @ X:[ -M_PI - M_PI ]  Y:[ 0 - M_PI ]\n", now());
     }
     
     table.x_ = 3;    table.xm = 2.0f;    table.xs = 3.0f / (2.0f * M_PI);    table.xo = -(-M_PI) * table.xs;
@@ -2286,18 +2267,199 @@ void RS_clear_adm_data(RSHandle *H) {
 }
 
 
-void RS_set_rcs_data(RSHandle *H, const RSTable2D table_real, const RSTable2D table_imag) {
+void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
     
+    int i;
+    
+    const int t = H->rcs_count;
+    
+    const size_t n = real.x_ * real.y_;
+    if (imag.x_ * imag.y_ != n) {
+        fprintf(stderr, "%s : RS : RS_set_rcs_data() received inconsistent real (%d x %d) & imag (%d x %d) dimensions", now(), real.x_, real.y_, imag.x_, imag.y_);
+        return;
+    }
+
+    // This is the part that we need to create two texture maps for each RSTable2D table
+    cl_image_format format = {CL_RGBA, CL_FLOAT};
+    
+#if defined (CL_VERSION_1_2)
+    
+    cl_image_desc desc;
+    desc.image_type = CL_MEM_OBJECT_IMAGE2D;
+    desc.image_width  = real.x_;
+    desc.image_height = real.y_;
+    desc.image_depth  = 1;
+    desc.image_array_size = 0;
+    desc.image_row_pitch = desc.image_width * sizeof(cl_float4);
+    desc.image_slice_pitch = desc.image_height * desc.image_row_pitch;
+    desc.num_mip_levels = 0;
+    desc.num_samples = 0;
+    desc.buffer = NULL;
+    
+#endif
+    
+    
+    for (i=0; i<H->num_workers; i++) {
+        if (H->worker[i].rcs_real[t] != NULL && H->worker[i].rcs_imag[t] != NULL) {
+            
+#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+            
+            gcl_release_image(H->worker[i].rcs_real[t]);
+            gcl_release_image(H->worker[i].rcs_imag[t]);
+            
+#else
+            
+            clReleaseMemObject(H->worker[i].rcs_real[t]);
+            clReleaseMemObject(H->worker[i].rcs_imag[t]);
+            
+#endif
+            
+            H->worker[i].mem_size -= ((cl_uint)(H->worker[i].rcs_desc[t].s8 + 1.0f) * (H->worker[i].rcs_desc[t].s9 + 1.0f)) * 2 * sizeof(cl_float4);
+        }
+        //  rcs_real & rcs_imag always have the same desc
+        
+        
+#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+        
+        H->worker[i].rcs_real[t] = gcl_create_image(&format, real.x_, real.y_, 1, NULL);
+        H->worker[i].rcs_imag[t] = gcl_create_image(&format, imag.x_, imag.y_, 1, NULL);
+        
+#else
+        
+        cl_int retd, retm;
+        cl_mem_flags flags = CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR;
+        
+#if defined (CL_VERSION_1_2)
+        
+        H->worker[i].rcs_real[t] = clCreateImage(H->worker[i].context, flags, &format, &desc, real.data, &retd);
+        H->worker[i].rcs_imag[t] = clCreateImage(H->worker[i].context, flags, &format, &desc, imag.data, &retm);
+        
+#else
+        
+        H->worker[i].rcs_real[t] = clCreateImage2D(H->worker[i].context, flags, &format, real.x_, real.y_, real.x_ * sizeof(cl_float4), real.data, &retd);
+        H->worker[i].rcs_imag[t] = clCreateImage2D(H->worker[i].context, flags, &format, imag.x_, imag.y_, imag.x_ * sizeof(cl_float4), imag.data, &retm);
+        
+#endif
+        
+#endif
+        if (H->worker[i].rcs_real[t] == NULL || H->worker[i].rcs_imag[t] == NULL) {
+            fprintf(stderr, "%s : RS : worker[%d] encountered error creating RCS tables on CL device(s).\n", now(), i);
+            return;
+        } else if (H->verb > 2) {
+            printf("%s : RS : worker[%d] created rcs_real[%d] & rcs_imag[%d] @ %p & %p\n", now(), i, t, t, &H->worker[i].rcs_real[t], &H->worker[i].rcs_imag[t]);
+        }
+        
+#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+        
+        dispatch_async(H->worker[i].que, ^{
+            size_t origin[3] = {0, 0, 0};
+            size_t region[3] = {real.x_, imag.y_, 1};
+            gcl_copy_ptr_to_image(H->worker[i].rcs_real[t], real.data, origin, region);
+            gcl_copy_ptr_to_image(H->worker[i].rcs_imag[t], imag.data, origin, region);
+            dispatch_semaphore_signal(H->worker[i].sem);
+        });
+        
+#endif
+        
+    }
+    
+    for (i=0; i<H->num_workers; i++) {
+        
+#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+        
+        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+        
+#endif
+        
+        // Copy over to CL worker
+        H->worker[i].rcs_desc[t].s[RSTableDescriptionScaleX] = real.xs;
+        H->worker[i].rcs_desc[t].s[RSTableDescriptionScaleY] = real.ys;
+        H->worker[i].rcs_desc[t].s[RSTableDescriptionScaleZ] = 0.0f;
+        H->worker[i].rcs_desc[t].s[RSTableDescriptionOriginX] = real.xo;
+        H->worker[i].rcs_desc[t].s[RSTableDescriptionOriginY] = real.yo;
+        H->worker[i].rcs_desc[t].s[RSTableDescriptionOriginZ] = 0.0f;
+        H->worker[i].rcs_desc[t].s[RSTableDescriptionMaximumX] = real.xm;
+        H->worker[i].rcs_desc[t].s[RSTableDescriptionMaximumY] = real.ym;
+        H->worker[i].rcs_desc[t].s[RSTableDescriptionMaximumZ] = 0.0f;
+        H->worker[i].mem_size += ((cl_uint)(real.xm + 1.0f) * (real.ym + 1.0f)) * 2 * sizeof(cl_float4);
+    }
+    H->rcs_count++;
 }
 
 
-void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *table) {
+void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *rosie) {
+    int i;
     
+    RSTable2D real = RS_table2d_init(rosie->nn);
+    RSTable2D imag = RS_table2d_init(rosie->nn);
+    
+    if (real.data == NULL || imag.data == NULL) {
+        return;
+    } else if (H->verb > 1) {
+        printf("%s : RS : ADM @ X:[ -M_PI - M_PI ]  Y:[ 0 - M_PI ]\n", now());
+    }
+    
+    // Set up the mapping coefficients
+    // Assumptions: maps are always in alpha in [-180deg, +180deg] and beta in [0, +180deg]
+    real.x_ = rosie->na;    real.xm = (float)(real.x_ - 1);    real.xs = (float)rosie->na / (2.0f * M_PI);    real.xo = -(-M_PI) * real.xs;
+    real.y_ = rosie->nb;    real.ym = (float)(real.y_ - 1);    real.ys = (float)rosie->nb / M_PI;             real.yo = 0.0f;
+    
+    imag.x_ = rosie->na;    imag.xm = (float)(imag.x_ - 1);    imag.xs = (float)rosie->na / (2.0f * M_PI);    imag.xo = -(-M_PI) * real.xs;
+    imag.y_ = rosie->nb;    imag.ym = (float)(imag.y_ - 1);    imag.ys = (float)rosie->nb / M_PI;             imag.yo = 0.0f;
+    
+    // Arrange RCS values into float4, getting ready for GPU's global memory
+    for (i=0; i<rosie->nn; i++) {
+        real.data[i].x = rosie->hh_real[i];
+        real.data[i].y = rosie->vv_real[i];
+        real.data[i].z = rosie->hv_real[i];
+        real.data[i].w = 0.0f;
+        imag.data[i].x = rosie->hh_imag[i];
+        imag.data[i].y = rosie->vv_imag[i];
+        imag.data[i].z = rosie->hv_imag[i];
+        imag.data[i].w = 0.0f;
+    }
+    
+    RS_set_rcs_data(H, real, imag);
+    
+    RS_table2d_free(real);
+    RS_table2d_free(imag);
+
 }
 
 
 void RS_set_rcs_data_to_unity(RSHandle *H) {
     
+    int i;
+    
+    RSTable2D table_real = RS_table2d_init(9);
+    RSTable2D table_imag = RS_table2d_init(9);
+    
+    if (H->verb > 1) {
+        printf("%s : RS : RCS to unity @ X:[ -M_PI - M_PI ]  Y:[ 0 - M_PI ]\n", now());
+    }
+    
+    table_real.x_ = 3;    table_real.xm = 2.0f;    table_real.xs = 3.0f / (2.0f * M_PI);    table_real.xo = -(-M_PI) * table_real.xs;
+    table_real.y_ = 3;    table_real.ym = 2.0f;    table_real.ys = 3.0f / M_PI;             table_real.yo = 0.0f;
+
+    table_imag.x_ = 3;    table_imag.xm = 2.0f;    table_imag.xs = 3.0f / (2.0f * M_PI);    table_imag.xo = -(-M_PI) * table_imag.xs;
+    table_imag.y_ = 3;    table_imag.ym = 2.0f;    table_imag.ys = 3.0f / M_PI;             table_imag.yo = 0.0f;
+    
+    for (i=0; i<9; i++) {
+        table_real.data[i].x = 1.0f;
+        table_real.data[i].y = 1.0f;
+        table_real.data[i].z = 1.0f;
+        table_real.data[i].w = 0.0f;
+
+        table_imag.data[i].x = 0.0f;
+        table_imag.data[i].y = 0.0f;
+        table_imag.data[i].z = 0.0f;
+        table_imag.data[i].w = 0.0f;
+    }
+    
+    RS_set_rcs_data(H, table_real, table_imag);
+    
+    RS_table2d_free(table_real);
+    RS_table2d_free(table_imag);
 }
 
 
@@ -2370,8 +2532,8 @@ void RS_explode(RSHandle *H) {
                              (cl_image)H->worker[i].adm_cd[t],
                              (cl_image)H->worker[i].adm_cm[t],
                              H->worker[i].adm_desc[t],
-                             (cl_image)H->worker[i].adm_cd[t],
-                             (cl_image)H->worker[i].adm_cm[t],
+                             (cl_image)H->worker[i].rcs_real[t],
+                             (cl_image)H->worker[i].rcs_imag[t],
                              H->worker[i].rcs_desc[t],
                              (cl_float *)H->worker[i].angular_weight,
                              H->worker[i].angular_weight_desc,
@@ -2770,8 +2932,8 @@ void RS_advance_time(RSHandle *H) {
                              (cl_image)H->worker[i].adm_cd[t],
                              (cl_image)H->worker[i].adm_cm[t],
                              H->worker[i].adm_desc[t],
-                             (cl_image)H->worker[i].adm_cd[t],
-                             (cl_image)H->worker[i].adm_cd[t],
+                             (cl_image)H->worker[i].rcs_real[t],
+                             (cl_image)H->worker[i].rcs_imag[t],
                              H->worker[i].rcs_desc[t],
                              (cl_float *)H->worker[i].angular_weight,
                              H->worker[i].angular_weight_desc,

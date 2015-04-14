@@ -238,7 +238,8 @@ typedef struct _rs_worker {
     cl_mem                 adm_cm[RS_MAX_ADM_TABLES];
     cl_float16             adm_desc[RS_MAX_ADM_TABLES];
     
-    cl_mem                 rcs[RS_MAX_RCS_TABLES];
+    cl_mem                 rcs_real[RS_MAX_RCS_TABLES];
+    cl_mem                 rcs_imag[RS_MAX_RCS_TABLES];
     cl_float16             rcs_desc[RS_MAX_RCS_TABLES];
     
 	cl_mem                 vel[RS_MAX_VEL_TABLES];

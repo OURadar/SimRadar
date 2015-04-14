@@ -819,7 +819,9 @@
     [textRenderer drawText:statusMessage[0] origin:NSMakePoint(25.0f, height - 90.0f) scale:0.333f];
     [textRenderer drawText:statusMessage[1] origin:NSMakePoint(25.0f, height - 120.0f) scale:0.333f];
 
+#ifndef GEN_IMG
     [textRenderer drawText:fpsString origin:NSMakePoint(width - 30.0f, hudOrigin.y - 40.0f) scale:0.333f red:1.0f green:0.9f blue:0.2f alpha:1.0f align:GLTextAlignmentRight];
+#endif
     
     if (showHud) {
         snprintf(statusMessage[2], 128, "EL %.2f   AZ %.2f", beamElevation / M_PI * 180.0f, beamAzimuth / M_PI * 180.0f);

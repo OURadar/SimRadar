@@ -162,6 +162,11 @@ NSWindow *standardWindow;
 	[self setSizeAndCentralized:NSMakeSize(1280.0f, 720.0f + 17.0f)];
 }
 
+- (IBAction)setSizeTo1080p:(id)sender
+{
+    [self setSizeAndCentralized:NSMakeSize(1920.0f, 1080.0f + 17.0f)];
+}
+
 - (IBAction)setSizeTo4K:(id)sender
 {
 //    [self.window setFrame:NSMakeRect(0.0f, -3000.0f, 3180.0f, 2160.0f + 17.0f) display:NO];
