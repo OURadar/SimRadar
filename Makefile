@@ -31,6 +31,7 @@ $(PROGS): %: %.c $(MYLIB)
 	$(CC) $(CFLAGS) -o $@ $@.c $(LDFLAGS)
 
 lib/librs.a: $(OBJS)
+	mkdir -p lib
 	ar rvcs $@ $(OBJS)
 
 
