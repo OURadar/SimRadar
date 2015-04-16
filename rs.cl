@@ -281,13 +281,12 @@ __kernel void scat_atts(__global float4 *p,
         const float Ta = adm_desc.sf;
         const float4 inv_inln = (float4)(adm_desc.scde, 0.0f);
 
-//        float4 cdo = cd;
         cd = quat_rotate(cd, ori);
     
-        //    if (i == 0)
-        //        printf("ur = %5.2f %5.2f %5.2f %5.2f  cdr = %5.2f %5.2f %5.2f %5.2f\n",
-        //               ur.x, ur.y, ur.z, ur.w,
-        //               cd.x, cd.y, cd.z, cd.w);
+//    if (i == 0)
+//        printf("ur = %5.2f %5.2f %5.2f %5.2f  cdr = %5.2f %5.2f %5.2f %5.2f\n",
+//               ur.x, ur.y, ur.z, ur.w,
+//               cd.x, cd.y, cd.z, cd.w);
         
         float ur_norm = length(ur.xyz);
         float ur_norm_sq = ur_norm * ur_norm;
@@ -315,25 +314,6 @@ __kernel void scat_atts(__global float4 *p,
                        c.x * s.y * c.z - s.x * c.y * s.z,
                        c.x * c.y * s.z + s.x * s.y * c.z,
                        c.x * c.y * c.z - s.x * s.y * s.z);
-
-//        if (any(!isfinite(pos)) || any(!isfinite(vel)) || any(!isfinite(ori)) || any(!isfinite(tum)) || any(isgreater(dw, M_PI_4_F)) || length(vel_bg) > 100.0f) {
-//            float4 du = dudt * dt;
-//            printf("%u  p = [%5.2f %5.2f %5.2f %5.2f]  v = [%5.2f %5.2f %5.2f %5.2f]  vbg = [%5.2f %5.2f %5.2f %5.2f]  o = [%5.2f %5.2f %5.2f %5.2f]  du = [%5.2f %5.2f %5.2f %5.2f]  dw = [%5.2f %5.2f %5.2f %5.2f]  cd(%5.2f, %5.2f) = [%5.2f %5.2f %5.2f %5.2f] --> [%5.2f %5.2f %5.2f %5.2f]  %5.2f\n",
-//                   i,
-//                   pos.x, pos.y, pos.z, pos.w,
-//                   vel.x, vel.y, vel.z, vel.w,
-//                   //ori.x, ori.y, ori.z, ori.w,
-//                   vel_bg.x, vel_bg.y, vel_bg.z, vel_bg.w,
-//                   //tum.x, tum.y, tum.z, tum.w,
-//                   ori.x, ori.y, ori.z, ori.w,
-//                   du.x, du.y, du.z, du.w,
-//                   dw.x, dw.y, dw.z, dw.w,
-//                   RAD2DEG(beta), RAD2DEG(alpha),
-//                   cdo.x, cdo.y, cdo.z, cdo.w,
-//                   cd.x, cd.y, cd.z, cd.w,
-//                   ur_norm_sq
-//                   );
-//        }
 
         vel += dudt * dt;
         
@@ -449,7 +429,7 @@ __kernel void scat_atts(__global float4 *p,
     float2 table_o = (float2)(angular_weight_desc.s1, angular_weight_desc.s1) + (float2)(0.0f, 1.0f);
     float2 angle_2 = (float2)(angle, angle);
     
-    // scale, offset, clampp to edge
+    // scale, offset, clamp to edge
     uint2  iidx_int;
     float2 fidx_int;
     float2 fidx_raw = clamp(fma(angle_2, table_s, table_o), 0.0f, angular_weight_desc.s2);
@@ -618,6 +598,20 @@ __kernel void make_pulse_pass_1(__global float4 *out,
     unsigned int local_numel = range_count * local_size;
     
     // Consolidate the local memory
+    if (local_size > 512 && local_id < 512)
+    {
+        for (k=0; k<local_numel; k+=local_size)
+            shared[local_id + k] += shared[local_id + k + 512];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if (local_size > 256 && local_id < 256)
+    {
+        for (k=0; k<local_numel; k+=local_size)
+            shared[local_id + k] += shared[local_id + k + 256];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
     if (local_size > 128 && local_id < 128)
     {
         for (k=0; k<local_numel; k+=local_size)
@@ -769,6 +763,16 @@ __kernel void make_pulse_pass_2_group(__global float4 *out,
         barrier(CLK_LOCAL_MEM_FENCE);
         
         // Consolidate local memory to range_count
+        if (local_size > 512 && local_id < 512) {
+            shared[local_id] += shared[local_id + 512];
+        }
+        barrier(CLK_LOCAL_MEM_FENCE);
+        
+        if (local_size > 256 && local_id < 256) {
+            shared[local_id] += shared[local_id + 256];
+        }
+        barrier(CLK_LOCAL_MEM_FENCE);
+
         if (local_size > 128 && local_id < 128) {
             shared[local_id] += shared[local_id + 128];
         }

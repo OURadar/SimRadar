@@ -123,7 +123,7 @@ int main(int argc, char *argv[]) {
 
 	RS_set_tx_params(S, 1.0e-6, 50.0e3f);
     
-    RS_set_prt(S, 1.0f);
+    RS_set_prt(S, 0.05f);
 
 	RS_set_scan_box(S,
 					10.0e3, 15.0e3, 250.0f,                     // Range
@@ -131,10 +131,19 @@ int main(int argc, char *argv[]) {
 					0.0f, 8.0f, 1.0f);                          // Elevation
 	
 	RS_set_range_weight_to_triangle(S, 120.0f);
-	
-	RS_set_wind_data_to_cube125(S);
 
-	// Populate the domain with scatter bodies.
+    RS_clear_wind_data(S);
+    for (int k=0; k<RS_MAX_VEL_TABLES; k++) {
+        RS_set_wind_data_to_LES_table(S, LES_get_frame(L, k));
+    }
+
+    RS_clear_adm_data(S);
+    RS_set_adm_data_to_ADM_table(S, ADM_get_frame(A));
+
+    RS_clear_rcs_data(S);
+    RS_set_rcs_data_to_RCS_table(S, RCS_get_frame(R));
+
+    // Populate the domain with scatter bodies.
 	// This is also the function that triggers kernel compilation, GPU memory allocation and
 	// upload all the parameters to the GPU.
 	RS_populate(S);
@@ -147,26 +156,32 @@ int main(int argc, char *argv[]) {
 			   now(), commaint(num_frames), num_frames>1?"s":"", commaint(S->num_scats));
 	}
 	
-	gettimeofday(&t1, NULL);
-
 	// Now, we are ready to bake
-    for (int k=0; k<num_frames; k++) {
+    int k;
+    const int ks = 10;
+    for (k=0; k<ks; k++) {
         RS_make_pulse(S);
         RS_set_beam_pos(S, 15.0f, 10.0f);
         RS_advance_time(S);
 
-        if (k <= 10) {
-            RS_download(S);
-            printf("== k = %d ==============\n", k);
-            RS_show_scat_pos(S);
-        }
+        RS_download(S);
+        printf("== k = %d ==============\n", k);
+        RS_show_scat_pos(S);
     }
 
-	gettimeofday(&t2, NULL);
+    gettimeofday(&t1, NULL);
+    
+    for (; k<num_frames; k++) {
+        RS_make_pulse(S);
+        RS_set_beam_pos(S, 15.0f, 10.0f);
+        RS_advance_time(S);
+    }
+	
+    gettimeofday(&t2, NULL);
 
 	if (num_frames >= 10) {
 		float dt = DTIME(t1, t2);
-		printf("%s : Finished.  Time elapsed = %.2f s  (%.2f FPS).\n", now(), dt, (num_frames - 3) / dt);
+		printf("%s : Finished.  Time elapsed = %.2f s  (%.2f FPS).\n", now(), dt, (num_frames - 10) / dt);
 	} else {
 		printf("%s : Finished.\n", now());
 	}
@@ -182,6 +197,10 @@ int main(int argc, char *argv[]) {
 	RS_free(S);
 
     LES_free(L);
+    
+    ADM_free(A);
+    
+    RCS_free(R);
 
 	printf("%s : Session ended\n", now());
 

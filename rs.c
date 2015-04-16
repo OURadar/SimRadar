@@ -39,7 +39,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
         fprintf(stderr, "%s : RS : Error creating OpenCL context.  ret = %d\n", now(), ret);
         exit(EXIT_FAILURE);
     } else if (verb) {
-        printf("%s : RS : OpenCL context created.\n", now());
+        printf("%s : RS : OpenCL context[%d] created.\n", now(), (int)C->name);
     }
     
     // Program
@@ -49,7 +49,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
         clReleaseContext(C->context);
         return;
     } else if (verb) {
-        printf("%s : RS : OpenCL program created.\n", now());
+        printf("%s : RS : OpenCL program[%d] created.\n", now(), (int)C->name);
     }
     if (verb) {
         ret = clBuildProgram(C->prog, 1, &C->dev, "", &pfn_prog_notify, NULL);
@@ -72,7 +72,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
         clReleaseContext(C->context);                                                                   \
         return;                                                                                         \
     }
-	
+
     // Tie all kernels to the program
     C->kern_io = clCreateKernel(C->prog, "io", &ret);                                             CHECK_CL_CREATE_KERNEL
     C->kern_dummy = clCreateKernel(C->prog, "dummy", &ret);                                       CHECK_CL_CREATE_KERNEL
@@ -144,12 +144,28 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     // Copy the necessary parameters from host to compute workers
     C->num_scats = sub_num_scats;
     
+    size_t work_items = 64;
+
+#if !defined (_SHARE_OBJ_)
+    clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_1, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(work_items), &work_items, NULL);
+#endif
+    
+    size_t max_work_group_size;
+    clGetDeviceInfo(C->dev, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max_work_group_size), &max_work_group_size, NULL);
+    
     C->make_pulse_params = RS_make_pulse_params((cl_uint)C->num_scats,
-                                                RS_CL_GROUP_ITEMS,
-                                                C->num_cus * 4,
+                                                (cl_uint)work_items,
+                                                (cl_uint)max_work_group_size,
                                                 H->params.range_start,
                                                 H->params.range_delta,
                                                 H->params.range_count);
+
+//    C->make_pulse_params = RS_make_pulse_params((cl_uint)C->num_scats,
+//                                                RS_CL_GROUP_ITEMS,
+//                                                C->num_cus * 4,
+//                                                H->params.range_start,
+//                                                H->params.range_delta,
+//                                                H->params.range_count);
     
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 	
@@ -198,16 +214,15 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
         return;                                                                            \
     }
 	
-	C->scat_pos = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                   CHECK_CL_CREATE_BUFFER
-	C->scat_vel = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                   CHECK_CL_CREATE_BUFFER
-	C->scat_ori = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                   CHECK_CL_CREATE_BUFFER
-    C->scat_tum = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                   CHECK_CL_CREATE_BUFFER
-	C->scat_att = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                   CHECK_CL_CREATE_BUFFER
-	C->scat_sig = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                   CHECK_CL_CREATE_BUFFER
-	C->work = clCreateBuffer(C->context, CL_MEM_READ_WRITE, RS_MAX_GATES * RS_CL_GROUP_ITEMS * sizeof(cl_float4), NULL, &ret);   CHECK_CL_CREATE_BUFFER
-	C->pulse = clCreateBuffer(C->context, CL_MEM_READ_WRITE, RS_MAX_GATES * sizeof(cl_float4), NULL, &ret);                      CHECK_CL_CREATE_BUFFER
-	
-	C->scat_rnd = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_int4), NULL, &ret);                     CHECK_CL_CREATE_BUFFER
+	C->scat_pos = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
+	C->scat_vel = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
+	C->scat_ori = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
+    C->scat_tum = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
+	C->scat_att = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
+	C->scat_sig = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
+	C->work     = clCreateBuffer(C->context, CL_MEM_READ_WRITE, RS_MAX_GATES * RS_CL_GROUP_ITEMS * sizeof(cl_float4), NULL, &ret);   CHECK_CL_CREATE_BUFFER
+	C->pulse    = clCreateBuffer(C->context, CL_MEM_READ_WRITE, RS_MAX_GATES * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
+	C->scat_rnd = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_int4), NULL, &ret);                         CHECK_CL_CREATE_BUFFER
 	
 	C->mem_size += (cl_uint)( (6 * C->num_scats + RS_MAX_GATES * RS_CL_GROUP_ITEMS + RS_MAX_GATES) * sizeof(cl_float4) + C->num_scats * sizeof(cl_int4) );
 	
@@ -269,7 +284,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     }
 
 	if (C->verb > 1) {
-		printf("%s : RS : Pass 1   global = %5s   local =%3zu x %2d = %6s B   groups =%3d   N = %9s\n",
+		printf("%s : RS : Pass 1   global =%6s   local = %3zu x %2d = %6s B   groups = %3d   N = %9s\n",
 			   now(),
 			   commaint(C->make_pulse_params.global[0]),
 			   C->make_pulse_params.local[0],
@@ -306,9 +321,9 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	}
 	
 	if (C->verb > 1) {
-		printf("%s : RS : Pass 2   global =   %3zu   local =%3zu x %2lu = %6s B   groups = %d%s   N = %9s\n",
+		printf("%s : RS : Pass 2   global =%6s   local = %3zu x %2lu = %6s B   groups =  %d%s   N = %9s\n",
 			   now(),
-			   C->make_pulse_params.global[1],
+			   commaint(C->make_pulse_params.global[1]),
 			   C->make_pulse_params.local[1],
 			   C->make_pulse_params.local_mem_size[1] / C->make_pulse_params.local[1] / sizeof(cl_float4),
 			   commaint(C->make_pulse_params.local_mem_size[1]),
@@ -400,7 +415,9 @@ void rsprint(const char *format, ...) {
 
 
 void pfn_prog_notify(cl_program program, void *user_data) {
-	fprintf(stderr, "%s : RS : Program %p returned %p (via pfn_prog_notify)\n", now(), program, user_data);
+    if (user_data != NULL) {
+        fprintf(stderr, "%s : RS : Program %p returned %p (via pfn_prog_notify)\n", now(), program, user_data);
+    }
 }
 
 
@@ -932,7 +949,7 @@ void RS_free(RSHandle *H) {
 RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint user_max_work_items, cl_uint user_max_groups,
 									   const float range_start, const float range_delta, const unsigned int range_count) {
 	RSMakePulseParams param;
-	
+
 	// Keep a copy for reference
 	param.num_scats = count;
 	param.user_max_groups = user_max_groups;
@@ -941,10 +958,10 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint user_m
 	param.range_delta = range_delta;
 	param.range_count = MAX(1, range_count);
     
-	// The 2nd pass kernel functions are only for work_items <= 256
-	if (user_max_groups > 256) {
-		fprintf(stderr, "%s : RS : I'm not programmed to handle user_max_groups > 256.\n", now());
-		param.user_max_groups = 256;
+	// The 2nd pass kernel functions are only for work_items <= 1024.
+	if (user_max_groups > 1024) {
+		fprintf(stderr, "%s : RS : I'm not programmed to handle user_max_groups > 1024.\n", now());
+		param.user_max_groups = 1024;
 	}
 	
 	// Work items is at most count / 2
@@ -969,27 +986,23 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint user_m
 	unsigned int work_count = group_count * param.range_count;
 	
 	param.entry_counts[1] = work_count;
-	
-	if (param.local[0] % param.range_count == 0) {
+    work_items = work_count / (param.range_count * 2);
+    if (work_items < 1) {
+        fprintf(stderr, "%s : RS : 2nd pass with CL work_items < 2?\n", now());
+        work_items = 1;
+    }
+
+	if (param.local[0] % param.range_count == 0 && user_max_work_items >= work_items) {
 		//
 		param.cl_pass_2_method = RS_CL_PASS_2_UNIVERSAL;
-		work_items = work_count / (param.range_count * 2);
-		if (work_items < 1) {
-			fprintf(stderr, "%s : RS : 2nd pass with CL work_items < 2?\n", now());
-			work_items = 1;
-		}
 		param.group_counts[1] = 1;
 		param.global[1] = work_items;
 		param.local[1] = work_items;
 		param.local_mem_size[1] = work_items * sizeof(cl_float4);
 		
-	} else if (group_count >= 2 * param.range_count) {
+	} else if (group_count >= 2 * param.range_count && user_max_work_items >= work_items) {
 		//
 		param.cl_pass_2_method = RS_CL_PASS_2_IN_LOCAL;
-		work_items = work_count / (param.range_count * 2);
-		if (work_items < 1) {
-			work_items = 1;
-		}
 		param.group_counts[1] = 1;
 		param.global[1] = work_items;
 		param.local[1] = work_items;
@@ -1135,8 +1148,8 @@ void RS_init_scat_pos(RSHandle *H) {
     H->inv_inln.z = (mass * len) / (ii.z * g * g);
     H->Ta *= g / (v0 * v0);
 
-    printf("Ta = %.4f;  inv_inln = [%.4f %.4f %.4f];   mass = %.4f kg\n",
-           H->Ta, H->inv_inln.x, H->inv_inln.y, H->inv_inln.z, mass);
+    printf("%s : RS : Ta = %.4f;  inv_inln = [%.4f %.4f %.4f];   mass = %.4f kg\n",
+           now(), H->Ta, H->inv_inln.x, H->inv_inln.y, H->inv_inln.z, mass);
     
     int t = 0;
     for (int i=0; i<H->num_workers; i++) {
@@ -2038,7 +2051,6 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
     
 #endif
     
-    
     for (i=0; i<H->num_workers; i++) {
         if (H->worker[i].adm_cd[t] != NULL && H->worker[i].adm_cm[t] != NULL) {
             
@@ -2209,7 +2221,7 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
     int i;
     
     const int t = H->rcs_count;
-    
+
     const size_t n = real.x_ * real.y_;
     if (imag.x_ * imag.y_ != n) {
         fprintf(stderr, "%s : RS : RS_set_rcs_data() received inconsistent real (%d x %d) & imag (%d x %d) dimensions", now(), real.x_, real.y_, imag.x_, imag.y_);
@@ -2401,7 +2413,14 @@ void RS_set_rcs_data_to_unity(RSHandle *H) {
 
 
 void RS_clear_rcs_data(RSHandle *H) {
-    
+    for (int i=0; i<H->num_workers; i++) {
+        for (int t=0; t<H->rcs_count; t++) {
+            cl_uint nx = (cl_uint)H->worker[i].rcs_desc[t].s[RSTableDescriptionMaximumX] + 1;
+            cl_uint ny = (cl_uint)H->worker[i].rcs_desc[t].s[RSTableDescriptionMaximumY] + 1;
+            H->worker[i].mem_size -= nx * ny * 2 * sizeof(cl_float4);
+        }
+    }
+    H->rcs_count = 0;
 }
 
 
@@ -2651,7 +2670,9 @@ void RS_populate(RSHandle *H) {
 	RS_init_scat_pos(H);
 
     RS_upload(H);
+
     if (H->verb) {
+        printf("%s : RS : VEL / ADM / RCS count = %d / %d / %d\n", now(), H->vel_count, H->adm_count, H->rcs_count);
         printf("%s : RS : CL domain synchronized.\n", now());
     }
 	
@@ -2659,8 +2680,13 @@ void RS_populate(RSHandle *H) {
 
 	// Update kernel arguments
 	cl_int ret = CL_SUCCESS;
+    const int a = 0;
+    const int r = 0;
 	for (i=0; i<H->num_workers; i++) {
-        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, 17, sizeof(cl_float16), &H->sim_desc);
+        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &H->worker[i].vel_desc);
+        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &H->worker[i].adm_desc[a]);
+        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &H->worker[i].rcs_desc[r]);
+        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
 	}
 
 	if (ret != CL_SUCCESS) {
@@ -2679,9 +2705,9 @@ void RS_populate(RSHandle *H) {
 void RS_download(RSHandle *H) {
 	
 	int i;
-	
+
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
-	
+
 	for (i=0; i<H->num_workers; i++) {
 		dispatch_async(H->worker[i].que, ^{
 			gcl_memcpy(H->scat_pos + H->offset[i], H->worker[i].scat_pos, H->worker[i].num_scats * sizeof(cl_float4));
@@ -2691,9 +2717,9 @@ void RS_download(RSHandle *H) {
 			gcl_memcpy(H->scat_sig + H->offset[i], H->worker[i].scat_sig, H->worker[i].num_scats * sizeof(cl_float4));
 		});
 	}
-	
+
 #else
-	
+
 	for (i=0; i<H->num_workers; i++) {
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, NULL);
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_vel, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, NULL);
@@ -2701,11 +2727,11 @@ void RS_download(RSHandle *H) {
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_att, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_att + H->offset[i], 0, NULL, NULL);
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_sig, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, NULL);
 	}
-	
+
 	RS_download_pulse_only(H);
-	
+
 #endif
-	
+
 }
 
 
@@ -2836,6 +2862,8 @@ void RS_advance_time(RSHandle *H) {
 		return;
 	}
 
+    const int v = H->vel_idx;
+
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 
     const int t = 0;
@@ -2848,7 +2876,6 @@ void RS_advance_time(RSHandle *H) {
         }
     }
     
-    int v = H->vel_idx;
 
     for (i=0; i<H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
@@ -2892,10 +2919,11 @@ void RS_advance_time(RSHandle *H) {
 	if (H->sim_tic >= H->sim_toc) {
 		H->sim_toc = H->sim_tic + (size_t)(1.0f / H->params.prt);
 	}
-	
+
 	for (i=0; i<H->num_workers; i++) {
 		// Need to refresh some parameters at each time update
-        clSetKernelArg(H->worker[i].kern_scat_atts, 17, sizeof(cl_float16), &H->sim_desc);
+        clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
+        clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
         
         clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_atts, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, &events[i]);
     }
@@ -3080,15 +3108,19 @@ void RS_table3d_free(RSTable3D T) {
 #pragma mark Display
 
 static void RS_show_scat_i(RSHandle *H, int i) {
-	printf(" %7d - ( %9.2f, %9.2f, %9.2f, %9.2f )  %7.4f %7.4f %7.4f %7.4f\n", i,
+	printf(" %7d - ( %9.2f, %9.2f, %9.2f, %9.2f )  %7.2f %7.2f %7.2f   %7.4f %7.4f %7.4f %7.4f\n", i,
 		   H->scat_pos[i].x, H->scat_pos[i].y, H->scat_pos[i].z, H->scat_pos[i].w,
-		   H->scat_vel[i].x, H->scat_vel[i].y, H->scat_vel[i].z, H->scat_att[i].s3);
+		   H->scat_vel[i].x, H->scat_vel[i].y, H->scat_vel[i].z,
+           H->scat_ori[i].x, H->scat_ori[i].y, H->scat_ori[i].z, H->scat_ori[i].w);
 }
 
 
 void RS_show_scat_pos(RSHandle *H) {
 	int i;
-	for (i=0; i<H->num_scats-1; i+=H->num_scats/9) {
+    for (i=0; i<10; i++) {
+        RS_show_scat_i(H, i);
+    }
+    for (i=0; i<H->num_scats-1; i+=H->num_scats/9) {
 		//for (i=0; i<H->num_scats-1; i+=H->num_scats/100) {
 		RS_show_scat_i(H, i);
 	}

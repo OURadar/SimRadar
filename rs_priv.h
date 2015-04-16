@@ -8,6 +8,27 @@
 #ifndef rs_priv_h
 #define rs_priv_h
 
+enum RSScattererAttributeKernelArgument {
+    RSScattererAttributeKernelArgumentPosition                      = 0,
+    RSScattererAttributeKernelArgumentOrientation                   = 1,
+    RSScattererAttributeKernelArgumentVelocity                      = 2,
+    RSScattererAttributeKernelArgumentTumble                        = 3,
+    RSScattererAttributeKernelArgumentExtras                        = 4,
+    RSScattererAttributeKernelArgumentSignal                        = 5,
+    RSScattererAttributeKernelArgumentRandomSeed                    = 6,
+    RSScattererAttributeKernelArgumentBackgroundVelocity            = 7,
+    RSScattererAttributeKernelArgumentBackgroundVelocityDescription = 8,
+    RSScattererAttributeKernelArgumentAirDragModelDrag              = 9,
+    RSScattererAttributeKernelArgumentAirDragModelMomentum          = 10,
+    RSScattererAttributeKernelArgumentAirDragModelDescription       = 11,
+    RSScattererAttributeKernelArgumentRadarCrossSectionReal         = 12,
+    RSScattererAttributeKernelArgumentRadarCrossSectionImag         = 13,
+    RSScattererAttributeKernelArgumentRadarCrossSectionDescription  = 14,
+    RSScattererAttributeKernelArgumentAngularWeight                 = 15,
+    RSScattererAttributeKernelArgumentAngularWeightDescription      = 16,
+    RSScattererAttributeKernelArgumentSimulationDescription         = 17
+};
+
 void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device_id *devices, cl_uint *num_cus, cl_int detail_level);
 void pfn_prog_notify(cl_program program, void *user_data);
 void pfn_notify(const char *errinfo, const void *private_info, size_t cb, void *user_data);
