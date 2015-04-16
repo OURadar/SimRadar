@@ -16,7 +16,6 @@
 //
 
 #include "rs.h"
-#include "les.h"
 
 enum {
 	ACCEL_TYPE_GPU,
@@ -80,11 +79,11 @@ int main(int argc, char *argv[]) {
 	RSHandle *S;
     ADMHandle *A;
     LESHandle *L;
+    RCSHandle *R;
 
 	// Initialize the RS framework
 	if (accel_type == ACCEL_TYPE_CPU) {
 		S = RS_init_for_cpu_verbose(verb);
-		RS_set_worker_count(S, 4);
 	} else {
 		S = RS_init_verbose(verb);
 	}
@@ -97,15 +96,25 @@ int main(int argc, char *argv[]) {
 		RS_set_density(S, density);
 	}
 	
-    // Initialize the LES framework
+    // Initialize the LES ingest
     L = LES_init();
     if (L == NULL) {
         fprintf(stderr, "%s : Some errors occurred during LES_init().\n", now());
 		return EXIT_FAILURE;
     }
+    
+    // Initialize the ADM ingest
     A = ADM_init();
     if (A == NULL) {
         fprintf(stderr, "%s : Some errors occurred during ADM_init().\n", now());
+        return EXIT_FAILURE;
+    }
+    
+    // Initialize the RCS ingest
+    R = RCS_init();
+    if (R == NULL) {
+        fprintf(stderr, "%s : Some errors occurred during RCS_init().\n", now());
+        return EXIT_FAILURE;
     }
     
 	// Set up the parameters:
@@ -113,6 +122,8 @@ int main(int argc, char *argv[]) {
 	RS_set_antenna_params(S, 1.0f, 44.5f);
 
 	RS_set_tx_params(S, 1.0e-6, 50.0e3f);
+    
+    RS_set_prt(S, 1.0f);
 
 	RS_set_scan_box(S,
 					10.0e3, 15.0e3, 250.0f,                     // Range
@@ -130,7 +141,7 @@ int main(int argc, char *argv[]) {
 	
 	// Show some basic info
 	if (verb) {
-		printf("%s : Emulating %s frame%s\n", now(), commaint(num_frames), num_frames>1?"s":"");
+		printf("%s : Emulating %s frame%s\n", now(), commaint(num_frames), num_frames>1 ? "s" : "");
 	} else {
 		printf("%s : Emulating %s frame%s with %s scatter bodies\n",
 			   now(), commaint(num_frames), num_frames>1?"s":"", commaint(S->num_scats));
@@ -138,31 +149,18 @@ int main(int argc, char *argv[]) {
 	
 	gettimeofday(&t1, NULL);
 
-	// Now, we are ready to make pulse(s)
-	int k = 0;
-	if (accel_type == ACCEL_TYPE_GPU) {
-		printf("%s : Using GPU functions\n", now());
-		for (k=0; k<num_frames; k++) {
-			RS_make_pulse(S);
-//			if (k < 10) {
-//				RS_download_pulse_only(S);
-//				RS_show_pulse(S);
-//			}
-//			RS_set_beam_pos(S, -20.0f, 0.0f);
-			RS_set_beam_pos(S, 15.0f, 10.0f);
-			RS_advance_time(S);
-		}
-	} else {
-		printf("%s : No CPU functions\n", now());
-//		for (k=0; k<num_frames; k++) {
-//			RS_make_pulse_cpu(S);
-////			if (k < 10) {
-////				RS_show_pulse(S);
-////			}
-//			RS_set_beam_pos(S, -2.0f, 1.0f);
-//			RS_advance_time_cpu(S);
-//		}
-	}
+	// Now, we are ready to bake
+    for (int k=0; k<num_frames; k++) {
+        RS_make_pulse(S);
+        RS_set_beam_pos(S, 15.0f, 10.0f);
+        RS_advance_time(S);
+
+        if (k <= 10) {
+            RS_download(S);
+            printf("== k = %d ==============\n", k);
+            RS_show_scat_pos(S);
+        }
+    }
 
 	gettimeofday(&t2, NULL);
 

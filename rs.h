@@ -40,7 +40,7 @@
 #define RS_MAX_GPU_DEVICE           8
 #define RS_MAX_KERNEL_LINES      1024
 #define RS_MAX_KERNEL_SRC       65536
-#define RS_ALIGN_SIZE             128     // Align size. Be sure to have a least 32 for AVX
+#define RS_ALIGN_SIZE             128     // Align size. Be sure to have a least 16 for SSE, 32 for AVX, 64 for AVX-512
 #define RS_MAX_GATES              512
 #define RS_MAX_NUM_SCATS      4000000
 #define RS_BODY_PER_CELL           50.0
@@ -189,7 +189,7 @@ enum {
     RSSimulationParameter4             =  4,
     RSSimulationParameter5             =  5,
     RSSimulationParameter6             =  6,
-    RSSimulationParameter7             =  7,
+    RSSimulationParameterSimTic        =  7,
     RSSimulationParameterBoundOriginX  =  8,  // hi.s0
     RSSimulationParameterBoundOriginY  =  9,  // hi.s1
     RSSimulationParameterBoundOriginZ  =  10, // hi.s2
@@ -373,7 +373,6 @@ void RS_set_scan_box(RSHandle *H,
 					 RSfloat elevation_start, RSfloat elevation_end, RSfloat elevation_gate);
 void RS_set_beam_pos(RSHandle *H, RSfloat az_deg, RSfloat el_deg);
 void RS_set_verbosity(RSHandle *H, const char verb);
-void RS_set_worker_count(RSHandle *H, char count);
 
 void RS_set_range_weight(RSHandle *H, const float *weights, const float table_index_start, const float table_index_delta, unsigned int table_size);
 void RS_set_range_weight_to_triangle(RSHandle *H, float pulse_width_m);

@@ -268,12 +268,6 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
         exit(EXIT_FAILURE);
     }
 
-    //	printf("C->physics        @ %p\n", C->physics);
-    //	printf("C->range_weight   @ %p\n", C->range_weight);
-    //	printf("C->angular_weight @ %p\n", C->angular_weight);
-    //	printf("C->scat_pos       @ %p\n", C->scat_pos);
-    //	printf("C->scat_vel       @ %p\n", C->scat_vel);
-   
 	if (C->verb > 1) {
 		printf("%s : RS : Pass 1   global = %5s   local =%3zu x %2d = %6s B   groups =%3d   N = %9s\n",
 			   now(),
@@ -722,75 +716,67 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
 		if (verb) {
 			rsprint("Getting CL devices ...");
 		}
-		
 		// Get and show some device info
 		get_device_info(CL_DEVICE_TYPE_GPU, &H->num_devs, H->devs, H->num_cus, H->verb);
-		if (H->num_devs == 0 || H->num_cus[0] == 0) {
-			fprintf(stderr, "%s : RS : Error. No OpenCL devices found.\n", now());
-			H->method = RS_METHOD_CPU;
-		}
-	} else {
+	} else if (H->method == RS_METHOD_CPU) {
 		// Run this to get the num_cus to the same values.
 		get_device_info(CL_DEVICE_TYPE_CPU, &H->num_devs, H->devs, H->num_cus, 0);
-		if (H->num_cus[0] == 0) {
-			H->num_cus[0] = 16;
-		}
 	}
-	
-	if (H->method == RS_METHOD_GPU) {
-		
+    if (H->num_devs == 0 || H->num_cus[0] == 0) {
+        fprintf(stderr, "%s : RS : Error. No OpenCL devices found.\n", now());
+        return NULL;
+    }
+			
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 		
-		H->num_workers = 1;
-		
-		CGLContextObj cobj = CGLGetCurrentContext();
-		if (cobj == NULL) {
-			fprintf(stderr, "No GL context yet.\n");
-			return NULL;
-		}
-		gcl_gl_set_sharegroup(CGLGetShareGroup(cobj));
-		
-		for (int i=0; i<H->num_workers; i++) {
-			if (H->verb > 2) {
-				printf("%s : RS : Initializing worker %d using %p\n", now(), i, H->devs[i]);
-			}
-			RS_worker_init(&H->worker[i], H->devs[i], 0, NULL, H->verb);
-		}
+    H->num_workers = 1;
+    
+    CGLContextObj cobj = CGLGetCurrentContext();
+    if (cobj == NULL) {
+        fprintf(stderr, "No GL context yet.\n");
+        return NULL;
+    }
+    gcl_gl_set_sharegroup(CGLGetShareGroup(cobj));
+    
+    for (int i=0; i<H->num_workers; i++) {
+        if (H->verb > 2) {
+            printf("%s : RS : Initializing worker %d using %p\n", now(), i, H->devs[i]);
+        }
+        RS_worker_init(&H->worker[i], H->devs[i], 0, NULL, H->verb);
+    }
 		
 #else
 		
-		cl_uint count;
-		char *src_ptr[RS_MAX_KERNEL_LINES];
-		
-		// Kernel source
-		if (!strcmp(bundle_path, ".")) {
-			count = read_kernel_source_from_files(src_ptr, "rs.cl", NULL);
-		} else {
-			//char types_h_path[RS_MAX_STR];
-			//snprintf(types_h_path, RS_MAX_STR, "%s/rs_types.h", bundle_path);
-			char kern_src_path[RS_MAX_STR];
-			snprintf(kern_src_path, RS_MAX_STR, "%s/rs.cl", bundle_path);
-			//count = read_kernel_source_from_files(src_ptr, types_h_path, kern_src_path, NULL);
-			count = read_kernel_source_from_files(src_ptr, kern_src_path, NULL);
-		}
-		if (count == 0) {
-			return NULL;
-		}
-		
-		H->num_workers = H->num_devs;
-		//H->num_workers = 1;
-		
-		for (int i=0; i<H->num_workers; i++) {
-			if (H->verb > 2) {
-				printf("%s : RS : Initializing worker %d using %p\n", now(), i, H->devs[i]);
-			}
-			RS_worker_init(&H->worker[i], H->devs[i], count, (const char **)src_ptr, H->verb);
-		}
+    cl_uint count;
+    char *src_ptr[RS_MAX_KERNEL_LINES];
+    
+    // Kernel source
+    if (!strcmp(bundle_path, ".")) {
+        count = read_kernel_source_from_files(src_ptr, "rs.cl", NULL);
+    } else {
+        //char types_h_path[RS_MAX_STR];
+        //snprintf(types_h_path, RS_MAX_STR, "%s/rs_types.h", bundle_path);
+        char kern_src_path[RS_MAX_STR];
+        snprintf(kern_src_path, RS_MAX_STR, "%s/rs.cl", bundle_path);
+        //count = read_kernel_source_from_files(src_ptr, types_h_path, kern_src_path, NULL);
+        count = read_kernel_source_from_files(src_ptr, kern_src_path, NULL);
+    }
+    if (count == 0) {
+        return NULL;
+    }
+    
+    H->num_workers = H->num_devs;
+    //H->num_workers = 1;
+    
+    for (int i=0; i<H->num_workers; i++) {
+        if (H->verb > 2) {
+            printf("%s : RS : Initializing worker %d using %p\n", now(), i, H->devs[i]);
+        }
+        RS_worker_init(&H->worker[i], H->devs[i], count, (const char **)src_ptr, H->verb);
+    }
 		
 #endif
 		
-	}
-	
 	// More parameters that need the CL context initialized
 	char user_verb = H->verb;
 	
@@ -1591,34 +1577,10 @@ void RS_set_verbosity(RSHandle *H, const char verb) {
 #pragma mark -
 #pragma mark Functions to set properties after RS_init()
 
-void RS_set_worker_count(RSHandle *H, char count) {
-	
-	if (H->method == RS_METHOD_GPU) {
-		printf("%s : RS : Number of workers cannot be changed for GPU method.\n", now());
-		return;
-	}
-	
-	H->num_workers = count;
-	
-	size_t offset = 0;
-	size_t sub_num_scats = H->num_scats / H->num_workers;
-	
-	for (int i=0; i<H->num_workers; i++) {
-		H->offset[i] = offset;
-		if (H->verb > 1) {
-			printf("%s : RS : worker[%d] num_scats = %s   offset = %s\n", now(), i, commaint(sub_num_scats), commaint(offset));
-		}
-		offset += sub_num_scats;
-	}
-}
-
-
 void RS_set_range_weight(RSHandle *H, const float *weights, const float table_index_start, const float table_index_delta, unsigned int table_size) {
 	
 	int i;
 	
-//	RS_table_free(H->range_weight_table);
-//	H->range_weight_table = RS_table_init(table_size);
     RSTable table = RS_table_init(table_size);
     if (table.data == NULL) {
         return;
@@ -1632,66 +1594,60 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
         printf("%s : RS : Host range weight table received.  dx = %.4f   x0 = %.1f   xm = %.0f  n = %d\n", now(),
                table.dx, table.x0, table.xm, table_size);
     }
-	
-	if (H->method == RS_METHOD_GPU) {
 		
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 		
-		for (i=0; i<H->num_workers; i++) {
-			if (H->worker[i].range_weight != NULL) {
-				if (H->verb > 1) {
-					printf("%s : RS : worker[%d] setting range weight.\n", now(), i);
-				}
-				gcl_free(H->worker[i].range_weight);
-			}
-			H->worker[i].range_weight = gcl_malloc(table_size * sizeof(float), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
-			if (H->worker[i].range_weight == NULL) {
-				fprintf(stderr, "%s : RS : Error creating range weight table on CL device.\n", now());
-				return;
-			}
-            // Copy over to CL worker. I know it's a bit wasteful but the codes are easier to ready this way.
-            H->worker[i].range_weight_desc.s0 = table.dx;
-            H->worker[i].range_weight_desc.s1 = table.x0;
-            H->worker[i].range_weight_desc.s2 = table.xm;
-            H->worker[i].range_weight_desc.s3 = 0.0f;
-            H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
-		}
-		
+    for (i=0; i<H->num_workers; i++) {
+        if (H->worker[i].range_weight != NULL) {
+            if (H->verb > 1) {
+                printf("%s : RS : worker[%d] setting range weight.\n", now(), i);
+            }
+            gcl_free(H->worker[i].range_weight);
+        }
+        H->worker[i].range_weight = gcl_malloc(table_size * sizeof(float), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+        if (H->worker[i].range_weight == NULL) {
+            fprintf(stderr, "%s : RS : Error creating range weight table on CL device.\n", now());
+            return;
+        }
+        // Copy over to CL worker. I know it's a bit wasteful but the codes are easier to ready this way.
+        H->worker[i].range_weight_desc.s0 = table.dx;
+        H->worker[i].range_weight_desc.s1 = table.x0;
+        H->worker[i].range_weight_desc.s2 = table.xm;
+        H->worker[i].range_weight_desc.s3 = 0.0f;
+        H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
+    }
+
 #else
 		
-		cl_int ret;
-		for (i=0; i<H->num_workers; i++) {
-			if (H->worker[i].range_weight != NULL) {
-				if (H->verb > 1) {
-					printf("%s : RS : worker[%d] setting range weight.\n", now(), i);
-				}
-				clReleaseMemObject(H->worker[i].range_weight);
-			}
-			if (H->verb > 1) {
-				printf("%s : RS : worker[%d] creating range weight (cl_mem) & copying data from %p.\n", now(), i, table.data);
-			}
-			H->worker[i].range_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), table.data, &ret);
-			if (ret != CL_SUCCESS) {
-				fprintf(stderr, "%s : RS : Error creating range weight table on CL device.\n", now());
-				return;
-			}
-			if (H->verb > 1) {
-				printf("%s : RS : worker[%d] created range weight @ %p.\n", now(), i, H->worker[i].range_weight);
-			}
-            // Copy over to CL worker. I know it's a bit wasteful but the codes are easier to ready this way.
-            H->worker[i].range_weight_desc.s0 = table.dx;
-            H->worker[i].range_weight_desc.s1 = table.x0;
-            H->worker[i].range_weight_desc.s2 = table.xm;
-            H->worker[i].range_weight_desc.s3 = 0.0f;
-            H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
-		}
-		
+    cl_int ret;
+    for (i=0; i<H->num_workers; i++) {
+        if (H->worker[i].range_weight != NULL) {
+            if (H->verb > 1) {
+                printf("%s : RS : worker[%d] setting range weight.\n", now(), i);
+            }
+            clReleaseMemObject(H->worker[i].range_weight);
+        }
+        if (H->verb > 1) {
+            printf("%s : RS : worker[%d] creating range weight (cl_mem) & copying data from %p.\n", now(), i, table.data);
+        }
+        H->worker[i].range_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), table.data, &ret);
+        if (ret != CL_SUCCESS) {
+            fprintf(stderr, "%s : RS : Error creating range weight table on CL device.\n", now());
+            return;
+        }
+        if (H->verb > 1) {
+            printf("%s : RS : worker[%d] created range weight @ %p.\n", now(), i, H->worker[i].range_weight);
+        }
+        // Copy over to CL worker. I know it's a bit wasteful but the codes are easier to ready this way.
+        H->worker[i].range_weight_desc.s0 = table.dx;
+        H->worker[i].range_weight_desc.s1 = table.x0;
+        H->worker[i].range_weight_desc.s2 = table.xm;
+        H->worker[i].range_weight_desc.s3 = 0.0f;
+        H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
+    }
+
 #endif
 
-    } else {
-        fprintf(stderr, "%s : RS : Non-GPU codes are not implemented.\n", now());
-    }
-    
     RS_table_free(table);
 }
 
@@ -1719,67 +1675,60 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
         printf("%s : RS : Host angular weight table received.  dx = %.4f   x0 = %.1f   xm = %.0f  n = %d\n", now(),
                table.dx, table.x0, table.xm, table_size);
     }
-	
-	if (H->method == RS_METHOD_GPU) {
-		
+
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
-		
-		//printf("gcl_malloc() for angular weight  %d  table_size=%d.\n", H->num_workers, table_size);
-		for (i=0; i<H->num_workers; i++) {
-			if (H->worker[i].angular_weight != NULL) {
-				if (H->verb > 1) {
-					printf("%s : RS : worker[%d] setting angular weight.\n", now(), i);
-				}
-				gcl_free(H->worker[i].angular_weight);
-			}
-			H->worker[i].angular_weight = gcl_malloc(table_size * sizeof(float), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
-			if (H->worker[i].angular_weight == NULL) {
-				fprintf(stderr, "%s : RS : Error creating angular weight table on CL device.\n", now());
-				return;
-			}
-            // Copy over to CL worker. I know it's a bit wasteful but the codes are easier to ready this way.
-            H->worker[i].angular_weight_desc.s0 = table.dx;
-            H->worker[i].angular_weight_desc.s1 = table.x0;
-            H->worker[i].angular_weight_desc.s2 = table.xm;
-            H->worker[i].angular_weight_desc.s3 = 0.0f;
-            H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
-		}
+
+    for (i=0; i<H->num_workers; i++) {
+        if (H->worker[i].angular_weight != NULL) {
+            if (H->verb > 1) {
+                printf("%s : RS : worker[%d] setting angular weight.\n", now(), i);
+            }
+            gcl_free(H->worker[i].angular_weight);
+        }
+        H->worker[i].angular_weight = gcl_malloc(table_size * sizeof(float), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+        if (H->worker[i].angular_weight == NULL) {
+            fprintf(stderr, "%s : RS : Error creating angular weight table on CL device.\n", now());
+            return;
+        }
+        // Copy over to CL worker. I know it's a bit wasteful but the codes are easier to ready this way.
+        H->worker[i].angular_weight_desc.s0 = table.dx;
+        H->worker[i].angular_weight_desc.s1 = table.x0;
+        H->worker[i].angular_weight_desc.s2 = table.xm;
+        H->worker[i].angular_weight_desc.s3 = 0.0f;
+        H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
+    }
 		
 #else
 		
-		cl_int ret;
-		for (i=0; i<H->num_workers; i++) {
-			if (H->worker[i].angular_weight != NULL) {
-				if (H->verb > 1) {
-					printf("%s : RS : worker[%d] setting angular weight.\n", now(), i);
-				}
-				clReleaseMemObject(H->worker[i].angular_weight);
-			}
-			if (H->verb > 1) {
-				printf("%s : RS : worker[%d] creating angular weight (cl_mem) & copying data from %p.\n", now(), i, table.data);
-			}
-			H->worker[i].angular_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), table.data, &ret);
-			if (ret != CL_SUCCESS) {
-				fprintf(stderr, "%s : RS : Error creating angular weight table on CL device.\n", now());
-				return;
-			}
-			if (H->verb > 1) {
-				printf("%s : RS : worker[%d] created angular weight.\n", now(), i);
-			}
-            // Copy over to CL worker. I know it's a bit wasteful but the codes are easier to ready this way.
-            H->worker[i].angular_weight_desc.s0 = table.dx;
-            H->worker[i].angular_weight_desc.s1 = table.x0;
-            H->worker[i].angular_weight_desc.s2 = table.xm;
-            H->worker[i].angular_weight_desc.s3 = 0.0f;
-            H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
-		}
+    cl_int ret;
+    for (i=0; i<H->num_workers; i++) {
+        if (H->worker[i].angular_weight != NULL) {
+            if (H->verb > 1) {
+                printf("%s : RS : worker[%d] setting angular weight.\n", now(), i);
+            }
+            clReleaseMemObject(H->worker[i].angular_weight);
+        }
+        if (H->verb > 1) {
+            printf("%s : RS : worker[%d] creating angular weight (cl_mem) & copying data from %p.\n", now(), i, table.data);
+        }
+        H->worker[i].angular_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), table.data, &ret);
+        if (ret != CL_SUCCESS) {
+            fprintf(stderr, "%s : RS : Error creating angular weight table on CL device.\n", now());
+            return;
+        }
+        if (H->verb > 1) {
+            printf("%s : RS : worker[%d] created angular weight.\n", now(), i);
+        }
+        // Copy over to CL worker. I know it's a bit wasteful but the codes are easier to ready this way.
+        H->worker[i].angular_weight_desc.s0 = table.dx;
+        H->worker[i].angular_weight_desc.s1 = table.x0;
+        H->worker[i].angular_weight_desc.s2 = table.xm;
+        H->worker[i].angular_weight_desc.s3 = 0.0f;
+        H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
+    }
 		
 #endif
 
-    } else {
-        fprintf(stderr, "%s : RS : Non-GPU codes are not implemented.\n", now());
-    }
-    
     RS_table_free(table);
 }
 
@@ -1821,11 +1770,6 @@ void RS_set_wind_data(RSHandle *H, const RSTable3D table) {
 	
 	int i;
 		
-	// We are done if no GPU acceleration is utilized
-	if (H->method == RS_METHOD_CPU) {
-		return;
-	}
-
     int t = H->vel_count;
     
 	cl_image_format format = {CL_RGBA, CL_FLOAT};
@@ -2694,33 +2638,29 @@ void RS_populate(RSHandle *H) {
 	// Divide the scatter bodies into (num_workers) chunks
 	size_t sub_num_scats = H->num_scats / MAX(1, H->num_workers);
 	
-	if (H->method == RS_METHOD_GPU) {
-		for (i=0; i<H->num_workers; i++) {
-			H->offset[i] = offset;
-			if (H->verb > 1) {
-				printf("%s : RS : worker[%d] num_scats = %s   offset = %s\n", now(), i, commaint(sub_num_scats), commaint(offset));
-			}
-			RS_worker_malloc(H, i, sub_num_scats);
-			offset += sub_num_scats;
-		}
-	}
+    for (i=0; i<H->num_workers; i++) {
+        H->offset[i] = offset;
+        if (H->verb > 1) {
+            printf("%s : RS : worker[%d] num_scats = %s   offset = %s\n", now(), i, commaint(sub_num_scats), commaint(offset));
+        }
+        RS_worker_malloc(H, i, sub_num_scats);
+        offset += sub_num_scats;
+    }
 	
 	// Initialize the scatter body positions on CPU, then upload
 	RS_init_scat_pos(H);
 
-	if (H->method == RS_METHOD_GPU) {
-		RS_upload(H);
-		if (H->verb) {
-			printf("%s : RS : CL domain synchronized.\n", now());
-		}
-	}
+    RS_upload(H);
+    if (H->verb) {
+        printf("%s : RS : CL domain synchronized.\n", now());
+    }
 	
 #if !defined (__APPLE__) || !defined (_SHARE_OBJ_)
 
 	// Update kernel arguments
 	cl_int ret = CL_SUCCESS;
 	for (i=0; i<H->num_workers; i++) {
-        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, 16, sizeof(cl_float16), &H->sim_desc);
+        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, 17, sizeof(cl_float16), &H->sim_desc);
 	}
 
 	if (ret != CL_SUCCESS) {
@@ -2955,18 +2895,9 @@ void RS_advance_time(RSHandle *H) {
 	
 	for (i=0; i<H->num_workers; i++) {
 		// Need to refresh some parameters at each time update
-        clSetKernelArg(H->worker[i].kern_scat_atts, 16, sizeof(cl_float16), &H->sim_desc);
+        clSetKernelArg(H->worker[i].kern_scat_atts, 17, sizeof(cl_float16), &H->sim_desc);
         
         clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_atts, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, &events[i]);
-        
-		//clSetKernelArg(H->worker[i].kern_scat_mov, 6, sizeof(cl_float4), &H->beam_pos);
-		//clSetKernelArg(H->worker[i].kern_scat_mov, 7, sizeof(float), &H->params.prt);
-
-		//clSetKernelArg(H->worker[i].kern_scat_chk, 3, sizeof(cl_float8), &domain_bounds);
-		
-//		clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_chk, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, &event1s[i]);
-//		clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_mov, 1, NULL, &H->worker[i].num_scats, NULL, 1, &event1s[i], &event2s[i]);
-
     }
 
     for (i=0; i<H->num_workers; i++) {
@@ -2983,35 +2914,9 @@ void RS_advance_time(RSHandle *H) {
 	
 #endif
 	
-	H->sim_tic++;
-	H->sim_time = H->sim_tic * H->params.prt;
-    //H->sim_desc.s[RSSimulationParameterSimTic] = H->sim_tic;
+    H->sim_desc.s[RSSimulationParameterSimTic] = ++H->sim_tic;
+    H->sim_time = H->sim_tic * H->params.prt;
 }
-
-
-/*
-void RS_advance_time_cpu(RSHandle *H) {
-	for (int i=0; i<H->num_scats; i++) {
-		H->scat_pos[i].x += H->scat_vel[i].x * H->params.prt;
-		H->scat_pos[i].y += H->scat_vel[i].y * H->params.prt;
-		H->scat_pos[i].z += H->scat_vel[i].z * H->params.prt;
-		
-		H->scat_att[i].s0 = sqrtf(H->scat_pos[i].x * H->scat_pos[i].x +
-								  H->scat_pos[i].y * H->scat_pos[i].y +
-								  H->scat_pos[i].z * H->scat_pos[i].z);
-//		H->scat_att[i].s1 = (H->scat_pos[i].x * H->beam_pos.x +
-//							 H->scat_pos[i].y * H->beam_pos.y +
-//							 H->scat_pos[i].z * H->beam_pos.z) / H->scat_att[i].s0;
-		H->scat_att[i].s1 += H->params.prt;
-		H->scat_att[i].s2 = acosf(H->scat_att[i].s1);
-		H->scat_att[i].s3 = read_table(H->angular_weight_table.data,
-									   H->angular_weight_table.xm,
-									   H->scat_att[i].s2 * H->angular_weight_table.dx + H->angular_weight_table.x0);
-	}
-	H->sim_tic++;
-	H->sim_time = H->sim_tic * H->params.prt;
-}
-*/
 
 
 void RS_make_pulse(RSHandle *H) {
@@ -3099,69 +3004,6 @@ void RS_make_pulse(RSHandle *H) {
 	
 }
 
-
-typedef struct _cpu_worker_input {
-	int name;
-	int scat_start;
-	int scat_end;
-	RSHandle *H;
-} RSCPUWorkerInput;
-
-/*
-void *RS_make_pulse_cpu_worker(void *input) {
-	
-	RSCPUWorkerInput *C = (RSCPUWorkerInput *)input;
-	RSHandle *H = C->H;
-	
-	float r;
-	float w_r;
-	const int w = C->name;
-	const cl_float4 zero = {{0.0f, 0.0f, 0.0f, 0.0f}};
-	
-	for (int ir=0; ir<H->params.range_count; ir++) {
-		r = (float)ir * H->params.range_delta + H->params.range_start;
-		//H->pulse[ir] = zero;
-		H->pulse_tmp[w][ir] = zero;
-		for (int i=C->scat_start; i<C->scat_end; i++) {
-			float r_a = H->scat_att[i].s0;
-			float fidx = (r_a - r) * H->range_weight_table.dx + H->range_weight_table.x0;
-			w_r = read_table(H->range_weight_table.data, H->range_weight_table.xm, fidx);
-//			if (i < 32) {
-//				printf("ir=%2u  r=%5.2f  i=%2u  r_a=%.3f  dr=%.3f  w_r=%.3f  %.2f -> %.0f/%.0f/%.2f\n",
-//					   ir, r, i, r_a, r_a-r, w_r, fidx, floorf(fidx), ceilf(fidx), fidx-floorf(fidx));
-//			}
-			H->pulse_tmp[w][ir].s0 += (H->scat_sig[i].s0 * w_r);
-			H->pulse_tmp[w][ir].s1 += (H->scat_sig[i].s1 * w_r);
-			H->pulse_tmp[w][ir].s2 += (H->scat_sig[i].s2 * w_r);
-			H->pulse_tmp[w][ir].s3 += (H->scat_sig[i].s3 * w_r);
-		}
-	}
-	RS_merge_pulse_tmp(H);
-	return (void *)0;
-}
-
-void RS_make_pulse_cpu(RSHandle *H) {
-	
-	int i;
-	int offset = 0;
-	int size = (int)H->num_scats / H->num_workers;
-	pthread_t tid[H->num_workers];
-	
-	RSCPUWorkerInput W[H->num_workers];
-	
-	for (i=0; i<H->num_workers; i++) {
-		W[i].H = H;
-		W[i].name = i;
-		W[i].scat_start = offset;
-		W[i].scat_end = offset + size;
-		pthread_create(&tid[i], NULL, RS_make_pulse_cpu_worker, &W[i]);
-		offset += size;
-	}
-	
-	for (i=0; i<H->num_workers; i++)
-		pthread_join(tid[i], NULL);
-}
- */
 
 #pragma mark -
 #pragma mark Elements for table lookup

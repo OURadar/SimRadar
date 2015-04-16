@@ -6,7 +6,7 @@ enum RSSimulationParameter {
     RSSimulationParameter4             =  4,
     RSSimulationParameter5             =  5,
     RSSimulationParameter6             =  6,
-    RSSimulationParameter7             =  7,
+    RSSimulationParameterSimTic        =  7,
     RSSimulationParameterBoundOriginX  =  8,
     RSSimulationParameterBoundOriginY  =  9,
     RSSimulationParameterBoundOriginZ  =  10,
