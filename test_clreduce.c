@@ -6,10 +6,10 @@
 
 #include <errno.h>
 #include "rs.h"
+#include "rs_priv.h"
 
 #define NUM_ELEM  (2 * 1024 * 1024)
 //#define NUM_ELEM  (64)
-
 
 int main(int argc, char **argv)
 {
@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 	cl_device_id devices[4];
 	cl_uint num_cus[4];
 	
-	get_device_info(&num_devices, devices, num_cus, 3);
+	get_device_info(CL_DEVICE_TYPE_GPU, &num_devices, devices, num_cus, 3);
 	
 	cl_int ret;
 	cl_context context;

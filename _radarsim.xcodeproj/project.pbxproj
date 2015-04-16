@@ -219,6 +219,7 @@
 		B5BAD56218B67E8B007AC15D /* test_make_pulse copy */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "test_make_pulse copy"; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5C2D1EE1ADC154900DD91B1 /* test_rcs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_rcs.c; sourceTree = "<group>"; };
 		B5C2D1F31ADC155700DD91B1 /* test_rcs */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_rcs; sourceTree = BUILT_PRODUCTS_DIR; };
+		B5CFAD1F1ADF4A1800360E9A /* rs_priv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rs_priv.h; sourceTree = "<group>"; };
 		B5D1420A18AA72E90041566E /* test_make_pulse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_make_pulse.c; sourceTree = "<group>"; };
 		B5D1420F18AA72F80041566E /* test_make_pulse */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_make_pulse; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5D1B10E19D0EE8300769416 /* leaf.fsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = leaf.fsh; sourceTree = "<group>"; };
@@ -387,6 +388,7 @@
 			isa = PBXGroup;
 			children = (
 				B57ADA6017E21A8900B03074 /* rs_types.h */,
+				B5CFAD1F1ADF4A1800360E9A /* rs_priv.h */,
 				B50A281917D7C4D500E4DE66 /* rs.c */,
 				B50A281617D7C21F00E4DE66 /* rs.h */,
 				B5F3C31C18F2F86700092A72 /* les.c */,
