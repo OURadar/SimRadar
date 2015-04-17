@@ -63,7 +63,7 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	[context release];
 	[pf release];
 
-	renderer = [Renderer new];
+	renderer = [[Renderer alloc] initWithDevicePixelRatio:[self.window backingScaleFactor]];
 
     posix_memalign(&scratchBuffer, 64, 3840 * 2160 * 4);
 }

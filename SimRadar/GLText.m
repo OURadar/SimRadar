@@ -21,19 +21,27 @@
 #pragma mark -
 #pragma mark Life Cycle
 
-- (id)init
+- (id)initWithDevicePixelRatio:(GLfloat)ratio
 {
     self = [super init];
     if (self) {
         baseSize = 72.0f;
-        bitmapWidth = 1024;
-        bitmapHeight = 1024;
+        bitmapWidth = 1024 * ratio;
+        bitmapHeight = 1024 * ratio;
+        devicePixelRatio = ratio;
         bitmap = (GLubyte *)malloc(bitmapWidth * bitmapHeight * 4);
         drawAnchors = (GLTextVertex *)malloc(GLTextMaxString * 6 * sizeof(GLTextVertex));
         [self buildTexture];
     }
     return self;
 }
+
+
+- (id)init
+{
+    return [self initWithDevicePixelRatio:1.0f];
+}
+
 
 - (void)dealloc
 {
@@ -160,8 +168,8 @@
     NSAutoreleasePool *pool = [NSAutoreleasePool new];
     
     // Create a bitmap canvas, draw all the symbols
-    float w = (float)bitmapWidth;
-    float h = (float)bitmapHeight;
+    const float w = (float)bitmapWidth / devicePixelRatio;
+    const float h = (float)bitmapHeight / devicePixelRatio;
     
     // Use Core Graphics to draw a texture atlas
     CGRect rect = CGRectMake(0.0f, 0.0f, (CGFloat)bitmapWidth, (CGFloat)bitmapHeight);
@@ -201,7 +209,10 @@
         
         drawSize = [label sizeWithAttributes:labelAtts];
         
-        if (drawSize.width < 1.0f) {
+        if (i == '2') {
+            NSLog(@"drawSize = %.1f %.1f", drawSize.width, drawSize.height);
+        }
+        if (drawSize.width < devicePixelRatio) {
             symbolSize[i] = NSMakeSize(0.0f, 0.0f);
             continue;
         }
@@ -233,18 +244,20 @@
         }
         
 #ifdef DEBUG_GL
+        // Core Graphics framework uses points (not pixel)
         CGContextSetBlendMode(context, kCGBlendModeNormal);
         CGContextSetStrokeColorWithColor(context, [NSColor redColor].CGColor);
         CGContextStrokeRect(context, NSMakeRect(textureCoord[i].origin.x * w + 0.5f,
                                                 point.y - pad,
                                                 textureCoord[i].size.width * w,
                                                 textureCoord[i].size.height * h));
-        CGContextSetStrokeColorWithColor(context, [NSColor colorWithRed:0.0f green:1.0f blue:0.0f alpha:1.0f].CGColor);
+        CGContextSetStrokeColorWithColor(context, [NSColor greenColor].CGColor);
         CGContextStrokeRect(context, NSMakeRect(point.x,
                                                 point.y,
                                                 symbolSize[i].width,
                                                 symbolSize[i].height));
 #endif
+
         
         point.x += symbolSize[i].width + 2.0f * pad + 1.0f;
         rowHeight = MAX(rowHeight, drawSize.height);
@@ -344,8 +357,8 @@
         {1.0f, 1.0f, 1.0f, 1.0f}
     };
     for (int k=0; k<6; k++) {
-        pos[k].x = pos[k].x * w + 10.0f;
-        pos[k].y = pos[k].y * h + 10.0f;
+        pos[k].x = (pos[k].x * w + 10.0f) / devicePixelRatio;
+        pos[k].y = (pos[k].y * h + 10.0f) / devicePixelRatio;
         pos[k].t = (1.0f - pos[k].t);
     }
     memcpy(textureAnchors, pos, 6 * sizeof(GLTextVertex));

@@ -24,6 +24,7 @@
 @synthesize delegate;
 @synthesize width, height;
 @synthesize beamAzimuth, beamElevation;
+@synthesize showHUD;
 
 #pragma mark Properties
 
@@ -38,7 +39,7 @@
 	width = (GLsizei)size.width;
 	height = (GLsizei)size.height;
 	
-	glViewport(0, 0, width, height);
+	glViewport(0, 0, width * devicePixelRatio, height * devicePixelRatio);
 	
 	aspectRatio = size.width / size.height;
 	
@@ -477,7 +478,7 @@
 #pragma mark -
 #pragma mark Initializations & Deallocation
 
-- (id)init
+- (id)initWithDevicePixelRatio:(GLfloat)pixelRatio
 {
 	self = [super init];
 	if (self) {
@@ -487,18 +488,25 @@
         spinModel = 1;
 		aspectRatio = 1.0f;
         
-        showHud = TRUE;
+        showHUD = TRUE;
         
         hudModelViewProjection = GLKMatrix4Identity;
         beamModelViewProjection = GLKMatrix4Identity;
         backgroundOpacity = 0.3;
         
         // Add device pixel ratio here
+        devicePixelRatio = pixelRatio;
+        NSLog(@"Renderer initialized with %.1f", devicePixelRatio);
         
 		// View parameters
 		[self resetViewParameters];
 	}
 	return self;
+}
+
+
+- (id)init {
+    return [self initWithDevicePixelRatio:1.0f];
 }
 
 
@@ -539,7 +547,7 @@
 	leafRenderer = [self createRenderResourceFromVertexShader:@"leaf" fragmentShader:@"leaf"];
 	hudRenderer = [self createRenderResourceFromProgram:gridRenderer.program];
 	
-	textRenderer = [GLText new];
+	textRenderer = [[GLText alloc] initWithDevicePixelRatio:devicePixelRatio];
 	
 	NSLog(@"VAOs = bodyRenderer %d  gridRenderer %d  anchorRenderer %d  anchorLineRendrer %d  leafRendrer = %d",
 		  bodyRenderer.vao, gridRenderer.vao, anchorRenderer.vao, anchorLineRenderer.vao, leafRenderer.vao);
@@ -556,7 +564,7 @@
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
 	[self makeOneLeaf];
-    leafRenderer.count = 3001;
+    leafRenderer.count = 6001;
     
     // Tell whatever controller that the OpenGL context is ready for sharing and set up renderer's body count
 	[delegate glContextVAOPrepared];
@@ -599,8 +607,6 @@
 	
 	glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer.vbo[2]);  // orientation
 	glBufferData(GL_ARRAY_BUFFER, bodyRenderer.count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
-//	glVertexAttribPointer(bodyRenderer.rotationAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
-//	glEnableVertexAttribArray(bodyRenderer.rotationAI);
     glVertexAttribPointer(bodyRenderer.quaternionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(bodyRenderer.quaternionAI);
 
@@ -716,7 +722,7 @@
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, width * devicePixelRatio, height * devicePixelRatio);
 	
 //	NSLog(@"%d %d", anchorRenderer.colorUI, gridRenderer.colorUI);
     
@@ -773,7 +779,7 @@
     glUniformMatrix4fv(leafRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
 	glDrawElementsInstanced(GL_LINE_STRIP, 7, GL_UNSIGNED_INT, NULL, leafRenderer.count);
 	
-    if (showHud) {
+    if (showHUD) {
         // HUD Background & Outline
         glBindVertexArray(hudRenderer.vao);
         glUseProgram(hudRenderer.program);
@@ -785,7 +791,7 @@
         
         
         // Objects on HUD (beam's view)
-        glViewport(hudOrigin.x, hudOrigin.y, hudSize.width, hudSize.height);
+        glViewport(hudOrigin.x * devicePixelRatio, hudOrigin.y * devicePixelRatio, hudSize.width * devicePixelRatio, hudSize.height * devicePixelRatio);
 
         glBindVertexArray(leafRenderer.vao);
         glUseProgram(leafRenderer.program);
@@ -805,7 +811,7 @@
         glDrawArrays(GL_LINES, 0, gridRenderer.count);
     }
     
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, width * devicePixelRatio, height * devicePixelRatio);
     
 #ifdef DEBUG_GL
     [textRenderer showTextureMap];
@@ -815,7 +821,6 @@
     snprintf(statusMessage[1], 256, "Frame %d", iframe);
     
     [textRenderer drawText:"SimRadar" origin:NSMakePoint(25.0f, height - 60.0f) scale:0.5f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
-    //[textRenderer drawText:"SimRadar" origin:NSMakePoint(25.0f, height - 150.0f) scale:1.0f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
     [textRenderer drawText:statusMessage[0] origin:NSMakePoint(25.0f, height - 90.0f) scale:0.333f];
     [textRenderer drawText:statusMessage[1] origin:NSMakePoint(25.0f, height - 120.0f) scale:0.333f];
 
@@ -823,7 +828,7 @@
     [textRenderer drawText:fpsString origin:NSMakePoint(width - 30.0f, hudOrigin.y - 40.0f) scale:0.333f red:1.0f green:0.9f blue:0.2f alpha:1.0f align:GLTextAlignmentRight];
 #endif
     
-    if (showHud) {
+    if (showHUD) {
         snprintf(statusMessage[2], 128, "EL %.2f   AZ %.2f", beamElevation / M_PI * 180.0f, beamAzimuth / M_PI * 180.0f);
         [textRenderer drawText:statusMessage[2] origin:NSMakePoint(hudOrigin.x + 15.0f, hudOrigin.y + 15.0f) scale:0.25f];
     }
@@ -839,7 +844,7 @@
 
     GLfloat near = 2.0f / range * modelCenter.y;
     
-    unitsPerPixel = range / height;
+    unitsPerPixel = range / height / devicePixelRatio;
     pixelsPerUnit = 1.0f / unitsPerPixel;
 
     GLKMatrix4 mat;
@@ -931,6 +936,11 @@
 - (void)toggleSpinModelReverse
 {
 	spinModel = spinModel == 0 ? 5 : spinModel - 1;
+}
+
+- (void)toggleHUDVisibility
+{
+    showHUD = !showHUD;
 }
 
 - (void)increaseLeafCount

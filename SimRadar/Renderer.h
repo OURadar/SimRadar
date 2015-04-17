@@ -66,12 +66,13 @@ typedef struct _draw_resource {
 
 	GLfloat pixelsPerUnit;
 	GLfloat unitsPerPixel;
+    GLfloat devicePixelRatio;
 
     GLfloat beamAzimuth, beamElevation;
     
 	id<RendererDelegate> delegate;
     
-    BOOL showHud;
+    BOOL showHUD;
 	
 	@private
 	
@@ -103,6 +104,9 @@ typedef struct _draw_resource {
 @property (nonatomic, retain) id<RendererDelegate> delegate;
 @property (nonatomic, readonly) GLsizei width, height;
 @property (nonatomic) GLfloat beamAzimuth, beamElevation;
+@property (nonatomic) BOOL showHUD;
+
+- (id)initWithDevicePixelRatio:(GLfloat)pixelRatio;
 
 - (void)setSize:(CGSize)size;
 - (void)setBodyCount:(GLuint)number;
@@ -125,6 +129,7 @@ typedef struct _draw_resource {
 - (void)stopSpinModel;
 - (void)toggleSpinModel;
 - (void)toggleSpinModelReverse;
+- (void)toggleHUDVisibility;
 
 - (void)increaseLeafCount;
 - (void)decreaseLeafCount;

@@ -71,6 +71,7 @@ typedef union _gltext_vertex GLTextVertex;
     CGFloat baseSize;
 	GLubyte *bitmap;
     GLsizei bitmapWidth, bitmapHeight;
+    GLfloat devicePixelRatio;
     GLTextVertex textureAnchors[6];
     GLTextVertex *drawAnchors;
     NSRect textureCoord[256];
@@ -79,6 +80,8 @@ typedef union _gltext_vertex GLTextVertex;
 
 @property (nonatomic, readonly) GLuint texture;
 @property (nonatomic) GLKMatrix4 modelViewProjection;
+
+- (id)initWithDevicePixelRatio:(GLfloat)ratio;
 
 - (void)showTextureMap;
 - (void)drawText:(const char *)string origin:(NSPoint)origin scale:(float)scale;

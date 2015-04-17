@@ -210,6 +210,11 @@ NSWindow *standardWindow;
 			[glView.renderer panX:0.0f Y:0.0f dx:0.0f dy:-30.0f];
 			break;
 			
+        case 'h':
+            // Toggle HUD
+            [glView.renderer toggleHUDVisibility];
+            break;
+        
 		case '+':
 		case '=':
 			// Zoom in
