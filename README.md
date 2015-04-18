@@ -93,7 +93,14 @@ The simulation framework is written is plain C for performance and portability. 
 
         RS_set_range_weight_to_triangle(S, 120.0f);
 
-        RS_set_wind_data_to_cube125(S);
+        RS_clear_wind_data(S);
+        RS_set_wind_data_to_LES_table(S, LES_get_frame(L, 0));
+
+        RS_clear_adm_data(S);
+        RS_set_adm_data_to_ADM_table(S, ADM_get_frame(A));
+
+        RS_clear_rcs_data(S);
+        RS_set_rcs_data_to_RCS_table(S, RCS_get_frame(R));
 
         // Populate the domain with scatter bodies.
         // This is also the function that triggers kernel compilation, GPU memory allocation and
