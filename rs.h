@@ -320,7 +320,8 @@ typedef struct _rs_handle {
     cl_float4              *scat_tum;       // tumble
 	cl_float4              *scat_att;       // attributes
 	cl_float4              *scat_sig;       // signal
-	cl_float4              *work;
+    cl_uint4               *scat_rnd;       // random seed
+    cl_float4              *work;
 	cl_float4              *pulse;
 
 	cl_float4              *pulse_tmp[RS_MAX_GPU_DEVICE];

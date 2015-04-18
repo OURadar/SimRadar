@@ -17,10 +17,17 @@ On Linux:
 * [OpenCL] version 1.1 or 1.2
 
 On Mac:
+
 * [XCode 6]
 
 [OpenCL]: https://www.khronos.org/opencl
 [XCode 6]: https://developer.apple.com/xcode
+
+
+OSCER boomer
+------------
+
+There are several GPU equiped nodes and everything needed is installed. However, the `git` software does not have HTTP access to to the ARRC git repository. Until then, manually the software project folder to your home folder. Batch scripts are included to schedule jobs for the GPU compute nodes, i.e., CUDA pool.
 
 
 Radar Simulation Framework

@@ -129,14 +129,20 @@ ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path) {
     h->data_grid = (ADMGrid *)malloc(sizeof(ADMGrid));
     if (h->data_grid == NULL) {
         fprintf(stderr, "Error allocating table (ADMGrid).\n");
+        fclose(fid);
         return NULL;
     }
     h->data_grid->rev = 1;
     uint16_t nbna[2];
     fread(nbna, sizeof(uint16_t), 2, fid);
-    h->data_grid->nb = nbna[0];
-    h->data_grid->na = nbna[1];
-
+    h->data_grid->nb = nbna[0];  // x-axis = beta
+    h->data_grid->na = nbna[1];  // y-axis = alpha
+    if (h->data_grid->nb == 0 || h->data_grid->na == 0) {
+        fprintf(stderr, "None of the grid elements can be zero.\n");
+        fclose(fid);
+        return NULL;
+    }
+    
     #ifdef DEBUG
     printf("%s    nb = %d    na = %d\n", h->data_path, h->data_grid->nb, h->data_grid->na);
     #endif
@@ -157,6 +163,7 @@ ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path) {
     h->data_value = (ADMTable *)malloc(sizeof(ADMTable));
     if (h->data_value == NULL) {
         fprintf(stderr, "Error allocating table (ADMTable).\n");
+        fclose(fid);
         return NULL;
     }
     h->data_value->nb = h->data_grid->nb;

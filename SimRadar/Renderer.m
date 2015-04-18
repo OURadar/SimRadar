@@ -210,7 +210,7 @@
 - (void)makeOneLeaf
 {
 	if (leafRenderer.positions == NULL) {
-		leafRenderer.positions = (GLfloat *)malloc(6 * sizeof(cl_float4));
+		leafRenderer.positions = (GLfloat *)malloc(24 * sizeof(GLfloat));
 	}
     leafRenderer.positions[0]  =  0.0f;   leafRenderer.positions[1]  =  0.0f;   leafRenderer.positions[2]  =  1.0f;   leafRenderer.positions[3]  = 0.0f;
     leafRenderer.positions[4]  =  0.0f;   leafRenderer.positions[5]  =  0.0f;   leafRenderer.positions[6]  = -1.0f;   leafRenderer.positions[7]  = 0.0f;

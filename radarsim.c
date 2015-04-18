@@ -164,9 +164,11 @@ int main(int argc, char *argv[]) {
         RS_set_beam_pos(S, 15.0f, 10.0f);
         RS_advance_time(S);
 
-        RS_download(S);
-        printf("== k = %d ==============\n", k);
-        RS_show_scat_pos(S);
+        if (verb) {
+            RS_download(S);
+            printf("== k = %d ==============\n", k);
+            RS_show_scat_pos(S);
+        }
     }
 
     gettimeofday(&t1, NULL);

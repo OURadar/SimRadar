@@ -158,6 +158,7 @@ RCSHandle *RCS_init_with_config_path(const RCSConfig config, const char *path) {
     h->data_grid = (RCSGrid *)malloc(sizeof(RCSGrid));
     if (h->data_grid == NULL) {
         fprintf(stderr, "Error allocating table (RCSGrid).\n");
+        fclose(fid);
         return NULL;
     }
     h->data_grid->rev = 1;
@@ -165,6 +166,11 @@ RCSHandle *RCS_init_with_config_path(const RCSConfig config, const char *path) {
     fread(nbna, sizeof(uint16_t), 2, fid);
     h->data_grid->na = nbna[0];  // x-axis = alpha
     h->data_grid->nb = nbna[1];  // y-axis = beta
+    if (h->data_grid->na == 0 || h->data_grid->nb == 0) {
+        fprintf(stderr, "None of the grid elements can be zero.\n");
+        fclose(fid);
+        return NULL;
+    }
     
     #ifdef DEBUG
     printf("%s    na = %d    nb = %d\n", h->data_path, h->data_grid->na, h->data_grid->nb);
@@ -186,6 +192,7 @@ RCSHandle *RCS_init_with_config_path(const RCSConfig config, const char *path) {
     h->data_value = (RCSTable *)malloc(sizeof(RCSTable));
     if (h->data_value == NULL) {
         fprintf(stderr, "Error allocating table (RCSTable).\n");
+        fclose(fid);
         return NULL;
     }
     h->data_value->na = h->data_grid->na;

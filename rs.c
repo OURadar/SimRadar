@@ -1065,6 +1065,11 @@ void RS_init_scat_pos(RSHandle *H) {
 		H->scat_sig[i].s1 = 0.0f;
 		H->scat_sig[i].s2 = 1.0f;
 		H->scat_sig[i].s3 = 0.0f;
+        
+        H->scat_rnd[i].s0 = rand();
+        H->scat_rnd[i].s1 = rand();
+        H->scat_rnd[i].s2 = rand();
+        H->scat_rnd[i].s3 = rand();
 	}
 	
 	// Replace a few points for debugging purpose.
@@ -2621,6 +2626,7 @@ void RS_populate(RSHandle *H) {
     posix_memalign((void **)&H->scat_tum, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
 	posix_memalign((void **)&H->scat_att, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
 	posix_memalign((void **)&H->scat_sig, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
+    posix_memalign((void **)&H->scat_rnd, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_uint4));
 
 	posix_memalign((void **)&H->work, RS_ALIGN_SIZE, RS_MAX_GATES * RS_CL_GROUP_ITEMS * sizeof(cl_float4));
 	posix_memalign((void **)&H->pulse, RS_ALIGN_SIZE, RS_MAX_GATES * sizeof(cl_float4));
@@ -2631,6 +2637,7 @@ void RS_populate(RSHandle *H) {
         H->scat_tum == NULL ||
 		H->scat_att == NULL ||
 		H->scat_sig == NULL ||
+        H->scat_rnd == NULL ||
 		H->work == NULL ||
 		H->pulse == NULL) {
 		fprintf(stderr, "%s : RS : Error allocating memory space for scatterers.\n", now());
@@ -2812,10 +2819,15 @@ void RS_upload(RSHandle *H) {
 		printf("%s : RS : scat_vel @ %p\n", now(), H->scat_vel);
 	}
 	
-	cl_uint4 *seeds = (cl_uint4 *)malloc(H->num_scats * sizeof(cl_uint4));
-	for (i=0; i<H->num_scats; i++) {
-		seeds[i] = (cl_uint4){{rand(), rand(), rand(), rand()}};
-	}
+    if (H->num_scats == 0) {
+        printf("%s : RS : Abort @ num_scats = 0 during RS_upload()\n", now());
+        return;
+    }
+//
+//	cl_uint4 *seeds = (cl_uint4 *)malloc(H->num_scats * sizeof(cl_uint4));
+//	for (i=0; i<H->num_scats; i++) {
+//		seeds[i] = (cl_uint4){{rand(), rand(), rand(), rand()}};
+//	}
 	
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 	
@@ -2826,9 +2838,9 @@ void RS_upload(RSHandle *H) {
 			gcl_memcpy(H->worker[i].scat_ori, H->scat_ori + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->worker[i].scat_att, H->scat_att + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->worker[i].scat_sig, H->scat_sig + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
-			
-			gcl_memcpy(H->worker[i].scat_rnd, seeds + H->offset[i], H->worker[i].num_scats * sizeof(cl_uint4));
-			
+			gcl_memcpy(H->worker[i].scat_rnd, H->scat_rnd + H->offset[i], H->worker[i].num_scats * sizeof(cl_uint4));
+			//gcl_memcpy(H->worker[i].scat_rnd, seeds + H->offset[i], H->worker[i].num_scats * sizeof(cl_uint4));
+            
 			dispatch_semaphore_signal(H->worker[i].sem);
 		});
 		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
@@ -2842,13 +2854,14 @@ void RS_upload(RSHandle *H) {
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, NULL);
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_att, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_att + H->offset[i], 0, NULL, NULL);
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_sig, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, NULL);
+        clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_rnd, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_uint4),  H->scat_rnd + H->offset[i], 0, NULL, NULL);
 		
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_rnd, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_uint4), seeds + H->offset[i], 0, NULL, NULL);
 	}
 	
 #endif
 	
-	free(seeds);
+//	free(seeds);
 	
 }
 
