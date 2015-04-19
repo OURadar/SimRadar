@@ -144,11 +144,18 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     // Copy the necessary parameters from host to compute workers
     C->num_scats = sub_num_scats;
     
-    size_t work_items = 64;
+    size_t work_items = RS_CL_GROUP_ITEMS;
 
 #if !defined (_SHARE_OBJ_)
+    
     clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_1, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(work_items), &work_items, NULL);
+
 #endif
+
+    if (work_items > RS_CL_GROUP_ITEMS) {
+        printf("%s : RS : Potential memory leak. work_items > RS_CL_GROUP_ITEMS.\n", now());
+        return;
+    }
     
     size_t max_work_group_size;
     clGetDeviceInfo(C->dev, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max_work_group_size), &max_work_group_size, NULL);
@@ -159,13 +166,8 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
                                                 H->params.range_start,
                                                 H->params.range_delta,
                                                 H->params.range_count);
-
-//    C->make_pulse_params = RS_make_pulse_params((cl_uint)C->num_scats,
-//                                                RS_CL_GROUP_ITEMS,
-//                                                C->num_cus * 4,
-//                                                H->params.range_start,
-//                                                H->params.range_delta,
-//                                                H->params.range_count);
+    
+    const unsigned long work_numel = C->make_pulse_params.global[0] * C->make_pulse_params.local[0] * H->params.range_count;
     
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 	
@@ -197,12 +199,12 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     C->scat_tum = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
     C->scat_att = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
     C->scat_sig = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
-    C->work = gcl_malloc(RS_MAX_GATES * RS_CL_GROUP_ITEMS * sizeof(cl_float4), NULL, 0);
-    C->pulse = gcl_malloc(RS_MAX_GATES * sizeof(cl_float4), NULL, 0);
+    C->work = gcl_malloc(work_numel * sizeof(cl_float4), NULL, 0);
+    C->pulse = gcl_malloc(H->params.range_count * sizeof(cl_float4), NULL, 0);
     
     C->scat_rnd = gcl_malloc(C->num_scats * sizeof(cl_int4), NULL, 0);
     
-    C->mem_size += (cl_uint)( (7 * C->num_scats + RS_MAX_GATES * RS_CL_GROUP_ITEMS + RS_MAX_GATES) * sizeof(cl_float4) + C->num_scats * sizeof(cl_int4) );
+    C->mem_size += (cl_uint)( (7 * C->num_scats + work_numel + H->params.range_count) * sizeof(cl_float4) + C->num_scats * sizeof(cl_int4) );
 
 #else
 	
@@ -220,11 +222,11 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     C->scat_tum = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
 	C->scat_att = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
 	C->scat_sig = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
-	C->work     = clCreateBuffer(C->context, CL_MEM_READ_WRITE, RS_MAX_GATES * RS_CL_GROUP_ITEMS * sizeof(cl_float4), NULL, &ret);   CHECK_CL_CREATE_BUFFER
-	C->pulse    = clCreateBuffer(C->context, CL_MEM_READ_WRITE, RS_MAX_GATES * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
-	C->scat_rnd = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_int4), NULL, &ret);                         CHECK_CL_CREATE_BUFFER
+    C->scat_rnd = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_int4), NULL, &ret);                         CHECK_CL_CREATE_BUFFER
+    C->work     = clCreateBuffer(C->context, CL_MEM_READ_WRITE, work_numel * sizeof(cl_float4), NULL, &ret);                         CHECK_CL_CREATE_BUFFER
+	C->pulse    = clCreateBuffer(C->context, CL_MEM_READ_WRITE, H->params.range_count * sizeof(cl_float4), NULL, &ret);              CHECK_CL_CREATE_BUFFER
 	
-	C->mem_size += (cl_uint)( (6 * C->num_scats + RS_MAX_GATES * RS_CL_GROUP_ITEMS + RS_MAX_GATES) * sizeof(cl_float4) + C->num_scats * sizeof(cl_int4) );
+	C->mem_size += (cl_uint)( (6 * C->num_scats + work_numel + H->params.range_count) * sizeof(cl_float4) + C->num_scats * sizeof(cl_int4) );
 	
 	//
 	// Set up kernel's input / output arguments
@@ -284,7 +286,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     }
 
 	if (C->verb > 1) {
-		printf("%s : RS : Pass 1   global =%6s   local = %3zu x %2d = %6s B   groups = %3d   N = %9s\n",
+		printf("%s : RS : Pass 1   global =%6s   local = %3zu x %2d = %6s B   groups = %4d   N = %9s\n",
 			   now(),
 			   commaint(C->make_pulse_params.global[0]),
 			   C->make_pulse_params.local[0],
@@ -321,7 +323,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	}
 	
 	if (C->verb > 1) {
-		printf("%s : RS : Pass 2   global =%6s   local = %3zu x %2lu = %6s B   groups =  %d%s   N = %9s\n",
+		printf("%s : RS : Pass 2   global =%6s   local = %3zu x %2lu = %6s B   groups = %3d%s   N = %9s\n",
 			   now(),
 			   commaint(C->make_pulse_params.global[1]),
 			   C->make_pulse_params.local[1],
@@ -888,8 +890,8 @@ void RS_free_scat_memory(RSHandle *H) {
     free(H->scat_tum);
 	free(H->scat_att);
 	free(H->scat_sig);
-	
-	free(H->work);
+    free(H->scat_rnd);
+
 	free(H->pulse);
 	
 	for (i=0; i<H->num_workers; i++) {
@@ -937,6 +939,7 @@ void RS_free(RSHandle *H) {
 #endif
 	
     free(H->anchor_pos);
+    free(H->anchor_lines);
     
     free(H);
     
@@ -1017,8 +1020,8 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint user_m
 		param.local_mem_size[1] = sizeof(cl_float4);
 		
 	}
-	if (param.entry_counts[1] > RS_MAX_GATES * RS_CL_GROUP_ITEMS) {
-		fprintf(stderr, "%s : RS : H->dev_work is not large enough.\n", now());
+	if (param.entry_counts[1] > RS_MAX_GATES * work_items) {
+		fprintf(stderr, "%s : RS : H->dev_work may not be large enough.\n", now());
 	}
 	return param;
 }
@@ -1333,7 +1336,7 @@ void RS_set_scan_box(RSHandle *H,
 	H->num_scats = (size_t)(H->params.body_per_cell * nvol);
 	
 	// Round to a GPU preferred number
-	size_t mul = RS_CL_GROUP_ITEMS * H->num_cus[0] * H->num_devs * 4;
+	size_t mul = H->num_cus[0] * H->num_devs * 128;
 	size_t preferred_n = (size_t)(H->num_scats / mul) * mul;
 	if (preferred_n < H->params.body_per_cell * 9 / 10) {
 		preferred_n += mul;
@@ -2628,8 +2631,7 @@ void RS_populate(RSHandle *H) {
 	posix_memalign((void **)&H->scat_sig, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
     posix_memalign((void **)&H->scat_rnd, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_uint4));
 
-	posix_memalign((void **)&H->work, RS_ALIGN_SIZE, RS_MAX_GATES * RS_CL_GROUP_ITEMS * sizeof(cl_float4));
-	posix_memalign((void **)&H->pulse, RS_ALIGN_SIZE, RS_MAX_GATES * sizeof(cl_float4));
+	posix_memalign((void **)&H->pulse, RS_ALIGN_SIZE, H->params.range_count * sizeof(cl_float4));
 	
 	if (H->scat_pos == NULL ||
 		H->scat_vel == NULL ||
@@ -2638,7 +2640,6 @@ void RS_populate(RSHandle *H) {
 		H->scat_att == NULL ||
 		H->scat_sig == NULL ||
         H->scat_rnd == NULL ||
-		H->work == NULL ||
 		H->pulse == NULL) {
 		fprintf(stderr, "%s : RS : Error allocating memory space for scatterers.\n", now());
 		return;
@@ -2647,7 +2648,7 @@ void RS_populate(RSHandle *H) {
 	int i;
 	BOOL has_null = FALSE;
 	for (i=0; i<H->num_workers; i++) {
-		posix_memalign((void **)&H->pulse_tmp[i], RS_ALIGN_SIZE, RS_MAX_GATES * sizeof(cl_float4));
+		posix_memalign((void **)&H->pulse_tmp[i], RS_ALIGN_SIZE, H->params.range_count * sizeof(cl_float4));
 		has_null |= H->pulse_tmp[i] == NULL;
 	}
 	if (has_null) {
@@ -2823,11 +2824,6 @@ void RS_upload(RSHandle *H) {
         printf("%s : RS : Abort @ num_scats = 0 during RS_upload()\n", now());
         return;
     }
-//
-//	cl_uint4 *seeds = (cl_uint4 *)malloc(H->num_scats * sizeof(cl_uint4));
-//	for (i=0; i<H->num_scats; i++) {
-//		seeds[i] = (cl_uint4){{rand(), rand(), rand(), rand()}};
-//	}
 	
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 	
@@ -2839,7 +2835,6 @@ void RS_upload(RSHandle *H) {
 			gcl_memcpy(H->worker[i].scat_att, H->scat_att + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->worker[i].scat_sig, H->scat_sig + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->worker[i].scat_rnd, H->scat_rnd + H->offset[i], H->worker[i].num_scats * sizeof(cl_uint4));
-			//gcl_memcpy(H->worker[i].scat_rnd, seeds + H->offset[i], H->worker[i].num_scats * sizeof(cl_uint4));
             
 			dispatch_semaphore_signal(H->worker[i].sem);
 		});
@@ -2855,13 +2850,9 @@ void RS_upload(RSHandle *H) {
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_att, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_att + H->offset[i], 0, NULL, NULL);
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_sig, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, NULL);
         clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_rnd, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_uint4),  H->scat_rnd + H->offset[i], 0, NULL, NULL);
-		
-		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_rnd, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_uint4), seeds + H->offset[i], 0, NULL, NULL);
 	}
 	
 #endif
-	
-//	free(seeds);
 	
 }
 
@@ -2974,7 +2965,7 @@ void RS_make_pulse(RSHandle *H) {
 	for (i=0; i<H->num_workers; i++) {
 		dispatch_async(H->worker[i].que, ^{
 			
-#ifdef MAKE_PULSE_PASS_1
+//#ifdef MAKE_PULSE_PASS_1
 			make_pulse_pass_1_kernel(&H->worker[i].ndrange_pulse_pass_1,
 									 (cl_float4 *)H->worker[i].work,
 									 (cl_float4 *)H->worker[i].scat_sig,
@@ -2989,7 +2980,7 @@ void RS_make_pulse(RSHandle *H) {
 									 H->worker[i].make_pulse_params.range_count,
 									 H->worker[i].make_pulse_params.group_counts[0],
 									 H->worker[i].make_pulse_params.entry_counts[0]);
-#endif
+//#endif
 			switch (H->worker[i].make_pulse_params.cl_pass_2_method) {
 				case RS_CL_PASS_2_IN_LOCAL:
 					make_pulse_pass_2_local_kernel(&H->worker[i].ndrange_pulse_pass_2,
@@ -3121,7 +3112,7 @@ void RS_table3d_free(RSTable3D T) {
 #pragma mark Display
 
 static void RS_show_scat_i(RSHandle *H, int i) {
-	printf(" %7d - ( %9.2f, %9.2f, %9.2f, %9.2f )  %7.2f %7.2f %7.2f   %7.4f %7.4f %7.4f %7.4f\n", i,
+	printf(" %7d - ( %9.2f, %9.2f, %9.2f, %4.2f )  %7.2f %7.2f %7.2f   %7.4f %7.4f %7.4f %7.4f\n", i,
 		   H->scat_pos[i].x, H->scat_pos[i].y, H->scat_pos[i].z, H->scat_pos[i].w,
 		   H->scat_vel[i].x, H->scat_vel[i].y, H->scat_vel[i].z,
            H->scat_ori[i].x, H->scat_ori[i].y, H->scat_ori[i].z, H->scat_ori[i].w);
