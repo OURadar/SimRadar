@@ -76,6 +76,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     // Tie all kernels to the program
     C->kern_io = clCreateKernel(C->prog, "io", &ret);                                             CHECK_CL_CREATE_KERNEL
     C->kern_dummy = clCreateKernel(C->prog, "dummy", &ret);                                       CHECK_CL_CREATE_KERNEL
+    C->kern_bg_atts = clCreateKernel(C->prog, "bg_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
     C->kern_scat_atts = clCreateKernel(C->prog, "scat_atts", &ret);                               CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_1 = clCreateKernel(C->prog, "make_pulse_pass_1", &ret);               CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_2_group = clCreateKernel(C->prog, "make_pulse_pass_2_group", &ret);   CHECK_CL_CREATE_KERNEL
@@ -122,6 +123,7 @@ void RS_worker_free(RSWorker *C) {
     
     clReleaseKernel(C->kern_io);
     clReleaseKernel(C->kern_dummy);
+    clReleaseKernel(C->kern_bg_atts);
     clReleaseKernel(C->kern_scat_atts);
     clReleaseKernel(C->kern_make_pulse_pass_1);
     clReleaseKernel(C->kern_make_pulse_pass_2_group);
@@ -141,6 +143,11 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 
     RSWorker *C = &H->worker[worker_id];
     
+    if (C == NULL) {
+        printf("%s : RS : Worker[%d] has not been initialized?\n", now(), worker_id);
+        return;
+    }
+    
     // Copy the necessary parameters from host to compute workers
     C->num_scats = sub_num_scats;
     
@@ -153,7 +160,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 #endif
 
     if (work_items > RS_CL_GROUP_ITEMS) {
-        printf("%s : RS : Potential memory leak. work_items > RS_CL_GROUP_ITEMS.\n", now());
+        printf("%s : RS : Potential memory leak. work_items(%d) > RS_CL_GROUP_ITEMS(%d).\n", now(), (int)work_items, RS_CL_GROUP_ITEMS);
         return;
     }
     
@@ -261,24 +268,40 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     sim_desc.s[RSSimulationParameterAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTableDescriptionRefreshTime];
 
     ret = CL_SUCCESS;
-    ret |= clSetKernelArg(C->kern_scat_atts,  0, sizeof(cl_mem),     &C->scat_pos);
-    ret |= clSetKernelArg(C->kern_scat_atts,  1, sizeof(cl_mem),     &C->scat_ori);
-    ret |= clSetKernelArg(C->kern_scat_atts,  2, sizeof(cl_mem),     &C->scat_vel);
-    ret |= clSetKernelArg(C->kern_scat_atts,  3, sizeof(cl_mem),     &C->scat_tum);
-    ret |= clSetKernelArg(C->kern_scat_atts,  4, sizeof(cl_mem),     &C->scat_att);
-    ret |= clSetKernelArg(C->kern_scat_atts,  5, sizeof(cl_mem),     &C->scat_sig);
-    ret |= clSetKernelArg(C->kern_scat_atts,  6, sizeof(cl_mem),     &C->scat_rnd);
-    ret |= clSetKernelArg(C->kern_scat_atts,  7, sizeof(cl_mem),     &C->vel[0]);
-    ret |= clSetKernelArg(C->kern_scat_atts,  8, sizeof(cl_float16), &C->vel_desc);
-    ret |= clSetKernelArg(C->kern_scat_atts,  9, sizeof(cl_mem),     &C->adm_cd[0]);
-    ret |= clSetKernelArg(C->kern_scat_atts, 10, sizeof(cl_mem),     &C->adm_cm[0]);
-    ret |= clSetKernelArg(C->kern_scat_atts, 11, sizeof(cl_float16), &C->adm_desc);
-    ret |= clSetKernelArg(C->kern_scat_atts, 12, sizeof(cl_mem),     &C->rcs_real[0]);
-    ret |= clSetKernelArg(C->kern_scat_atts, 13, sizeof(cl_mem),     &C->rcs_imag[0]);
-    ret |= clSetKernelArg(C->kern_scat_atts, 14, sizeof(cl_float16), &C->rcs_desc);
-	ret |= clSetKernelArg(C->kern_scat_atts, 15, sizeof(cl_mem),     &C->angular_weight);
-	ret |= clSetKernelArg(C->kern_scat_atts, 16, sizeof(cl_float4),  &C->angular_weight_desc);
-    ret |= clSetKernelArg(C->kern_scat_atts, 17, sizeof(cl_float16), &sim_desc);
+    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
+    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentExtras,                        sizeof(cl_mem),     &C->scat_att);
+    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
+    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
+    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
+    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentAngularWeight,                 sizeof(cl_mem),     &C->angular_weight);
+    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentAngularWeightDescription,      sizeof(cl_float4),  &C->angular_weight_desc);
+    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
+    
+    if (ret != CL_SUCCESS) {
+        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_bg_atts().\n", now());
+        exit(EXIT_FAILURE);
+    }
+
+    ret = CL_SUCCESS;
+    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentOrientation,                   sizeof(cl_mem),     &C->scat_ori);
+    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
+    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentTumble,                        sizeof(cl_mem),     &C->scat_tum);
+    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentExtras,                        sizeof(cl_mem),     &C->scat_att);
+    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentSignal,                        sizeof(cl_mem),     &C->scat_sig);
+    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
+    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
+    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
+    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &C->adm_cd[0]);
+    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentAirDragModelMomentum,          sizeof(cl_mem),     &C->adm_cm[0]);
+    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &C->adm_desc);
+    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &C->rcs_real[0]);
+    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[0]);
+    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc);
+	ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentAngularWeight,                 sizeof(cl_mem),     &C->angular_weight);
+	ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentAngularWeightDescription,      sizeof(cl_float4),  &C->angular_weight_desc);
+    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
 
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_atts().\n", now());
@@ -2691,6 +2714,9 @@ void RS_populate(RSHandle *H) {
     const int a = 0;
     const int r = 0;
 	for (i=0; i<H->num_workers; i++) {
+        ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &H->worker[i].vel_desc);
+        ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
+
         ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &H->worker[i].vel_desc);
         ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &H->worker[i].adm_desc[a]);
         ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &H->worker[i].rcs_desc[r]);
@@ -2918,18 +2944,30 @@ void RS_advance_time(RSHandle *H) {
 
 #else
 
-	cl_event events[RS_MAX_GPU_DEVICE];
+    cl_event events[RS_MAX_GPU_DEVICE][RS_MAX_SPECIES_TYPES];
 	
 	if (H->sim_tic >= H->sim_toc) {
 		H->sim_toc = H->sim_tic + (size_t)(1.0f / H->params.prt);
 	}
-
+    
 	for (i=0; i<H->num_workers; i++) {
+        H->worker[i].species_origin[0] = 0;
+        H->worker[i].species_origin[1] = 512;
+        H->worker[i].species_population[0] = 512;
+        H->worker[i].species_population[1] = H->worker[i].num_scats - 512;
+        
 		// Need to refresh some parameters at each time update
         clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
         clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
         
-        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_atts, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, &events[i]);
+        //clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_atts, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, &event2s[i]);
+        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_bg_atts, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], NULL, 0, NULL, &events[i][0]);
+
+        clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
+        clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
+        
+        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_bg_atts, 1, &H->worker[i].species_origin[1], &H->worker[i].species_population[1], NULL, 0, NULL, &events[i][1]);
+        
     }
 
     for (i=0; i<H->num_workers; i++) {
@@ -2937,11 +2975,12 @@ void RS_advance_time(RSHandle *H) {
     }
     
     for (i=0; i<H->num_workers; i++) {
-        clWaitForEvents(1, &events[i]);
+        clWaitForEvents(2, events[i]);
     }
 	
     for (i=0; i<H->num_workers; i++) {
-		clReleaseEvent(events[i]);
+        clReleaseEvent(events[i][0]);
+		clReleaseEvent(events[i][1]);
     }
 	
 #endif
@@ -2966,22 +3005,37 @@ void RS_make_pulse(RSHandle *H) {
 		dispatch_async(H->worker[i].que, ^{
 			
 //#ifdef MAKE_PULSE_PASS_1
-			make_pulse_pass_1_kernel(&H->worker[i].ndrange_pulse_pass_1,
-									 (cl_float4 *)H->worker[i].work,
-									 (cl_float4 *)H->worker[i].scat_sig,
-									 (cl_float4 *)H->worker[i].scat_att,
-									 H->worker[i].make_pulse_params.local_mem_size[0],
-									 (cl_float *)H->worker[i].range_weight,
-									 H->range_weight_table.x0,
-									 H->range_weight_table.xm,
-									 H->range_weight_table.dx,
-									 H->worker[i].make_pulse_params.range_start,
-									 H->worker[i].make_pulse_params.range_delta,
-									 H->worker[i].make_pulse_params.range_count,
-									 H->worker[i].make_pulse_params.group_counts[0],
-									 H->worker[i].make_pulse_params.entry_counts[0]);
+//			make_pulse_pass_1_kernel(&H->worker[i].ndrange_pulse_pass_1,
+//									 (cl_float4 *)H->worker[i].work,
+//									 (cl_float4 *)H->worker[i].scat_sig,
+//									 (cl_float4 *)H->worker[i].scat_att,
+//									 H->worker[i].make_pulse_params.local_mem_size[0],
+//									 (cl_float *)H->worker[i].range_weight,
+//									 H->range_weight_table.x0,
+//									 H->range_weight_table.xm,
+//									 H->range_weight_table.dx,
+//									 H->worker[i].make_pulse_params.range_start,
+//									 H->worker[i].make_pulse_params.range_delta,
+//									 H->worker[i].make_pulse_params.range_count,
+//									 H->worker[i].make_pulse_params.group_counts[0],
+//									 H->worker[i].make_pulse_params.entry_counts[0]);
 //#endif
-			switch (H->worker[i].make_pulse_params.cl_pass_2_method) {
+            make_pulse_pass_1_kernel(&H->worker[i].ndrange_pulse_pass_1,
+                                     (cl_float4 *)H->worker[i].work,
+                                     (cl_float4 *)H->worker[i].scat_sig,
+                                     (cl_float4 *)H->worker[i].scat_att,
+                                     H->worker[i].make_pulse_params.local_mem_size[0],
+                                     (cl_float *)H->worker[i].range_weight,
+                                     H->worker[i].range_weight_desc.s1,
+                                     H->worker[i].range_weight_desc.s2,
+                                     H->worker[i].range_weight_desc.s0,
+                                     H->worker[i].make_pulse_params.range_start,
+                                     H->worker[i].make_pulse_params.range_delta,
+                                     H->worker[i].make_pulse_params.range_count,
+                                     H->worker[i].make_pulse_params.group_counts[0],
+                                     H->worker[i].make_pulse_params.entry_counts[0]);
+
+            switch (H->worker[i].make_pulse_params.cl_pass_2_method) {
 				case RS_CL_PASS_2_IN_LOCAL:
 					make_pulse_pass_2_local_kernel(&H->worker[i].ndrange_pulse_pass_2,
 												   (cl_float4 *)H->worker[i].pulse,

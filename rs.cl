@@ -151,19 +151,113 @@ __kernel void dummy(__global float4 *i)
     //    + (float4)(-0.5f, -0.5f, -0.5f, 0.5f) * sin(0.5f * (az4 - el4));   
 }
 
-//
-// p - position
-// o - orientation
-// v - velocity
-// w - tumble
-// a - auxiliary info
-// x - signal
-// y - random seed
-// wind_uvw            - wind table cube for u, v, w components
-// sim_desc            - (prt, beam_pos,
-// angular_weight      - beam weighting function
-// angular_weight_desc - description of the indexing of angular_weight
-//
+__kernel void bg_atts(__global float4 *p,
+                      __global float4 *v,
+                      __global float4 *a,
+                      __global uint4 *y,
+                      __read_only image3d_t wind_uvw,
+                      const float16 wind_desc,
+                      __constant float *angular_weight,
+                      const float4 angular_weight_desc,
+                      const float16 sim_desc)
+{
+
+    const unsigned int i = get_global_id(0);
+    
+    float4 pos = p[i];
+    float4 vel = v[i];
+    float4 aux = a[i];
+    
+    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
+    
+    //    RSSimulationParameterBeamUnitX     =  0,
+    //    RSSimulationParameterBeamUnitY     =  1,
+    //    RSSimulationParameterBeamUnitZ     =  2,
+    //    RSSimulationParameterDebrisCount   =  3,
+    //    RSSimulationParameter4             =  4,
+    //    RSSimulationParameter5             =  5,
+    //    RSSimulationParameter6             =  6,
+    //    RSSimulationParameter7             =  7,
+    //    RSSimulationParameterBoundOriginX  =  8,  // hi.s0
+    //    RSSimulationParameterBoundOriginY  =  9,  // hi.s1
+    //    RSSimulationParameterBoundOriginZ  =  10, // hi.s2
+    //    RSSimulationParameterPRT           =  11,
+    //    RSSimulationParameterBoundSizeX    =  12, // hi.s4
+    //    RSSimulationParameterBoundSizeY    =  13, // hi.s5
+    //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
+    //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
+    const float4 dt = (float4)(sim_desc.sb, sim_desc.sb, sim_desc.sb, 0.0f);
+    
+    // Background wind
+    float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
+    
+    vel = read_imagef(wind_uvw, sampler, wind_coord);
+
+    // Future position, orientation, etc.
+    pos += vel * dt;
+    //    if (any(!isfinite(pos))) {
+    //        printf("pos = [%5.2f %5.2f %5.2f %5.2f]  vel = [%5.2f %5.2f %5.2f %5.2f]  ori = [%5.2f %5.2f %5.2f %5.2f]\n",
+    //               pos.x, pos.y, pos.z, pos.w,
+    //               vel.x, vel.y, vel.z, vel.w,
+    //               ori.x, ori.y, ori.z, ori.z
+    //               );
+    //    }
+    
+    // Check for bounding constraints
+    //    RSSimulationParameterBoundOriginX  =  8,  // hi.s0
+    //    RSSimulationParameterBoundOriginY  =  9,  // hi.s1
+    //    RSSimulationParameterBoundOriginZ  =  10, // hi.s2
+    //    RSSimulationParameterPRT           =  11,
+    //    RSSimulationParameterBoundSizeX    =  12, // hi.s4
+    //    RSSimulationParameterBoundSizeY    =  13, // hi.s5
+    //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
+    //    RSSimulationParameterAgeIncrement  =  15
+    int is_outside = any(isless(pos.xyz, sim_desc.hi.s012) | isgreater(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
+    if (is_outside | isgreater(aux.s1, 1.0f)) {
+        uint4 seed = y[i];
+        float4 r = rand(&seed);
+        y[i] = seed;
+        
+        pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
+        
+        //  RSSimulationParameterDebrisCount   =  3,
+        //        if (is_debris) {
+        //            pos.z = 20.0f;
+        //        }
+        
+        // reset the age and velocity
+        aux.s1 = 0.0f;
+        vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
+    }
+    
+    //    RSSimulationParameterBeamUnitX     =  0,
+    //    RSSimulationParameterBeamUnitY     =  1,
+    //    RSSimulationParameterBeamUnitZ     =  2,
+    float dprod = dot(sim_desc.s012, normalize(pos.xyz));
+    float angle = acos(dprod);
+    
+    // Range of the point
+    aux.s0 = length(pos);
+    
+    float2 table_s = (float2)(angular_weight_desc.s0, angular_weight_desc.s0);
+    float2 table_o = (float2)(angular_weight_desc.s1, angular_weight_desc.s1) + (float2)(0.0f, 1.0f);
+    float2 angle_2 = (float2)(angle, angle);
+    
+    // scale, offset, clamp to edge
+    uint2  iidx_int;
+    float2 fidx_int;
+    float2 fidx_raw = clamp(fma(angle_2, table_s, table_o), 0.0f, angular_weight_desc.s2);
+    float2 fidx_dec = fract(fidx_raw, &fidx_int);
+    
+    iidx_int = convert_uint2(fidx_int);
+    aux.s3 = mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
+    
+    p[i] = pos;
+    v[i] = vel;
+    a[i] = aux;
+}
+
+
 __kernel void scat_atts(__global float4 *p,
                         __global float4 *o,
                         __global float4 *v,
