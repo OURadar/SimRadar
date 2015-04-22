@@ -19,7 +19,8 @@
 
 	id rootSender;
 	NSTimer *inputMonitorTimer;
-	
+
+    int speciesId;
 }
 
 @property (nonatomic, retain) SimPoint *sim;

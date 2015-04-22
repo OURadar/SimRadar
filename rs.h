@@ -382,6 +382,7 @@ void RS_set_scan_box(RSHandle *H,
 void RS_set_beam_pos(RSHandle *H, RSfloat az_deg, RSfloat el_deg);
 void RS_set_verbosity(RSHandle *H, const char verb);
 void RS_set_debris_count(RSHandle *H, const int species_id, const size_t count);
+size_t RS_get_debris_count(RSHandle *H, const int species_id);
 
 void RS_set_range_weight(RSHandle *H, const float *weights, const float table_index_start, const float table_index_delta, unsigned int table_size);
 void RS_set_range_weight_to_triangle(RSHandle *H, float pulse_width_m);

@@ -69,8 +69,9 @@
 						-12.0f, 12.0f, 2.0f,            // Azimuth
 						0.0f, 6.0f, 1.0f);              // Elevation
 	
-
-        RS_set_debris_count(S, 1, 10000);
+        RS_set_debris_count(S, 1, 4000);
+        RS_set_debris_count(S, 2, 2000);
+        RS_set_debris_count(S, 3, 500);
         
         
 		//RS_set_physics_data_to_cube125(S);
@@ -245,5 +246,44 @@
 {
 	return S->domain;
 }
+
+#pragma mark -
+#pragma mark Simulation parameters
+
+- (GLuint)decreasePopulationForSpecies:(const int)speciesId
+{
+    if (speciesId == 0) {
+        return 0;
+    }
+    size_t pop = RS_get_debris_count(S, speciesId);
+    if (pop > 2000) {
+        pop -= 1000;
+    } else if (pop > 100) {
+        pop -= 100;
+    }
+    RS_set_debris_count(S, speciesId, pop);
+    return (GLuint)pop;
+}
+
+- (GLuint)increasePopulationForSpecies:(const int)speciesId
+{
+    if (speciesId == 0) {
+        return 0;
+    }
+    size_t pop = RS_get_debris_count(S, speciesId);
+    if (pop >= 1000 && pop < S->num_scats - 1000) {
+        pop += 1000;
+    } else if (pop < S->num_scats - 100) {
+        pop += 100;
+    }
+    RS_set_debris_count(S, speciesId, pop);
+    return (GLuint)pop;
+}
+
+- (GLuint)populationForSpecies:(const int)speciesId
+{
+    return (GLuint)RS_get_debris_count(S, speciesId);
+}
+
 
 @end

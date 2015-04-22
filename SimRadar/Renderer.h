@@ -11,14 +11,15 @@
 #import "glUtil.h"
 #import "GLText.h"
 
-#define RENDERER_NEAR_RANGE  1000.0f
-#define RENDERER_FAR_RANGE   100000.0f
-#define RENDERER_TIC_COUNT   10
+#define RENDERER_NEAR_RANGE         1000.0f
+#define RENDERER_FAR_RANGE          100000.0f
+#define RENDERER_TIC_COUNT          10
+#define RENDERER_MAX_SPECIES_COUNT  4
 
 typedef struct _draw_resource {
 	GLuint program;
 	GLuint vao;
-	GLuint vbo[5];       // positions, colors, tex_coord, wvp_mat
+	GLuint vbo[5];       // positions, colors, tex_coord, wvp_mat, etc.
 	GLint mvpUI;
     GLint sizeUI;
 	GLint colorUI;
@@ -34,8 +35,19 @@ typedef struct _draw_resource {
 	GLint colorAI;
     GLKTextureInfo *texture;
     GLuint textureID;
+    GLuint sourceOffset;
+    GLuint instanceSize;
+    GLenum drawMode;
 } RenderResource;
 
+
+typedef struct _draw_primitive {
+    GLfloat vertices[64];
+    GLuint indices[64];
+    GLuint vertexSize;
+    GLuint instanceSize;
+    GLenum drawMode;
+} RenderPrimitive;
 
 @protocol RendererDelegate <NSObject>
 
@@ -82,18 +94,23 @@ typedef struct _draw_resource {
     BOOL viewParametersNeedUpdate;
     GLchar spinModel;
     
+    BOOL debrisCountsHaveChanged;
+    
     RenderResource gridRenderer;
     RenderResource bodyRenderer;
     RenderResource anchorRenderer;
     RenderResource anchorLineRenderer;
     RenderResource leafRenderer;
+    RenderResource speciesRenderer[RENDERER_MAX_SPECIES_COUNT];
     RenderResource hudRenderer;
+
+    RenderPrimitive primitives[4];
     
     GLfloat backgroundOpacity;
     
     GLText *textRenderer;
     
-    char statusMessage[10][256];
+    char statusMessage[16][256];
 
     int itic, iframe;
     NSTimeInterval tics[RENDERER_TIC_COUNT];
@@ -105,11 +122,13 @@ typedef struct _draw_resource {
 @property (nonatomic, readonly) GLsizei width, height;
 @property (nonatomic) GLfloat beamAzimuth, beamElevation;
 @property (nonatomic) BOOL showHUD;
+@property (nonatomic) BOOL debrisCountsHaveChanged;
 
 - (id)initWithDevicePixelRatio:(GLfloat)pixelRatio;
 
 - (void)setSize:(CGSize)size;
 - (void)setBodyCount:(GLuint)number;
+- (void)setPopulationTo:(GLuint)count forSpecies:(GLuint)speciesId;
 - (void)setGridAtOrigin:(GLfloat *)origin size:(GLfloat *)size;
 - (void)setAnchorPoints:(GLfloat *)points number:(GLuint)number;
 - (void)setAnchorLines:(GLfloat *)lines number:(GLuint)number;
@@ -118,6 +137,8 @@ typedef struct _draw_resource {
 - (void)makeOneLeaf;
 
 - (void)allocateVAO;
+- (void)updateBodyToDebrisMappings;
+
 - (void)render;
 
 - (void)panX:(GLfloat)x Y:(GLfloat)y dx:(GLfloat)dx dy:(GLfloat)dy;
@@ -130,9 +151,6 @@ typedef struct _draw_resource {
 - (void)toggleSpinModel;
 - (void)toggleSpinModelReverse;
 - (void)toggleHUDVisibility;
-
-- (void)increaseLeafCount;
-- (void)decreaseLeafCount;
 
 - (void)increaseBackgroundOpacity;
 - (void)decreaseBackgroundOpacity;

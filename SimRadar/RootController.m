@@ -140,6 +140,12 @@
 	[sim shareVBOsWithGL:vbos];
 
 	[sim populate];
+
+    for (int k=1; k<RENDERER_MAX_SPECIES_COUNT; k++) {
+        GLuint pop = [sim populationForSpecies:k];
+        [dc.glView.renderer setPopulationTo:pop forSpecies:k];
+    }
+    [dc.glView.renderer setDebrisCountsHaveChanged:TRUE];
 }
 
 

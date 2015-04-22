@@ -192,16 +192,9 @@ __kernel void bg_atts(__global float4 *p,
     float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
     
     vel = read_imagef(wind_uvw, sampler, wind_coord);
-
+    
     // Future position, orientation, etc.
     pos += vel * dt;
-    //    if (any(!isfinite(pos))) {
-    //        printf("pos = [%5.2f %5.2f %5.2f %5.2f]  vel = [%5.2f %5.2f %5.2f %5.2f]  ori = [%5.2f %5.2f %5.2f %5.2f]\n",
-    //               pos.x, pos.y, pos.z, pos.w,
-    //               vel.x, vel.y, vel.z, vel.w,
-    //               ori.x, ori.y, ori.z, ori.z
-    //               );
-    //    }
     
     // Check for bounding constraints
     //    RSSimulationParameterBoundOriginX  =  8,  // hi.s0
@@ -211,8 +204,9 @@ __kernel void bg_atts(__global float4 *p,
     //    RSSimulationParameterBoundSizeX    =  12, // hi.s4
     //    RSSimulationParameterBoundSizeY    =  13, // hi.s5
     //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
-    //    RSSimulationParameterAgeIncrement  =  15
+    //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
     int is_outside = any(isless(pos.xyz, sim_desc.hi.s012) | isgreater(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
+
     if (is_outside | isgreater(aux.s1, 1.0f)) {
         uint4 seed = y[i];
         float4 r = rand(&seed);
@@ -228,6 +222,8 @@ __kernel void bg_atts(__global float4 *p,
         // reset the age and velocity
         aux.s1 = 0.0f;
         vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
+    } else {
+        aux.s1 += sim_desc.sf;
     }
     
     //    RSSimulationParameterBeamUnitX     =  0,
@@ -306,151 +302,127 @@ __kernel void scat_atts(__global float4 *p,
     const float4 dt = (float4)(sim_desc.sb, sim_desc.sb, sim_desc.sb, 0.0f);
     const float el = atan2(sim_desc.s2, length(sim_desc.s01));
     const float az = atan2(sim_desc.s0, sim_desc.s1);
-    const int is_debris = i < (unsigned int)sim_desc.s3;
-//    const int is_debris = i < 10001;
 
     // Background wind
     float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
     float4 vel_bg = read_imagef(wind_uvw, sampler, wind_coord);
     
-    if (is_debris) {
-
-        // For DEBUG: Override 1-st particle's parameters
-//        if (i == 0) {
-//            vel = (float4)(0.0f, 10.0f, 0.0f, 0.0f);
-//            if (a[i].s2 > 5.0f) {
-//                vel = (float4)(10.0f, 0.0f, 0.0f, 0.0f);
-//            } else if (aux.s2 > 4.0f) {
-//                vel = (float4)(0.0f, 10.0f, 0.0f, 0.0f);
-//            } else if (aux.s2 > 3.0f) {
-//                vel = (float4)(0.0f, 0.0f, 10.0f, 0.0f);
-//            } else if (aux.s2 > 2.0f) {
-//                vel = (float4)(10.0f, -10.0f, 0.0f, 0.0f);
-//            } else {
-//                vel = (float4)(10.0f, 0.0f, -10.0f, 0.0f);
-//            }
-//        }
-        
-        //
-        // derive alpha & beta of ADM for ADM table lookup ---------------------------------
-        //
-        float alpha, beta, gamma;
-        
-        float4 ur = vel_bg - vel;
-
-        if (length(ur.xyz) > 1.0e-3f) {
-            float4 u_hat = normalize(ur);
-            
-//            // xp, yp, zp - x, y, z axis of the particle
-//            float4 xp = quat_get_x(ori);
-//            float4 yp = quat_get_y(ori);
-//            float4 zp = quat_get_z(ori);
-//            
-//            beta = acos(dot(u_hat, xp));
-//            
-//            alpha = atan2(dot(u_hat, zp), dot(u_hat, yp));
-//            
-            u_hat = quat_rotate(u_hat, quat_conj(ori));
-            
-            beta = acos(u_hat.x);
-            alpha = atan2(u_hat.z, u_hat.y);
-            
-            if (alpha < 0.0f) {
-                alpha = M_PI_F + alpha;
-                beta = -beta;
-            }
-        } else {
-            alpha = M_PI_2_F;
-            beta = 0.0f;
-        }
-        
-        float2 adm_coord = fma((float2)(beta, alpha), adm_desc.s01, adm_desc.s45);
-        float4 cd = read_imagef(adm_cd, sampler, adm_coord);
-        float4 cm = read_imagef(adm_cm, sampler, adm_coord);
-        
-        //    RSTableDescriptionRecipInLnX  = 12,
-        //    RSTableDescriptionRecipInLnY  = 13,
-        //    RSTableDescriptionRecipInLnZ  = 14,
-        //    RSTableDescriptionTachikawa   = 15,
-        const float Ta = adm_desc.sf;
-        const float4 inv_inln = (float4)(adm_desc.scde, 0.0f);
-
-        cd = quat_rotate(cd, ori);
+    //
+    // derive alpha & beta of ADM for ADM table lookup ---------------------------------
+    //
+    float alpha, beta, gamma;
     
+    float4 ur = vel_bg - vel;
+
+    if (length(ur.xyz) > 1.0e-3f) {
+        float4 u_hat = normalize(ur);
+        
+//        // xp, yp, zp - x, y, z axis of the particle
+//        float4 xp = quat_get_x(ori);
+//        float4 yp = quat_get_y(ori);
+//        float4 zp = quat_get_z(ori);
+
+        u_hat = quat_rotate(u_hat, quat_conj(ori));
+        
+        beta = acos(u_hat.x);
+        alpha = atan2(u_hat.z, u_hat.y);
+        
+        if (alpha < 0.0f) {
+            alpha = M_PI_F + alpha;
+            beta = -beta;
+        }
+    } else {
+        alpha = M_PI_2_F;
+        beta = 0.0f;
+    }
+    
+    float2 adm_coord = fma((float2)(beta, alpha), adm_desc.s01, adm_desc.s45);
+    float4 cd = read_imagef(adm_cd, sampler, adm_coord);
+    float4 cm = read_imagef(adm_cm, sampler, adm_coord);
+    
+    //    RSTableDescriptionRecipInLnX  = 12,
+    //    RSTableDescriptionRecipInLnY  = 13,
+    //    RSTableDescriptionRecipInLnZ  = 14,
+    //    RSTableDescriptionTachikawa   = 15,
+    const float Ta = adm_desc.sf;
+    const float4 inv_inln = (float4)(adm_desc.scde, 0.0f);
+
+    cd = quat_rotate(cd, ori);
+
 //    if (i == 0)
 //        printf("ur = %5.2f %5.2f %5.2f %5.2f  cdr = %5.2f %5.2f %5.2f %5.2f\n",
 //               ur.x, ur.y, ur.z, ur.w,
 //               cd.x, cd.y, cd.z, cd.w);
-        
-        float ur_norm = length(ur.xyz);
-        float ur_norm_sq = ur_norm * ur_norm;
-        
-        float4 dudt = Ta * ur_norm_sq * cd;
-        
-        dudt.z -= 9.8f;
-        
-//        if (length(vel) > length(vel_bg)) {
-//            printf("vel = [%5.2f %5.2f %5.2f %5.2f]  vel_bg = [%5.2f %5.2f %5.2f %5.2f]   %5.2f\n",
-//                   vel.x, vel.y, vel.z, vel.w,
-//                   vel_bg.x, vel_bg.y, vel_bg.z, vel_bg.w,
-//                   ur_norm_sq
-//                   );
-//        }
+    
+    float ur_norm = length(ur.xyz);
+    float ur_norm_sq = ur_norm * ur_norm;
+    
+    float4 dudt = Ta * ur_norm_sq * cd;
+    
+    dudt.z -= 9.8f;
+    
+//    if (length(vel) > length(vel_bg)) {
+//        printf("vel = [%5.2f %5.2f %5.2f %5.2f]  vel_bg = [%5.2f %5.2f %5.2f %5.2f]   %5.2f\n",
+//               vel.x, vel.y, vel.z, vel.w,
+//               vel_bg.x, vel_bg.y, vel_bg.z, vel_bg.w,
+//               ur_norm_sq
+//               );
+//    }
     
 #define DEG2RAD(x)  (x * 0.017453292519943f)
 #define RAD2DEG(x)  (x * 57.295779513082323f)
     
-        float4 dw = DEG2RAD(dt * Ta * ur_norm_sq * cm * inv_inln);
-        
-        float4 c = cos(dw);
-        float4 s = sin(dw);
-        tum = (float4)(c.x * s.y * s.z + s.x * c.y * c.z,
-                       c.x * s.y * c.z - s.x * c.y * s.z,
-                       c.x * c.y * s.z + s.x * s.y * c.z,
-                       c.x * c.y * c.z - s.x * s.y * s.z);
+    float4 dw = DEG2RAD(dt * Ta * ur_norm_sq * cm * inv_inln);
+    
+    float4 c = cos(dw);
+    float4 s = sin(dw);
+    tum = (float4)(c.x * s.y * s.z + s.x * c.y * c.z,
+                   c.x * s.y * c.z - s.x * c.y * s.z,
+                   c.x * c.y * s.z + s.x * s.y * c.z,
+                   c.x * c.y * c.z - s.x * s.y * s.z);
 
-        vel += dudt * dt;
-        
-        ori = quat_mult(ori, tum);
+    vel += dudt * dt;
+    
+    ori = quat_mult(ori, tum);
 
-        //
-        // derive alpha, beta & gamma of RCS for RCS table lookup --------------------------
-        //
+    //
+    // derive alpha, beta & gamma of RCS for RCS table lookup --------------------------
+    //
 
-        // original codes:
-        //    float4 quat_beam = quat_mult((float4)(sin(0.5f * el), 0.0f, 0.0f, cos(0.5f * el)),
-        //                                 (float4)(0.0f, 0.0f, sin(0.5f * (-M_PI_2_F + az)), cos(0.5f * (-M_PI_2_F + az))));
-        //    float4 quat_coord_change = (float4)(sin(0.5f * M_PI_2_F), 0.0f, 0.0f, cos(0.5f * M_PI_2_F));
-        //    float4 quat_new_frame = quat_conj(quat_mult(quat_beam, quat_coord_chang));
+    // original codes:
+    //    float4 quat_beam = quat_mult((float4)(sin(0.5f * el), 0.0f, 0.0f, cos(0.5f * el)),
+    //                                 (float4)(0.0f, 0.0f, sin(0.5f * (-M_PI_2_F + az)), cos(0.5f * (-M_PI_2_F + az))));
+    //    float4 quat_coord_change = (float4)(sin(0.5f * M_PI_2_F), 0.0f, 0.0f, cos(0.5f * M_PI_2_F));
+    //    float4 quat_new_frame = quat_conj(quat_mult(quat_beam, quat_coord_chang));
 
-        // simplified codes:
-        float4 quat_new_frame = (float4)(-0.5f * cos(0.5f * (az - el)) - 0.5f * sin(0.5f * (az + el)),
-                                         +0.5f * cos(0.5f * (az - el)) - 0.5f * sin(0.5f * (az + el)),
-                                         +0.5f * cos(0.5f * (az + el)) - 0.5f * sin(0.5f * (az - el)),
-                                         +0.5f * cos(0.5f * (az + el)) + 0.5f * sin(0.5f * (az - el)));
+    // simplified codes:
+    float4 quat_new_frame = (float4)(-0.5f * cos(0.5f * (az - el)) - 0.5f * sin(0.5f * (az + el)),
+                                     +0.5f * cos(0.5f * (az - el)) - 0.5f * sin(0.5f * (az + el)),
+                                     +0.5f * cos(0.5f * (az + el)) - 0.5f * sin(0.5f * (az - el)),
+                                     +0.5f * cos(0.5f * (az + el)) + 0.5f * sin(0.5f * (az - el)));
 
-        // quaternion relative to the new frame of reference
-        float4 quat_rel = quat_mult(ori, quat_new_frame);
+    // quaternion relative to the new frame of reference
+    float4 quat_rel = quat_mult(ori, quat_new_frame);
 
-        if (fabs(quat_rel.w) < 1.0e-6f) {
-            alpha = 0.0f;
-            beta  = 0.0f;
-            gamma = 0.0f;
-        } else if (fabs(quat_rel.x) < 1.0e-6f && fabs(quat_rel.y) < 1.0e-6f) {
-            // Pure azimuth: multiple solutions if we combine alpha & gamma so just lump everything to alpha
-            alpha = 2.0f * acos(quat_rel.w);
-            beta  = 0.0f;
-            gamma = 0.0f;
-        } else if (fabs(quat_rel.y) < 1.0e-6f && fabs(quat_rel.z) < 1.0e-6f) {
-            // Pure elevation: cos^2 + sin^2 = 1 for all angles, ill-conditioned
-            alpha = 0.0f;
-            beta  = quat_rel.x < 0.0f ? -2.0f * acos(quat_rel.w) : 2.0f * acos(quat_rel.w);
-            gamma = 0.0f;
-        } else {
-            alpha = atan2(quat_rel.y * quat_rel.z - quat_rel.x * quat_rel.w , quat_rel.x * quat_rel.z + quat_rel.y * quat_rel.w);
-            beta  =  acos(quat_rel.w * quat_rel.w + quat_rel.z * quat_rel.z - quat_rel.y * quat_rel.y - quat_rel.x * quat_rel.x);
-            gamma = atan2(quat_rel.x * quat_rel.w + quat_rel.y * quat_rel.z , quat_rel.y * quat_rel.w - quat_rel.x * quat_rel.z);
-        }
+    if (fabs(quat_rel.w) < 1.0e-6f) {
+        alpha = 0.0f;
+        beta  = 0.0f;
+        gamma = 0.0f;
+    } else if (fabs(quat_rel.x) < 1.0e-6f && fabs(quat_rel.y) < 1.0e-6f) {
+        // Pure azimuth: multiple solutions if we combine alpha & gamma so just lump everything to alpha
+        alpha = 2.0f * acos(quat_rel.w);
+        beta  = 0.0f;
+        gamma = 0.0f;
+    } else if (fabs(quat_rel.y) < 1.0e-6f && fabs(quat_rel.z) < 1.0e-6f) {
+        // Pure elevation: cos^2 + sin^2 = 1 for all angles, ill-conditioned
+        alpha = 0.0f;
+        beta  = quat_rel.x < 0.0f ? -2.0f * acos(quat_rel.w) : 2.0f * acos(quat_rel.w);
+        gamma = 0.0f;
+    } else {
+        alpha = atan2(quat_rel.y * quat_rel.z - quat_rel.x * quat_rel.w , quat_rel.x * quat_rel.z + quat_rel.y * quat_rel.w);
+        beta  =  acos(quat_rel.w * quat_rel.w + quat_rel.z * quat_rel.z - quat_rel.y * quat_rel.y - quat_rel.x * quat_rel.x);
+        gamma = atan2(quat_rel.x * quat_rel.w + quat_rel.y * quat_rel.z , quat_rel.y * quat_rel.w - quat_rel.x * quat_rel.z);
+    }
 
 
 //#define RAD2DEG(X)  (X * 57.295779513082323f)
@@ -460,28 +432,9 @@ __kernel void scat_atts(__global float4 *p,
 //                   RAD2DEG(alpha), RAD2DEG(beta), RAD2DEG(gamma),
 //                   quat_rel.x, quat_rel.y, quat_rel.z, quat_rel.w);
 //        }
-        
-        // Debris never ages
-        aux.s1 = 0.0f;
-
-    } else {
-        
-        // Particle velocity = background velocity
-        vel = vel_bg;
-
-        //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
-        aux.s1 += sim_desc.sf;
-    }
     
     // Future position, orientation, etc.
     pos += vel * dt;
-//    if (any(!isfinite(pos))) {
-//        printf("pos = [%5.2f %5.2f %5.2f %5.2f]  vel = [%5.2f %5.2f %5.2f %5.2f]  ori = [%5.2f %5.2f %5.2f %5.2f]\n",
-//               pos.x, pos.y, pos.z, pos.w,
-//               vel.x, vel.y, vel.z, vel.w,
-//               ori.x, ori.y, ori.z, ori.z
-//               );
-//    }
     
     // Check for bounding constraints
     //    RSSimulationParameterBoundOriginX  =  8,  // hi.s0
@@ -491,8 +444,9 @@ __kernel void scat_atts(__global float4 *p,
     //    RSSimulationParameterBoundSizeX    =  12, // hi.s4
     //    RSSimulationParameterBoundSizeY    =  13, // hi.s5
     //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
-    //    RSSimulationParameterAgeIncrement  =  15
+    //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
     int is_outside = any(isless(pos.xyz, sim_desc.hi.s012) | isgreater(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
+
     if (is_outside | isgreater(aux.s1, 1.0f)) {
         uint4 seed = y[i];
         float4 r = rand(&seed);
@@ -505,8 +459,6 @@ __kernel void scat_atts(__global float4 *p,
 //            pos.z = 20.0f;
 //        }
         
-        // reset the age and velocity
-        aux.s1 = 0.0f;
         vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
     }
 

@@ -9,6 +9,7 @@
 
 @interface Renderer ()
 
+- (void)makePrimitives;
 - (void)attachShader:(NSString *)filename toProgram:(GLuint)program;
 - (RenderResource)createRenderResourceFromVertexShader:(NSString *)vShader fragmentShader:(NSString *)fShader;
 - (RenderResource)createRenderResourceFromProgram:(GLuint)program;
@@ -25,6 +26,7 @@
 @synthesize width, height;
 @synthesize beamAzimuth, beamElevation;
 @synthesize showHUD;
+@synthesize debrisCountsHaveChanged;
 
 #pragma mark Properties
 
@@ -176,6 +178,17 @@
 }
 
 
+- (void)setPopulationTo:(GLuint)count forSpecies:(GLuint)speciesId
+{
+    if (speciesId == 0) {
+        NSLog(@"Invalid speciesId.");
+        return;
+    }
+    speciesRenderer[speciesId].count = count;
+    debrisCountsHaveChanged = TRUE;
+}
+
+
 - (void)setAnchorPoints:(GLfloat *)points number:(GLuint)number
 {
 	anchorRenderer.positions = points;
@@ -226,6 +239,90 @@
 	}
 	
 	vbosNeedUpdate = TRUE;
+}
+
+- (void)makePrimitives
+{
+    GLfloat *pos;
+    RenderPrimitive *prim;
+    
+    // Leaf
+    
+    prim = &primitives[0];
+    pos = prim->vertices;
+    pos[0]  =  0.0f;   pos[1]  =  0.0f;   pos[2]  =  1.0f;   pos[3]  = 0.0f;
+    pos[4]  =  0.0f;   pos[5]  =  0.0f;   pos[6]  = -1.0f;   pos[7]  = 0.0f;
+    pos[8]  =  0.0f;   pos[9]  = -2.0f;   pos[10] =  0.0f;   pos[11] = 0.0f;
+    pos[12] =  0.0f;   pos[13] =  1.0f;   pos[14] =  0.0f;   pos[15] = 0.0f;
+    pos[16] = -0.5f;   pos[17] =  1.0f;   pos[18] =  0.0f;   pos[19] = 0.0f;
+    pos[20] =  0.0f;   pos[21] =  0.0f;   pos[22] =  0.0f;   pos[23] = 0.0f;
+    prim->vertexSize = 24 * sizeof(GLfloat);
+    for (int i=0; i<24; i++) {
+        pos[i] *= 40.0f;
+    }
+    prim->instanceSize = 7;
+    GLuint ind0[] = {5, 1, 2, 0, 5, 3, 4};
+    memcpy(prim->indices, ind0, 7 * sizeof(GLuint));
+    prim->drawMode = GL_LINE_STRIP;
+
+
+    // Cube
+    
+    prim = &primitives[1];
+    pos = prim->vertices;
+    pos[0]  = -1.0f;   pos[1]  = -1.0f;   pos[2]  = -1.0f;   pos[3]  = 0.0f;
+    pos[4]  =  1.0f;   pos[5]  = -1.0f;   pos[6]  = -1.0f;   pos[7]  = 0.0f;
+    pos[8]  = -1.0f;   pos[9]  =  1.0f;   pos[10] = -1.0f;   pos[11] = 0.0f;
+    pos[12] =  1.0f;   pos[13] =  1.0f;   pos[14] = -1.0f;   pos[15] = 0.0f;
+    pos[16] = -1.0f;   pos[17] = -1.0f;   pos[18] =  1.0f;   pos[19] = 0.0f;
+    pos[20] =  1.0f;   pos[21] = -1.0f;   pos[22] =  1.0f;   pos[23] = 0.0f;
+    pos[24] = -1.0f;   pos[25] =  1.0f;   pos[26] =  1.0f;   pos[27] = 0.0f;
+    pos[28] =  1.0f;   pos[29] =  1.0f;   pos[30] =  1.0f;   pos[31] = 0.0f;
+    for (int i=0; i<8; i++) {
+        pos[4 * i]     *= 30.0f;
+        pos[4 * i + 1] *= 30.0f;
+        pos[4 * i + 2] *= 30.0f;
+    }
+    prim->vertexSize = 32 * sizeof(GLfloat);
+    GLuint ind1[] = {
+        0, 1, 1, 3, 3, 2, 2, 0,
+        4, 5, 5, 7, 7, 6, 6, 4,
+        0, 4, 1, 5, 3, 7, 2, 6
+    };
+    prim->instanceSize = sizeof(ind1) / sizeof(GLuint);
+    memcpy(prim->indices, ind1, prim->instanceSize * sizeof(GLuint));
+    prim->drawMode = GL_LINES;
+
+
+    // Stick
+    prim = &primitives[2];
+    pos = prim->vertices;
+    pos[0]  = -1.0f;   pos[1]  = -1.0f;   pos[2]  = -1.0f;   pos[3]  = 0.0f;
+    pos[4]  =  1.0f;   pos[5]  = -1.0f;   pos[6]  = -1.0f;   pos[7]  = 0.0f;
+    pos[8]  = -1.0f;   pos[9]  =  1.0f;   pos[10] = -1.0f;   pos[11] = 0.0f;
+    pos[12] =  1.0f;   pos[13] =  1.0f;   pos[14] = -1.0f;   pos[15] = 0.0f;
+    pos[16] = -1.0f;   pos[17] = -1.0f;   pos[18] =  1.0f;   pos[19] = 0.0f;
+    pos[20] =  1.0f;   pos[21] = -1.0f;   pos[22] =  1.0f;   pos[23] = 0.0f;
+    pos[24] = -1.0f;   pos[25] =  1.0f;   pos[26] =  1.0f;   pos[27] = 0.0f;
+    pos[28] =  1.0f;   pos[29] =  1.0f;   pos[30] =  1.0f;   pos[31] = 0.0f;
+    pos[32] =  0.0f;   pos[33] = -2.0f;   pos[34] =  0.0f;   pos[35] = 0.0f;
+    pos[36] =  0.0f;   pos[37] =  1.2f;   pos[38] =  0.0f;   pos[39] = 0.0f;
+    for (int i=0; i<10; i++) {
+        pos[4 * i]     *= 10.0f;
+        pos[4 * i + 1] *= 80.0f;
+        pos[4 * i + 2] *= 20.0f;
+    }
+    prim->vertexSize = 40 * sizeof(GLfloat);
+    GLuint ind2[] = {
+        0, 1, 1, 3, 3, 2, 2, 0,
+        4, 5, 5, 7, 7, 6, 6, 4,
+        0, 4, 1, 5, 3, 7, 2, 6,
+        0, 8, 4, 8, 5, 8, 1, 8,
+        2, 9, 3, 9, 7, 9, 6, 9
+    };
+    prim->instanceSize = sizeof(ind2) / sizeof(GLuint);
+    memcpy(prim->indices, ind2, prim->instanceSize * sizeof(GLuint));
+    prim->drawMode = GL_LINES;
 }
 
 #pragma mark -
@@ -297,9 +394,7 @@
 {
 	RenderResource resource;
 
-	resource.positions = NULL;
-	resource.colors = NULL;
-	resource.indices = NULL;
+    memset(&resource, 0, sizeof(RenderResource));
 	
 	glGenVertexArrays(1, &resource.vao);
 	glBindVertexArray(resource.vao);
@@ -339,11 +434,9 @@
 
 	RenderResource resource;
 	
-	resource.positions = NULL;
-	resource.colors = NULL;
-	resource.indices = NULL;
-	
-	glGenVertexArrays(1, &resource.vao);
+    memset(&resource, 0, sizeof(RenderResource));
+
+    glGenVertexArrays(1, &resource.vao);
 	glBindVertexArray(resource.vao);
 	
 	resource.program = glCreateProgram();
@@ -434,10 +527,6 @@
     resource.quaternionAI = glGetAttribLocation(resource.program, "inQuaternion");
 	resource.translationAI = glGetAttribLocation(resource.program, "inTranslation");
 
-//	NSLog(@"positionAI = %d", leafRenderer.positionAI);
-//	NSLog(@"rotationAI = %d", leafRenderer.rotationAI);
-//	NSLog(@"translationAI = %d", leafRenderer.translationAI);
-
 	return resource;
 }
 
@@ -457,14 +546,21 @@
     return texture;
 }
 
+
 - (void)updateStatusMessage
 {
     snprintf(statusMessage[0],
              sizeof(statusMessage[0]),
-             "@ %d Particles / %d Leaves",
-             bodyRenderer.count,
-             leafRenderer.count);
+             "@ %d Particles",
+             bodyRenderer.count);
+    snprintf(statusMessage[1],
+             sizeof(statusMessage[1]),
+             "Debris Pop. %d, %d, %d",
+             speciesRenderer[1].count,
+             speciesRenderer[2].count,
+             speciesRenderer[3].count);
 }
+
 
 - (void)measureFPS
 {
@@ -518,6 +614,9 @@
 	if (leafRenderer.positions != NULL) {
 		free(leafRenderer.positions);
 	}
+    for (int k=0; k<RENDERER_MAX_SPECIES_COUNT; k++) {
+        free(speciesRenderer[k].colors);
+    }
 	[super dealloc];
 }
 
@@ -539,13 +638,28 @@
 	NSLog(@"Aliased / smoothed line width: %d ... %d / %d ... %d", v[0], v[1], v[2], v[3]);
 	
 	// Set up VAO and shaders
-	//bodyRenderer = [self createRenderResourceFromVertexShader:@"shape" fragmentShader:@"shape"];
     bodyRenderer = [self createRenderResourceFromVertexShader:@"square" fragmentShader:@"square"];
 	gridRenderer = [self createRenderResourceFromVertexShader:@"shape_sc" fragmentShader:@"shape_sc"];
 	anchorRenderer = [self createRenderResourceFromProgram:gridRenderer.program];
 	anchorLineRenderer = [self createRenderResourceFromProgram:gridRenderer.program];
 	leafRenderer = [self createRenderResourceFromVertexShader:@"leaf" fragmentShader:@"leaf"];
 	hudRenderer = [self createRenderResourceFromProgram:gridRenderer.program];
+
+    GLfloat colors[] = {
+        0.00f, 0.00f, 0.00f,
+        0.00f, 1.00f, 0.00f,
+        1.00f, 1.00f, 0.00f,
+        1.00f, 0.55f, 0.25f
+    };
+    
+    for (int k=0; k<RENDERER_MAX_SPECIES_COUNT; k++) {
+        speciesRenderer[k] = [self createRenderResourceFromProgram:leafRenderer.program];
+        speciesRenderer[k].colors = malloc(4 * sizeof(GLfloat));
+        speciesRenderer[k].colors[0] = colors[(k % 4) * 3];
+        speciesRenderer[k].colors[1] = colors[(k % 4) * 3 + 1];
+        speciesRenderer[k].colors[2] = colors[(k % 4) * 3 + 2];
+        speciesRenderer[k].colors[3] = 1.0f;
+    }
 	
 	textRenderer = [[GLText alloc] initWithDevicePixelRatio:devicePixelRatio];
 	
@@ -563,8 +677,8 @@
 	//glClearColor(0.0f, 0.2f, 0.25f, 1.0f);
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
-	[self makeOneLeaf];
-    leafRenderer.count = 6001;
+	//[self makeOneLeaf];
+    [self makePrimitives];
     
     // Tell whatever controller that the OpenGL context is ready for sharing and set up renderer's body count
 	[delegate glContextVAOPrepared];
@@ -581,7 +695,8 @@
 
 	// Grid lines
 	glBindVertexArray(gridRenderer.vao);
-	
+
+    glDeleteBuffers(1, gridRenderer.vbo);
 	glGenBuffers(1, gridRenderer.vbo);
 
 	glBindBuffer(GL_ARRAY_BUFFER, gridRenderer.vbo[0]);
@@ -593,27 +708,29 @@
 	// Scatter body
 	glBindVertexArray(bodyRenderer.vao);
 	
-	glGenBuffers(3, bodyRenderer.vbo);
-	
-	glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer.vbo[0]);  // position
-	glBufferData(GL_ARRAY_BUFFER, bodyRenderer.count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
-	glVertexAttribPointer(bodyRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
-	glEnableVertexAttribArray(bodyRenderer.positionAI);
-	
-	glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer.vbo[1]);  // color
-	glBufferData(GL_ARRAY_BUFFER, bodyRenderer.count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
-	glVertexAttribPointer(bodyRenderer.colorAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
-	glEnableVertexAttribArray(bodyRenderer.colorAI);
-	
-	glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer.vbo[2]);  // orientation
-	glBufferData(GL_ARRAY_BUFFER, bodyRenderer.count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
+    glDeleteBuffers(3, bodyRenderer.vbo);
+    glGenBuffers(3, bodyRenderer.vbo);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer.vbo[0]);  // position
+    glBufferData(GL_ARRAY_BUFFER, bodyRenderer.count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
+    glVertexAttribPointer(bodyRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(bodyRenderer.positionAI);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer.vbo[1]);  // color
+    glBufferData(GL_ARRAY_BUFFER, bodyRenderer.count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
+    glVertexAttribPointer(bodyRenderer.colorAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(bodyRenderer.colorAI);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer.vbo[2]);  // orientation
+    glBufferData(GL_ARRAY_BUFFER, bodyRenderer.count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
     glVertexAttribPointer(bodyRenderer.quaternionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(bodyRenderer.quaternionAI);
 
-	
+    
 	// Anchor
 	glBindVertexArray(anchorRenderer.vao);
 	
+    glDeleteBuffers(1, anchorLineRenderer.vbo);
 	glGenBuffers(1, anchorRenderer.vbo);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, anchorRenderer.vbo[0]);
@@ -625,6 +742,7 @@
 	// Anchor Line
 	glBindVertexArray(anchorLineRenderer.vao);
 
+    glDeleteBuffers(1, anchorLineRenderer.vbo);
 	glGenBuffers(1, anchorLineRenderer.vbo);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, anchorLineRenderer.vbo[0]);
@@ -633,38 +751,10 @@
 	glEnableVertexAttribArray(anchorLineRenderer.positionAI);
 	
 	
-	// Debris
-	glBindVertexArray(leafRenderer.vao);
-	
-	glGenBuffers(4, leafRenderer.vbo);
-	
-	glBindBuffer(GL_ARRAY_BUFFER, leafRenderer.vbo[0]);  // Debris primitive (6 points)
-	glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(cl_float4), leafRenderer.positions, GL_STATIC_DRAW);
-	glVertexAttribPointer(leafRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
-	glEnableVertexAttribArray(leafRenderer.positionAI);
-	
-	glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer.vbo[0]);  // Debris position as translation
-	glVertexAttribPointer(leafRenderer.translationAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
-	glVertexAttribDivisor(leafRenderer.translationAI, 1);
-	glEnableVertexAttribArray(leafRenderer.translationAI);
-
-	glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer.vbo[2]);  // Debris quaternion as rotation
-//    glVertexAttribPointer(leafRenderer.rotationAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
-//    glVertexAttribDivisor(leafRenderer.rotationAI, 1);
-//    glEnableVertexAttribArray(leafRenderer.rotationAI);
-//    NSLog(@"quaternionAI @ %d", leafRenderer.quaternionAI);
-    glVertexAttribPointer(leafRenderer.quaternionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
-	glVertexAttribDivisor(leafRenderer.quaternionAI, 1);
-    glEnableVertexAttribArray(leafRenderer.quaternionAI);
-
-	GLuint indices[] = {5, 1, 2, 0, 5, 3, 4};
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, leafRenderer.vbo[2]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-    
-	
-	// HUD
+    // HUD
 	glBindVertexArray(hudRenderer.vao);
 	
+    glDeleteBuffers(1, hudRenderer.vbo);
 	glGenBuffers(1, hudRenderer.vbo);
     
 	glBindBuffer(GL_ARRAY_BUFFER, hudRenderer.vbo[0]);
@@ -692,6 +782,60 @@
 	viewParametersNeedUpdate = TRUE;
 }
 
+
+- (void)updateBodyToDebrisMappings
+{
+    // Debris
+    int k = RENDERER_MAX_SPECIES_COUNT;
+    GLuint offset = bodyRenderer.count;
+    while (k > 1) {
+        k--;
+        if (speciesRenderer[k].count > 0) {
+            offset -= speciesRenderer[k].count;
+            speciesRenderer[k].sourceOffset = offset;
+        }
+    }
+    
+    // Various Species
+    for (int k=1; k<RENDERER_MAX_SPECIES_COUNT; k++) {
+        if (speciesRenderer[k].count == 0) {
+            continue;
+        }
+        glBindVertexArray(speciesRenderer[k].vao);
+        
+        if (speciesRenderer[k].vbo[0]) {
+            glDeleteBuffers(4, speciesRenderer[k].vbo);
+        }
+        glGenBuffers(4, speciesRenderer[k].vbo);
+        
+        RenderPrimitive *prim = &primitives[(k + 2) % 3];
+
+        speciesRenderer[k].instanceSize = prim->instanceSize;
+        speciesRenderer[k].drawMode = prim->drawMode;
+        
+        glBindBuffer(GL_ARRAY_BUFFER, speciesRenderer[k].vbo[0]);           // 1-st VBO for position (primitive, we are instancing)
+        glBufferData(GL_ARRAY_BUFFER, prim->vertexSize, prim->vertices, GL_STATIC_DRAW);
+        glVertexAttribPointer(speciesRenderer[k].positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+        glEnableVertexAttribArray(speciesRenderer[k].positionAI);
+        
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, speciesRenderer[k].vbo[1]);   // 2-nd VBO for position index
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, prim->instanceSize * sizeof(GLuint), prim->indices, GL_STATIC_DRAW);
+        
+        glBindBuffer(GL_ARRAY_BUFFER, speciesRenderer[k].vbo[2]);           // 3-rd VBO for translation
+        glBufferData(GL_ARRAY_BUFFER, speciesRenderer[k].count * sizeof(cl_float4), NULL, GL_DYNAMIC_DRAW);
+        glVertexAttribPointer(speciesRenderer[k].translationAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+        glVertexAttribDivisor(speciesRenderer[k].translationAI, 1);
+        glEnableVertexAttribArray(speciesRenderer[k].translationAI);
+        
+        glBindBuffer(GL_ARRAY_BUFFER, speciesRenderer[k].vbo[3]);           // 4-th VBO for quaternion (rotation)
+        glBufferData(GL_ARRAY_BUFFER, speciesRenderer[k].count * sizeof(cl_float4), NULL, GL_DYNAMIC_DRAW);
+        glVertexAttribPointer(speciesRenderer[k].quaternionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+        glVertexAttribDivisor(speciesRenderer[k].quaternionAI, 1);
+        glEnableVertexAttribArray(speciesRenderer[k].quaternionAI);
+    }
+}
+
+
 - (void)render
 {
     static float theta = 0.0f;
@@ -701,10 +845,14 @@
 		[self allocateVBO];
 	}
 	
+    if (debrisCountsHaveChanged) {
+        debrisCountsHaveChanged = FALSE;
+        [self updateBodyToDebrisMappings];
+        [self updateStatusMessage];
+    }
+    
 	if (spinModel) {
 		modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeYRotation(0.001f * spinModel), modelRotate);
-//        modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeYRotation(0.003f * cos(theta)), modelRotate);
-//        modelRotate = GLKMatrix4RotateY(modelRotate, 0.001f * spinModel);
         theta = theta + 0.005f;
 		viewParametersNeedUpdate = TRUE;
 	}
@@ -755,7 +903,6 @@
 	glPointSize(MIN(MAX(15.0f * pixelsPerUnit, 1.0f), 64.0f));
 //    glPointSize(MIN(MAX(35.0f * pixelsPerUnit, 2.0f), 256.0f));
 	glUseProgram(bodyRenderer.program);
-	//glUniform4f(bodyRenderer.colorUI, 1.0f, 1.0f, 1.0f, 0.6f);
     if (range < 1000.0f) {
         glUniform4f(bodyRenderer.colorUI, 1.0f, 1.0f, 1.0f, MIN(1.0f, backgroundOpacity * 1000.0f / range));
     } else {
@@ -767,19 +914,33 @@
 	//glDrawArrays(GL_POINTS, leafRenderer.count, bodyRenderer.count);
     glDrawArrays(GL_POINTS, 0, bodyRenderer.count);
 	
-	// Leaves
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glBindVertexArray(leafRenderer.vao);
-	glUseProgram(leafRenderer.program);
-    if (leafRenderer.count > 1000) {
-        glUniform4f(leafRenderer.sizeUI, 0.5f, 0.5f, 0.5f, 0.5f);
-    } else {
-        glUniform4f(leafRenderer.sizeUI, 1.0f, 1.0f, 1.0f, 1.0f);
-    }
-	glUniform4f(leafRenderer.colorUI, 0.0f, 1.0f, 0.0f, 1.0f);
+    
+    // Various debris types
+    glUseProgram(leafRenderer.program);
+    glUniform4f(leafRenderer.sizeUI, 0.5f, 0.5f, 0.5f, 0.5f);
     glUniformMatrix4fv(leafRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
-	glDrawElementsInstanced(GL_LINE_STRIP, 7, GL_UNSIGNED_INT, NULL, leafRenderer.count);
-	
+
+    for (int k=1; k<RENDERER_MAX_SPECIES_COUNT; k++) {
+        if (speciesRenderer[k].count == 0) {
+            continue;
+        }
+        // Update the VBOs by copy
+        glBindVertexArray(speciesRenderer[k].vao);
+        
+        glUniform4f(leafRenderer.colorUI, speciesRenderer[k].colors[0], speciesRenderer[k].colors[1], speciesRenderer[k].colors[2], speciesRenderer[k].colors[3]);
+
+        glBindBuffer(GL_COPY_READ_BUFFER, bodyRenderer.vbo[0]);              // positions of simulation particles
+        glBindBuffer(GL_COPY_WRITE_BUFFER, speciesRenderer[k].vbo[2]);       // translations of species[k]
+        glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, speciesRenderer[k].sourceOffset * sizeof(cl_float4), 0, speciesRenderer[k].count * sizeof(cl_float4));
+        
+        glBindBuffer(GL_COPY_READ_BUFFER, bodyRenderer.vbo[2]);              // quaternions of simulation particles
+        glBindBuffer(GL_COPY_WRITE_BUFFER, speciesRenderer[k].vbo[3]);       // quaternions of species[k]
+        glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, speciesRenderer[k].sourceOffset * sizeof(cl_float4), 0, speciesRenderer[k].count * sizeof(cl_float4));
+        
+        glDrawElementsInstanced(speciesRenderer[k].drawMode, speciesRenderer[k].instanceSize, GL_UNSIGNED_INT, NULL, speciesRenderer[k].count);
+    }
+    
     if (showHUD) {
         // HUD Background & Outline
         glBindVertexArray(hudRenderer.vao);
@@ -794,10 +955,17 @@
         // Objects on HUD (beam's view)
         glViewport(hudOrigin.x * devicePixelRatio, hudOrigin.y * devicePixelRatio, hudSize.width * devicePixelRatio, hudSize.height * devicePixelRatio);
 
-        glBindVertexArray(leafRenderer.vao);
+        // Draw the debris again
         glUseProgram(leafRenderer.program);
         glUniformMatrix4fv(leafRenderer.mvpUI, 1, GL_FALSE, beamModelViewProjection.m);
-        glDrawElementsInstanced(GL_LINE_STRIP, 7, GL_UNSIGNED_INT, NULL, leafRenderer.count);
+        for (int k=1; k<RENDERER_MAX_SPECIES_COUNT; k++) {
+            if (speciesRenderer[k].count == 0) {
+                continue;
+            }
+            glBindVertexArray(speciesRenderer[k].vao);
+            glUniform4f(leafRenderer.colorUI, speciesRenderer[k].colors[0], speciesRenderer[k].colors[1], speciesRenderer[k].colors[2], speciesRenderer[k].colors[3]);
+            glDrawElementsInstanced(GL_LINE_STRIP, speciesRenderer[k].instanceSize, GL_UNSIGNED_INT, NULL, speciesRenderer[k].count);
+        }
 
         glBindVertexArray(anchorLineRenderer.vao);
         glUseProgram(anchorLineRenderer.program);
@@ -819,19 +987,20 @@
 #endif
     
     // Text
-    snprintf(statusMessage[1], 256, "Frame %d", iframe);
+    snprintf(statusMessage[2], 256, "Frame %d", iframe);
     
     [textRenderer drawText:"SimRadar" origin:NSMakePoint(25.0f, height - 60.0f) scale:0.5f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
     [textRenderer drawText:statusMessage[0] origin:NSMakePoint(25.0f, height - 90.0f) scale:0.333f];
     [textRenderer drawText:statusMessage[1] origin:NSMakePoint(25.0f, height - 120.0f) scale:0.333f];
+    [textRenderer drawText:statusMessage[2] origin:NSMakePoint(25.0f, height - 150.0f) scale:0.333f];
 
 #ifndef GEN_IMG
-    [textRenderer drawText:fpsString origin:NSMakePoint(width - 30.0f, hudOrigin.y - 40.0f) scale:0.333f red:1.0f green:0.9f blue:0.2f alpha:1.0f align:GLTextAlignmentRight];
+    [textRenderer drawText:fpsString origin:NSMakePoint(width - 30.0f, 20.0f) scale:0.333f red:1.0f green:0.9f blue:0.2f alpha:1.0f align:GLTextAlignmentRight];
 #endif
     
     if (showHUD) {
-        snprintf(statusMessage[2], 128, "EL %.2f   AZ %.2f", beamElevation / M_PI * 180.0f, beamAzimuth / M_PI * 180.0f);
-        [textRenderer drawText:statusMessage[2] origin:NSMakePoint(hudOrigin.x + 15.0f, hudOrigin.y + 15.0f) scale:0.25f];
+        snprintf(statusMessage[3], 128, "EL %.2f   AZ %.2f", beamElevation / M_PI * 180.0f, beamAzimuth / M_PI * 180.0f);
+        [textRenderer drawText:statusMessage[3] origin:NSMakePoint(hudOrigin.x + 15.0f, hudOrigin.y + 15.0f) scale:0.25f];
     }
 
     glBindVertexArray(0);
@@ -859,10 +1028,10 @@
     projection = GLKMatrix4MakeFrustum(-aspectRatio, aspectRatio, -1.0f, 1.0f, MIN(RENDERER_NEAR_RANGE, near), RENDERER_FAR_RANGE);
     modelViewProjection = GLKMatrix4Multiply(projection, modelView);
 
-    hudSize = CGSizeMake(aspectRatio * 250.0f, 250.0f);
+    hudSize = CGSizeMake(roundf(aspectRatio * 250.0f), 250.0f);
     hudOrigin = CGPointMake(width - hudSize.width - 30.0f, height - hudSize.height - 30.0f);
     hudProjection = GLKMatrix4MakeOrtho(0.0f, width, 0.0f, height, 0.0f, 1.0f);
-    mat = GLKMatrix4MakeTranslation(hudOrigin.x + 0.5f, hudOrigin.y + 0.5f, 0.0f);
+    mat = GLKMatrix4MakeTranslation(hudOrigin.x, hudOrigin.y, 0.0f);
     mat = GLKMatrix4Scale(mat, hudSize.width, hudSize.height, 1.0f);
     hudModelViewProjection = GLKMatrix4Multiply(hudProjection, mat);
 
@@ -883,11 +1052,13 @@
 	modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeXRotation(2.0f * dy / height), modelRotate);
 }
 
+
 - (void)magnify:(GLfloat)scale
 {
 	range = MIN(50000.0f, MAX(0.001f, range * (1.0f - scale)));
 	viewParametersNeedUpdate = TRUE;
 }
+
 
 - (void)rotate:(GLfloat)angle
 {
@@ -899,6 +1070,7 @@
 	modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeZRotation(angle), modelRotate);
 	viewParametersNeedUpdate = TRUE;
 }
+
 
 - (void)resetViewParameters
 {
@@ -919,6 +1091,7 @@
 	viewParametersNeedUpdate = TRUE;
 }
 
+
 - (void)startSpinModel
 {
 	spinModel = 1;
@@ -929,45 +1102,30 @@
 	spinModel = 0;
 }
 
+
 - (void)toggleSpinModel
 {
 	spinModel = spinModel == 5 ? 0 : spinModel + 1;
 }
+
 
 - (void)toggleSpinModelReverse
 {
 	spinModel = spinModel == 0 ? 5 : spinModel - 1;
 }
 
+
 - (void)toggleHUDVisibility
 {
     showHUD = !showHUD;
 }
 
-- (void)increaseLeafCount
-{
-    if (leafRenderer.count >= 1000 && leafRenderer.count < bodyRenderer.count - 1000) {
-        leafRenderer.count += 1000;
-    } else if (leafRenderer.count < bodyRenderer.count - 100) {
-		leafRenderer.count += 100;
-	}
-    [self updateStatusMessage];
-}
-
-- (void)decreaseLeafCount
-{
-    if (leafRenderer.count > 2000) {
-        leafRenderer.count -= 1000;
-    } else if (leafRenderer.count > 100) {
-		leafRenderer.count -= 100;
-	}
-    [self updateStatusMessage];
-}
 
 - (void)increaseBackgroundOpacity
 {
     backgroundOpacity = MIN(1.0f, backgroundOpacity + 0.1f);
 }
+
 
 - (void)decreaseBackgroundOpacity
 {

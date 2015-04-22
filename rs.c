@@ -719,6 +719,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
 	memset(H, 0, sizeof(RSHandle));
 	
 	// Default non-zero parameters
+    H->sim_tic = 0;
 	H->status = RS_STATUS_DOMAIN_NULL;
 	H->params.c = 3.0e8f;
 	H->params.body_per_cell = RS_BODY_PER_CELL;
@@ -1621,15 +1622,32 @@ void RS_set_debris_count(RSHandle *H, const int species_id, const size_t count) 
 
     H->species_population[species_id] = count;
 
+    H->num_species = 0;
     for (i=0; i<RS_MAX_SPECIES_TYPES; i++) {
         if (H->species_population[i] > 0) {
             H->num_species++;
         }
     }
     
-    if (H->verb) {
+    if (H->verb > 1) {
         printf("%s : RS : Total number of species = %d\n", now(), (int)H->num_species);
     }
+
+    if (H->sim_tic > 0) {
+        RS_update_debris_count(H);
+        
+#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+        
+        RS_derive_ndranges(H);
+        
+#endif
+
+    }
+}
+
+
+size_t RS_get_debris_count(RSHandle *H, const int species_id) {
+    return H->species_population[species_id];
 }
 
 
@@ -1680,7 +1698,7 @@ void RS_update_debris_count(RSHandle *H) {
         }
     }
     
-    if (H->verb > 1) {
+    if (H->verb > 2) {
         for (i=0; i<H->num_workers; i++) {
             for (k=0; k<RS_MAX_SPECIES_TYPES; k++) {
                 printf("%s : RS : worker[%d], species_population[%d] - [ %9s, %9s, %9s ]\n", now(), i, k,
@@ -2557,8 +2575,10 @@ void RS_derive_ndranges(RSHandle *H) {
             C->ndrange_scat[k].global_work_offset[0] = C->species_origin[k];
             C->ndrange_scat[k].global_work_size[0] = C->species_population[k];
             C->ndrange_scat[k].local_work_size[0] = 0;
-            printf("-- global_work_offset = %d\n", (int)C->ndrange_scat[k].global_work_offset[0]);
-            printf("-- global_work_size = %d\n", (int)C->ndrange_scat[k].global_work_size[0]);
+            if (C->verb > 2) {
+                printf("%s : RS : work[%d] offset, size = %d, %d\n",
+                       now(), (int)C->name, (int)C->ndrange_scat[k].global_work_offset[0], (int)C->ndrange_scat[k].global_work_size[0]);
+            }
         }
         
         C->ndrange_pulse_pass_1.work_dim = 1;

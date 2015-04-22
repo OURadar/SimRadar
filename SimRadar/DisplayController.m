@@ -104,6 +104,7 @@ NSWindow *standardWindow;
 	self = [super initWithWindowNibName:windowNibName];
 	if (self) {
 		rootSender = sender;
+        speciesId = 1;
 	}
 	return self;
 }
@@ -181,6 +182,8 @@ NSWindow *standardWindow;
 {
 	unichar c = [[event charactersIgnoringModifiers] characterAtIndex:0];
 	
+    GLuint pop;
+    
 	switch (c)
 	{
 		case 27:
@@ -253,10 +256,19 @@ NSWindow *standardWindow;
 			break;
 
 		case ']':
-			[glView.renderer increaseLeafCount];
+            pop = [sim increasePopulationForSpecies:speciesId];
+            if (pop) {
+                [glView.renderer setPopulationTo:pop forSpecies:speciesId];
+                [glView.renderer setDebrisCountsHaveChanged:TRUE];
+            }
 			break;
+            
 		case '[':
-			[glView.renderer decreaseLeafCount];
+            pop = [sim decreasePopulationForSpecies:speciesId];
+            if (pop) {
+                [glView.renderer setPopulationTo:pop forSpecies:speciesId];
+                [glView.renderer setDebrisCountsHaveChanged:TRUE];
+            }
 			break;
 			
         case 'b':
@@ -267,8 +279,17 @@ NSWindow *standardWindow;
         case 'o':
             [glView.renderer decreaseBackgroundOpacity];
             break;
+            
         case 'O':
             [glView.renderer increaseBackgroundOpacity];
+            break;
+            
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+            speciesId = c - '0';
+            NSLog(@"speciesId = %d", speciesId);
             break;
             
 		default:
