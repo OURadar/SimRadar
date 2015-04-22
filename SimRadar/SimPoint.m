@@ -69,8 +69,8 @@
 						-12.0f, 12.0f, 2.0f,            // Azimuth
 						0.0f, 6.0f, 1.0f);              // Elevation
 	
-//        RS_set_debris_collection(S, A);
-        
+
+        RS_set_debris_count(S, 1, 10000);
         
         
 		//RS_set_physics_data_to_cube125(S);

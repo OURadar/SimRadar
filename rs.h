@@ -256,7 +256,7 @@ typedef struct _rs_worker {
 	
 	dispatch_queue_t       que;
 	dispatch_semaphore_t   sem;
-	cl_ndrange             ndrange_scat;
+	cl_ndrange             ndrange_scat[RS_MAX_SPECIES_TYPES];
 	cl_ndrange             ndrange_pulse_pass_1;
 	cl_ndrange             ndrange_pulse_pass_2;
 	
@@ -319,7 +319,7 @@ typedef struct _rs_handle {
 	// Scatter bodies
 	size_t                 num_scats;
     size_t                 num_species;
-    size_t                 species_counts[RS_MAX_SPECIES_TYPES];
+    size_t                 species_population[RS_MAX_SPECIES_TYPES];
 
 	// CPU side memory (for upload/download)
 	cl_float4              *scat_pos;       // position
@@ -410,6 +410,7 @@ void RS_clear_rcs_data(RSHandle *H);
 #pragma mark -
 
 void RS_share_mem_with_vbo(RSHandle *H, unsigned int *vbo);
+void RS_derive_ndranges(RSHandle *H);
 void RS_update_colors_only(RSHandle *H);
 void RS_explode(RSHandle *H);
 
