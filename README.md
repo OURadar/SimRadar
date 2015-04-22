@@ -150,3 +150,10 @@ The SimRadar app for Mac OS X
 -----------------------------
 
 A dedicated project SimRadar, which is a Mac OS X implemtation of visualization and graphical user interface, is included. It demonstrates how to wrap the framework in Objective-C. There is currently no plan to make this a full-fledge application that allows users to access all simulation parameters through the GUI.
+
+
+Some Notes
+----------
+
+| Scatterer Species 0 | Scatterer Species 0 |
+| Scatterer Species 1 | Scatterer Species 1 |
