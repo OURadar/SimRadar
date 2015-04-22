@@ -2804,8 +2804,8 @@ void RS_populate(RSHandle *H) {
 	
     RS_update_debris_count(H);
     
-#if defined (__APPLE__) || defined (_SHARE_OBJ_)
-
+#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+    
     RS_derive_ndranges(H);
 
 #endif
@@ -3092,6 +3092,8 @@ void RS_advance_time(RSHandle *H) {
 	}
 
 #else
+    
+    int k;
 
     cl_event events[RS_MAX_GPU_DEVICE][RS_MAX_SPECIES_TYPES];
 	
