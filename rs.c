@@ -20,6 +20,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
 	
     C->dev = dev;
     C->verb = verb;
+    C->mem_size = 0;
     
     clGetDeviceInfo(C->dev, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &C->num_cus, NULL);
 
@@ -3133,7 +3134,7 @@ void RS_advance_time(RSHandle *H) {
         clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
         
         // Debris type
-        for (k=0; k<RS_MAX_SPECIES_TYPES; k++) {
+        for (k=1; k<RS_MAX_SPECIES_TYPES; k++) {
             if (H->worker[i].species_population[k] == 0) {
                 continue;
             }

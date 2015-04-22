@@ -648,8 +648,8 @@
     GLfloat colors[] = {
         0.00f, 0.00f, 0.00f,
         0.00f, 1.00f, 0.00f,
-        1.00f, 1.00f, 0.00f,
-        1.00f, 0.55f, 0.25f
+        0.30f, 1.00f, 1.00f,
+        1.00f, 0.65f, 0.25f
     };
     
     for (int k=0; k<RENDERER_MAX_SPECIES_COUNT; k++) {
