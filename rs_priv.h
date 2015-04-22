@@ -55,4 +55,6 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 
 void RS_init_scat_pos(RSHandle *H);
 
+void RS_update_debris_count(RSHandle *H);
+
 #endif

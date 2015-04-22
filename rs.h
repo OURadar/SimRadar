@@ -48,7 +48,7 @@
 #define RS_MAX_VEL_TABLES          20
 #define RS_MAX_ADM_TABLES           4
 #define RS_MAX_RCS_TABLES           4
-#define RS_MAX_SPECIES_TYPES        2
+#define RS_MAX_SPECIES_TYPES        4
 
 
 #ifndef MAX
@@ -65,7 +65,7 @@ enum {
 	RS_STATUS_DOMAIN_POPULATED   = 0x01
 };
 
-enum {
+enum RS_CL_PASS_2 {
 	RS_CL_PASS_2_UNIVERSAL,
 	RS_CL_PASS_2_IN_RANGE,
 	RS_CL_PASS_2_IN_LOCAL
@@ -318,6 +318,8 @@ typedef struct _rs_handle {
 
 	// Scatter bodies
 	size_t                 num_scats;
+    size_t                 num_species;
+    size_t                 species_counts[RS_MAX_SPECIES_TYPES];
 
 	// CPU side memory (for upload/download)
 	cl_float4              *scat_pos;       // position
@@ -379,9 +381,11 @@ void RS_set_scan_box(RSHandle *H,
 					 RSfloat elevation_start, RSfloat elevation_end, RSfloat elevation_gate);
 void RS_set_beam_pos(RSHandle *H, RSfloat az_deg, RSfloat el_deg);
 void RS_set_verbosity(RSHandle *H, const char verb);
+void RS_set_debris_count(RSHandle *H, const int species_id, const size_t count);
 
 void RS_set_range_weight(RSHandle *H, const float *weights, const float table_index_start, const float table_index_delta, unsigned int table_size);
 void RS_set_range_weight_to_triangle(RSHandle *H, float pulse_width_m);
+
 void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_index_start, const float table_index_delta, unsigned int table_size);
 void RS_set_angular_weight_to_standard(RSHandle *H, float beamwidth_deg);
 void RS_set_angular_weight_to_double_cone(RSHandle *H, float beamwidth_deg);

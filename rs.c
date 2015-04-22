@@ -722,6 +722,8 @@ float read_table(const float *table, const float index_last, const float index) 
 
 RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char verb) {
 	
+    int i;
+    
 	RSHandle *H;
 	
 	// Allocate
@@ -738,11 +740,16 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
 	H->params.domain_pad_factor = RS_DOMAIN_PAD;
 	H->params.prt = 0.0f;
 	H->num_workers = 1;
+    H->num_species = 1;
 	H->method = method;
 	
-	for (int i=0; i<RS_MAX_GPU_DEVICE; i++) {
+	for (i=0; i<RS_MAX_GPU_DEVICE; i++) {
 		H->worker[i].name = i;
 	}
+    
+    for (i=0; i<RS_MAX_SPECIES_TYPES; i++) {
+        H->species_counts[i] = 0;
+    }
 	
 	// Set up some basic parameters to default values, H->verb is still 0 so no API message output
 	RS_set_antenna_params(H, 1.0f, 50.0f);
@@ -808,7 +815,6 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
     }
     
     H->num_workers = H->num_devs;
-    //H->num_workers = 1;
     
     for (int i=0; i<H->num_workers; i++) {
         if (H->verb > 2) {
@@ -1361,7 +1367,7 @@ void RS_set_scan_box(RSHandle *H,
 	// Round to a GPU preferred number
 	size_t mul = H->num_cus[0] * H->num_devs * 128;
 	size_t preferred_n = (size_t)(H->num_scats / mul) * mul;
-	if (preferred_n < H->params.body_per_cell * 9 / 10) {
+	while (preferred_n < H->params.body_per_cell * 9 / 10) {
 		preferred_n += mul;
 	}
 	
@@ -1617,6 +1623,90 @@ void RS_set_beam_pos(RSHandle *H, RSfloat az_deg, RSfloat el_deg) {
 void RS_set_verbosity(RSHandle *H, const char verb) {
 	H->verb = verb;
 }
+
+
+void RS_set_debris_count(RSHandle *H, const int species_id, const size_t count) {
+    
+    int i;
+    
+    if (species_id == 0) {
+        printf("%s : RS : RS_set_debris_count() cannot have species = 0.\n", now());
+        return;
+    }
+
+    H->species_counts[species_id] = count;
+
+    for (i=0; i<RS_MAX_SPECIES_TYPES; i++) {
+        if (H->species_counts[i] > 0) {
+            H->num_species++;
+        }
+    }
+    
+    if (H->verb) {
+        printf("%s : RS : Total number of species = %d\n", now(), (int)H->num_species);
+    }
+}
+
+
+void RS_update_debris_count(RSHandle *H) {
+    
+    int i, k;
+    
+    size_t count = H->num_scats;
+    
+    k = RS_MAX_SPECIES_TYPES;
+    while (k > 1) {
+        k--;
+        count -= H->species_counts[k];
+    }
+    H->species_counts[0] = count;
+
+    if (H->verb > 1) {
+        for (k=0; k<RS_MAX_SPECIES_TYPES; k++) {
+            printf("%s : RS : species_counts[%d] = %s\n", now(), k, commaint(H->species_counts[k]));
+        }
+    }
+
+    k = RS_MAX_SPECIES_TYPES;
+    while (k > 0) {
+        k--;
+        size_t species_count_left = H->species_counts[k];
+        if (species_count_left == 0) {
+            continue;
+        }
+        size_t sub_species_population = H->species_counts[k] / H->num_workers;
+        for (i=0; i<H->num_workers-1; i++) {
+            H->worker[i].species_population[k] = sub_species_population;
+            species_count_left -= sub_species_population;
+        }
+        // The last worker gets all the remainders
+        H->worker[i].species_population[k] = species_count_left;
+    }
+    
+    for (i=0; i<H->num_workers; i++) {
+        k = RS_MAX_SPECIES_TYPES;
+        size_t origin = H->worker[i].num_scats;
+        while (k > 1) {
+            k--;
+            if (H->worker[i].species_population[k] > 0) {
+                origin -= H->worker[i].species_population[k];
+                H->worker[i].species_origin[k] = origin;
+            }
+        }
+    }
+    
+    if (H->verb) {
+        for (i=0; i<H->num_workers; i++) {
+            for (k=0; k<RS_MAX_SPECIES_TYPES; k++) {
+                printf("%s : RS : worker[%d], species[%d] - [ %9s, %9s, %9s ]\n", now(), i, k,
+                       commaint(H->worker[i].species_origin[k]),
+                       commaint(H->worker[i].species_population[k]),
+                       commaint(H->worker[i].species_origin[k] + H->worker[i].species_population[k]));
+            }
+        }
+    }
+}
+
 
 #pragma mark -
 #pragma mark Functions to set properties after RS_init()
@@ -2697,6 +2787,8 @@ void RS_populate(RSHandle *H) {
         offset += sub_num_scats;
     }
 	
+    RS_update_debris_count(H);
+    
 	// Initialize the scatter body positions on CPU, then upload
 	RS_init_scat_pos(H);
 

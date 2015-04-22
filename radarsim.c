@@ -132,6 +132,8 @@ int main(int argc, char *argv[]) {
 	
 	RS_set_range_weight_to_triangle(S, 120.0f);
 
+    RS_set_debris_count(S, 1, 32);
+    
     RS_clear_wind_data(S);
     for (int k=0; k<RS_MAX_VEL_TABLES; k++) {
         RS_set_wind_data_to_LES_table(S, LES_get_frame(L, k));
