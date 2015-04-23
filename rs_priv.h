@@ -54,7 +54,7 @@ void RS_worker_free(RSWorker *C);
 void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_scats);
 
 void RS_init_scat_pos(RSHandle *H);
-
+void RS_merge_pulse_tmp(RSHandle *H);
 void RS_update_debris_count(RSHandle *H);
 
 #endif

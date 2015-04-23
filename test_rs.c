@@ -30,7 +30,6 @@ int main(int argc, char **argv)
 {
 	char c;
 	char verb = 0;
-	//uint32_t test = TEST_N0NE;
 	uint32_t test = TEST_GPU_SIMPLE;
 
     float density = 0.0f;
@@ -38,11 +37,17 @@ int main(int argc, char **argv)
 	
 	struct timeval t1, t2;
 	
-	while ((c = getopt(argc, argv, "ac12igvn:s:h?")) != -1) {
+	while ((c = getopt(argc, argv, "vac012igdn:s:th?")) != -1) {
 		switch (c) {
+            case 'v':
+                verb++;
+                break;
 			case 'a':
 				test = TEST_ALL;
 				break;
+            case '0':
+                test = TEST_N0NE;
+                break;
 			case '1':
 				test |= TEST_MAKE_PULSE_GPU_PASS_1;
 				break;
@@ -64,9 +69,6 @@ int main(int argc, char **argv)
             case 't':
                 test |= TEST_DUMMY;
                 break;
-			case 'v':
-				verb++;
-				break;
 			case 'n':
 				N = atoi(optarg);
 				break;
@@ -84,7 +86,7 @@ int main(int argc, char **argv)
 					   "    -g     All GPU Tests\n"
 					   "    -v     increases verbosity\n"
 					   "    -n N   speed test using N iterations\n"
-					   "    -s S   speed test using S scatter bodies\n"
+					   "    -s S   speed test using scatter density S\n"
 					   "\n",
 					   argv[0], argv[0]);
 				return EXIT_FAILURE;
@@ -228,7 +230,7 @@ int main(int argc, char **argv)
 	//
 	if (test & TEST_DOWNLOAD) {
         // Only range_count * H + V - IQ data
-        byte_size = H->params.range_count * sizeof(cl_float4);
+        byte_size = 5 * H->num_scats * sizeof(cl_float4);
 		gettimeofday(&t1, NULL);
 		for (i=0; i<N; i++)
 			RS_download(H);

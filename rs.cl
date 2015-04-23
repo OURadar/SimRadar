@@ -19,6 +19,10 @@ enum RSSimulationParameter {
 
 float4 rand(uint4 *seed);
 float4 set_clr(float4 att);
+float compute_angular_weight(float4 pos,
+                             __constant float *angular_weight,
+                             const float4 angular_weight_desc,
+                             const float16 sim_desc);
 float4 quat_mult(float4 left, float4 right);
 float4 quat_conj(float4 quat);
 float4 quat_get_x(float4 quat);
@@ -63,6 +67,36 @@ float4 set_clr(float4 att)
     c.w = 1.0f;
     
     return c;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+//
+// Angular weighting function
+//
+
+float compute_angular_weight(float4 pos,
+                             __constant float *angular_weight,
+                             const float4 angular_weight_desc,
+                             const float16 sim_desc)
+{
+    //    RSSimulationParameterBeamUnitX     =  0,
+    //    RSSimulationParameterBeamUnitY     =  1,
+    //    RSSimulationParameterBeamUnitZ     =  2,
+    float angle = acos(dot(sim_desc.s012, normalize(pos.xyz)));
+    
+    float2 table_s = (float2)(angular_weight_desc.s0, angular_weight_desc.s0);
+    float2 table_o = (float2)(angular_weight_desc.s1, angular_weight_desc.s1) + (float2)(0.0f, 1.0f);
+    float2 angle_2 = (float2)(angle, angle);
+
+    // scale, offset, clamp to edge
+    uint2  iidx_int;
+    float2 fidx_int;
+    float2 fidx_raw = clamp(fma(angle_2, table_s, table_o), 0.0f, angular_weight_desc.s2);
+    float2 fidx_dec = fract(fidx_raw, &fidx_int);
+    
+    iidx_int = convert_uint2(fidx_int);
+    
+    return mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -211,42 +245,17 @@ __kernel void bg_atts(__global float4 *p,
         uint4 seed = y[i];
         float4 r = rand(&seed);
         y[i] = seed;
-        
         pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
-        
-        //  RSSimulationParameterDebrisCount   =  3,
-        //        if (is_debris) {
-        //            pos.z = 20.0f;
-        //        }
-        
-        // reset the age and velocity
         aux.s1 = 0.0f;
         vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
     } else {
         aux.s1 += sim_desc.sf;
     }
     
-    //    RSSimulationParameterBeamUnitX     =  0,
-    //    RSSimulationParameterBeamUnitY     =  1,
-    //    RSSimulationParameterBeamUnitZ     =  2,
-    float dprod = dot(sim_desc.s012, normalize(pos.xyz));
-    float angle = acos(dprod);
-    
     // Range of the point
     aux.s0 = length(pos);
-    
-    float2 table_s = (float2)(angular_weight_desc.s0, angular_weight_desc.s0);
-    float2 table_o = (float2)(angular_weight_desc.s1, angular_weight_desc.s1) + (float2)(0.0f, 1.0f);
-    float2 angle_2 = (float2)(angle, angle);
-    
-    // scale, offset, clamp to edge
-    uint2  iidx_int;
-    float2 fidx_int;
-    float2 fidx_raw = clamp(fma(angle_2, table_s, table_o), 0.0f, angular_weight_desc.s2);
-    float2 fidx_dec = fract(fidx_raw, &fidx_int);
-    
-    iidx_int = convert_uint2(fidx_int);
-    aux.s3 = mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
+
+    aux.s3 = compute_angular_weight(pos, angular_weight, angular_weight_desc, sim_desc);
     
     p[i] = pos;
     v[i] = vel;
@@ -453,36 +462,15 @@ __kernel void scat_atts(__global float4 *p,
         y[i] = seed;
         
         pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
-        
-        //  RSSimulationParameterDebrisCount   =  3,
-//        if (is_debris) {
-//            pos.z = 20.0f;
-//        }
+//        pos.z = 20.0f;
         
         vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
     }
 
-    //    RSSimulationParameterBeamUnitX     =  0,
-    //    RSSimulationParameterBeamUnitY     =  1,
-    //    RSSimulationParameterBeamUnitZ     =  2,
-    float dprod = dot(sim_desc.s012, normalize(pos.xyz));
-    float angle = acos(dprod);
-    
     // Range of the point
     aux.s0 = length(pos);
-    
-    float2 table_s = (float2)(angular_weight_desc.s0, angular_weight_desc.s0);
-    float2 table_o = (float2)(angular_weight_desc.s1, angular_weight_desc.s1) + (float2)(0.0f, 1.0f);
-    float2 angle_2 = (float2)(angle, angle);
-    
-    // scale, offset, clamp to edge
-    uint2  iidx_int;
-    float2 fidx_int;
-    float2 fidx_raw = clamp(fma(angle_2, table_s, table_o), 0.0f, angular_weight_desc.s2);
-    float2 fidx_dec = fract(fidx_raw, &fidx_int);
 
-    iidx_int = convert_uint2(fidx_int);
-    aux.s3 = mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
+    aux.s3 = compute_angular_weight(pos, angular_weight, angular_weight_desc, sim_desc);
 
     p[i] = pos;
     o[i] = ori;

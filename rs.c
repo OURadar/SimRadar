@@ -1172,8 +1172,10 @@ void RS_init_scat_pos(RSHandle *H) {
     H->inv_inln.z = (mass * len) / (ii.z * g * g);
     H->Ta *= g / (v0 * v0);
 
-    printf("%s : RS : Ta = %.4f;  inv_inln = [%.4f %.4f %.4f];   mass = %.4f kg\n",
-           now(), H->Ta, H->inv_inln.x, H->inv_inln.y, H->inv_inln.z, mass);
+    if (H->verb) {
+        printf("%s : RS : Ta = %.4f;  inv_inln = [%.4f %.4f %.4f];   mass = %.4f kg\n",
+               now(), H->Ta, H->inv_inln.x, H->inv_inln.y, H->inv_inln.z, mass);
+    }
     
     int t = 0;
     for (int i=0; i<H->num_workers; i++) {
@@ -1765,7 +1767,7 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
             }
             clReleaseMemObject(H->worker[i].range_weight);
         }
-        if (H->verb > 1) {
+        if (H->verb > 2) {
             printf("%s : RS : worker[%d] creating range weight (cl_mem) & copying data from %p.\n", now(), i, table.data);
         }
         H->worker[i].range_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), table.data, &ret);
@@ -1773,7 +1775,7 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
             fprintf(stderr, "%s : RS : Error creating range weight table on CL device.\n", now());
             return;
         }
-        if (H->verb > 1) {
+        if (H->verb > 2) {
             printf("%s : RS : worker[%d] created range weight @ %p.\n", now(), i, H->worker[i].range_weight);
         }
         // Copy over to CL worker. I know it's a bit wasteful but the codes are easier to ready this way.
@@ -2888,18 +2890,22 @@ void RS_download(RSHandle *H) {
 
 #else
 
+    cl_event events[6];
+    
 	for (i=0; i<H->num_workers; i++) {
-		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, NULL);
-		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_vel, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, NULL);
-		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, NULL);
-		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_att, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_att + H->offset[i], 0, NULL, NULL);
-		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_sig, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, NULL);
+		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, &events[0]);
+		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_vel, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, &events[1]);
+		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, &events[2]);
+		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_att, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_att + H->offset[i], 0, NULL, &events[3]);
+		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_sig, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, &events[4]);
+        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].pulse, CL_FALSE, 0, H->params.range_count * sizeof(cl_float4), H->pulse_tmp[i], 0, NULL, &events[5]);
 	}
 
-	RS_download_pulse_only(H);
+    clWaitForEvents(6, events);
 
 #endif
 
+    RS_merge_pulse_tmp(H);
 }
 
 
@@ -3358,11 +3364,10 @@ static void RS_show_scat_i(RSHandle *H, int i) {
 
 void RS_show_scat_pos(RSHandle *H) {
 	int i;
-    for (i=0; i<10; i++) {
-        RS_show_scat_i(H, i);
-    }
-    for (i=0; i<H->num_scats-1; i+=H->num_scats/9) {
-		//for (i=0; i<H->num_scats-1; i+=H->num_scats/100) {
+	// for (i=0; i<10; i++) {
+	// 	RS_show_scat_i(H, i);
+	// }
+	for (i=0; i<H->num_scats-1; i+=H->num_scats/9) {
 		RS_show_scat_i(H, i);
 	}
 	i = (int)(H->num_scats - 1);
