@@ -3148,7 +3148,13 @@ void RS_advance_time(RSHandle *H) {
     }
     
     for (i=0; i<H->num_workers; i++) {
-        clWaitForEvents(2, events[i]);
+        clWaitForEvents(1, events[i]);
+        for (k=1; k<RS_MAX_SPECIES_TYPES; k++) {
+            if (H->worker[i].species_population[k] == 0) {
+                continue;
+            }
+            clWaitForEvents(1, &events[i][k]);
+        }
     }
 	
     for (i=0; i<H->num_workers; i++) {

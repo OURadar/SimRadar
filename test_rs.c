@@ -30,8 +30,8 @@ int main(int argc, char **argv)
 {
 	char c;
 	char verb = 0;
-	uint32_t test = TEST_N0NE;
-	//uint32_t test = TEST_GPU_SIMPLE;
+	//uint32_t test = TEST_N0NE;
+	uint32_t test = TEST_GPU_SIMPLE;
 
     float density = 0.0f;
 	unsigned int N = 0;
