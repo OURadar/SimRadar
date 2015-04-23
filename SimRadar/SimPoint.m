@@ -37,7 +37,7 @@
 		S = RS_init_verbose(2);
         
         if (S->num_cus[0] < 32) {
-            RS_set_density(S, 25.0f);
+            RS_set_density(S, 8.0f);
         }
 
 		//L = LES_init();

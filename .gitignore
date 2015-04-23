@@ -11,4 +11,7 @@ cldemo
 test_*
 radarsim
 Sparkle.framework
+*.xcuserstate
+project.xcworkspace/
+xcuserdata/
 
