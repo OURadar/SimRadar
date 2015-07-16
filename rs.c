@@ -27,8 +27,22 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
     
     // A queue & semaphore for the CL work
-    C->que = gcl_create_dispatch_queue(CL_DEVICE_TYPE_GPU, NULL);
+    C->que = gcl_create_dispatch_queue(CL_DEVICE_TYPE_GPU, C->dev);
     C->sem = dispatch_semaphore_create(0);
+    
+    // Set all the surface to null
+    int i;
+    for (i=0; i<RS_MAX_VEL_TABLES; i++) {
+        C->surf_vel[i] = NULL;
+    }
+    for (i=0; i<RS_MAX_ADM_TABLES; i++) {
+        C->surf_adm_cd[i] = NULL;
+        C->surf_adm_cm[i] = NULL;
+    }
+    for (i=0; i<RS_MAX_RCS_TABLES; i++) {
+        C->surf_rcs_real[i] = NULL;
+        C->surf_rcs_imag[i] = NULL;
+    }
     
 #else
 	
@@ -1948,7 +1962,7 @@ void RS_set_wind_data(RSHandle *H, const RSTable3D table) {
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 
-        H->worker[i].vel[t] = gcl_create_image(&format, desc.image_width, desc.image_height, desc.image_depth, NULL);
+        H->worker[i].vel[t] = gcl_create_image(&format, desc.image_width, desc.image_height, desc.image_depth, H->worker[i].surf_vel[t]);
 
 #else
         
@@ -2200,8 +2214,8 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
         
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
         
-        H->worker[i].adm_cd[t] = gcl_create_image(&format, cd.x_, cd.y_, 1, NULL);
-        H->worker[i].adm_cm[t] = gcl_create_image(&format, cm.x_, cm.y_, 1, NULL);
+        H->worker[i].adm_cd[t] = gcl_create_image(&format, cd.x_, cd.y_, 1, H->worker[i].surf_adm_cd[t]);
+        H->worker[i].adm_cm[t] = gcl_create_image(&format, cm.x_, cm.y_, 1, H->worker[i].surf_adm_cm[t]);
         
 #else
         
@@ -2397,8 +2411,8 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
         
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
         
-        H->worker[i].rcs_real[t] = gcl_create_image(&format, real.x_, real.y_, 1, NULL);
-        H->worker[i].rcs_imag[t] = gcl_create_image(&format, imag.x_, imag.y_, 1, NULL);
+        H->worker[i].rcs_real[t] = gcl_create_image(&format, real.x_, real.y_, 1, H->worker[i].surf_rcs_real[t]);
+        H->worker[i].rcs_imag[t] = gcl_create_image(&format, imag.x_, imag.y_, 1, H->worker[i].surf_rcs_imag[t]);
         
 #else
         

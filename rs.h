@@ -267,6 +267,12 @@ typedef struct _rs_worker {
 
 	cl_mem                 scat_clr;   // color
 	
+    IOSurfaceRef           surf_adm_cd[RS_MAX_ADM_TABLES];
+    IOSurfaceRef           surf_adm_cm[RS_MAX_ADM_TABLES];
+    IOSurfaceRef           surf_rcs_real[RS_MAX_RCS_TABLES];
+    IOSurfaceRef           surf_rcs_imag[RS_MAX_RCS_TABLES];
+    IOSurfaceRef           surf_vel[RS_MAX_VEL_TABLES];
+    
 #else
 	
 	cl_context             context;
