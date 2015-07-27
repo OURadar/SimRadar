@@ -1110,21 +1110,15 @@ void RS_init_scat_pos(RSHandle *H) {
 	H->scat_pos[0].y = H->domain.origin.y + 0.5f * H->domain.size.y;
 	H->scat_pos[0].z = H->domain.origin.z + 0.5f * H->domain.size.z;
 	
-	H->scat_pos[1820].x = H->domain.origin.x;
-	H->scat_pos[1820].y = H->domain.origin.y;
-	H->scat_pos[1820].z = H->domain.origin.z;
-	
-	H->scat_pos[3640].x = H->domain.origin.x + 0.25f * H->domain.size.x;
-	H->scat_pos[3640].y = H->domain.origin.y + 0.25f * H->domain.size.y;
-	H->scat_pos[3640].z = H->domain.origin.z + 0.25f * H->domain.size.z;
-	
-	H->scat_pos[5460].x = H->domain.origin.x + 0.75f * H->domain.size.x;
-	H->scat_pos[5460].y = H->domain.origin.y + 0.75f * H->domain.size.y;
-	H->scat_pos[5460].z = H->domain.origin.z + 0.75f * H->domain.size.z;
-	
-	H->scat_pos[7280].x = H->domain.origin.x + H->domain.size.x;
-	H->scat_pos[7280].y = H->domain.origin.y + H->domain.size.y;
-	H->scat_pos[7280].z = H->domain.origin.z + H->domain.size.z;
+    if (H->species_population[1] >= 1) {
+        int k = (int)H->species_population[1];
+//        H->scat_pos[k].x = H->domain.origin.x + 0.5f * H->domain.size.x;
+//        H->scat_pos[k].y = H->domain.origin.y + 0.5f * H->domain.size.y;
+//        H->scat_pos[k].z = H->domain.origin.z + 0.5f * H->domain.size.z;
+        H->scat_pos[k].x = 0.0f;
+        H->scat_pos[k].y = 0.0f;
+        H->scat_pos[k].z = 0.0f;
+    }
 	
 	// Restore simulation time
 	H->sim_tic = 0;
@@ -1251,7 +1245,7 @@ void RS_set_scan_box(RSHandle *H,
 	const RSfloat r_hi =  ceil((H->params.range_end   + H->params.domain_pad_factor * H->params.dr) / H->params.range_delta) * H->params.range_delta;
 	const RSfloat az_lo = floor((H->params.azimuth_start_deg - H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg) * H->params.antenna_bw_deg;
 	const RSfloat az_hi =  ceil((H->params.azimuth_end_deg   + H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg) * H->params.antenna_bw_deg;
-	const RSfloat el_lo = MAX( 0.0f, floor((H->params.elevation_start_deg - H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg) * H->params.antenna_bw_deg);
+	const RSfloat el_lo = MAX(-90.0f, floor((H->params.elevation_start_deg - H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg) * H->params.antenna_bw_deg);
 	const RSfloat el_hi = MIN(90.0f,  ceil((H->params.elevation_end_deg   + H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg) * H->params.antenna_bw_deg);
 	const RSfloat tiny = 1.0e-5;
 	
@@ -1310,7 +1304,7 @@ void RS_set_scan_box(RSHandle *H,
 	RSfloat
 	xmin = INFINITY, xmax = -INFINITY,
 	ymin = INFINITY, ymax = -INFINITY,
-	zmin = INFINITY, zmax = 0.0;
+    zmin = INFINITY, zmax = -INFINITY;
 	el = el_lo / 180.0 * M_PI;
 	while (el <= el_hi / 180.0 * M_PI + tiny && ii < H->num_anchors - 3) {
 		az = az_lo / 180.0 * M_PI;

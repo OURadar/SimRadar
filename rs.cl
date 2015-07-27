@@ -390,49 +390,105 @@ __kernel void scat_atts(__global float4 *p,
                    c.x * c.y * s.z + s.x * s.y * c.z,
                    c.x * c.y * c.z - s.x * s.y * s.z);
 
-    vel += dudt * dt;
-    
-    ori = quat_mult(ori, tum);
 
     //
     // derive alpha, beta & gamma of RCS for RCS table lookup --------------------------
     //
-
+    
     // original codes:
     //    float4 quat_beam = quat_mult((float4)(sin(0.5f * el), 0.0f, 0.0f, cos(0.5f * el)),
     //                                 (float4)(0.0f, 0.0f, sin(0.5f * (-M_PI_2_F + az)), cos(0.5f * (-M_PI_2_F + az))));
     //    float4 quat_coord_change = (float4)(sin(0.5f * M_PI_2_F), 0.0f, 0.0f, cos(0.5f * M_PI_2_F));
-    //    float4 quat_new_frame = quat_conj(quat_mult(quat_beam, quat_coord_chang));
-
+    //    float4 quat_new_frame = quat_conj(quat_mult(quat_beam, quat_coord_change));
+    
     // simplified codes:
-    float4 quat_new_frame = (float4)(-0.5f * cos(0.5f * (az - el)) - 0.5f * sin(0.5f * (az + el)),
-                                     +0.5f * cos(0.5f * (az - el)) - 0.5f * sin(0.5f * (az + el)),
-                                     +0.5f * cos(0.5f * (az + el)) - 0.5f * sin(0.5f * (az - el)),
-                                     +0.5f * cos(0.5f * (az + el)) + 0.5f * sin(0.5f * (az - el)));
-
+    //float4 quat_new_frame = (float4)(-0.5f * cos(0.5f * (az - el)) - 0.5f * sin(0.5f * (az + el)),
+    //                                 +0.5f * cos(0.5f * (az - el)) - 0.5f * sin(0.5f * (az + el)),
+    //                                 +0.5f * cos(0.5f * (az + el)) - 0.5f * sin(0.5f * (az - el)),
+    //                                 +0.5f * cos(0.5f * (az + el)) + 0.5f * sin(0.5f * (az - el)));
+    
     // quaternion relative to the new frame of reference
-    float4 quat_rel = quat_mult(ori, quat_new_frame);
+    //    float4 quat_rel = quat_mult(ori, quat_new_frame);
+    
+    
+    
+    // Coordinate change quaternion:
+    // C = quat_mult(quat_rotx_make(pi/2), quat_roty_make(pi/2))
+    // can be hard coded as:
+    // float4 qC = (float4)(0.5f, 0.5f, 0.5f, 0.5f);
+    
+    // Desired identity quaternion, which is pointing angle dependent
+    // I = X(EL) x Z(-PI/2 + AZ)
+    // can be hard coded as:
+    // float4 qI = quat_mult((float4)(sin(0.5f * el), 0.0f, 0.0f, cos(0.5f * el)),
+    //                       (float4)(0.0f, 0.0f, sin(0.5f * (-M_PI_2_F + az)), cos(0.5f * (-M_PI_2_F + az))));
+    
+    // quat_conj( qI x qC ) =
+    //    -(2^(1/2)*cos(a/2)*(cos(e/2) + sin(e/2)))/2
+    //    -(2^(1/2)*sin(a/2)*(cos(e/2) - sin(e/2)))/2
+    //    -(2^(1/2)*sin(a/2)*(cos(e/2) + sin(e/2)))/2
+    //     (2^(1/2)*cos(a/2)*(cos(e/2) - sin(e/2)))/2
+    //    float4 qQ = (float4)(-0.707106781186548f * cos(0.5f * az) * (cos(0.5f * el) + sin(0.5f * el)),
+    //                         -0.707106781186548f * sin(0.5f * az) * (cos(0.5f * el) - sin(0.5f * el)),
+    //                         -0.707106781186548f * sin(0.5f * az) * (cos(0.5f * el) + sin(0.5f * el)),
+    //                          0.707106781186548f * cos(0.5f * az) * (cos(0.5f * el) - sin(0.5f * el)));
+    
+    // Desired identity quaternion, which is pointing angle dependent
+    // I = X(EL) x Z(-PI/2 + AZ)
+    // can be hard coded as:
+    // float4 qI = quat_mult((float4)(sin(0.5f * el), 0.0f, 0.0f, cos(0.5f * el)),
+    //                       (float4)(0.0f, 0.0f, sin(0.5f * az), cos(0.5f * az)));
+    // quat_conj( qI x qC ) =
+    //      sin(a/2 - e/2)/2 - cos(a/2 + e/2)/2
+    //    - cos(a/2 + e/2)/2 - sin(a/2 - e/2)/2
+    //    - cos(a/2 - e/2)/2 - sin(a/2 + e/2)/2
+    //      cos(a/2 - e/2)/2 - sin(a/2 + e/2)/2
+    float4 qQ = (float4)( 0.5f * (sin(0.5f * (az - el)) - cos(0.5f * (az + el))),
+                         -0.5f * (cos(0.5f * (az + el)) - sin(0.5f * (az - el))),
+                         -0.5f * (cos(0.5f * (az - el)) - sin(0.5f * (az + el))),
+                          0.5f * (cos(0.5f * (az - el)) - sin(0.5f * (az + el))));
+    
+    float4 quat_rel = quat_mult(qQ, ori);
+    //float4 quat_rel = quat_mult(ori, qQ);
+    
+    
+//    if (length(quat_rel.xyz) < 1.0e-6f && fabs(quat_rel.w) > 0.9999f) {
+//        alpha = 0.0f;
+//        beta  = 0.0f;
+//        gamma = 0.0f;
+//    } else if (fabs(quat_rel.x) < 1.0e-6f && fabs(quat_rel.y) < 1.0e-6f) {
+//        // Pure azimuth: multiple solutions if we combine alpha & gamma so just lump everything to alpha
+//        alpha = 2.0f * acos(quat_rel.w);
+//        beta  = 0.0f;
+//        gamma = 0.0f;
+//    } else if (fabs(quat_rel.y) < 1.0e-6f && fabs(quat_rel.z) < 1.0e-6f) {
+//        // Pure elevation: cos^2 + sin^2 = 1 for all angles, ill-conditioned
+//        alpha = 0.0f;
+//        beta  = quat_rel.x < 0.0f ? -2.0f * acos(quat_rel.w) : 2.0f * acos(quat_rel.w);
+//        gamma = 0.0f;
+//    } else {
+//        alpha = atan2(quat_rel.y * quat_rel.z - quat_rel.x * quat_rel.w , quat_rel.x * quat_rel.z + quat_rel.y * quat_rel.w);
+//        beta  =  acos(quat_rel.w * quat_rel.w + quat_rel.z * quat_rel.z - quat_rel.y * quat_rel.y - quat_rel.x * quat_rel.x);
+//        gamma = atan2(quat_rel.x * quat_rel.w + quat_rel.y * quat_rel.z , quat_rel.y * quat_rel.w - quat_rel.x * quat_rel.z);
+//    }
+    
+    // 3-2-3 convection:
+    alpha = atan2(quat_rel.y * quat_rel.z + quat_rel.w * quat_rel.x , quat_rel.w * quat_rel.y - quat_rel.x * quat_rel.z);
+    beta  =  acos(quat_rel.w * quat_rel.w + quat_rel.z * quat_rel.z - quat_rel.y * quat_rel.y - quat_rel.x * quat_rel.x);
+    gamma = atan2(quat_rel.y * quat_rel.z - quat_rel.w * quat_rel.x , quat_rel.x * quat_rel.z + quat_rel.w * quat_rel.z);
 
-    if (fabs(quat_rel.w) < 1.0e-6f) {
-        alpha = 0.0f;
-        beta  = 0.0f;
-        gamma = 0.0f;
-    } else if (fabs(quat_rel.x) < 1.0e-6f && fabs(quat_rel.y) < 1.0e-6f) {
-        // Pure azimuth: multiple solutions if we combine alpha & gamma so just lump everything to alpha
-        alpha = 2.0f * acos(quat_rel.w);
-        beta  = 0.0f;
-        gamma = 0.0f;
-    } else if (fabs(quat_rel.y) < 1.0e-6f && fabs(quat_rel.z) < 1.0e-6f) {
-        // Pure elevation: cos^2 + sin^2 = 1 for all angles, ill-conditioned
-        alpha = 0.0f;
-        beta  = quat_rel.x < 0.0f ? -2.0f * acos(quat_rel.w) : 2.0f * acos(quat_rel.w);
-        gamma = 0.0f;
-    } else {
-        alpha = atan2(quat_rel.y * quat_rel.z - quat_rel.x * quat_rel.w , quat_rel.x * quat_rel.z + quat_rel.y * quat_rel.w);
-        beta  =  acos(quat_rel.w * quat_rel.w + quat_rel.z * quat_rel.z - quat_rel.y * quat_rel.y - quat_rel.x * quat_rel.x);
-        gamma = atan2(quat_rel.x * quat_rel.w + quat_rel.y * quat_rel.z , quat_rel.y * quat_rel.w - quat_rel.x * quat_rel.z);
-    }
-
+    printf("i = %d   Q = [ %.3f %.3f %.3f %.3f ]   ori = [ %.3f %.3f %.3f %.3f ]   quat = [ %.3f %.3f %.3f %.3f ]  ==> abg = [ %.4f %.4f %.4f ]\n",
+           i,
+           qQ.x, qQ.y, qQ.z, qQ.w,
+           ori.x, ori.y, ori.z, ori.w,
+           quat_rel.x, quat_rel.y, quat_rel.z, quat_rel.w,
+           alpha, beta, gamma);
+    
+    // Update velocity
+    vel += dudt * dt;
+    
+    // Update orientation
+    ori = quat_mult(ori, tum);
 
 //#define RAD2DEG(X)  (X * 57.295779513082323f)
 //        if (i == 0) {
@@ -442,7 +498,7 @@ __kernel void scat_atts(__global float4 *p,
 //                   quat_rel.x, quat_rel.y, quat_rel.z, quat_rel.w);
 //        }
     
-    // Future position, orientation, etc.
+    // Update position
     pos += vel * dt;
     
     // Check for bounding constraints

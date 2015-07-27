@@ -891,7 +891,7 @@
 
 	// Anchors
 	glBindVertexArray(anchorRenderer.vao);
-	glPointSize(5.0f);
+	glPointSize(5.0f * devicePixelRatio);
 	glUseProgram(anchorRenderer.program);
 	glUniform4f(anchorRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
 	glUniformMatrix4fv(anchorRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
@@ -900,8 +900,7 @@
 	// The scatter bodies
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 	glBindVertexArray(bodyRenderer.vao);
-	glPointSize(MIN(MAX(15.0f * pixelsPerUnit, 1.0f), 64.0f));
-//    glPointSize(MIN(MAX(35.0f * pixelsPerUnit, 2.0f), 256.0f));
+	glPointSize(MIN(MAX(15.0f * pixelsPerUnit, 1.0f), 64.0f) * devicePixelRatio);
 	glUseProgram(bodyRenderer.program);
     if (range < 1000.0f) {
         glUniform4f(bodyRenderer.colorUI, 1.0f, 1.0f, 1.0f, MIN(1.0f, backgroundOpacity * 1000.0f / range));
@@ -1013,6 +1012,8 @@
 - (void)updateViewParameters {
 
     GLfloat near = 2.0f / range * modelCenter.y;
+    
+//    glLineWidth(2.0f * devicePixelRatio);
     
     unitsPerPixel = range / height / devicePixelRatio;
     pixelsPerUnit = 1.0f / unitsPerPixel;

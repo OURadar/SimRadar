@@ -69,11 +69,13 @@
 		RS_set_scan_box(S,
 						10.0e3, 15.0e3, 250.0f,         // Range
 						-12.0f, 12.0f, 2.0f,            // Azimuth
-						0.0f, 6.0f, 1.0f);              // Elevation
+						-1.0f, 6.0f, 1.0f);              // Elevation
 	
-        RS_set_debris_count(S, 1, 4000);
-        RS_set_debris_count(S, 2, 2000);
-        RS_set_debris_count(S, 3, 500);
+//        RS_set_debris_count(S, 1, 4000);
+//        RS_set_debris_count(S, 2, 2000);
+//        RS_set_debris_count(S, 3, 500);
+
+        RS_set_debris_count(S, 1, 1);
         
         
 		//RS_set_physics_data_to_cube125(S);
@@ -133,10 +135,12 @@
 - (void)populate
 {
 	RS_populate(S);
-    float x = S->domain.origin.x + 0.5f * S->domain.size.x;
-    float y = S->domain.origin.y + 0.5f * S->domain.size.y;
-    float r = sqrtf(x * x + y * y);
-    el_deg = atan2f(S->domain.origin.z + 0.5f * S->domain.size.z, r) * 180.0f / M_PI;
+//    float x = S->domain.origin.x + 0.5f * S->domain.size.x;
+//    float y = S->domain.origin.y + 0.5f * S->domain.size.y;
+//    float r = sqrtf(x * x + y * y);
+//    el_deg = atan2f(S->domain.origin.z + 0.5f * S->domain.size.z, r) * 180.0f / M_PI;
+    el_deg = 0.0f;
+    RS_set_beam_pos(S, az_deg, el_deg);
 }
 
 - (void)explode

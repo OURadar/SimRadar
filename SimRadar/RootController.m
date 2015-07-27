@@ -78,6 +78,8 @@
 	iconFolder = [[[NSBundle mainBundle] pathForResource:@"Minion-Icons" ofType:nil] retain];
 	icons = [[[NSFileManager defaultManager] contentsOfDirectoryAtPath:iconFolder error:nil] retain];
 
+    state = 2;
+    
 	[self newLiveDisplay:self];
 }
 
