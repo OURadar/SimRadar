@@ -284,11 +284,12 @@ __kernel void scat_atts(__global float4 *p,
 {
     const unsigned int i = get_global_id(0);
     
-    float4 pos = p[i];
-    float4 ori = o[i];
-    float4 vel = v[i];
-    float4 tum = t[i];
-    float4 aux = a[i];
+    float4 pos = p[i];  // position
+    float4 ori = o[i];  // orientation
+    float4 vel = v[i];  // velocity
+    float4 tum = t[i];  // tumbling of the velocity
+    float4 aux = a[i];  // auxiliary
+    float4 sig = x[i];  // signal
     
     const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
 
@@ -345,6 +346,7 @@ __kernel void scat_atts(__global float4 *p,
         beta = 0.0f;
     }
     
+    // ADM values are stored as cd(x, y, z, _) + cm(x, y, z, _)
     float2 adm_coord = fma((float2)(beta, alpha), adm_desc.s01, adm_desc.s45);
     float4 cd = read_imagef(adm_cd, sampler, adm_coord);
     float4 cm = read_imagef(adm_cm, sampler, adm_coord);
@@ -408,26 +410,29 @@ __kernel void scat_atts(__global float4 *p,
     alpha = atan2(quat_rel.y * quat_rel.z + quat_rel.w * quat_rel.x , quat_rel.w * quat_rel.y - quat_rel.x * quat_rel.z);
     beta  =  acos(quat_rel.w * quat_rel.w + quat_rel.z * quat_rel.z - quat_rel.y * quat_rel.y - quat_rel.x * quat_rel.x);
     gamma = atan2(quat_rel.y * quat_rel.z - quat_rel.w * quat_rel.x , quat_rel.x * quat_rel.z + quat_rel.w * quat_rel.y);
+    
+//    printf("i = %d   ori = [ %.3f %.3f %.3f %.3f ]   BLC = [ %.4f %.4f %.4f %.4f ]  ==> abg = [ %.4f %.4f %.4f ]\n",
+//           i,
+//           ori.x, ori.y, ori.z, ori.w,
+//           quat_rel.x, quat_rel.y, quat_rel.z, quat_rel.w,
+//           RAD2DEG(alpha), RAD2DEG(beta), RAD2DEG(gamma));
+    
+    // RCS values are stored as real(hh, vv, hv, __) + imag(hh, vv, hv, __)
+    float2 rcs_coord = fma((float2)(alpha, beta), rcs_desc.s01, rcs_desc.s45);
+    float4 rcs_real = read_imagef(adm_cd, sampler, adm_coord);
+    float4 rcs_imag = read_imagef(adm_cm, sampler, adm_coord);
 
-    printf("i = %d   ori = [ %.3f %.3f %.3f %.3f ]   BLC = [ %.3f %.3f %.3f %.3f ]  ==> abg = [ %.4f %.4f %.4f ]\n",
-           i,
-           ori.x, ori.y, ori.z, ori.w,
-           quat_rel.x, quat_rel.y, quat_rel.z, quat_rel.w,
-           alpha, beta, gamma);
+    // Assign signal amplitude as Hi, Hq, Vi, Vq
+    sig.s0 = rcs_real.s0;
+    sig.s1 = rcs_imag.s0;
+    sig.s2 = rcs_real.s1;
+    sig.s3 = rcs_imag.s1;
     
     // Update velocity
     vel += dudt * dt;
     
     // Update orientation
     ori = quat_mult(ori, tum);
-
-//#define RAD2DEG(X)  (X * 57.295779513082323f)
-//        if (i == 0) {
-//            printf("el/az = %5.2f %5.2f   alpha/beta/gamma = %5.2f %5.2f %5.2f   quat_rel = %5.2f %5.2f %5.2f %5.2f\n",
-//                   RAD2DEG(el), RAD2DEG(az),
-//                   RAD2DEG(alpha), RAD2DEG(beta), RAD2DEG(gamma),
-//                   quat_rel.x, quat_rel.y, quat_rel.z, quat_rel.w);
-//        }
     
     // Update position
     pos += vel * dt;
@@ -459,11 +464,13 @@ __kernel void scat_atts(__global float4 *p,
 
     aux.s3 = compute_angular_weight(pos, angular_weight, angular_weight_desc, sim_desc);
 
+    // Copy back to global memory space
     p[i] = pos;
     o[i] = ori;
     v[i] = vel;
     t[i] = tum;
     a[i] = aux;
+    x[i] = sig;
 }
 
 

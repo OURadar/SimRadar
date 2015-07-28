@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
     
     RS_set_range_weight_to_triangle(S, 120.0f);
     
-    RS_set_debris_count(S, 1, 32);
+    RS_set_debris_count(S, 1, 1);
     
     RS_clear_wind_data(S);
     for (int k=0; k<RS_MAX_VEL_TABLES; k++) {
@@ -159,25 +159,25 @@ int main(int argc, char *argv[]) {
     }
     
     // Now, we are ready to bake
-    int k;
-    const int ks = 10;
-    for (k=0; k<ks; k++) {
-        RS_make_pulse(S);
-        RS_set_beam_pos(S, 15.0f, 10.0f);
-        RS_advance_time(S);
-        
-        if (verb > 2) {
-            RS_download(S);
-            printf("== k = %d ==============\n", k);
-            RS_show_scat_pos(S);
-        }
-    }
+    int k = 0;
+//    const int ks = 10;
+//    for (k=0; k<ks; k++) {
+//        RS_make_pulse(S);
+//        RS_set_beam_pos(S, 15.0f, 10.0f);
+//        RS_advance_time(S);
+//        
+//        if (verb > 2) {
+//            RS_download(S);
+//            printf("== k = %d ==============\n", k);
+//            RS_show_scat_pos(S);
+//        }
+//    }
     
     gettimeofday(&t1, NULL);
     
     for (; k<num_frames; k++) {
         RS_make_pulse(S);
-        RS_set_beam_pos(S, 15.0f, 10.0f);
+        RS_set_beam_pos(S, 0.0f, 0.0f);
         RS_advance_time(S);
     }
     

@@ -1078,16 +1078,16 @@ void RS_init_scat_pos(RSHandle *H) {
 		H->scat_vel[i].w = 0.0f;
 
         // Facing the sky
-        H->scat_ori[i].x =  0.0f;
-        H->scat_ori[i].y = -0.707106781186547f;
-        H->scat_ori[i].z =  0.0f;
-        H->scat_ori[i].w =  0.707106781186548f;
+//        H->scat_ori[i].x =  0.0f;
+//        H->scat_ori[i].y = -0.707106781186547f;
+//        H->scat_ori[i].z =  0.0f;
+//        H->scat_ori[i].w =  0.707106781186548f;
 
         // Facing the beam
-//        H->scat_ori[i].x =  0.5f;
-//        H->scat_ori[i].y = -0.5f;
-//        H->scat_ori[i].z = -0.5f;
-//        H->scat_ori[i].w =  0.5f;
+        H->scat_ori[i].x =  0.5f;
+        H->scat_ori[i].y = -0.5f;
+        H->scat_ori[i].z = -0.5f;
+        H->scat_ori[i].w =  0.5f;
 		
         H->scat_tum[i].x = 0.0f;
         H->scat_tum[i].y = 0.0f;
