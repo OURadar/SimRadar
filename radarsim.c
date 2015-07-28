@@ -134,7 +134,7 @@ int main(int argc, char *argv[]) {
                     -10.0f, 10.0f, 1.0f,                        // Azimuth
                     0.0f, 8.0f, 1.0f);                          // Elevation
     
-    RS_set_range_weight_to_triangle(S, 120.0f);
+    RS_set_range_weight_to_triangle(S, 250.0f);
     
     RS_set_debris_count(S, 1, 1);
     
@@ -197,12 +197,13 @@ int main(int argc, char *argv[]) {
     
     for (; k<num_frames; k++) {
         RS_set_beam_pos(S, 0.0f, 0.0f);
+        RS_advance_time(S);
         RS_make_pulse(S);
         RS_download(S);
         
         RS_show_scat_sig(S);
         
-        RS_download_pulse_only(S);
+        //RS_download_pulse_only(S);
         
         printf("signal:\n");
         for (int r=0; r<S->params.range_count; r++) {
@@ -213,8 +214,6 @@ int main(int argc, char *argv[]) {
         }
         
         printf("\n");
-        
-        RS_advance_time(S);
     }
     
     gettimeofday(&t2, NULL);

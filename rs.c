@@ -391,7 +391,7 @@ char *commaint(long long num) {
 	if (num >= 1000) {
 		int c = (int)(strlen(buf[b]) - 1) / 3; // Number of commans
 		int p = (int)(strlen(buf[b])) + c;     // End position
-		int d = 1;                          // Count of digits
+		int d = 1;                             // Count of digits
 		buf[b][p] = '\0';
 		while (p > 0) {
 			p--;
@@ -1077,9 +1077,9 @@ void RS_init_scat_pos(RSHandle *H) {
 		H->scat_pos[i].w = 1.0f;
 		
 		H->scat_att[i].s0 = 0.0f;
-        H->scat_att[i].s1 = (float)rand() / RAND_MAX;
-		H->scat_att[i].s2 = (float)rand() / RAND_MAX;
-		H->scat_att[i].s3 = (float)rand() / RAND_MAX;
+        H->scat_att[i].s1 = 0.0f;
+		H->scat_att[i].s2 = 0.0f;
+		H->scat_att[i].s3 = 0.0f;
 		
 		H->scat_vel[i].x = 0.0f;
 		H->scat_vel[i].y = 0.0f;
@@ -1098,6 +1098,7 @@ void RS_init_scat_pos(RSHandle *H) {
         H->scat_ori[i].z = -0.5f;
         H->scat_ori[i].w =  0.5f;
 		
+        // Tumbling vector for orientation update
         H->scat_tum[i].x = 0.0f;
         H->scat_tum[i].y = 0.0f;
         H->scat_tum[i].z = 0.0f;
@@ -1122,10 +1123,12 @@ void RS_init_scat_pos(RSHandle *H) {
 	H->scat_pos[0].z = H->domain.origin.z + 0.5f * H->domain.size.z;
 	
     if (H->species_population[1]) {
-        int k = (int)H->species_population[0];
+        int k = (int)H->species_population[0] / 2;
         H->scat_pos[k].x = 0.0f;
-        H->scat_pos[k].y = H->domain.origin.y + 0.5f * H->domain.size.y;
+        H->scat_pos[k].y = H->params.range_start + floorf(H->params.range_count * 0.5f) * H->params.range_delta;
         H->scat_pos[k].z = 0.0f;
+        
+        H->scat_att[k].s0 = H->params.range_start + floorf(H->params.range_count * 0.5f) * H->params.range_delta;
     }
 	
 	// Restore simulation time
@@ -1696,7 +1699,9 @@ void RS_update_debris_count(RSHandle *H) {
         if (species_count_left == 0) {
             continue;
         }
-        size_t sub_species_population = H->species_population[k] / H->num_workers;
+        // Groups of debris types
+        size_t round_up_down_toggle = k % H->num_workers;
+        size_t sub_species_population = (H->species_population[k] + round_up_down_toggle) / H->num_workers;
         for (i=0; i<H->num_workers-1; i++) {
             H->worker[i].species_population[k] = sub_species_population;
             species_count_left -= sub_species_population;
@@ -2081,7 +2086,7 @@ void RS_set_wind_data_to_cube27(RSHandle *H) {
 			   H->domain.origin.z, H->domain.origin.z + H->domain.size.z);
 	}
 	
-	// Set up the mapping coefficients: -table_start * table_dx
+	// Set up the mapping coefficients: -table_start * table_xs
 	//	table.x_ = 3;    table.xm = 2.0f;    table.xs = 2.0f / H->domain.size.x;    table.xo = -H->domain.origin.x * table.xs + 0.5f;
 	//	table.y_ = 3;    table.ym = 2.0f;    table.ys = 2.0f / H->domain.size.y;    table.yo = -H->domain.origin.y * table.ys + 0.5f;
 	//	table.z_ = 3;    table.zm = 2.0f;    table.zs = 2.0f / H->domain.size.z;    table.zo = -H->domain.origin.z * table.zs + 0.5f;
@@ -3144,25 +3149,28 @@ void RS_advance_time(RSHandle *H) {
 		H->sim_toc = H->sim_tic + (size_t)(1.0f / H->params.prt);
 	}
     
+    size_t local_item_size = 1;
+    
 	for (i=0; i<H->num_workers; i++) {
 		// Need to refresh some parameters at each time update
+        clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
+        clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
+
         clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
         clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
         
         // Background
-        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_bg_atts, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], NULL, 0, NULL, &events[i][0]);
-
-        clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
-        clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
+        //printf("H->worker[%d].species_population[0] = %d from %d --> background\n", i, (int)H->worker[i].species_population[0], (int)H->worker[i].species_origin[0]);
+        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_bg_atts, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i][0]);
         
         // Debris type
         for (k=1; k<RS_MAX_SPECIES_TYPES; k++) {
             if (H->worker[i].species_population[k] == 0) {
                 continue;
             }
-            clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_atts, 1, &H->worker[i].species_origin[k], &H->worker[i].species_population[k], NULL, 0, NULL, &events[i][k]);
+            //printf("H->worker[%d].species_population[%d] = %d from %d --> debris\n", i, k, (int)H->worker[i].species_population[k], (int)H->worker[i].species_origin[k]);
+            clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_atts, 1, &H->worker[i].species_origin[k], &H->worker[i].species_population[k], &local_item_size, 0, NULL, &events[i][k]);
         }
-        
     }
 
     for (i=0; i<H->num_workers; i++) {
@@ -3208,32 +3216,15 @@ void RS_make_pulse(RSHandle *H) {
 	
 	for (i=0; i<H->num_workers; i++) {
 		dispatch_async(H->worker[i].que, ^{
-			
-//#ifdef MAKE_PULSE_PASS_1
-//			make_pulse_pass_1_kernel(&H->worker[i].ndrange_pulse_pass_1,
-//									 (cl_float4 *)H->worker[i].work,
-//									 (cl_float4 *)H->worker[i].scat_sig,
-//									 (cl_float4 *)H->worker[i].scat_att,
-//									 H->worker[i].make_pulse_params.local_mem_size[0],
-//									 (cl_float *)H->worker[i].range_weight,
-//									 H->range_weight_table.x0,
-//									 H->range_weight_table.xm,
-//									 H->range_weight_table.dx,
-//									 H->worker[i].make_pulse_params.range_start,
-//									 H->worker[i].make_pulse_params.range_delta,
-//									 H->worker[i].make_pulse_params.range_count,
-//									 H->worker[i].make_pulse_params.group_counts[0],
-//									 H->worker[i].make_pulse_params.entry_counts[0]);
-//#endif
             make_pulse_pass_1_kernel(&H->worker[i].ndrange_pulse_pass_1,
                                      (cl_float4 *)H->worker[i].work,
                                      (cl_float4 *)H->worker[i].scat_sig,
                                      (cl_float4 *)H->worker[i].scat_att,
                                      H->worker[i].make_pulse_params.local_mem_size[0],
                                      (cl_float *)H->worker[i].range_weight,
+                                     H->worker[i].range_weight_desc.s0,
                                      H->worker[i].range_weight_desc.s1,
                                      H->worker[i].range_weight_desc.s2,
-                                     H->worker[i].range_weight_desc.s0,
                                      H->worker[i].make_pulse_params.range_start,
                                      H->worker[i].make_pulse_params.range_delta,
                                      H->worker[i].make_pulse_params.range_count,
@@ -3276,7 +3267,7 @@ void RS_make_pulse(RSHandle *H) {
 	
 #else
 	
-	cl_event pass_1_events[H->num_workers];
+    cl_event pass_1_events[H->num_workers];
 	cl_event pass_2_events[H->num_workers];
 	for (i=0; i<H->num_workers; i++) {
 		RSWorker *C = &H->worker[i];
@@ -3379,10 +3370,11 @@ static void RS_show_scat_i(RSHandle *H, const int i) {
 
 
 static void RS_show_rcs_i(RSHandle *H, const int i) {
-    printf(" %7d - ( %9.2f, %9.2f, %9.2f )  %7.4f %7.4f %7.4f %7.4f  [ %7.2f %7.2f %7.2f %7.2f ]\n", i,
+    printf(" %7d - ( %9.2f, %9.2f, %9.2f )  %7.4f %7.4f %7.4f %7.4f  [ %7.2f %7.2f %7.2f %7.2f ] %.2f\n", i,
            H->scat_pos[i].x, H->scat_pos[i].y, H->scat_pos[i].z,
            H->scat_ori[i].x, H->scat_ori[i].y, H->scat_ori[i].z, H->scat_ori[i].w,
-           H->scat_sig[i].x, H->scat_sig[i].y, H->scat_sig[i].z, H->scat_sig[i].w);
+           H->scat_sig[i].x, H->scat_sig[i].y, H->scat_sig[i].z, H->scat_sig[i].w,
+           H->scat_att[i].s0);
 }
 
 
@@ -3402,16 +3394,16 @@ void RS_show_scat_pos(RSHandle *H) {
 void RS_show_scat_sig(RSHandle *H) {
     int i;
     printf("background:\n");
-    for (i=0; i<H->species_population[0]; i+=H->species_population[0]/9) {
+    for (i=0; i<H->species_population[0]; i+=H->species_population[0] / 9) {
         RS_show_rcs_i(H, i);
     }
     if (H->species_population[1] == 0) {
         return;
     }
     // Show the debris
-    printf("debris type #1:\n");
-    i = (int)H->species_population[0];
-    for (; i<H->species_population[0] + H->species_population[1]; i++) {
+    i = (int)H->species_population[0] / 2;
+    printf("debris type #1 (%d)\n", i);
+    for (; i<H->species_population[0] / 2 + H->species_population[1]; i++) {
         RS_show_rcs_i(H, i);
     }
 }

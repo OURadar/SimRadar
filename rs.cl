@@ -222,13 +222,13 @@ __kernel void bg_atts(__global float4 *p,
     //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
     const float4 dt = (float4)(sim_desc.sb, sim_desc.sb, sim_desc.sb, 0.0f);
     
+    // Future position, orientation, etc.
+    pos += vel * dt;
+    
     // Background wind
     float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
     
     vel = read_imagef(wind_uvw, sampler, wind_coord);
-    
-    // Future position, orientation, etc.
-    pos += vel * dt;
     
     // Check for bounding constraints
     //    RSSimulationParameterBoundOriginX  =  8,  // hi.s0
@@ -291,6 +291,8 @@ __kernel void scat_atts(__global float4 *p,
     float4 aux = a[i];  // auxiliary
     float4 sig = x[i];  // signal
     
+    printf("debris %u\n", i);
+    
     const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
 
     //    RSSimulationParameterBeamUnitX     =  0,
@@ -318,6 +320,12 @@ __kernel void scat_atts(__global float4 *p,
     float4 vel_bg = read_imagef(wind_uvw, sampler, wind_coord);
     
     //
+    // Update orientation & position ---------------------------------
+    //
+    //ori = quat_mult(ori, tum);
+    //pos += vel * dt;
+
+    //
     // derive alpha & beta of ADM for ADM table lookup ---------------------------------
     //
     float alpha, beta, gamma;
@@ -327,11 +335,6 @@ __kernel void scat_atts(__global float4 *p,
     if (length(ur.xyz) > 1.0e-3f) {
         float4 u_hat = normalize(ur);
         
-//        // xp, yp, zp - x, y, z axis of the particle
-//        float4 xp = quat_get_x(ori);
-//        float4 yp = quat_get_y(ori);
-//        float4 zp = quat_get_z(ori);
-
         u_hat = quat_rotate(u_hat, quat_conj(ori));
         
         beta = acos(u_hat.x);
@@ -431,12 +434,6 @@ __kernel void scat_atts(__global float4 *p,
     // Update velocity
     vel += dudt * dt;
     
-    // Update orientation
-    ori = quat_mult(ori, tum);
-    
-    // Update position
-    pos += vel * dt;
-    
     // Check for bounding constraints
     //    RSSimulationParameterBoundOriginX  =  8,  // hi.s0
     //    RSSimulationParameterBoundOriginY  =  9,  // hi.s1
@@ -523,9 +520,9 @@ __kernel void scat_clr2(__global float4 *c,
 // att - attributes
 // shared - local memory space __local space (64 kB max)
 // weight_table - range weighting function, __constant space (64 kB max)
+// table_xs - scale to convert range to table index
 // table_x0 - offset to convert range to table index
 // table_xm - last table index
-// table_dx - scale to convert range to table index
 // range_start - start range of the domain
 // range_delta - range spacing (not resolution)
 // range_count - number of range gates
@@ -537,9 +534,9 @@ __kernel void make_pulse_pass_1(__global float4 *out,
                                 __global const float4 *att,
                                 __local float4 *shared,
                                 __constant float *weight_table,
+                                const float table_xs,
                                 const float table_x0,
                                 const float table_xm,
-                                const float table_dx,
                                 const float range_start,
                                 const float range_delta,
                                 const unsigned int range_count,
@@ -553,7 +550,7 @@ __kernel void make_pulse_pass_1(__global float4 *out,
     const unsigned int group_stride = 2 * local_size;
     const unsigned int local_stride = group_stride * group_count;
     
-    const float4 table_dx_4 = (float4)(table_dx, table_dx, table_dx, table_dx);
+    const float4 table_xs_4 = (float4)(table_xs, table_xs, table_xs, table_xs);
     const float4 table_x0_4 = (float4)(table_x0, table_x0, table_x0, table_x0) + (float4)(0.0f, 1.0f, 0.0f, 1.0f);
     
     float r;
@@ -567,7 +564,6 @@ __kernel void make_pulse_pass_1(__global float4 *out,
     
     unsigned int k;
     unsigned int i = group_id * group_stride + local_id;
-    
     
     // Initialize the block of local memory to zeros
     for (k=0; k<range_count; k++) {
@@ -587,6 +583,9 @@ __kernel void make_pulse_pass_1(__global float4 *out,
     // Linearly interpolate weights of element 0 & 1 using decimal fraction stored in dec.s0
     // Linearly interpolate weights of element 2 & 3 using decimal fraction stored in dec.s2
     // Why do it like this rather than the plain C code? Keep the CU's SIMD processors busy.
+    
+    // att.s0 - range
+    
     while (i < n) {
         a = sig[i];
         b = sig[i + local_size];
@@ -596,7 +595,7 @@ __kernel void make_pulse_pass_1(__global float4 *out,
         for (k=0; k<range_count; k++) {
             float4 dr = (float4)(r_a, r_a, r_b, r_b) - (float4)(r, r, r, r);
             
-            fidx_raw = clamp(fma(dr, table_dx_4, table_x0_4), 0.0f, table_xm);     // Index [0 ... xm] in float
+            fidx_raw = clamp(fma(dr, table_xs_4, table_x0_4), 0.0f, table_xm);     // Index [0 ... xm] in float
             fidx_dec = fract(fidx_raw, &fidx_int);                                 // The integer and decimal fraction
             iidx_int = convert_uint4(fidx_int);
             
@@ -604,12 +603,13 @@ __kernel void make_pulse_pass_1(__global float4 *out,
                             (float2)(weight_table[iidx_int.s1], weight_table[iidx_int.s3]),
                             fidx_dec.s02);
             
-            //			if (i < 16) {
-            //				printf("k=%2u  r=%5.2f  i=%2u  r_a=%6.3f  dr=% 5.3f  w_r=% 6.3f   % 5.2f -> % 2u/% 2u/% 3.2f  % 5.2f % 5.2f\n",
-            //					   k, r, i,            r_a, dr.s0, w2.s0, fidx_raw.s0, iidx_int.s0, iidx_int.s1, fidx_dec.s0, weight_table[iidx_int.s0], weight_table[iidx_int.s1]);
-            //				printf("k=%2u  r=%5.2f  i=%2u  r_a=%6.3f  dr=% 5.3f  w_r=% 6.3f   % 5.2f -> % 2u/% 2u/% 3.2f  % 5.2f % 5.2f\n",
-            //					   k, r, i+local_size, r_b, dr.s2, w2.s1, fidx_raw.s2, iidx_int.s2, iidx_int.s3, fidx_dec.s2, weight_table[iidx_int.s2], weight_table[iidx_int.s3]);
-            //			}
+//            if (a.s0 > 0.0f || b.s0 > 0.0f) {
+//                printf("xs = %.4f  x0 = %.2f  xm = %.2f\n", table_xs, table_x0, table_xm);
+//                printf("k=%2u  r=%5.2f  i=%2u  r_a=%6.3f  dr=% 5.3f  w_r=% 6.3f   % 5.2f -> % 2u/% 2u/% 3.2f  % 5.2f % 5.2f\n",
+//                       k, r, i,            r_a, dr.s0, w2.s0, fidx_raw.s0, iidx_int.s0, iidx_int.s1, fidx_dec.s0, weight_table[iidx_int.s0], weight_table[iidx_int.s1]);
+//                printf("k=%2u  r=%5.2f  i=%2u  r_b=%6.3f  dr=% 5.3f  w_r=% 6.3f   % 5.2f -> % 2u/% 2u/% 3.2f  % 5.2f % 5.2f\n",
+//                       k, r, i+local_size, r_b, dr.s2, w2.s1, fidx_raw.s2, iidx_int.s2, iidx_int.s3, fidx_dec.s2, weight_table[iidx_int.s2], weight_table[iidx_int.s3]);
+//            }
             
             w_a = (float4)(w2.s0, w2.s0, w2.s0, w2.s0);
             w_b = (float4)(w2.s1, w2.s1, w2.s1, w2.s1);
