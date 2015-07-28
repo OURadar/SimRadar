@@ -1123,7 +1123,7 @@ void RS_init_scat_pos(RSHandle *H) {
 	H->scat_pos[0].z = H->domain.origin.z + 0.5f * H->domain.size.z;
 	
     if (H->species_population[1]) {
-        int k = (int)H->species_population[0] / 2;
+        int k = (int)H->species_population[0] / H->num_workers;
         H->scat_pos[k].x = 0.0f;
         H->scat_pos[k].y = H->params.range_start + floorf(H->params.range_count * 0.5f) * H->params.range_delta;
         H->scat_pos[k].z = 0.0f;
@@ -3401,9 +3401,9 @@ void RS_show_scat_sig(RSHandle *H) {
         return;
     }
     // Show the debris
-    i = (int)H->species_population[0] / 2;
+    i = (int)H->species_population[0] / H->num_workers;
     printf("debris type #1 (%d)\n", i);
-    for (; i<H->species_population[0] / 2 + H->species_population[1]; i++) {
+    for (; i<H->species_population[0] / H->num_workers + H->species_population[1]; i++) {
         RS_show_rcs_i(H, i);
     }
 }

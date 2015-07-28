@@ -201,19 +201,24 @@ int main(int argc, char *argv[]) {
         RS_make_pulse(S);
         RS_download(S);
         
-        RS_show_scat_sig(S);
+        if (verb > 1) {
+            RS_show_scat_sig(S);
+            
+            if (verb < 2) {
+                continue;
+            }
+            printf("signal:\n");
+            for (int r=0; r<S->params.range_count; r++) {
+                printf("sig[%d] = (%.2f %.2f %.2f %.2f)\n", r, S->pulse[r].s0, S->pulse[r].s1, S->pulse[r].s2, S->pulse[r].s3);
+            }
+            printf("\n");
+        }
         
         //RS_download_pulse_only(S);
         
-        printf("signal:\n");
-        for (int r=0; r<S->params.range_count; r++) {
-            printf("sig[%d] = (%.2f %.2f %.2f %.2f)\n", r, S->pulse[r].s0, S->pulse[r].s1, S->pulse[r].s2, S->pulse[r].s3);
-        }
         if (write_file) {
             fwrite(S->pulse, sizeof(cl_float4), S->params.range_count, fid);
         }
-        
-        printf("\n");
     }
     
     gettimeofday(&t2, NULL);
