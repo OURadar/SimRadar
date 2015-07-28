@@ -125,14 +125,15 @@ NSWindow *standardWindow;
 	#ifdef DEBUG
 	NSLog(@"Stopping animation ...");
 	#endif
-	[glView stopAnimation];
+	
+    [glView stopAnimation];
 }
 
 - (void)showWindow:(id)sender
 {
 	[super showWindow:sender];
-		
-	#ifdef DEBUG
+
+    #ifdef DEBUG
 	NSLog(@"Starting animation ...");
 	#endif
 	

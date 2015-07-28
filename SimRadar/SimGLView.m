@@ -106,6 +106,9 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	// OSX (but not iOS since iOS apps must create their own FBO)
 	CGSize size = CGSizeMake(self.bounds.size.width, self.bounds.size.height);
 
+    [renderer setSize:size];
+    [renderer allocateVAO];
+    
 	// Create a display link capable of being used with all active displays
 	CVDisplayLinkCreateWithActiveCGDisplays(&displayLink);
 	
@@ -126,9 +129,6 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 											 selector:@selector(windowWillClose:)
 												 name:NSWindowWillCloseNotification
 											   object:[self window]];
-	[renderer setSize:size];
-	[renderer allocateVAO];
-	
 }
 
 #pragma mark -
@@ -191,7 +191,7 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 
 
 - (void)startAnimation {
-	[self renewGState];
+    [self renewGState];
 	if (!animating) {
 		// Activate the display link
 		CVDisplayLinkStart(displayLink);

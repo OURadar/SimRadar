@@ -662,7 +662,7 @@
     }
 	
 	textRenderer = [[GLText alloc] initWithDevicePixelRatio:devicePixelRatio];
-	
+    
 	NSLog(@"VAOs = bodyRenderer %d  gridRenderer %d  anchorRenderer %d  anchorLineRendrer %d  leafRendrer = %d",
 		  bodyRenderer.vao, gridRenderer.vao, anchorRenderer.vao, anchorLineRenderer.vao, leafRenderer.vao);
 	// Depth test will always be enabled
