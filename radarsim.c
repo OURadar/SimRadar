@@ -32,12 +32,13 @@ int main(int argc, char *argv[]) {
     char c;
     char verb = 0;
     char accel_type = 0;
+    char write_file = FALSE;
     int num_frames = 5;
     float density = 0.0f;
     
     struct timeval t1, t2;
     
-    while ((c = getopt(argc, argv, "vcgf:a:d:h?")) != -1) {
+    while ((c = getopt(argc, argv, "vcgf:a:d:wh?")) != -1) {
         switch (c) {
             case 'v':
                 verb++;
@@ -56,6 +57,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'd':
                 density = atof(optarg);
+                break;
+            case 'w':
+                write_file = TRUE;
                 break;
             case 'h':
             case '?':
@@ -157,7 +161,23 @@ int main(int argc, char *argv[]) {
         printf("%s : Emulating %s frame%s with %s scatter bodies\n",
                now(), commaint(num_frames), num_frames>1?"s":"", commaint(S->num_scats));
     }
-    
+
+    // Initialize a file if the user wants an output file
+    FILE *fid = NULL;
+    if (write_file) {
+        char filename[4096];
+        memset(filename, 0, 4096);
+        snprintf(filename, 256, "%s/Downloads/sim-%s.iq", getenv("HOME"), nowlong());
+        printf("%s : Output file : %s\n", now(), filename);
+        fid = fopen(filename, "wb");
+        if (fid == NULL) {
+            fprintf(stderr, "%s : Error creating file for writing data.\n", now());
+            write_file = FALSE;
+        }
+        // For now, we simply write a 4K header. Will populate with more contents next time
+        fwrite(filename, sizeof(char), 4096, fid);
+    }
+
     // Now, we are ready to bake
     int k = 0;
 //    const int ks = 10;
@@ -176,8 +196,24 @@ int main(int argc, char *argv[]) {
     gettimeofday(&t1, NULL);
     
     for (; k<num_frames; k++) {
-        RS_make_pulse(S);
         RS_set_beam_pos(S, 0.0f, 0.0f);
+        RS_make_pulse(S);
+        RS_download(S);
+        
+        RS_show_scat_sig(S);
+        
+        RS_download_pulse_only(S);
+        
+        printf("signal:\n");
+        for (int r=0; r<S->params.range_count; r++) {
+            printf("sig[%d] = (%.2f %.2f %.2f %.2f)\n", r, S->pulse[r].s0, S->pulse[r].s1, S->pulse[r].s2, S->pulse[r].s3);
+        }
+        if (write_file) {
+            fwrite(S->pulse, sizeof(cl_float4), S->params.range_count, fid);
+        }
+        
+        printf("\n");
+        
         RS_advance_time(S);
     }
     
@@ -194,9 +230,13 @@ int main(int argc, char *argv[]) {
         RS_download(S);
     }
     
-    printf("Final scatter body positions:\n");
-    
-    RS_show_scat_pos(S);
+    //printf("Final scatter body positions:\n");
+    //RS_show_scat_pos(S);
+
+    if (write_file) {
+        printf("%s : Data file with %s bytes.\n", now(), commaint(ftell(fid)));
+        fclose(fid);
+    }
     
     RS_free(S);
     

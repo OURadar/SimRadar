@@ -363,6 +363,7 @@ typedef struct _rs_handle {
 
 char *commaint(long long num);
 char *now();
+char *nowlong();
 
 #pragma mark -
 
@@ -451,6 +452,7 @@ void RS_table3d_free(RSTable3D T);
 #pragma mark -
 
 void RS_show_scat_pos(RSHandle *H);
+void RS_show_scat_sig(RSHandle *H);
 void RS_show_pulse(RSHandle *H);
 
 #endif

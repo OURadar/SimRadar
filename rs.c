@@ -418,6 +418,15 @@ char *now() {
 }
 
 
+char *nowlong() {
+    static char timestr[64];
+    time_t utc;
+    time(&utc);
+    strftime(timestr, 63, "%Y%m%d-%H%M%S", localtime(&utc));
+    return timestr;
+}
+
+
 void rsprint(const char *format, ...) {
 	
 	char str[RS_MAX_STR] = "";
@@ -1094,11 +1103,13 @@ void RS_init_scat_pos(RSHandle *H) {
         H->scat_tum[i].z = 0.0f;
         H->scat_tum[i].w = 0.0f;
 
-        H->scat_sig[i].s0 = 1.0f;
+        // Initial return from each point
+        H->scat_sig[i].s0 = 0.0f;
 		H->scat_sig[i].s1 = 0.0f;
-		H->scat_sig[i].s2 = 1.0f;
+		H->scat_sig[i].s2 = 0.0f;
 		H->scat_sig[i].s3 = 0.0f;
         
+        // Random seeds
         H->scat_rnd[i].s0 = rand();
         H->scat_rnd[i].s1 = rand();
         H->scat_rnd[i].s2 = rand();
@@ -1110,13 +1121,10 @@ void RS_init_scat_pos(RSHandle *H) {
 	H->scat_pos[0].y = H->domain.origin.y + 0.5f * H->domain.size.y;
 	H->scat_pos[0].z = H->domain.origin.z + 0.5f * H->domain.size.z;
 	
-    if (H->species_population[1] >= 1) {
-        int k = (int)H->species_population[1];
-//        H->scat_pos[k].x = H->domain.origin.x + 0.5f * H->domain.size.x;
-//        H->scat_pos[k].y = H->domain.origin.y + 0.5f * H->domain.size.y;
-//        H->scat_pos[k].z = H->domain.origin.z + 0.5f * H->domain.size.z;
+    if (H->species_population[1]) {
+        int k = (int)H->species_population[0];
         H->scat_pos[k].x = 0.0f;
-        H->scat_pos[k].y = 0.0f;
+        H->scat_pos[k].y = H->domain.origin.y + 0.5f * H->domain.size.y;
         H->scat_pos[k].z = 0.0f;
     }
 	
@@ -3362,11 +3370,19 @@ void RS_table3d_free(RSTable3D T) {
 #pragma mark -
 #pragma mark Display
 
-static void RS_show_scat_i(RSHandle *H, int i) {
+static void RS_show_scat_i(RSHandle *H, const int i) {
 	printf(" %7d - ( %9.2f, %9.2f, %9.2f, %4.2f )  %7.2f %7.2f %7.2f   %7.4f %7.4f %7.4f %7.4f\n", i,
 		   H->scat_pos[i].x, H->scat_pos[i].y, H->scat_pos[i].z, H->scat_pos[i].w,
 		   H->scat_vel[i].x, H->scat_vel[i].y, H->scat_vel[i].z,
            H->scat_ori[i].x, H->scat_ori[i].y, H->scat_ori[i].z, H->scat_ori[i].w);
+}
+
+
+static void RS_show_rcs_i(RSHandle *H, const int i) {
+    printf(" %7d - ( %9.2f, %9.2f, %9.2f )  %7.4f %7.4f %7.4f %7.4f  [ %7.2f %7.2f %7.2f %7.2f ]\n", i,
+           H->scat_pos[i].x, H->scat_pos[i].y, H->scat_pos[i].z,
+           H->scat_ori[i].x, H->scat_ori[i].y, H->scat_ori[i].z, H->scat_ori[i].w,
+           H->scat_sig[i].x, H->scat_sig[i].y, H->scat_sig[i].z, H->scat_sig[i].w);
 }
 
 
@@ -3382,6 +3398,23 @@ void RS_show_scat_pos(RSHandle *H) {
 	RS_show_scat_i(H, i);
 }
 
+
+void RS_show_scat_sig(RSHandle *H) {
+    int i;
+    printf("background:\n");
+    for (i=0; i<H->species_population[0]; i+=H->species_population[0]/9) {
+        RS_show_rcs_i(H, i);
+    }
+    if (H->species_population[1] == 0) {
+        return;
+    }
+    // Show the debris
+    printf("debris type #1:\n");
+    i = (int)H->species_population[0];
+    for (; i<H->species_population[0] + H->species_population[1]; i++) {
+        RS_show_rcs_i(H, i);
+    }
+}
 
 void RS_show_pulse(RSHandle *H) {
 	unsigned int i;

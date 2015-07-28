@@ -419,14 +419,14 @@ __kernel void scat_atts(__global float4 *p,
     
     // RCS values are stored as real(hh, vv, hv, __) + imag(hh, vv, hv, __)
     float2 rcs_coord = fma((float2)(alpha, beta), rcs_desc.s01, rcs_desc.s45);
-    float4 rcs_real = read_imagef(adm_cd, sampler, adm_coord);
-    float4 rcs_imag = read_imagef(adm_cm, sampler, adm_coord);
+    float4 real = read_imagef(rcs_real, sampler, rcs_coord);
+    float4 imag = read_imagef(rcs_imag, sampler, rcs_coord);
 
     // Assign signal amplitude as Hi, Hq, Vi, Vq
-    sig.s0 = rcs_real.s0;
-    sig.s1 = rcs_imag.s0;
-    sig.s2 = rcs_real.s1;
-    sig.s3 = rcs_imag.s1;
+    sig.s0 = real.s0;
+    sig.s1 = imag.s0;
+    sig.s2 = real.s1;
+    sig.s3 = imag.s1;
     
     // Update velocity
     vel += dudt * dt;
