@@ -291,8 +291,6 @@ __kernel void scat_atts(__global float4 *p,
     float4 aux = a[i];  // auxiliary
     float4 sig = x[i];  // signal
     
-    printf("debris %u\n", i);
-    
     const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
 
     //    RSSimulationParameterBeamUnitX     =  0,
@@ -425,11 +423,38 @@ __kernel void scat_atts(__global float4 *p,
     float4 real = read_imagef(rcs_real, sampler, rcs_coord);
     float4 imag = read_imagef(rcs_imag, sampler, rcs_coord);
 
+    float cg = cos(gamma);
+    float sg = sin(gamma);
+    
+    //    >> Tinv * S * T
+    //    
+    //    ans =
+    //    
+    //    [ cos(gamma)*(hh*cos(gamma) - vh*sin(gamma)) - sin(gamma)*(hv*cos(gamma) - vv*sin(gamma)), cos(gamma)*(hv*cos(gamma) - vv*sin(gamma)) + sin(gamma)*(hh*cos(gamma) - vh*sin(gamma))]
+    //    [ cos(gamma)*(vh*cos(gamma) + hh*sin(gamma)) - sin(gamma)*(vv*cos(gamma) + hv*sin(gamma)), cos(gamma)*(vv*cos(gamma) + hv*sin(gamma)) + sin(gamma)*(vh*cos(gamma) + hh*sin(gamma))]
+    //
+    //    HH = cos(gamma)*(hh*cos(gamma) - vh*sin(gamma)) - sin(gamma)*(hv*cos(gamma) - vv*sin(gamma))
+    //    HV = cos(gamma)*(hv*cos(gamma) - vv*sin(gamma)) + sin(gamma)*(hh*cos(gamma) - vh*sin(gamma))
+    //    VH = cos(gamma)*(vh*cos(gamma) + hh*sin(gamma)) - sin(gamma)*(vv*cos(gamma) + hv*sin(gamma))
+    //    VV = cos(gamma)*(vv*cos(gamma) + hv*sin(gamma)) + sin(gamma)*(vh*cos(gamma) + hh*sin(gamma))
+
+    float hh_real = cg * (real.s0 * cg - real.s2 * sg) - sg * (real.s2 * cg - real.s1 * sg);
+    float hh_imag = cg * (imag.s0 * cg - imag.s2 * sg) - sg * (imag.s2 * cg - imag.s1 * sg);
+
+    //float hv_real = cg * (real.s2 * cg - real.s1 * sg) + sg * (real.s0 * cg - real.s2 * sg);
+    //float hv_imag = cg * (imag.s2 * cg - imag.s1 * sg) + sg * (imag.s0 * cg - imag.s2 * sg);
+
+    //float vh_real = cg * (real.s2 * cg + real.s0 * sg) - sg * (real.s1 * cg + real.s2 * sg);
+    //float vh_imag = cg * (imag.s2 * cg + imag.s0 * sg) - sg * (imag.s1 * cg + imag.s2 * sg);
+
+    float vv_real = cg * (real.s1 * cg + real.s2 * sg) + sg * (real.s2 * cg + real.s1 * sg);
+    float vv_imag = cg * (imag.s1 * cg + imag.s2 * sg) + sg * (imag.s2 * cg + imag.s0 * sg);
+    
     // Assign signal amplitude as Hi, Hq, Vi, Vq
-    sig.s0 = real.s0;
-    sig.s1 = imag.s0;
-    sig.s2 = real.s1;
-    sig.s3 = imag.s1;
+    sig.s0 = hh_real;
+    sig.s1 = hh_imag;
+    sig.s2 = vv_real;
+    sig.s3 = vv_imag;
     
     // Update velocity
     vel += dudt * dt;
