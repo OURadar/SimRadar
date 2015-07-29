@@ -1,3 +1,6 @@
+#define DEG2RAD(x)  (x * 0.017453292519943f)
+#define RAD2DEG(x)  (x * 57.295779513082323f)
+
 enum RSSimulationParameter {
     RSSimulationParameterBeamUnitX     =  0,
     RSSimulationParameterBeamUnitY     =  1,
@@ -55,8 +58,8 @@ float4 rand(uint4 *seed)
 // Set colors
 float4 set_clr(float4 att)
 {
-    //float g = clamp(fma(log10(att.s3), 0.3f, 1.5f), 0.05f, 0.3f);
-    float g = clamp(fma(log10(att.s3), 1.6f, 6.0f), 0.05f, 0.3f);
+    float g = clamp(fma(log10(att.s3), 0.3f, 1.5f), 0.05f, 0.3f);
+    //float g = clamp(fma(log10(att.s3), 1.6f, 6.0f), 0.05f, 0.3f);
     
     float4 c;
     
@@ -225,11 +228,6 @@ __kernel void bg_atts(__global float4 *p,
     // Future position, orientation, etc.
     pos += vel * dt;
     
-    // Background wind
-    float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
-    
-    vel = read_imagef(wind_uvw, sampler, wind_coord);
-    
     // Check for bounding constraints
     //    RSSimulationParameterBoundOriginX  =  8,  // hi.s0
     //    RSSimulationParameterBoundOriginY  =  9,  // hi.s1
@@ -240,7 +238,7 @@ __kernel void bg_atts(__global float4 *p,
     //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
     //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
     int is_outside = any(isless(pos.xyz, sim_desc.hi.s012) | isgreater(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
-
+    
     if (is_outside | isgreater(aux.s1, 1.0f)) {
         uint4 seed = y[i];
         float4 r = rand(&seed);
@@ -251,6 +249,11 @@ __kernel void bg_atts(__global float4 *p,
     } else {
         aux.s1 += sim_desc.sf;
     }
+    
+    // Background wind
+    float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
+    
+    vel = read_imagef(wind_uvw, sampler, wind_coord);
     
     // Range of the point
     aux.s0 = length(pos);
@@ -322,6 +325,29 @@ __kernel void scat_atts(__global float4 *p,
     //
     //ori = quat_mult(ori, tum);
     //pos += vel * dt;
+    
+    // Check for bounding constraints
+    //    RSSimulationParameterBoundOriginX  =  8,  // hi.s0
+    //    RSSimulationParameterBoundOriginY  =  9,  // hi.s1
+    //    RSSimulationParameterBoundOriginZ  =  10, // hi.s2
+    //    RSSimulationParameterPRT           =  11,
+    //    RSSimulationParameterBoundSizeX    =  12, // hi.s4
+    //    RSSimulationParameterBoundSizeY    =  13, // hi.s5
+    //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
+    //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
+    int is_outside = any(isless(pos.xyz, sim_desc.hi.s012) | isgreater(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
+    
+    if (is_outside | isgreater(aux.s1, 1.0f)) {
+        uint4 seed = y[i];
+        float4 r = rand(&seed);
+        y[i] = seed;
+        
+        pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
+        //        pos.z = 20.0f;
+        
+        vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
+    }
+    
 
     //
     // derive alpha & beta of ADM for ADM table lookup ---------------------------------
@@ -380,10 +406,10 @@ __kernel void scat_atts(__global float4 *p,
 //               ur_norm_sq
 //               );
 //    }
-    
-#define DEG2RAD(x)  (x * 0.017453292519943f)
-#define RAD2DEG(x)  (x * 57.295779513082323f)
-    
+
+    // Update velocity
+    vel += dudt * dt;
+
     float4 dw = DEG2RAD(dt * Ta * ur_norm_sq * cm * inv_inln);
     
     float4 c = cos(dw);
@@ -456,31 +482,6 @@ __kernel void scat_atts(__global float4 *p,
     sig.s2 = vv_real;
     sig.s3 = vv_imag;
     
-    // Update velocity
-    vel += dudt * dt;
-    
-    // Check for bounding constraints
-    //    RSSimulationParameterBoundOriginX  =  8,  // hi.s0
-    //    RSSimulationParameterBoundOriginY  =  9,  // hi.s1
-    //    RSSimulationParameterBoundOriginZ  =  10, // hi.s2
-    //    RSSimulationParameterPRT           =  11,
-    //    RSSimulationParameterBoundSizeX    =  12, // hi.s4
-    //    RSSimulationParameterBoundSizeY    =  13, // hi.s5
-    //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
-    //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
-    int is_outside = any(isless(pos.xyz, sim_desc.hi.s012) | isgreater(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
-
-    if (is_outside | isgreater(aux.s1, 1.0f)) {
-        uint4 seed = y[i];
-        float4 r = rand(&seed);
-        y[i] = seed;
-        
-        pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
-//        pos.z = 20.0f;
-        
-        vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
-    }
-
     // Range of the point
     aux.s0 = length(pos);
 

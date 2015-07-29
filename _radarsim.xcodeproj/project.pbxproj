@@ -216,6 +216,7 @@
 		B593683E188DE4BC00B4106C /* shape_sc.vsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = shape_sc.vsh; sourceTree = "<group>"; };
 		B5A5142518328A2F00921ACE /* FullscreenWindow.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FullscreenWindow.h; sourceTree = "<group>"; };
 		B5A5142618328A2F00921ACE /* FullscreenWindow.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FullscreenWindow.m; sourceTree = "<group>"; };
+		B5B574791B690A45002AD2E7 /* iq.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = iq.h; sourceTree = "<group>"; };
 		B5BAD55618B67E80007AC15D /* test_rs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_rs.c; sourceTree = "<group>"; };
 		B5BAD56218B67E8B007AC15D /* test_make_pulse copy */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "test_make_pulse copy"; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5C2D1EE1ADC154900DD91B1 /* test_rcs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_rcs.c; sourceTree = "<group>"; };
@@ -398,6 +399,7 @@
 				B567F8B01A6D520C00F40660 /* adm.h */,
 				B55716851AB7519D001984E0 /* rcs.c */,
 				B55716841AB75186001984E0 /* rcs.h */,
+				B5B574791B690A45002AD2E7 /* iq.h */,
 			);
 			name = Sources;
 			sourceTree = "<group>";

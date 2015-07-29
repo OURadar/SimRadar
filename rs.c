@@ -1076,10 +1076,10 @@ void RS_init_scat_pos(RSHandle *H) {
 		H->scat_pos[i].z = (float)rand() / RAND_MAX * H->domain.size.z + H->domain.origin.z;
 		H->scat_pos[i].w = 1.0f;
 		
-		H->scat_att[i].s0 = 0.0f;
-        H->scat_att[i].s1 = 0.0f;
+		H->scat_att[i].s0 = 0.0f;                      // Use this to store range
+        H->scat_att[i].s1 = (float)rand() / RAND_MAX;  // Use this to store age
 		H->scat_att[i].s2 = 0.0f;
-		H->scat_att[i].s3 = 0.0f;
+		H->scat_att[i].s3 = 1.0f;                      // Use this to store angular weight
 		
 		H->scat_vel[i].x = 0.0f;
 		H->scat_vel[i].y = 0.0f;
@@ -2911,18 +2911,23 @@ void RS_download(RSHandle *H) {
 
 #else
 
-    cl_event events[6];
+    cl_event events[H->num_workers][6];
     
 	for (i=0; i<H->num_workers; i++) {
-		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, &events[0]);
-		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_vel, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, &events[1]);
-		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, &events[2]);
-		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_att, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_att + H->offset[i], 0, NULL, &events[3]);
-		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_sig, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, &events[4]);
-        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].pulse, CL_FALSE, 0, H->params.range_count * sizeof(cl_float4), H->pulse_tmp[i], 0, NULL, &events[5]);
+		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, &events[i][0]);
+		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_vel, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, &events[i][1]);
+		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, &events[i][2]);
+		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_att, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_att + H->offset[i], 0, NULL, &events[i][3]);
+		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_sig, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, &events[i][4]);
+        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].pulse, CL_FALSE, 0, H->params.range_count * sizeof(cl_float4), H->pulse_tmp[i], 0, NULL, &events[i][5]);
 	}
 
-    clWaitForEvents(6, events);
+    for (i=0; i<H->num_workers; i++) {
+        clWaitForEvents(6, events[i]);
+        for (int k=0; k<6; k++) {
+            clReleaseEvent(events[i][k]);
+        }
+    }
 
 #endif
 
@@ -2947,7 +2952,7 @@ void RS_download_position_only(RSHandle *H) {
 #else
 	
 	for (i=0; i<H->num_workers; i++) {
-		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, NULL);
+		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL,NULL);
 	}
 	
 #endif
@@ -3029,8 +3034,8 @@ void RS_upload(RSHandle *H) {
 	}
 	
 #else
-	
-	for (i=0; i<H->num_workers; i++) {
+
+    for (i=0; i<H->num_workers; i++) {
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, NULL);
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_vel, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, NULL);
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, NULL);

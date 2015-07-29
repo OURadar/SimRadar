@@ -41,41 +41,41 @@ typedef struct _rs_volume {
 } RSVolume;
 
 typedef struct _rs_params {
-	RSfloat c;                    // Speed of light (m/s)
-	RSfloat prf;                  // Pulse repetition frequency (Hz)
-	RSfloat loss;                 // System loss
+	RSfloat  c;                    // Speed of light (m/s)
+	RSfloat  prf;                  // Pulse repetition frequency (Hz)
+	RSfloat  loss;                 // System loss
 	
-	RSfloat lambda;               // Wavelength (m)
-	RSfloat tx_power_watt;        // Transmit power (watt)
-	RSfloat antenna_gain_dbi;     // Antenna gain (dBi)
-	RSfloat antenna_bw_deg;       // Antenna beamwidth (deg)
-	RSfloat tau;                  // Pulse width (s)
+	RSfloat  lambda;               // Wavelength (m)
+	RSfloat  tx_power_watt;        // Transmit power (watt)
+	RSfloat  antenna_gain_dbi;     // Antenna gain (dBi)
+	RSfloat  antenna_bw_deg;       // Antenna beamwidth (deg)
+	RSfloat  tau;                  // Pulse width (s)
 
-	RSfloat range_start;          // Start range (m)
-	RSfloat range_end;            // End range (m)
-	RSfloat range_delta;          // Range sampling gate spacing (m)
+	RSfloat  range_start;          // Start range (m)
+	RSfloat  range_end;            // End range (m)
+	RSfloat  range_delta;          // Range sampling gate spacing (m)
 	
-	RSfloat azimuth_start_deg;    // Start azimuth (deg)
-	RSfloat azimuth_end_deg;      // End azimuth (deg)
-	RSfloat azimuth_delta_deg;    // Azimuth sampling gate spacing (deg)
+	RSfloat  azimuth_start_deg;    // Start azimuth (deg)
+	RSfloat  azimuth_end_deg;      // End azimuth (deg)
+	RSfloat  azimuth_delta_deg;    // Azimuth sampling gate spacing (deg)
 
-	RSfloat elevation_start_deg;   // Start azimuth (deg)
-	RSfloat elevation_end_deg;     // End azimuth (deg)
-	RSfloat elevation_delta_deg;   // Azimuth sampling gate spacing (deg)
+	RSfloat  elevation_start_deg;   // Start azimuth (deg)
+	RSfloat  elevation_end_deg;     // End azimuth (deg)
+	RSfloat  elevation_delta_deg;   // Azimuth sampling gate spacing (deg)
 	
-	RSfloat domain_pad_factor;     // Padding factor to scale up the needed domain
-	RSfloat body_per_cell;         // Average number of scatter bodies per cell
+	RSfloat  domain_pad_factor;     // Padding factor to scale up the needed domain
+	RSfloat  body_per_cell;         // Average number of scatter bodies per cell
 
 	// Derived parameters for easy reference
-	RSfloat prt;                   // Pulse repetition time (sec)
-	RSfloat va;                    // Aliasing velocity (m/s)
-	RSfloat fn;                    // Nyquist frequency (Hz)
-	RSfloat antenna_bw_rad;        // Antenna beamwidth (rad)
-	RSfloat dr;                    // Range resolution
+	RSfloat  prt;                   // Pulse repetition time (sec)
+	RSfloat  va;                    // Aliasing velocity (m/s)
+	RSfloat  fn;                    // Nyquist frequency (Hz)
+	RSfloat  antenna_bw_rad;        // Antenna beamwidth (rad)
+	RSfloat  dr;                    // Range resolution
 
 	//RSfloat azimuth_start_rad;
 	
-	unsigned int range_count;
+	uint32_t range_count;
 	
 } RSParams;
 

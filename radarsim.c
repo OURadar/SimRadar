@@ -16,6 +16,7 @@
 //
 
 #include "rs.h"
+#include "iq.h"
 
 enum {
     ACCEL_TYPE_GPU,
@@ -164,6 +165,13 @@ int main(int argc, char *argv[]) {
 
     // Initialize a file if the user wants an output file
     FILE *fid = NULL;
+    IQFileHeader file_header;
+    IQPulseHeader pulse_header;
+    memset(&file_header, 0, sizeof(IQFileHeader));
+    memset(&pulse_header, 0, sizeof(IQPulseHeader));
+    
+    file_header.params = S->params;
+    
     if (write_file) {
         char filename[4096];
         memset(filename, 0, 4096);
@@ -175,7 +183,7 @@ int main(int argc, char *argv[]) {
             write_file = FALSE;
         }
         // For now, we simply write a 4K header. Will populate with more contents next time
-        fwrite(filename, sizeof(char), 4096, fid);
+        fwrite(&file_header, sizeof(IQFileHeader), 1, fid);
     }
 
     // Now, we are ready to bake
@@ -195,12 +203,15 @@ int main(int argc, char *argv[]) {
     
     gettimeofday(&t1, NULL);
     
+    float az_deg = 0.0f, el_deg = 0.0f;
+    
     for (; k<num_frames; k++) {
-        RS_set_beam_pos(S, 0.0f, 0.0f);
+        RS_set_beam_pos(S, az_deg, el_deg);
         RS_advance_time(S);
         RS_make_pulse(S);
         RS_download(S);
-        
+
+        //RS_download_pulse_only(S);
         if (verb > 1) {
             RS_show_scat_sig(S);
             
@@ -209,14 +220,19 @@ int main(int argc, char *argv[]) {
             }
             printf("signal:\n");
             for (int r=0; r<S->params.range_count; r++) {
-                printf("sig[%d] = (%.2f %.2f %.2f %.2f)\n", r, S->pulse[r].s0, S->pulse[r].s1, S->pulse[r].s2, S->pulse[r].s3);
+                printf("sig[%d] = (%.4f %.4f %.4f %.4f)\n", r, S->pulse[r].s0, S->pulse[r].s1, S->pulse[r].s2, S->pulse[r].s3);
             }
             printf("\n");
         }
         
-        //RS_download_pulse_only(S);
         
         if (write_file) {
+            // Gather information for the  pulse header
+            pulse_header.time = S->sim_time;
+            pulse_header.az_deg = az_deg;
+            pulse_header.el_deg = el_deg;
+            
+            fwrite(&pulse_header, sizeof(IQPulseHeader), 1, fid);
             fwrite(S->pulse, sizeof(cl_float4), S->params.range_count, fid);
         }
     }
