@@ -140,10 +140,6 @@ float4 quat_rotate(float4 vector, float4 quat)
     return quat_mult(quat_mult(quat, vector), quat_conj(quat));
 }
 
-//float4 quat_identity()
-//{
-//    return (float4)(0.0f, 0.0f, 0.0f, 1.0f);
-//}
 #define quat_identity  (float4)(0.0f, 0.0f, 0.0f, 1.0f)
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -323,8 +319,8 @@ __kernel void scat_atts(__global float4 *p,
     //
     // Update orientation & position ---------------------------------
     //
-    //ori = quat_mult(ori, tum);
-    //pos += vel * dt;
+    ori = quat_mult(ori, tum);
+    pos += vel * dt;
     
     // Check for bounding constraints
     //    RSSimulationParameterBoundOriginX  =  8,  // hi.s0
@@ -337,7 +333,7 @@ __kernel void scat_atts(__global float4 *p,
     //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
     int is_outside = any(isless(pos.xyz, sim_desc.hi.s012) | isgreater(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
     
-    if (is_outside | isgreater(aux.s1, 1.0f)) {
+    if (is_outside) {
         uint4 seed = y[i];
         float4 r = rand(&seed);
         y[i] = seed;
@@ -398,6 +394,7 @@ __kernel void scat_atts(__global float4 *p,
     float4 dudt = Ta * ur_norm_sq * cd;
     
     dudt.z -= 9.8f;
+    vel += dudt * dt;
     
 //    if (length(vel) > length(vel_bg)) {
 //        printf("vel = [%5.2f %5.2f %5.2f %5.2f]  vel_bg = [%5.2f %5.2f %5.2f %5.2f]   %5.2f\n",
@@ -406,9 +403,6 @@ __kernel void scat_atts(__global float4 *p,
 //               ur_norm_sq
 //               );
 //    }
-
-    // Update velocity
-    vel += dudt * dt;
 
     float4 dw = DEG2RAD(dt * Ta * ur_norm_sq * cm * inv_inln);
     
@@ -419,11 +413,10 @@ __kernel void scat_atts(__global float4 *p,
                    c.x * c.y * s.z + s.x * s.y * c.z,
                    c.x * c.y * c.z - s.x * s.y * s.z);
 
-
+    
     //
     // derive alpha, beta & gamma of RCS for RCS table lookup --------------------------
     //
-
     float ce = cos(0.5f * el);
     float se = sin(0.5f * el);
     float ca = cos(0.5f * az);
@@ -443,12 +436,13 @@ __kernel void scat_atts(__global float4 *p,
 //           ori.x, ori.y, ori.z, ori.w,
 //           quat_rel.x, quat_rel.y, quat_rel.z, quat_rel.w,
 //           RAD2DEG(alpha), RAD2DEG(beta), RAD2DEG(gamma));
-    
+
     // RCS values are stored as real(hh, vv, hv, __) + imag(hh, vv, hv, __)
     float2 rcs_coord = fma((float2)(alpha, beta), rcs_desc.s01, rcs_desc.s45);
     float4 real = read_imagef(rcs_real, sampler, rcs_coord);
     float4 imag = read_imagef(rcs_imag, sampler, rcs_coord);
 
+    // For gamma projection
     float cg = cos(gamma);
     float sg = sin(gamma);
     
@@ -484,7 +478,7 @@ __kernel void scat_atts(__global float4 *p,
     
     // Range of the point
     aux.s0 = length(pos);
-
+    aux.s1 = 0.0f;
     aux.s3 = compute_angular_weight(pos, angular_weight, angular_weight_desc, sim_desc);
 
     // Copy back to global memory space

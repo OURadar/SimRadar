@@ -1102,7 +1102,7 @@ void RS_init_scat_pos(RSHandle *H) {
         H->scat_tum[i].x = 0.0f;
         H->scat_tum[i].y = 0.0f;
         H->scat_tum[i].z = 0.0f;
-        H->scat_tum[i].w = 0.0f;
+        H->scat_tum[i].w = 1.0f;
 
         // Initial return from each point
         H->scat_sig[i].s0 = 0.0f;

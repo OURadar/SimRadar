@@ -18,10 +18,10 @@ On Linux:
 
 On Mac:
 
-* [XCode 6]
+* [Xcode 6]
 
 [OpenCL]: https://www.khronos.org/opencl
-[XCode 6]: https://developer.apple.com/xcode
+[Xcode 6]: https://developer.apple.com/xcode
 
 
 OSCER boomer
@@ -116,13 +116,14 @@ The simulation framework is written is plain C for performance and portability. 
 
         // Now, we are ready to make pulse(s)
         for (int k=0; k<10; k++) {
-            RS_make_pulse(S);
             RS_set_beam_pos(S, 15.0f, 10.0f);
             RS_advance_time(S);
+            RS_make_pulse(S);
+            RS_download_pulse_only(S);
         }
 
         // Retrieve the results from the GPUs
-        RS_download(S);
+        RS_download(S);        
 
         printf("Final scatter body positions:\n");
 

@@ -588,7 +588,7 @@
         
         hudModelViewProjection = GLKMatrix4Identity;
         beamModelViewProjection = GLKMatrix4Identity;
-        backgroundOpacity = 0.7;
+        backgroundOpacity = 0.3f;
         
         // Add device pixel ratio here
         devicePixelRatio = pixelRatio;
