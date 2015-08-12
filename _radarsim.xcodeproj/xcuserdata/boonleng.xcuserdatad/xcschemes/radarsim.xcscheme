@@ -48,11 +48,15 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "-c"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-f 10"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-vvv"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>
       <AdditionalOptions>

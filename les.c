@@ -107,7 +107,8 @@ LESGrid *LES_enclosing_grid_create_from_file(const char *filename) {
         free(grid);
 		return NULL;
 	}
-	fread(grid, 1, 16, fid);
+    // First 4 uint32_t describes the dimensions
+	fread(grid, 1, 4 * sizeof(uint32_t), fid);
 	// Now, we know how many the cell counts
 	size_t count = grid->nx * grid->ny * grid->nz;
 	grid->x = (float *)malloc(count * sizeof(float));
@@ -145,14 +146,13 @@ LESGrid *LES_data_grid_create_from_enclosing_grid(LESGrid *grid) {
 		return NULL;
 	}
 	int k = 0;
-	float s = 250.0f * 250.0f / 9.8f;
 	for (int iz = 0; iz < 51; iz++) {
 		for (int iy = 0; iy < grid->ny - 30; iy++) {
 			size_t o = iz * grid->ny * grid->nx + (iy + 14) * grid->nx + 14;
 			for (int i=0; i<grid->nx - 30; i++) {
-				subgrid->x[k] = grid->x[i + o] * s;
-				subgrid->y[k] = grid->y[i + o] * s;
-				subgrid->z[k] = grid->z[i + o] * s;
+				subgrid->x[k] = grid->x[i + o];
+				subgrid->y[k] = grid->y[i + o];
+				subgrid->z[k] = grid->z[i + o];
 				k++;
 			}
 		}
@@ -308,9 +308,9 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
 	h->ibuf = 0;
 	h->tr = 50.0f;
     if (!strcmp(config, LESConfigSuctionVortices)) {
-        h->v0 = 250.0f;
+        h->v0 = 300.0f;
     } else if (!strcmp(config, LESConfigTwoCell)) {
-        h->v0 = 250.0f; // 225
+        h->v0 = 225.0f;
     }
     
     char grid_file[1024];
@@ -322,7 +322,15 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
     
 	h->enclosing_grid = LES_enclosing_grid_create_from_file(grid_file);
 	h->data_grid = LES_data_grid_create_from_enclosing_grid(h->enclosing_grid);
-	
+    
+    // Scale the velocity by v0 ^ 2 / g
+    float s = h->v0 * h->v0 / 9.8f;
+    for (int i=0; i<h->data_grid->nx * h->data_grid->ny * h->data_grid->nz; i++) {
+        h->data_grid->x[i] *= s;
+        h->data_grid->y[i] *= s;
+        h->data_grid->z[i] *= s;
+    }
+
     const int file_count = LES_num / LES_file_nblock;
     
     for (int k=0; k<file_count; k++) {

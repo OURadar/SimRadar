@@ -1124,13 +1124,13 @@
 
 - (void)increaseBackgroundOpacity
 {
-    backgroundOpacity = MIN(1.0f, backgroundOpacity + 0.1f);
+    backgroundOpacity = MIN(1.0f, backgroundOpacity + 0.05f);
 }
 
 
 - (void)decreaseBackgroundOpacity
 {
-    backgroundOpacity = MAX(0.1f, backgroundOpacity - 0.1f);
+    backgroundOpacity = MAX(0.1f, backgroundOpacity - 0.05f);
 }
 
 @end

@@ -75,8 +75,7 @@
 //        RS_set_debris_count(S, 2, 2000);
 //        RS_set_debris_count(S, 3, 500);
 
-        RS_set_debris_count(S, 1, 1);
-        
+        RS_set_debris_count(S, 1, 101);
         
 		//RS_set_physics_data_to_cube125(S);
 		//RS_set_physics_data_to_cube27(S);
@@ -139,7 +138,7 @@
 //    float y = S->domain.origin.y + 0.5f * S->domain.size.y;
 //    float r = sqrtf(x * x + y * y);
 //    el_deg = atan2f(S->domain.origin.z + 0.5f * S->domain.size.z, r) * 180.0f / M_PI;
-    el_deg = 0.0f;
+    el_deg = 5.0f;
     RS_set_beam_pos(S, az_deg, el_deg);
 }
 

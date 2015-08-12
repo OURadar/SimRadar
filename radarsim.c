@@ -137,7 +137,7 @@ int main(int argc, char *argv[]) {
     
     RS_set_range_weight_to_triangle(S, 250.0f);
     
-    RS_set_debris_count(S, 1, 1);
+    RS_set_debris_count(S, 1, 1000);
     
     RS_clear_wind_data(S);
     for (int k=0; k<RS_MAX_VEL_TABLES; k++) {
@@ -209,7 +209,7 @@ int main(int argc, char *argv[]) {
         RS_set_beam_pos(S, az_deg, el_deg);
         RS_advance_time(S);
         RS_make_pulse(S);
-        RS_download(S);
+        //RS_download(S);
 
         //RS_download_pulse_only(S);
         if (verb > 1) {

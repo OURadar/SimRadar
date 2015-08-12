@@ -1084,7 +1084,7 @@ void RS_init_scat_pos(RSHandle *H) {
 		H->scat_vel[i].x = 0.0f;
 		H->scat_vel[i].y = 0.0f;
 		H->scat_vel[i].z = 0.0f;
-		H->scat_vel[i].w = 0.0f;
+		H->scat_vel[i].w = 1.0f;
 
         // Facing the sky
 //        H->scat_ori[i].x =  0.0f;
@@ -1118,9 +1118,9 @@ void RS_init_scat_pos(RSHandle *H) {
 	}
 	
 	// Replace a few points for debugging purpose.
-	H->scat_pos[0].x = H->domain.origin.x + 0.5f * H->domain.size.x;
-	H->scat_pos[0].y = H->domain.origin.y + 0.5f * H->domain.size.y;
-	H->scat_pos[0].z = H->domain.origin.z + 0.5f * H->domain.size.z;
+//	H->scat_pos[0].x = H->domain.origin.x + 0.5f * H->domain.size.x;
+//	H->scat_pos[0].y = H->domain.origin.y + 0.5f * H->domain.size.y;
+//	H->scat_pos[0].z = H->domain.origin.z + 0.5f * H->domain.size.z;
 	
     if (H->species_population[1]) {
         int k = (int)H->species_population[0] / H->num_workers;
@@ -2053,7 +2053,8 @@ void RS_set_wind_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
 	// Set up the mapping coefficients
 	table.x_ = leslie->nx;    table.xm = (float)(table.x_ - 1);    table.xs = (float)leslie->nx / H->domain.size.x;    table.xo = -H->domain.origin.x * table.xs;
 	table.y_ = leslie->ny;    table.ym = (float)(table.y_ - 1);    table.ys = (float)leslie->ny / H->domain.size.y;    table.yo = -H->domain.origin.y * table.ys;
-	table.z_ = leslie->nz;    table.zm = (float)(table.z_ - 1);    table.zs = (float)leslie->nz / H->domain.size.z;    table.zo = -H->domain.origin.z * table.zs;
+	//table.z_ = leslie->nz;    table.zm = (float)(table.z_ - 1);    table.zs = (float)leslie->nz / H->domain.size.z;    table.zo = -H->domain.origin.z * table.zs;
+    table.z_ = leslie->nz;    table.zm = (float)(table.z_ - 1);    table.zs = (float)leslie->nz / 3000.0f;    table.zo = 0.0f;
 	
     // Some other parameters
     table.tr = leslie->tr;
@@ -2854,9 +2855,8 @@ void RS_populate(RSHandle *H) {
 
 #endif
 
-    // Initialize the scatter body positions on CPU, then upload
+    // Initialize the scatter body positions on CPU, then upload to the GPU
 	RS_init_scat_pos(H);
-
     RS_upload(H);
 
     if (H->verb) {

@@ -286,7 +286,7 @@ __kernel void scat_atts(__global float4 *p,
     float4 pos = p[i];  // position
     float4 ori = o[i];  // orientation
     float4 vel = v[i];  // velocity
-    float4 tum = t[i];  // tumbling of the velocity
+    float4 tum = t[i];  // tumbling (orientation change)
     float4 aux = a[i];  // auxiliary
     float4 sig = x[i];  // signal
     
@@ -319,7 +319,11 @@ __kernel void scat_atts(__global float4 *p,
     //
     // Update orientation & position ---------------------------------
     //
-    ori = quat_mult(ori, tum);
+    float4 ori_next = quat_mult(ori, tum);
+    if (all(isfinite(ori_next))) {
+        ori = normalize(ori_next);
+    }
+    
     pos += vel * dt;
     
     // Check for bounding constraints
@@ -331,6 +335,8 @@ __kernel void scat_atts(__global float4 *p,
     //    RSSimulationParameterBoundSizeY    =  13, // hi.s5
     //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
     //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
+    sim_desc.hi.s2 = 0.0f;
+    sim_desc.hi.s6 = 1700.0f;
     int is_outside = any(isless(pos.xyz, sim_desc.hi.s012) | isgreater(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
     
     if (is_outside) {
@@ -339,11 +345,11 @@ __kernel void scat_atts(__global float4 *p,
         y[i] = seed;
         
         pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
-        //        pos.z = 20.0f;
+        pos.z = 100.0f;
         
         vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
+        tum = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
     }
-    
 
     //
     // derive alpha & beta of ADM for ADM table lookup ---------------------------------
@@ -388,13 +394,34 @@ __kernel void scat_atts(__global float4 *p,
 //               ur.x, ur.y, ur.z, ur.w,
 //               cd.x, cd.y, cd.z, cd.w);
     
-    float ur_norm = length(ur.xyz);
-    float ur_norm_sq = ur_norm * ur_norm;
+    float ur_norm_sq = dot(ur.xyz, ur.xyz);
     
-    float4 dudt = Ta * ur_norm_sq * cd;
+    // Euler method: dudt is just a scaled version of drag coefficient
+    float4 dudt = Ta * ur_norm_sq * cd + (float4)(0.0f, 0.0f, -9.8f, 0.0f);;
+    float4 dw = DEG2RAD((dt * Ta * ur_norm_sq * inv_inln) * cm);
     
-    dudt.z -= 9.8f;
-    vel += dudt * dt;
+    // Runge-Kutta: dudt is a two-point average
+//    float4 dudt1 = Ta * ur_norm_sq * cd;
+//    
+//    // Project to the next lookup
+//    float4 udt1 = vel;
+//    float4 udt2 = udt1 + dt * dudt1;
+//
+//    // New delta
+//    float4 ur2 = vel_bg - udt2;
+//    float ur2_norm_sq = dot(ur2.xyz, ur2.xyz);
+//    float4 dudt2 = Ta * ur2_norm_sq * cd;
+//    
+//    float4 dudt = 0.5f * (dudt1 + dudt2) + (float4)(0.0f, 0.0f, -9.8f, 0.0f);
+    
+    // bound the acceleration
+    if (length(vel.xy + dudt.xy * dt.xy) > length(vel_bg.xy)) {
+        vel.xy = vel_bg.xy;
+    } else {
+        vel += dudt * dt;
+    }
+
+    //vel += dudt * dt;
     
 //    if (length(vel) > length(vel_bg)) {
 //        printf("vel = [%5.2f %5.2f %5.2f %5.2f]  vel_bg = [%5.2f %5.2f %5.2f %5.2f]   %5.2f\n",
@@ -404,7 +431,7 @@ __kernel void scat_atts(__global float4 *p,
 //               );
 //    }
 
-    float4 dw = DEG2RAD(dt * Ta * ur_norm_sq * cm * inv_inln);
+    //float4 dw = DEG2RAD((dt * Ta * 0.5f * (ur_norm_sq + ur2_norm_sq) * inv_inln) * cm);
     
     float4 c = cos(dw);
     float4 s = sin(dw);
@@ -413,6 +440,8 @@ __kernel void scat_atts(__global float4 *p,
                    c.x * c.y * s.z + s.x * s.y * c.z,
                    c.x * c.y * c.z - s.x * s.y * s.z);
 
+    tum = normalize(tum);
+    // printf("i=%d  tum = (%.2f %.2f %.2f %.2f)\n", i, tum.x, tum.y, tum.z, tum.w);
     
     //
     // derive alpha, beta & gamma of RCS for RCS table lookup --------------------------
@@ -476,9 +505,13 @@ __kernel void scat_atts(__global float4 *p,
     sig.s2 = vv_real;
     sig.s3 = vv_imag;
     
-    // Range of the point
+    // Auxiliary info:
+    // - s0 = range of the point
+    // - s1 = age
+    // - s2 =
+    // - s3 = angular weight
     aux.s0 = length(pos);
-    aux.s1 = 0.0f;
+    aux.s1 = aux.s1 + sim_desc.sf;
     aux.s3 = compute_angular_weight(pos, angular_weight, angular_weight_desc, sim_desc);
 
     // Copy back to global memory space

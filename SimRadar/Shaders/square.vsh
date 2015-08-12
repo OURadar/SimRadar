@@ -30,4 +30,8 @@ void main (void)
 	//varColor = 0.3*drawColor + 0.7*inColor;
 	//varColor = inColor - drawColor;
 	//varColor = min(0.5*drawColor + 0.5*inColor, 1.0);
+    
+    if (inPosition.z < 0.0) {
+        varColor *= 0.75;
+    }
 }
