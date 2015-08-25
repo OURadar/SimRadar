@@ -46,6 +46,7 @@
 		B5760EAC18A93ABC008DAF83 /* rs.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281917D7C4D500E4DE66 /* rs.c */; };
 		B582522718BF2F1300ADFCD5 /* rs.cl in CopyFiles */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
 		B5916CC61ABC7069007EA0B9 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = B5916CC51ABC7069007EA0B9 /* README.md */; };
+		B59A64271B8CEB0200747CD5 /* arps.c in Sources */ = {isa = PBXBuildFile; fileRef = B59A64251B8CEB0200747CD5 /* arps.c */; };
 		B5A5142718328A2F00921ACE /* FullscreenWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = B5A5142618328A2F00921ACE /* FullscreenWindow.m */; };
 		B5BAD55A18B67E8B007AC15D /* rs.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281917D7C4D500E4DE66 /* rs.c */; };
 		B5BAD55C18B67E8B007AC15D /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
@@ -214,6 +215,8 @@
 		B5916CC51ABC7069007EA0B9 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		B593683D188DE4BC00B4106C /* shape_sc.fsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = shape_sc.fsh; sourceTree = "<group>"; };
 		B593683E188DE4BC00B4106C /* shape_sc.vsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = shape_sc.vsh; sourceTree = "<group>"; };
+		B59A64251B8CEB0200747CD5 /* arps.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = arps.c; sourceTree = "<group>"; };
+		B59A64261B8CEB0200747CD5 /* arps.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = arps.h; sourceTree = "<group>"; };
 		B5A5142518328A2F00921ACE /* FullscreenWindow.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FullscreenWindow.h; sourceTree = "<group>"; };
 		B5A5142618328A2F00921ACE /* FullscreenWindow.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FullscreenWindow.m; sourceTree = "<group>"; };
 		B5B574791B690A45002AD2E7 /* iq.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = iq.h; sourceTree = "<group>"; };
@@ -397,6 +400,8 @@
 				B5F3C31B18F2F85C00092A72 /* les.h */,
 				B567F8B11A6D522F00F40660 /* adm.c */,
 				B567F8B01A6D520C00F40660 /* adm.h */,
+				B59A64251B8CEB0200747CD5 /* arps.c */,
+				B59A64261B8CEB0200747CD5 /* arps.h */,
 				B55716851AB7519D001984E0 /* rcs.c */,
 				B55716841AB75186001984E0 /* rcs.h */,
 				B5B574791B690A45002AD2E7 /* iq.h */,
@@ -790,6 +795,7 @@
 			files = (
 				B55716861AB7519D001984E0 /* rcs.c in Sources */,
 				B56077F617E356A70068C6BE /* cldemo.c in Sources */,
+				B59A64271B8CEB0200747CD5 /* arps.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -894,6 +900,15 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = (
+					"-I",
+					/usr/local/include,
+				);
+				OTHER_LDFLAGS = (
+					"-L",
+					/usr/local/lib,
+					"-lhdf5",
+				);
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -973,6 +988,15 @@
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = (
+					"-I",
+					/usr/local/include,
+				);
+				OTHER_LDFLAGS = (
+					"-L",
+					/usr/local/lib,
+					"-lhdf5",
+				);
 				SDKROOT = macosx;
 			};
 			name = "Debug GL";
@@ -1228,6 +1252,15 @@
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = (
+					"-I",
+					/usr/local/include,
+				);
+				OTHER_LDFLAGS = (
+					"-L",
+					/usr/local/lib,
+					"-lhdf5",
+				);
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -1525,6 +1558,15 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = (
+					"-I",
+					/usr/local/include,
+				);
+				OTHER_LDFLAGS = (
+					"-L",
+					/usr/local/lib,
+					"-lhdf5",
+				);
 				SDKROOT = macosx;
 			};
 			name = GEN_IMG;
