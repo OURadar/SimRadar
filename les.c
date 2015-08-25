@@ -249,6 +249,7 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
     if (getcwd(cwd, sizeof(cwd)) == NULL)
         fprintf(stderr, "Error in getcwd()\n");
     
+    // 10 search paths with the first one being the relative subfolder 'les'
     char search_paths[10][1024] = {"./les"};
 	
     if (path == NULL) {
@@ -260,10 +261,12 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
 	char *ctmp = getenv("HOME");
 	if (ctmp != NULL) {
 		//printf("HOME = %s\n", ctmp);
-        snprintf(search_paths[2], 1024, "%s/Downloads/tables", ctmp);
-		snprintf(search_paths[3], 1024, "%s/Desktop/les", ctmp);
-		snprintf(search_paths[4], 1024, "%s/Douments/les", ctmp);
-		snprintf(search_paths[5], 1024, "%s/Downloads/les", ctmp);
+        snprintf(search_paths[3], 1024, "%s/Desktop/tables", ctmp);
+        snprintf(search_paths[4], 1024, "%s/Documents/tables", ctmp);
+        snprintf(search_paths[5], 1024, "%s/Downloads/tables", ctmp);
+        snprintf(search_paths[6], 1024, "%s/Desktop/les", ctmp);
+        snprintf(search_paths[7], 1024, "%s/Documents/les", ctmp);
+        snprintf(search_paths[8], 1024, "%s/Downloads/les", ctmp);
 	}
 	
     struct stat path_stat;
@@ -276,7 +279,7 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
     
     for (int i=0; i<sizeof(search_paths)/sizeof(search_paths[0]); i++) {
         les_path = search_paths[i];
-		snprintf(les_file_path, 1024, "%s/twocell/fort.10_2", les_path);
+		snprintf(les_file_path, 1024, "%s/%s/fort.10_2", les_path, config);
         dir_ret = stat(les_path, &path_stat);
 		file_ret = stat(les_file_path, &file_stat);
         if (dir_ret < 0 || file_ret < 0) {

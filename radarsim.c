@@ -85,6 +85,7 @@ int main(int argc, char *argv[]) {
     ADMHandle *A;
     LESHandle *L;
     RCSHandle *R;
+    ARPSHandle *O;
     
     // Initialize the RS framework
     if (accel_type == ACCEL_TYPE_CPU) {
@@ -119,6 +120,13 @@ int main(int argc, char *argv[]) {
     R = RCS_init();
     if (R == NULL) {
         fprintf(stderr, "%s : Some errors occurred during RCS_init().\n", now());
+        return EXIT_FAILURE;
+    }
+    
+    // Initialize the ARPS ingest
+    O = ARPS_init();
+    if (O == NULL) {
+        fprintf(stderr, "%s : Some errors occurred during ARPS_init().\n", now());
         return EXIT_FAILURE;
     }
     
@@ -265,6 +273,8 @@ int main(int argc, char *argv[]) {
     ADM_free(A);
     
     RCS_free(R);
+    
+    ARPS_free(O);
     
     printf("%s : Session ended\n", now());
     

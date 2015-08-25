@@ -47,6 +47,7 @@
 		B582522718BF2F1300ADFCD5 /* rs.cl in CopyFiles */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
 		B5916CC61ABC7069007EA0B9 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = B5916CC51ABC7069007EA0B9 /* README.md */; };
 		B59A64271B8CEB0200747CD5 /* arps.c in Sources */ = {isa = PBXBuildFile; fileRef = B59A64251B8CEB0200747CD5 /* arps.c */; };
+		B59A64281B8CF23E00747CD5 /* arps.c in Sources */ = {isa = PBXBuildFile; fileRef = B59A64251B8CEB0200747CD5 /* arps.c */; };
 		B5A5142718328A2F00921ACE /* FullscreenWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = B5A5142618328A2F00921ACE /* FullscreenWindow.m */; };
 		B5BAD55A18B67E8B007AC15D /* rs.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281917D7C4D500E4DE66 /* rs.c */; };
 		B5BAD55C18B67E8B007AC15D /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
@@ -785,6 +786,7 @@
 				B5F3C31D18F2F86700092A72 /* les.c in Sources */,
 				B5CFAD201ADFF4D800360E9A /* rcs.c in Sources */,
 				B527893318A13C5F00650679 /* rs.c in Sources */,
+				B59A64281B8CF23E00747CD5 /* arps.c in Sources */,
 				B527893118A13C4400650679 /* radarsim.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

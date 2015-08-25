@@ -23,6 +23,7 @@
 #include "les.h"
 #include "adm.h"
 #include "rcs.h"
+#include "arps.h"
 
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
