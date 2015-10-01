@@ -97,8 +97,11 @@ ARPSHandle *ARPS_init_with_config_path(const ARPSConfig config, const char *path
     herr_t status;
     H5D_layout_t layout = H5D_NLAYOUTS;
 //    hsize_t dims[2] = {1000, 1000};
+    printf("Getting file_id ...\n");
     file_id = H5Fopen(h->data_path, H5F_ACC_RDONLY, H5P_DEFAULT);
-    dset_id = H5Dopen(file_id, "DS1", H5P_DEFAULT);
+    
+    printf("Getting dset_id ...\n");
+    dset_id = H5Dopen1(file_id, "p");
 
 #define H5_LAYOUT_STRING(s) \
 (s == H5D_COMPACT ? "H5D_COMPACT" : \
