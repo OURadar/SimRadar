@@ -1,9 +1,9 @@
 UNAME := $(shell uname)
 
-CFLAGS = -std=gnu99 -Wall -Wno-unknown-pragmas -Os -msse -msse2 -mavx
-LDFLAGS = -L lib -lrs
+CFLAGS = -std=gnu99 -Wall -Wno-unknown-pragmas -Os -msse -msse2 -mavx -I /usr/local/include
+LDFLAGS = -L lib -L /usr/local/lib -lrs -lhdf5
 
-OBJS = rs.o les.o adm.o rcs.o
+OBJS = rs.o les.o adm.o rcs.o arps.o
 
 MYLIB = lib/librs.a
 
