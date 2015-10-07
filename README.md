@@ -15,6 +15,7 @@ On Linux:
 
 * [GNU C Compiler](http://gcc.gnu.org)
 * [OpenCL] version 1.1 or 1.2
+* [HDF5] HDF5 framework
 
 On Mac:
 
@@ -22,6 +23,13 @@ On Mac:
 
 [OpenCL]: https://www.khronos.org/opencl
 [Xcode 6]: https://developer.apple.com/xcode
+[HDF5]: https://www.hdfgroup.org/HDF5
+
+
+Installing HDF5 on a Mac
+------------------------
+
+The easiest way to obtain HDF5 framework on a Mac is through Homebrew (http://brew.sh). Once you have Homebrew installed, simply use the command `brew install hdf5` on the terminal. Homebrew handles all the dependency check and installed the pre-requisites for you.
 
 
 OSCER boomer

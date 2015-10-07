@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>CFBuildDate</key>
-	<string>Thu Sep 17 11:47:57 CDT 2015</string>
+	<string>Wed Oct  7 14:38:26 CDT 2015</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleExecutable</key>
@@ -23,7 +23,7 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>4321</string>
+	<string>4322</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.education</string>
 	<key>LSMinimumSystemVersion</key>

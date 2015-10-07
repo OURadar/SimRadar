@@ -52,6 +52,7 @@ typedef union _gltext_vertex GLTextVertex;
 @interface GLText : NSObject {
 	
 	GLuint texture;
+    CGFloat baseSize;
     GLKMatrix4 modelViewProjection;
 	
 	@private
@@ -68,7 +69,6 @@ typedef union _gltext_vertex GLTextVertex;
 	GLint textureCoordAI;
 
     CGFloat pad;
-    CGFloat baseSize;
 	GLubyte *bitmap;
     GLsizei bitmapWidth, bitmapHeight;
     GLfloat devicePixelRatio;
@@ -79,6 +79,7 @@ typedef union _gltext_vertex GLTextVertex;
 }
 
 @property (nonatomic, readonly) GLuint texture;
+@property (nonatomic) CGFloat baseSize;
 @property (nonatomic) GLKMatrix4 modelViewProjection;
 
 - (id)initWithDevicePixelRatio:(GLfloat)ratio;

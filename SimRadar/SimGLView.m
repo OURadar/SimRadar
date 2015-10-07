@@ -291,8 +291,8 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	int bytesPerRow;
 	unsigned char *bitmapData;
 	
-    int width = renderer.width;
-    int height = renderer.height;
+    int width = renderer.width * [self.window backingScaleFactor];
+    int height = renderer.height * [self.window backingScaleFactor];
 	
 	NSBitmapImageRep *imageRep = [[[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
 																		  pixelsWide:width

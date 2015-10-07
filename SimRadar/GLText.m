@@ -16,6 +16,7 @@
 @implementation GLText
 
 @synthesize texture;
+@synthesize baseSize;
 @synthesize modelViewProjection;
 
 #pragma mark -
