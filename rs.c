@@ -1074,7 +1074,7 @@ void RS_init_scat_pos(RSHandle *H) {
 		H->scat_pos[i].x = (float)rand() / RAND_MAX * H->domain.size.x + H->domain.origin.x;
 		H->scat_pos[i].y = (float)rand() / RAND_MAX * H->domain.size.y + H->domain.origin.y;
 		H->scat_pos[i].z = (float)rand() / RAND_MAX * H->domain.size.z + H->domain.origin.z;
-		H->scat_pos[i].w = 1.0f;
+		H->scat_pos[i].w = 0.05f;                      // Use this to store the size of hydrometeor
 		
 		H->scat_att[i].s0 = 0.0f;                      // Use this to store range
         H->scat_att[i].s1 = (float)rand() / RAND_MAX;  // Use this to store age
@@ -2717,10 +2717,8 @@ void RS_io_test(RSHandle *H) {
     
 #else
     
-	//	cl_event events[RS_MAX_GPU_DEVICE];
     
 	for (i=0; i<H->num_workers; i++) {
-		//clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_io, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, &events[i]);
         clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_io, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, NULL);
 	}
     
@@ -2732,13 +2730,19 @@ void RS_io_test(RSHandle *H) {
         clFinish(H->worker[i].que);
     }
 	
-	//    for (i=0; i<H->num_workers; i++) {
-	//        clWaitForEvents(1, &events[i]);
-	//        clReleaseEvent(events[i]);
-	//    }
-    
-	//    for (i=0; i<H->num_workers; i++) {
-	//    }
+//    cl_event events[RS_MAX_GPU_DEVICE];
+//    
+//    for (i=0; i<H->num_workers; i++) {
+//        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_io, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, &events[i]);
+//    }
+
+//    for (i=0; i<H->num_workers; i++) {
+//        clWaitForEvents(1, &events[i]);
+//        clReleaseEvent(events[i]);
+//    }
+
+//    for (i=0; i<H->num_workers; i++) {
+//    }
     
 #endif
 	

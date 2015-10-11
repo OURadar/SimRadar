@@ -346,8 +346,8 @@
 		B50A27FF17D7B1DC00E4DE66 = {
 			isa = PBXGroup;
 			children = (
-				B5916CC51ABC7069007EA0B9 /* README.md */,
 				B57ADA6117E225EE00B03074 /* Makefile */,
+				B5916CC51ABC7069007EA0B9 /* README.md */,
 				B535159B1AD31E12004C0F50 /* versions.html */,
 				B55A0B4719D0AD4300875832 /* images */,
 				B57ADA5F17E2068F00B03074 /* Kernels */,
@@ -437,13 +437,13 @@
 		B55A0B4719D0AD4300875832 /* images */ = {
 			isa = PBXGroup;
 			children = (
+				B55A0B5419D0B93E00875832 /* disc64.png */,
 				B55A0B4919D0AD4300875832 /* sphere1.png */,
 				B55A0B4A19D0AD4300875832 /* sphere16.png */,
 				B55A0B4B19D0AD4300875832 /* SphereAda.png */,
-				B55A0B4C19D0AD4300875832 /* texture_32.png */,
 				B55A0B5219D0B00400875832 /* sphere64.png */,
-				B55A0B5419D0B93E00875832 /* disc64.png */,
 				B567270D1AA11B2C00FF4436 /* spot256.png */,
+				B55A0B4C19D0AD4300875832 /* texture_32.png */,
 			);
 			name = images;
 			path = SimRadar/images;

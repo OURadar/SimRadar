@@ -262,6 +262,116 @@ __kernel void bg_atts(__global float4 *p,
 }
 
 
+// Dragged-spheroid
+__kernel void ds_atts(__global float4 *p,                  // position (x, y, z) and size (radius)
+                      __global float4 *o,                  // orientation (quaternion)
+                      __global float4 *v,                  // velocity (u, v, w) and a vacant float
+                      __global float4 *t,                  // tumbling (orientation change, quaternion)
+                      __global float4 *a,                  // auxiliary info: range, ange, ____, angular weight
+                      __global float4 *x,                  // signal (hh, hv, vh, vv)
+                      __global uint4 *y,                   // 128-bit random seed (4 x 32-bit)
+                      __read_only image3d_t wind_uvw,
+                      const float16 wind_desc,
+                      __read_only image2d_t adm_cd,
+                      __read_only image2d_t adm_cm,
+                      const float16 adm_desc,
+                      __read_only image2d_t rcs_real,
+                      __read_only image2d_t rcs_imag,
+                      const float16 rcs_desc,
+                      __constant float *angular_weight,
+                      const float4 angular_weight_desc,
+                      const float16 sim_desc)
+{
+    
+    const unsigned int i = get_global_id(0);
+    
+    float4 pos = p[i];  // position
+    float4 ori = o[i];  // orientation
+    float4 vel = v[i];  // velocity
+    float4 tum = t[i];  // tumbling (orientation change)
+    float4 aux = a[i];  // auxiliary
+    float4 sig = x[i];  // signal
+    
+    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
+
+    //    RSSimulationParameterBeamUnitX     =  0,
+    //    RSSimulationParameterBeamUnitY     =  1,
+    //    RSSimulationParameterBeamUnitZ     =  2,
+    //    RSSimulationParameterDebrisCount   =  3,
+    //    RSSimulationParameter4             =  4,
+    //    RSSimulationParameter5             =  5,
+    //    RSSimulationParameter6             =  6,
+    //    RSSimulationParameter7             =  7,
+    //    RSSimulationParameterBoundOriginX  =  8,  // hi.s0
+    //    RSSimulationParameterBoundOriginY  =  9,  // hi.s1
+    //    RSSimulationParameterBoundOriginZ  =  10, // hi.s2
+    //    RSSimulationParameterPRT           =  11,
+    //    RSSimulationParameterBoundSizeX    =  12, // hi.s4
+    //    RSSimulationParameterBoundSizeY    =  13, // hi.s5
+    //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
+    //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
+    const float4 dt = (float4)(sim_desc.sb, sim_desc.sb, sim_desc.sb, 0.0f);
+    
+    // Future position, orientation, etc.
+    pos += vel * dt;
+    
+    // Check for bounding constraints
+    //    RSSimulationParameterBoundOriginX  =  8,  // hi.s0
+    //    RSSimulationParameterBoundOriginY  =  9,  // hi.s1
+    //    RSSimulationParameterBoundOriginZ  =  10, // hi.s2
+    //    RSSimulationParameterPRT           =  11,
+    //    RSSimulationParameterBoundSizeX    =  12, // hi.s4
+    //    RSSimulationParameterBoundSizeY    =  13, // hi.s5
+    //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
+    //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
+    int is_outside = any(isless(pos.xyz, sim_desc.hi.s012) | isgreater(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
+    
+    if (is_outside | isgreater(aux.s1, 1.0f)) {
+        uint4 seed = y[i];
+        float4 r = rand(&seed);
+        y[i] = seed;
+        pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
+        aux.s1 = 0.0f;
+        vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
+    } else {
+        aux.s1 += sim_desc.sf;
+    }
+    
+    // Background wind
+    float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
+    
+    float4 bg_vel = read_imagef(wind_uvw, sampler, wind_coord);
+    
+    // Particle velocity will be slower due to drag
+    float4 delta_v = (bg_vel - vel);
+    delta_v.w = norm(delta_v.xyz);
+    
+    // Calculate Reynold's number: Need to update with air density and viscousity
+    const float rho_air = 0.9f;
+    const float rho_mu_air = 0.9f / 1.0f;
+    const float mass_debris = 4.18879020478639f * pos.w * pos.w * pos.w;
+    
+    float rep = rho_mu_air * (2.0f * pos.w) * delta_v.w;
+    float4 cd = 24.0f / rep + 6.0f / (1.0f + sqrt(rep)) + 0.4f;
+    float3 du_dt = (0.5f * rho_air / mass_debris * delta_v.w * cd * delta_v.w) * delta_v.xyz;
+    dudt.z -= 9.8;
+    
+    // Calculate Area from particle size (radius)
+    // Calculate du
+    
+//    float du_dt = 0.5f * rho_air *
+    
+    // Range of the point
+    aux.s0 = length(pos);
+    
+    aux.s3 = compute_angular_weight(pos, angular_weight, angular_weight_desc, sim_desc);
+    
+    p[i] = pos;
+    v[i] = vel;
+    a[i] = aux;
+}
+
+
 __kernel void scat_atts(__global float4 *p,
                         __global float4 *o,
                         __global float4 *v,
@@ -455,7 +565,7 @@ __kernel void scat_atts(__global float4 *p,
     float4 F = (float4)(-M_SQRT1_2_F * sa * (ce + se), -M_SQRT1_2_F * ca * (ce + se), M_SQRT1_2_F * ca * (ce - se), -M_SQRT1_2_F * sa * (ce - se));
     float4 quat_rel = quat_mult(quat_mult(F, ori), (float4)(-0.5f, 0.5f, -0.5f, 0.5f));
     
-    // 3-2-3 conversion:
+    // 3-1-3 conversion:
     alpha = atan2(quat_rel.y * quat_rel.z + quat_rel.w * quat_rel.x , quat_rel.w * quat_rel.y - quat_rel.x * quat_rel.z);
     beta  =  acos(quat_rel.w * quat_rel.w + quat_rel.z * quat_rel.z - quat_rel.y * quat_rel.y - quat_rel.x * quat_rel.x);
     gamma = atan2(quat_rel.y * quat_rel.z - quat_rel.w * quat_rel.x , quat_rel.x * quat_rel.z + quat_rel.w * quat_rel.y);

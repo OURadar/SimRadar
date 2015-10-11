@@ -32,7 +32,7 @@ Installing HDF5 on a Mac
 The easiest way to obtain HDF5 framework on a Mac is through Homebrew (http://brew.sh). Once you have Homebrew installed, simply use the command `brew install hdf5` on the terminal. Homebrew handles all the dependency check and installed the pre-requisites for you.
 
 
-OSCER boomer
+OSCER Boomer
 ------------
 
 There are several GPU equiped nodes and everything needed is installed. However, the `git` software does not have HTTP access to to the ARRC git repository. Until then, manually the software project folder to your home folder. Batch scripts are included to schedule jobs for the GPU compute nodes, i.e., CUDA pool.
@@ -155,8 +155,26 @@ Alternatively, if you are on a linux machine, the following should work:
 On linux machines, it is important that the GPU driver's include and library paths are also included in the compilation command.
 
 
-The SimRadar app for Mac OS X
+The SimRadar App for Mac OS X
 -----------------------------
 
 A dedicated project SimRadar, which is a Mac OS X implemtation of visualization and graphical user interface, is included. It demonstrates how to wrap the framework in Objective-C. There is currently no plan to make this a full-fledge application that allows users to access all simulation parameters through the GUI.
 
+
+
+Implmentation
+=============
+
+
+Details on Scatterer Attributes
+-------------------------------
+
+Multiple arrays of type `cl_float` are used to keep track of a set of attributes associated with each scatterer. The following list provides a summary of the attriutes and the variables used on the C-level abstraction.
+
+    cl_mem                 scat_pos;   // x, y, z coordinates
+    cl_mem                 scat_vel;   // u, v, w wind components
+    cl_mem                 scat_ori;   // orientation descbried by a quaternion
+    cl_mem                 scat_tum;   // tumbling motion = change of orientation derived from ADM
+    cl_mem                 scat_att;   // scatterer type, dot products, range, etc.
+    cl_mem                 scat_sig;   // signal: Ih Qh Iv Qv
+    cl_mem                 scat_rnd;   // random seed
