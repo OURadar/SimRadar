@@ -41,6 +41,21 @@ enum RSBackgroundAttributeKernelArgument {
     RSBackgroundAttributeKernelArgumentSimulationDescription         = 8
 };
 
+enum RSDraggedSpheroidAttributeKernelArgument {
+    RSDraggedSpheroidAttributeKernelArgumentPosition                      = 0,
+    RSDraggedSpheroidAttributeKernelArgumentOrientation                   = 1,
+    RSDraggedSpheroidAttributeKernelArgumentVelocity                      = 2,
+    RSDraggedSpheroidAttributeKernelArgumentTumble                        = 3,
+    RSDraggedSpheroidAttributeKernelArgumentExtras                        = 4,
+    RSDraggedSpheroidAttributeKernelArgumentSignal                        = 5,
+    RSDraggedSpheroidAttributeKernelArgumentRandomSeed                    = 6,
+    RSDraggedSpheroidAttributeKernelArgumentBackgroundVelocity            = 7,
+    RSDraggedSpheroidAttributeKernelArgumentBackgroundVelocityDescription = 8,
+    RSDraggedSpheroidAttributeKernelArgumentAngularWeight                 = 9,
+    RSDraggedSpheroidAttributeKernelArgumentAngularWeightDescription      = 10,
+    RSDraggedSpheroidAttributeKernelArgumentSimulationDescription         = 11
+};
+
 void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device_id *devices, cl_uint *num_cus, cl_int detail_level);
 void pfn_prog_notify(cl_program program, void *user_data);
 void pfn_notify(const char *errinfo, const void *private_info, size_t cb, void *user_data);

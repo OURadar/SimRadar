@@ -272,12 +272,6 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
                       __global uint4 *y,                   // 128-bit random seed (4 x 32-bit)
                       __read_only image3d_t wind_uvw,
                       const float16 wind_desc,
-                      __read_only image2d_t adm_cd,
-                      __read_only image2d_t adm_cm,
-                      const float16 adm_desc,
-                      __read_only image2d_t rcs_real,
-                      __read_only image2d_t rcs_imag,
-                      const float16 rcs_desc,
                       __constant float *angular_weight,
                       const float4 angular_weight_desc,
                       const float16 sim_desc)
@@ -349,7 +343,7 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
     // Calculate Reynold's number: Need to update with air density and viscousity
     const float rho_air = 0.9f;
     const float rho_mu_air = 0.9f / 1.0f;
-    const float mass_debris = 4.18879020478639f * pos.w * pos.w * pos.w;
+    const float mass_debris = 4.18879020478639f * pos.w * pos.w * pos.w; // (4 / 3) * PI * R ^ 3
     
     float rep = rho_mu_air * (2.0f * pos.w) * delta_v.w;
     float4 cd = 24.0f / rep + 6.0f / (1.0f + sqrt(rep)) + 0.4f;

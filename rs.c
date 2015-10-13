@@ -308,7 +308,38 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
         exit(EXIT_FAILURE);
     }
 
-	if (C->verb > 1) {
+//    __kernel void ds_atts(__global float4 *p,                  // position (x, y, z) and size (radius)
+//                          __global float4 *o,                  // orientation (quaternion)
+//                          __global float4 *v,                  // velocity (u, v, w) and a vacant float
+//                          __global float4 *t,                  // tumbling (orientation change, quaternion)
+//                          __global float4 *a,                  // auxiliary info: range, ange, ____, angular weight
+//                          __global float4 *x,                  // signal (hh, hv, vh, vv)
+//                          __global uint4 *y,                   // 128-bit random seed (4 x 32-bit)
+//                          __read_only image3d_t wind_uvw,
+//                          const float16 wind_desc,
+//                          __constant float *angular_weight,
+//                          const float4 angular_weight_desc,
+//                          const float16 sim_desc)
+    ret = CL_SUCCESS;
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentOrientation,                   sizeof(cl_mem),     &C->scat_ori);
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentTumble,                        sizeof(cl_mem),     &C->scat_tum);
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentExtras,                        sizeof(cl_mem),     &C->scat_att);
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentSignal,                        sizeof(cl_mem),     &C->scat_sig);
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentAngularWeight,                 sizeof(cl_mem),     &C->angular_weight);
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentAngularWeightDescription,      sizeof(cl_float4),  &C->angular_weight_desc);
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
+    
+    if (ret != CL_SUCCESS) {
+        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_ds_atts().\n", now());
+        exit(EXIT_FAILURE);
+    }
+
+    if (C->verb > 1) {
 		printf("%s : RS : Pass 1   global =%6s   local = %3zu x %2d = %6s B   groups = %4d   N = %9s\n",
 			   now(),
 			   commaint(C->make_pulse_params.global[0]),
@@ -2877,6 +2908,11 @@ void RS_populate(RSHandle *H) {
 	for (i=0; i<H->num_workers; i++) {
         ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &H->worker[i].vel_desc);
         ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
+
+//        ret |= clSetKernelArg(H->worker[i].kern_ds_atts, RSScattererAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &H->worker[i].vel_desc);
+//        ret |= clSetKernelArg(H->worker[i].kern_ds_atts, RSScattererAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &H->worker[i].adm_desc[a]);
+//        ret |= clSetKernelArg(H->worker[i].kern_ds_atts, RSScattererAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &H->worker[i].rcs_desc[r]);
+//        ret |= clSetKernelArg(H->worker[i].kern_ds_atts, RSScattererAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
 
         ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &H->worker[i].vel_desc);
         ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &H->worker[i].adm_desc[a]);
