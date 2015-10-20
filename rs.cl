@@ -184,6 +184,8 @@ __kernel void dummy(__global float4 *i)
     //    + (float4)(-0.5f, -0.5f, -0.5f, 0.5f) * sin(0.5f * (az4 - el4));   
 }
 
+
+// background
 __kernel void bg_atts(__global float4 *p,
                       __global float4 *v,
                       __global float4 *a,
@@ -306,7 +308,16 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
     //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
     const float4 dt = (float4)(sim_desc.sb, sim_desc.sb, sim_desc.sb, 0.0f);
     
-    // Future position, orientation, etc.
+    pos.w = 0.003f;
+    
+    //
+    // Update orientation & position ---------------------------------
+    //
+    float4 ori_next = quat_mult(ori, tum);
+    if (all(isfinite(ori_next))) {
+        ori = normalize(ori_next);
+    }
+    
     pos += vel * dt;
     
     // Check for bounding constraints
@@ -320,15 +331,15 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
     //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
     int is_outside = any(isless(pos.xyz, sim_desc.hi.s012) | isgreater(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
     
-    if (is_outside | isgreater(aux.s1, 1.0f)) {
+    if (is_outside) {
         uint4 seed = y[i];
         float4 r = rand(&seed);
         y[i] = seed;
         pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
         aux.s1 = 0.0f;
         vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
-    } else {
-        aux.s1 += sim_desc.sf;
+//    } else {
+        // aux.s1 += sim_desc.sf;
     }
     
     // Background wind
@@ -338,34 +349,39 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
     
     // Particle velocity will be slower due to drag
     float4 delta_v = (bg_vel - vel);
-    delta_v.w = norm(delta_v.xyz);
+    delta_v.w = length(delta_v.xyz);
     
     // Calculate Reynold's number: Need to update with air density and viscousity
-    const float rho_air = 0.9f;
-    const float rho_mu_air = 0.9f / 1.0f;
+    const float rho_air = 1.225f;
+    const float rho_mu_air = 1.225f / 1.983e-5f;
     const float mass_debris = 4.18879020478639f * pos.w * pos.w * pos.w; // (4 / 3) * PI * R ^ 3
     
     float rep = rho_mu_air * (2.0f * pos.w) * delta_v.w;
-    float4 cd = 24.0f / rep + 6.0f / (1.0f + sqrt(rep)) + 0.4f;
-    float3 du_dt = (0.5f * rho_air / mass_debris * delta_v.w * cd * delta_v.w) * delta_v.xyz;
-    dudt.z -= 9.8;
+    float cd = 24.0f / rep + 6.0f / (1.0f + sqrt(rep)) + 0.4f;
+//    float4 du_dt = (float4)((0.5f * rho_air / mass_debris * cd * delta_v.w) * delta_v.xyz, 0.0f);
+//                 + (float4)(0.0f, 0.0f, -9.8f, 0.0f);
+    float4 du_dt = (float4)((0.2e-6f * rho_air / mass_debris * cd * delta_v.w) * delta_v.xyz, 0.0f);
+                 + (float4)(0.0f, 0.0f, -9.8f, 0.0f);
+    
+    vel += du_dt * dt;
+
+//    vel += (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
     
     // Calculate Area from particle size (radius)
     // Calculate du
-    
-//    float du_dt = 0.5f * rho_air *
     
     // Range of the point
     aux.s0 = length(pos);
     
     aux.s3 = compute_angular_weight(pos, angular_weight, angular_weight_desc, sim_desc);
-    
+
     p[i] = pos;
     v[i] = vel;
     a[i] = aux;
 }
 
 
+// generic scatterer
 __kernel void scat_atts(__global float4 *p,
                         __global float4 *o,
                         __global float4 *v,
@@ -501,7 +517,7 @@ __kernel void scat_atts(__global float4 *p,
     float ur_norm_sq = dot(ur.xyz, ur.xyz);
     
     // Euler method: dudt is just a scaled version of drag coefficient
-    float4 dudt = Ta * ur_norm_sq * cd + (float4)(0.0f, 0.0f, -9.8f, 0.0f);;
+    float4 dudt = Ta * ur_norm_sq * cd + (float4)(0.0f, 0.0f, -9.8f, 0.0f);
     float4 dw = DEG2RAD((dt * Ta * ur_norm_sq * inv_inln) * cm);
     
     // Runge-Kutta: dudt is a two-point average

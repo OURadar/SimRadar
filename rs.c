@@ -284,6 +284,25 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     }
 
     ret = CL_SUCCESS;
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentOrientation,                   sizeof(cl_mem),     &C->scat_ori);
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentTumble,                        sizeof(cl_mem),     &C->scat_tum);
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentExtras,                        sizeof(cl_mem),     &C->scat_att);
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentSignal,                        sizeof(cl_mem),     &C->scat_sig);
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentAngularWeight,                 sizeof(cl_mem),     &C->angular_weight);
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentAngularWeightDescription,      sizeof(cl_float4),  &C->angular_weight_desc);
+    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
+    
+    if (ret != CL_SUCCESS) {
+        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_ds_atts().\n", now());
+        exit(EXIT_FAILURE);
+    }
+    
+    ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
     ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentOrientation,                   sizeof(cl_mem),     &C->scat_ori);
     ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
@@ -305,37 +324,6 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_atts().\n", now());
-        exit(EXIT_FAILURE);
-    }
-
-//    __kernel void ds_atts(__global float4 *p,                  // position (x, y, z) and size (radius)
-//                          __global float4 *o,                  // orientation (quaternion)
-//                          __global float4 *v,                  // velocity (u, v, w) and a vacant float
-//                          __global float4 *t,                  // tumbling (orientation change, quaternion)
-//                          __global float4 *a,                  // auxiliary info: range, ange, ____, angular weight
-//                          __global float4 *x,                  // signal (hh, hv, vh, vv)
-//                          __global uint4 *y,                   // 128-bit random seed (4 x 32-bit)
-//                          __read_only image3d_t wind_uvw,
-//                          const float16 wind_desc,
-//                          __constant float *angular_weight,
-//                          const float4 angular_weight_desc,
-//                          const float16 sim_desc)
-    ret = CL_SUCCESS;
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentOrientation,                   sizeof(cl_mem),     &C->scat_ori);
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentTumble,                        sizeof(cl_mem),     &C->scat_tum);
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentExtras,                        sizeof(cl_mem),     &C->scat_att);
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentSignal,                        sizeof(cl_mem),     &C->scat_sig);
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentAngularWeight,                 sizeof(cl_mem),     &C->angular_weight);
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentAngularWeightDescription,      sizeof(cl_float4),  &C->angular_weight_desc);
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
-    
-    if (ret != CL_SUCCESS) {
-        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_ds_atts().\n", now());
         exit(EXIT_FAILURE);
     }
 
@@ -3115,30 +3103,25 @@ void RS_advance_time(RSHandle *H) {
 
     for (i=0; i<H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
-//            scat_atts_kernel(&H->worker[i].ndrange_scat,
-//                             (cl_float4 *)H->worker[i].scat_pos,
-//                             (cl_float4 *)H->worker[i].scat_ori,
-//                             (cl_float4 *)H->worker[i].scat_vel,
-//                             (cl_float4 *)H->worker[i].scat_tum,
-//                             (cl_float4 *)H->worker[i].scat_att,
-//                             (cl_float4 *)H->worker[i].scat_sig,
-//                             (cl_uint4 *)H->worker[i].scat_rnd,
-//                             (cl_image)H->worker[i].vel[v],
-//                             H->worker[i].vel_desc,
-//                             (cl_image)H->worker[i].adm_cd[t],
-//                             (cl_image)H->worker[i].adm_cm[t],
-//                             H->worker[i].adm_desc[t],
-//                             (cl_image)H->worker[i].rcs_real[t],
-//                             (cl_image)H->worker[i].rcs_imag[t],
-//                             H->worker[i].rcs_desc[t],
-//                             (cl_float *)H->worker[i].angular_weight,
-//                             H->worker[i].angular_weight_desc,
-//                             H->sim_desc);
 
-            bg_atts_kernel(&H->worker[i].ndrange_scat[0],
+//            bg_atts_kernel(&H->worker[i].ndrange_scat[0],
+//                           (cl_float4 *)H->worker[i].scat_pos,
+//                           (cl_float4 *)H->worker[i].scat_vel,
+//                           (cl_float4 *)H->worker[i].scat_att,
+//                           (cl_uint4 *)H->worker[i].scat_rnd,
+//                           (cl_image)H->worker[i].vel[v],
+//                           H->worker[i].vel_desc,
+//                           (cl_float *)H->worker[i].angular_weight,
+//                           H->worker[i].angular_weight_desc,
+//                           H->sim_desc);
+
+            ds_atts_kernel(&H->worker[i].ndrange_scat[0],
                            (cl_float4 *)H->worker[i].scat_pos,
+                           (cl_float4 *)H->worker[i].scat_ori,
                            (cl_float4 *)H->worker[i].scat_vel,
+                           (cl_float4 *)H->worker[i].scat_tum,
                            (cl_float4 *)H->worker[i].scat_att,
+                           (cl_float4 *)H->worker[i].scat_sig,
                            (cl_uint4 *)H->worker[i].scat_rnd,
                            (cl_image)H->worker[i].vel[v],
                            H->worker[i].vel_desc,
