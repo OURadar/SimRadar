@@ -135,7 +135,9 @@ ARPSHandle *ARPS_init(void) {
 }
 
 void ARPS_free(ARPSHandle *A) {
-    free(A);
+    if (A != NULL) {
+        free(A);
+    }
 }
 
 ARPSTable *ARPS_get_frame(const ARPSHandle *i, const int n) {

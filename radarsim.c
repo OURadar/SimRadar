@@ -124,11 +124,11 @@ int main(int argc, char *argv[]) {
     }
     
     // Initialize the ARPS ingest
-    O = ARPS_init();
-    if (O == NULL) {
-        fprintf(stderr, "%s : Some errors occurred during ARPS_init().\n", now());
-        return EXIT_FAILURE;
-    }
+//    O = ARPS_init();
+//    if (O == NULL) {
+//        fprintf(stderr, "%s : Some errors occurred during ARPS_init().\n", now());
+//        return EXIT_FAILURE;
+//    }
     
     // Set up the parameters:
     // Only use the setter functions to change the state.
@@ -274,7 +274,7 @@ int main(int argc, char *argv[]) {
     
     RCS_free(R);
     
-    ARPS_free(O);
+    //ARPS_free(O);
     
     printf("%s : Session ended\n", now());
     

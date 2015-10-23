@@ -69,7 +69,7 @@
 		RS_set_scan_box(S,
 						10.0e3, 15.0e3, 250.0f,         // Range
 						-12.0f, 12.0f, 2.0f,            // Azimuth
-						-1.0f, 6.0f, 1.0f);              // Elevation
+						0.0f, 6.0f, 1.0f);              // Elevation
 	
 //        RS_set_debris_count(S, 1, 4000);
 //        RS_set_debris_count(S, 2, 2000);

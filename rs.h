@@ -39,7 +39,7 @@
 #define RS_MAX_STR               4096
 #define RS_MAX_GPU_PLATFORM        10
 #define RS_MAX_GPU_DEVICE           8
-#define RS_MAX_KERNEL_LINES      1024
+#define RS_MAX_KERNEL_LINES      2048
 #define RS_MAX_KERNEL_SRC       65536
 #define RS_ALIGN_SIZE             128     // Align size. Be sure to have a least 16 for SSE, 32 for AVX, 64 for AVX-512
 #define RS_MAX_GATES              512

@@ -30,6 +30,11 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     C->que = gcl_create_dispatch_queue(CL_DEVICE_TYPE_GPU, C->dev);
     C->sem = dispatch_semaphore_create(0);
     
+    if (C->sem == NULL) {
+        fprintf(stderr, "%s : RS : Error creating semaphore for the CL worker.\n", now());
+        return;
+    }
+    
     // Set all the surface to null
     int i;
     for (i=0; i<RS_MAX_VEL_TABLES; i++) {
@@ -92,6 +97,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     C->kern_io = clCreateKernel(C->prog, "io", &ret);                                             CHECK_CL_CREATE_KERNEL
     C->kern_dummy = clCreateKernel(C->prog, "dummy", &ret);                                       CHECK_CL_CREATE_KERNEL
     C->kern_bg_atts = clCreateKernel(C->prog, "bg_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
+    C->kern_ds_atts = clCreateKernel(C->prog, "ds_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
     C->kern_scat_atts = clCreateKernel(C->prog, "scat_atts", &ret);                               CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_1 = clCreateKernel(C->prog, "make_pulse_pass_1", &ret);               CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_2_group = clCreateKernel(C->prog, "make_pulse_pass_2_group", &ret);   CHECK_CL_CREATE_KERNEL
@@ -139,6 +145,7 @@ void RS_worker_free(RSWorker *C) {
     clReleaseKernel(C->kern_io);
     clReleaseKernel(C->kern_dummy);
     clReleaseKernel(C->kern_bg_atts);
+    clReleaseKernel(C->kern_ds_atts);
     clReleaseKernel(C->kern_scat_atts);
     clReleaseKernel(C->kern_make_pulse_pass_1);
     clReleaseKernel(C->kern_make_pulse_pass_2_group);
@@ -638,7 +645,7 @@ cl_uint read_kernel_source_from_files(char *src_ptr[], ...) {
 	}
 	
 	if (len >= RS_MAX_KERNEL_SRC || count >= RS_MAX_KERNEL_LINES) {
-		fprintf(stderr, "Kernel source exceeds buffer size constraints.\n");
+		fprintf(stderr, "Kernel source exceeds buffer size constraints.  (len = %d / %d, count = %d / %d)\n", len, RS_MAX_KERNEL_SRC, count, RS_MAX_KERNEL_LINES);
 		return 0;
 	}
 	
@@ -1093,7 +1100,7 @@ void RS_init_scat_pos(RSHandle *H) {
 		H->scat_pos[i].x = (float)rand() / RAND_MAX * H->domain.size.x + H->domain.origin.x;
 		H->scat_pos[i].y = (float)rand() / RAND_MAX * H->domain.size.y + H->domain.origin.y;
 		H->scat_pos[i].z = (float)rand() / RAND_MAX * H->domain.size.z + H->domain.origin.z;
-		H->scat_pos[i].w = 0.05f;                      // Use this to store the size of hydrometeor
+		H->scat_pos[i].w = (float)rand() / RAND_MAX;   // Use this to store the size of hydrometeor
 		
 		H->scat_att[i].s0 = 0.0f;                      // Use this to store range
         H->scat_att[i].s1 = (float)rand() / RAND_MAX;  // Use this to store age
@@ -1103,7 +1110,7 @@ void RS_init_scat_pos(RSHandle *H) {
 		H->scat_vel[i].x = 0.0f;
 		H->scat_vel[i].y = 0.0f;
 		H->scat_vel[i].z = 0.0f;
-		H->scat_vel[i].w = 1.0f;
+		H->scat_vel[i].w = 0.0f;
 
         // Facing the sky
 //        H->scat_ori[i].x =  0.0f;
@@ -1275,7 +1282,7 @@ void RS_set_scan_box(RSHandle *H,
 	const RSfloat r_hi =  ceil((H->params.range_end   + H->params.domain_pad_factor * H->params.dr) / H->params.range_delta) * H->params.range_delta;
 	const RSfloat az_lo = floor((H->params.azimuth_start_deg - H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg) * H->params.antenna_bw_deg;
 	const RSfloat az_hi =  ceil((H->params.azimuth_end_deg   + H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg) * H->params.antenna_bw_deg;
-	const RSfloat el_lo = MAX(-90.0f, floor((H->params.elevation_start_deg - H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg) * H->params.antenna_bw_deg);
+	const RSfloat el_lo = MAX(0.0f, floor((H->params.elevation_start_deg - H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg) * H->params.antenna_bw_deg);
 	const RSfloat el_hi = MIN(90.0f,  ceil((H->params.elevation_end_deg   + H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg) * H->params.antenna_bw_deg);
 	const RSfloat tiny = 1.0e-5;
 	
@@ -1335,14 +1342,14 @@ void RS_set_scan_box(RSHandle *H,
 	xmin = INFINITY, xmax = -INFINITY,
 	ymin = INFINITY, ymax = -INFINITY,
     zmin = INFINITY, zmax = -INFINITY;
-	el = el_lo / 180.0 * M_PI;
-	while (el <= el_hi / 180.0 * M_PI + tiny && ii < H->num_anchors - 3) {
-		az = az_lo / 180.0 * M_PI;
-		while (az <= az_hi / 180.0 * M_PI + tiny && ii < H->num_anchors - 3) {
+	el = el_lo / 180.0f * M_PI;
+	while (el <= el_hi / 180.0f * M_PI + tiny && ii < H->num_anchors - 3) {
+		az = az_lo / 180.0f * M_PI;
+		while (az <= az_hi / 180.0f * M_PI + tiny && ii < H->num_anchors - 3) {
 			H->anchor_pos[ii].x = r_lo * cos(el) * sin(az);
 			H->anchor_pos[ii].y = r_lo * cos(el) * cos(az);
 			H->anchor_pos[ii].z = r_lo * sin(el);
-			H->anchor_pos[ii].w = 1.0;
+			H->anchor_pos[ii].w = 1.0f;
 			xmin = H->anchor_pos[ii].x < xmin ? H->anchor_pos[ii].x : xmin;
 			xmax = H->anchor_pos[ii].x > xmax ? H->anchor_pos[ii].x : xmax;
 			ymin = H->anchor_pos[ii].y < ymin ? H->anchor_pos[ii].y : ymin;
@@ -1354,7 +1361,7 @@ void RS_set_scan_box(RSHandle *H,
 			H->anchor_pos[ii].x = r_hi * cos(el) * sin(az);
 			H->anchor_pos[ii].y = r_hi * cos(el) * cos(az);
 			H->anchor_pos[ii].z = r_hi * sin(el);
-			H->anchor_pos[ii].w = 1.0;
+			H->anchor_pos[ii].w = 1.0f;
 			xmin = H->anchor_pos[ii].x < xmin ? H->anchor_pos[ii].x : xmin;
 			xmax = H->anchor_pos[ii].x > xmax ? H->anchor_pos[ii].x : xmax;
 			ymin = H->anchor_pos[ii].y < ymin ? H->anchor_pos[ii].y : ymin;
@@ -1363,9 +1370,9 @@ void RS_set_scan_box(RSHandle *H,
 			zmax = H->anchor_pos[ii].z > zmax ? H->anchor_pos[ii].z : zmax;
 			ii++;
 			
-			az += azimuth_delta / 180.0 * M_PI;
+			az += azimuth_delta / 180.0f * M_PI;
 		}
-		el += elevation_delta / 180.0 * M_PI;
+		el += elevation_delta / 180.0f * M_PI;
 	}
 	
 	// Radar origin at (0, 0, 0)
@@ -1378,8 +1385,8 @@ void RS_set_scan_box(RSHandle *H,
 	
 	// Volume of a single resolution cell
 	r = 0.5f * (H->params.range_start + H->params.range_start);
-	RSfloat vol = (H->params.antenna_bw_rad * r) * (H->params.antenna_bw_rad * r) * (H->params.c * H->params.tau * 0.5);
-	RSfloat nvol = ((xmax-xmin) * (ymax-ymin) * (zmax-zmin)) / vol;
+	RSfloat vol = (H->params.antenna_bw_rad * r) * (H->params.antenna_bw_rad * r) * (H->params.c * H->params.tau * 0.5f);
+	RSfloat nvol = ((xmax - xmin) * (ymax - ymin) * (zmax - zmin)) / vol;
 	
 	H->domain.origin.x = xmin;
 	H->domain.origin.y = ymin;
@@ -2072,8 +2079,8 @@ void RS_set_wind_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
 	// Set up the mapping coefficients
 	table.x_ = leslie->nx;    table.xm = (float)(table.x_ - 1);    table.xs = (float)leslie->nx / H->domain.size.x;    table.xo = -H->domain.origin.x * table.xs;
 	table.y_ = leslie->ny;    table.ym = (float)(table.y_ - 1);    table.ys = (float)leslie->ny / H->domain.size.y;    table.yo = -H->domain.origin.y * table.ys;
-	//table.z_ = leslie->nz;    table.zm = (float)(table.z_ - 1);    table.zs = (float)leslie->nz / H->domain.size.z;    table.zo = -H->domain.origin.z * table.zs;
-    table.z_ = leslie->nz;    table.zm = (float)(table.z_ - 1);    table.zs = (float)leslie->nz / 3000.0f;    table.zo = 0.0f;
+//	table.z_ = leslie->nz;    table.zm = (float)(table.z_ - 1);    table.zs = (float)leslie->nz / H->domain.size.z;    table.zo = -H->domain.origin.z * table.zs;
+    table.z_ = leslie->nz;    table.zm = (float)(table.z_ - 1);    table.zs = (float)leslie->nz / 8000.0f;             table.zo = 0.0f;
 	
     // Some other parameters
     table.tr = leslie->tr;
@@ -2084,6 +2091,11 @@ void RS_set_wind_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
 		table.data[i].y = leslie->v[i];
 		table.data[i].z = leslie->w[i];
 		table.data[i].w = 0.0f;
+        if (!(isfinite(table.data[i].x) &&
+              isfinite(table.data[i].y) &&
+              isfinite(table.data[i].z))) {
+            printf("%s : RS : Some LES entries are not finite  (i = %d, vel = %.2f, %.2f, %.2f).\n", now(), i, table.data[i].x, table.data[i].y, table.data[i].z);
+        }
 	}
 	
 	RS_set_wind_data(H, table);
@@ -2897,10 +2909,8 @@ void RS_populate(RSHandle *H) {
         ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &H->worker[i].vel_desc);
         ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
 
-//        ret |= clSetKernelArg(H->worker[i].kern_ds_atts, RSScattererAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &H->worker[i].vel_desc);
-//        ret |= clSetKernelArg(H->worker[i].kern_ds_atts, RSScattererAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &H->worker[i].adm_desc[a]);
-//        ret |= clSetKernelArg(H->worker[i].kern_ds_atts, RSScattererAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &H->worker[i].rcs_desc[r]);
-//        ret |= clSetKernelArg(H->worker[i].kern_ds_atts, RSScattererAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
+        ret |= clSetKernelArg(H->worker[i].kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &H->worker[i].vel_desc);
+        ret |= clSetKernelArg(H->worker[i].kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
 
         ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &H->worker[i].vel_desc);
         ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &H->worker[i].adm_desc[a]);
@@ -3181,15 +3191,19 @@ void RS_advance_time(RSHandle *H) {
     
 	for (i=0; i<H->num_workers; i++) {
 		// Need to refresh some parameters at each time update
-        clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
-        clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
+        //clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
+        //clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
+        
+        clSetKernelArg(H->worker[i].kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
+        clSetKernelArg(H->worker[i].kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
 
         clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
         clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
         
         // Background
         //printf("H->worker[%d].species_population[0] = %d from %d --> background\n", i, (int)H->worker[i].species_population[0], (int)H->worker[i].species_origin[0]);
-        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_bg_atts, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i][0]);
+        //clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_bg_atts, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i][0]);
+        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_ds_atts, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i][0]);
         
         // Debris type
         for (k=1; k<RS_MAX_SPECIES_TYPES; k++) {

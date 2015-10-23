@@ -24,6 +24,7 @@ typedef struct _draw_resource {
     GLint sizeUI;
 	GLint colorUI;
     GLint textureUI;
+    GLint colormapUI;
 	GLuint count;
 	GLfloat *positions;  // CPU side position
 	GLfloat *colors;     // CPU side color
@@ -35,6 +36,11 @@ typedef struct _draw_resource {
 	GLint colorAI;
     GLKTextureInfo *texture;
     GLuint textureID;
+    GLKTextureInfo *colormap;
+    GLuint colormapCount;
+    GLuint colormapIndex;
+    GLfloat colormapIndexNormalized;
+    GLuint colormapID;
     GLuint sourceOffset;
     GLuint instanceSize;
     GLenum drawMode;
@@ -154,5 +160,8 @@ typedef struct _draw_primitive {
 
 - (void)increaseBackgroundOpacity;
 - (void)decreaseBackgroundOpacity;
+
+- (void)cycleForwardColormap;
+- (void)cycleReverseColormap;
 
 @end

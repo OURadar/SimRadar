@@ -235,7 +235,7 @@ __kernel void bg_atts(__global float4 *p,
     //    RSSimulationParameterBoundSizeY    =  13, // hi.s5
     //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
     //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
-    int is_outside = any(isless(pos.xyz, sim_desc.hi.s012) | isgreater(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
+    int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
     
     if (is_outside | isgreater(aux.s1, 1.0f)) {
         uint4 seed = y[i];
@@ -287,7 +287,7 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
     float4 tum = t[i];  // tumbling (orientation change)
     float4 aux = a[i];  // auxiliary
     float4 sig = x[i];  // signal
-    
+
     const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
 
     //    RSSimulationParameterBeamUnitX     =  0,
@@ -308,7 +308,7 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
     //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
     const float4 dt = (float4)(sim_desc.sb, sim_desc.sb, sim_desc.sb, 0.0f);
     
-    pos.w = 0.003f;
+    //pos.w = 0.0003f; // fixed size @ .3 mm
     
     //
     // Update orientation & position ---------------------------------
@@ -317,7 +317,7 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
     if (all(isfinite(ori_next))) {
         ori = normalize(ori_next);
     }
-    
+
     pos += vel * dt;
     
     // Check for bounding constraints
@@ -329,43 +329,62 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
     //    RSSimulationParameterBoundSizeY    =  13, // hi.s5
     //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
     //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
-    int is_outside = any(isless(pos.xyz, sim_desc.hi.s012) | isgreater(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
+    int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
     
     if (is_outside) {
+
         uint4 seed = y[i];
         float4 r = rand(&seed);
         y[i] = seed;
-        pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
-        aux.s1 = 0.0f;
+        //pos.xyz = r.xyz * (sim_desc.hi.s456 - (float3)(0.0f, 0.0f, 150.0f)) + sim_desc.hi.s012 + (float3)(0.0f, 0.0f, 150.0f);
+        //pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
+        pos.xyz = (fma(r, sim_desc.hi.s4567, sim_desc.hi.s0123)).xyz;
+        aux.s1 = 0.25f;
         vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
-//    } else {
-        // aux.s1 += sim_desc.sf;
-    }
-    
-    // Background wind
-    float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
-    
-    float4 bg_vel = read_imagef(wind_uvw, sampler, wind_coord);
-    
-    // Particle velocity will be slower due to drag
-    float4 delta_v = (bg_vel - vel);
-    delta_v.w = length(delta_v.xyz);
-    
-    // Calculate Reynold's number: Need to update with air density and viscousity
-    const float rho_air = 1.225f;
-    const float rho_mu_air = 1.225f / 1.983e-5f;
-    const float mass_debris = 4.18879020478639f * pos.w * pos.w * pos.w; // (4 / 3) * PI * R ^ 3
-    
-    float rep = rho_mu_air * (2.0f * pos.w) * delta_v.w;
-    float cd = 24.0f / rep + 6.0f / (1.0f + sqrt(rep)) + 0.4f;
-//    float4 du_dt = (float4)((0.5f * rho_air / mass_debris * cd * delta_v.w) * delta_v.xyz, 0.0f);
-//                 + (float4)(0.0f, 0.0f, -9.8f, 0.0f);
-    float4 du_dt = (float4)((0.2e-6f * rho_air / mass_debris * cd * delta_v.w) * delta_v.xyz, 0.0f);
-                 + (float4)(0.0f, 0.0f, -9.8f, 0.0f);
-    
-    vel += du_dt * dt;
 
-//    vel += (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
+    } else {
+    
+        // Background wind
+        float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
+        
+        float4 bg_vel = read_imagef(wind_uvw, sampler, wind_coord);
+        
+        // Particle velocity will be slower due to drag
+        float4 delta_v = bg_vel - vel;
+        float delta_v_abs = length(delta_v.xyz);
+        
+
+//        if (i < 10)
+//            printf("bg_vel = %.2v4f  vel = %.2v4f  delta_v = %.2v4f  bd = %.2v4f\n", bg_vel, vel, delta_v, bg_vel / dt);
+//        else if (i == 10)
+//            printf("--------\n");
+        
+        if (delta_v_abs > 1.0e-5f) {
+
+            // Calculate Reynold's number: Need to update with air density and viscousity
+            const float rho_air = 1.225f;
+            const float rho_mu_air = 6.7308e4;  // 1.225 / 1.82e-5 kg m^-1 s^-1 (David)
+            const float mass_particle = 4181.25f * pos.w * pos.w * pos.w; // rho * (4 / 3) * PI * R ^ 3 = (998.2 * 4 / 3 * PI) * R ^ 3
+            
+            float rep = rho_mu_air * (2.0f * pos.w) * delta_v_abs;
+            float cd = 24.0f / rep + 6.0f / (1.0f + sqrt(rep)) + 0.4f;
+            float4 dudt = (0.5f * rho_air / mass_particle * cd * delta_v_abs) * delta_v;
+            
+            // Bound the velocity change
+            if (length(vel.xyz + dudt.xyz * dt.xyz) > length(bg_vel.xyz)) {
+                //vel = (bg_vel + (float4)(0.0f, 0.0f, -9.8f * dt.z, 0.0f);
+                vel = bg_vel + (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
+                //vel = (bg_vel.x, bg_vel.y, vel.z + (dudt.z - 9.8f) * dt.z, 0.0f);
+            } else {
+                vel += (dudt + (float4)(0.0f, 0.0f, -9.8f, 0.0f)) * dt;
+            }
+        } else {
+
+            vel += (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
+
+        }
+
+    }
     
     // Calculate Area from particle size (radius)
     // Calculate du
@@ -378,6 +397,7 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
     p[i] = pos;
     v[i] = vel;
     a[i] = aux;
+    x[i] = sig;
 }
 
 
@@ -465,7 +485,7 @@ __kernel void scat_atts(__global float4 *p,
         y[i] = seed;
         
         pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
-        pos.z = 100.0f;
+        pos.z = 150.0f;
         
         vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
         tum = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
@@ -534,7 +554,7 @@ __kernel void scat_atts(__global float4 *p,
 //    
 //    float4 dudt = 0.5f * (dudt1 + dudt2) + (float4)(0.0f, 0.0f, -9.8f, 0.0f);
     
-    // bound the acceleration
+    // bound the velocity
     if (length(vel.xy + dudt.xy * dt.xy) > length(vel_bg.xy)) {
         vel.xy = vel_bg.xy;
     } else {

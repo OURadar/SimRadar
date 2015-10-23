@@ -517,9 +517,20 @@
 		resource.texture = [self loadTexture:@"disc64.png"];
 //        resource.texture = [self loadTexture:@"spot256.png"];
         resource.textureID = [resource.texture name];
-        glUniform1i(resource.textureUI, resource.textureID);
+        glUniform1i(resource.textureUI, 0);
     }
-
+    
+    // Get colormap location
+    resource.colormapUI = glGetUniformLocation(resource.program, "colormapTexture");
+    if (resource.colormapUI >= 0) {
+        resource.colormap = [self loadTexture:@"colormap.png"];
+        resource.colormapID = [resource.colormap name];
+        resource.colormapCount = resource.colormap.height;
+        resource.colormapIndex = 0;
+        glUniform1i(resource.colormapUI, 1);
+        NSLog(@"Colormap has %d maps, each with %d colors", resource.colormap.height, resource.colormap.width);
+    }
+    
 	// Get attributes
 	resource.colorAI = glGetAttribLocation(resource.program, "inColor");
     resource.positionAI = glGetAttribLocation(resource.program, "inPosition");
@@ -541,6 +552,10 @@
     if (texture == nil)
     {
         NSLog(@"Error loading file: %@", [error localizedDescription]);
+    }
+    else
+    {
+        NSLog(@"Texture with %d x %d pixels", texture.width, texture.height);
     }
     
     return texture;
@@ -644,6 +659,10 @@
 	anchorLineRenderer = [self createRenderResourceFromProgram:gridRenderer.program];
 	leafRenderer = [self createRenderResourceFromVertexShader:@"leaf" fragmentShader:@"leaf"];
 	hudRenderer = [self createRenderResourceFromProgram:gridRenderer.program];
+
+    // Make body renderer's color a bit translucent
+    glUniform4f(bodyRenderer.colorUI, 1.0f, 1.0f, 1.0f, 0.75f);
+    NSLog(@"bodyRenderer.colormap %p", bodyRenderer.colormap);
 
     GLfloat colors[] = {
         0.00f, 0.00f, 0.00f,
@@ -903,13 +922,15 @@
 	glPointSize(MIN(MAX(15.0f * pixelsPerUnit, 1.0f), 64.0f) * devicePixelRatio);
 	glUseProgram(bodyRenderer.program);
     if (range < 1000.0f) {
-        glUniform4f(bodyRenderer.colorUI, 1.0f, 1.0f, 1.0f, MIN(1.0f, backgroundOpacity * 1000.0f / range));
+        glUniform4f(bodyRenderer.colorUI, bodyRenderer.colormapIndexNormalized, 1.0f, 1.0f, MIN(1.0f, backgroundOpacity * 1000.0f / range));
     } else {
-        glUniform4f(bodyRenderer.colorUI, 1.0f, 1.0f, 1.0f, backgroundOpacity);
+        glUniform4f(bodyRenderer.colorUI, bodyRenderer.colormapIndexNormalized, 1.0f, 1.0f, backgroundOpacity);
     }
 	glUniformMatrix4fv(bodyRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
-    glUniform1i(bodyRenderer.textureUI, 0);
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, bodyRenderer.textureID);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, bodyRenderer.colormapID);
 	//glDrawArrays(GL_POINTS, leafRenderer.count, bodyRenderer.count);
     glDrawArrays(GL_POINTS, 0, bodyRenderer.count);
 	
@@ -986,6 +1007,8 @@
 #endif
     
     // Text
+    glActiveTexture(GL_TEXTURE0);
+
     snprintf(statusMessage[2], 256, "Frame %d", iframe);
     
     [textRenderer drawText:"SimRadar" origin:NSMakePoint(25.0f, height - 60.0f) scale:0.5f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
@@ -1131,6 +1154,22 @@
 - (void)decreaseBackgroundOpacity
 {
     backgroundOpacity = MAX(0.1f, backgroundOpacity - 0.05f);
+}
+
+
+- (void)cycleForwardColormap
+{
+    bodyRenderer.colormapIndex = bodyRenderer.colormapIndex >= bodyRenderer.colormapCount - 1 ? 0 : bodyRenderer.colormapIndex + 1;
+    bodyRenderer.colormapIndexNormalized = ((GLfloat)bodyRenderer.colormapIndex + 0.5f) / bodyRenderer.colormapCount;
+    NSLog(@"colormapIndex = %d", bodyRenderer.colormapIndex);
+}
+
+
+- (void)cycleReverseColormap
+{
+    bodyRenderer.colormapIndex = bodyRenderer.colormapIndex <= 0 ? bodyRenderer.colormapCount - 1 : bodyRenderer.colormapIndex - 1;
+    bodyRenderer.colormapIndexNormalized = ((GLfloat)bodyRenderer.colormapIndex + 0.5f) / bodyRenderer.colormapCount;
+    NSLog(@"colormapIndex = %d", bodyRenderer.colormapIndex);
 }
 
 @end

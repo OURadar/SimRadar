@@ -293,6 +293,14 @@ NSWindow *standardWindow;
             NSLog(@"speciesId = %d", speciesId);
             break;
             
+        case 'c':
+            [glView.renderer cycleForwardColormap];
+            break;
+            
+        case 'C':
+            [glView.renderer cycleReverseColormap];
+            break;
+            
 		default:
 			// Allow other character to be handled by how the superclass defined it
 			[super keyDown:event];
