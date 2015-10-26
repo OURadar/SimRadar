@@ -29,7 +29,8 @@ void main (void)
 
 	//varColor = inColor;
 	//varColor = inColor * drawColor;
-    varColor = texture(colormapTexture, vec2(inPosition.w, drawColor.x));
+    //varColor = texture(colormapTexture, vec2(inPosition.w * 250.0f, drawColor.x));
+    varColor = texture(colormapTexture, vec2(inColor.x, drawColor.x));
     varColor.w *= drawColor.w;
 	//varColor = 0.3*drawColor + 0.7*inColor;
 	//varColor = inColor - drawColor;

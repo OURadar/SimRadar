@@ -203,6 +203,13 @@ enum {
     RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
 };
 
+enum {
+    RSDropSizeDistributionUndefined      = 0,
+    RSDropSizeDistributionMarshallPalmer = 1,
+    RSDropSizeDistributionGamma          = 2,
+    RSDropSizeDistributionArbitrary      = 3
+};
+
 //
 //
 //  Worker (per GPU) handle
@@ -359,6 +366,16 @@ typedef struct _rs_handle {
 	cl_float4             *anchor_pos;
 	cl_float4             *anchor_lines;
 	cl_float4             beam_pos;
+    
+    // DSD parameters
+    char                  dsd_name;
+    RSfloat               dsd_n0;           // DSD parameter for MP, gamma
+    RSfloat               dsd_lambda;       // DSD parameter for MP, gamma
+    RSfloat               dsd_mu;           // DSD pameter for gamma
+    int                   dsd_count;
+    RSfloat               *dsd_pdf;
+    RSfloat               *dsd_cdf;
+    RSfloat               *dsd_d;           // DSD diameters
 	
 } RSHandle;
 
@@ -392,6 +409,9 @@ void RS_set_beam_pos(RSHandle *H, RSfloat az_deg, RSfloat el_deg);
 void RS_set_verbosity(RSHandle *H, const char verb);
 void RS_set_debris_count(RSHandle *H, const int species_id, const size_t count);
 size_t RS_get_debris_count(RSHandle *H, const int species_id);
+
+void RS_set_dsd(RSHandle *H, const float *cdf, const float *diameters, const int count, const char name);
+void RS_set_dsd_to_mp(RSHandle *H);
 
 void RS_set_range_weight(RSHandle *H, const float *weights, const float table_index_start, const float table_index_delta, unsigned int table_size);
 void RS_set_range_weight_to_triangle(RSHandle *H, float pulse_width_m);

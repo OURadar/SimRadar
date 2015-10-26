@@ -59,7 +59,6 @@ float4 rand(uint4 *seed)
 float4 set_clr(float4 att)
 {
     float g = clamp(fma(log10(att.s3), 0.3f, 1.5f), 0.05f, 0.3f);
-    //float g = clamp(fma(log10(att.s3), 1.6f, 6.0f), 0.05f, 0.3f);
     
     float4 c;
     
@@ -339,7 +338,6 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
         //pos.xyz = r.xyz * (sim_desc.hi.s456 - (float3)(0.0f, 0.0f, 150.0f)) + sim_desc.hi.s012 + (float3)(0.0f, 0.0f, 150.0f);
         //pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
         pos.xyz = (fma(r, sim_desc.hi.s4567, sim_desc.hi.s0123)).xyz;
-        aux.s1 = 0.25f;
         vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
 
     } else {
@@ -352,6 +350,7 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
         // Particle velocity will be slower due to drag
         float4 delta_v = bg_vel - vel;
         float delta_v_abs = length(delta_v.xyz);
+        float bg_vel_abs = length(bg_vel);
         
 
 //        if (i < 10)
@@ -371,9 +370,12 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
             float4 dudt = (0.5f * rho_air / mass_particle * cd * delta_v_abs) * delta_v;
             
             // Bound the velocity change
-            if (length(vel.xyz + dudt.xyz * dt.xyz) > length(bg_vel.xyz)) {
-                //vel = (bg_vel + (float4)(0.0f, 0.0f, -9.8f * dt.z, 0.0f);
+            if (length(vel + dudt * dt) > 5.0f * bg_vel_abs) {
+                //vel += dudt * dt;
+                //vel = vel / length(vel) * bg_vel_abs + (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
+                
                 vel = bg_vel + (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
+                
                 //vel = (bg_vel.x, bg_vel.y, vel.z + (dudt.z - 9.8f) * dt.z, 0.0f);
             } else {
                 vel += (dudt + (float4)(0.0f, 0.0f, -9.8f, 0.0f)) * dt;
@@ -475,9 +477,7 @@ __kernel void scat_atts(__global float4 *p,
     //    RSSimulationParameterBoundSizeY    =  13, // hi.s5
     //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
     //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
-    sim_desc.hi.s2 = 0.0f;
-    sim_desc.hi.s6 = 1700.0f;
-    int is_outside = any(isless(pos.xyz, sim_desc.hi.s012) | isgreater(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
+    int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
     
     if (is_outside) {
         uint4 seed = y[i];
@@ -703,7 +703,20 @@ __kernel void scat_clr2(__global float4 *c,
     
     //float w = mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
     
-    c[i] = set_clr(a[i]);
+    //c[i] = set_clr(a[i]);
+}
+
+
+__kernel void scat_clr_dsd(__global float4 *c,
+                           __global float4 *p,
+                           __global float4 *a,
+                           const unsigned int n)
+{
+    unsigned int i = get_global_id(0);
+    
+    c[i].x = clamp(2.0f + 0.5f * log10(p[i].w), 0.0f, 1.0f);   // diameter to bin index
+//    if (i < 10)
+//        printf("i=%d  d=%.1fmm  c=%.3f\n", i, p[i].w * 1000.0f, c[i].x);
 }
 
 

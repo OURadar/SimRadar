@@ -881,6 +881,8 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
     RS_set_adm_data_to_unity(H);
     
     RS_set_rcs_data_to_unity(H);
+    
+    RS_set_dsd_to_mp(H);
 	
 	H->verb = user_verb;
 	
@@ -1093,6 +1095,13 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint user_m
 
 
 void RS_init_scat_pos(RSHandle *H) {
+    
+    int counts[H->dsd_count];
+    int k, bin;
+    float a;
+    
+    memset(counts, 0, H->dsd_count * sizeof(int));
+    
 	//
 	// Initialize the scatter body positions & velocities
 	//
@@ -1100,8 +1109,21 @@ void RS_init_scat_pos(RSHandle *H) {
 		H->scat_pos[i].x = (float)rand() / RAND_MAX * H->domain.size.x + H->domain.origin.x;
 		H->scat_pos[i].y = (float)rand() / RAND_MAX * H->domain.size.y + H->domain.origin.y;
 		H->scat_pos[i].z = (float)rand() / RAND_MAX * H->domain.size.z + H->domain.origin.z;
-		H->scat_pos[i].w = (float)rand() / RAND_MAX;   // Use this to store the size of hydrometeor
-		
+		//H->scat_pos[i].w = ;   // Use this to store the size of hydrometeor
+        
+        a = (float)rand() / RAND_MAX;
+        k = H->dsd_count;
+        bin = 0;
+        while (k > 0) {
+            k--;
+            if (a >= H->dsd_cdf[k]) {
+                bin = k;
+                break;
+            }
+        }
+        counts[bin]++;
+        H->scat_pos[i].w = H->dsd_d[bin];
+
 		H->scat_att[i].s0 = 0.0f;                      // Use this to store range
         H->scat_att[i].s1 = (float)rand() / RAND_MAX;  // Use this to store age
 		H->scat_att[i].s2 = 0.0f;
@@ -1142,6 +1164,10 @@ void RS_init_scat_pos(RSHandle *H) {
         H->scat_rnd[i].s2 = rand();
         H->scat_rnd[i].s3 = rand();
 	}
+    
+    for (k=0; k<H->dsd_count; k++) {
+        printf("bin %d - %.1f mm - %d = %.4f\n", k, H->dsd_d[k] * 1000.0f, counts[k], (float)counts[k] / (float)H->num_scats);
+    }
 	
 	// Replace a few points for debugging purpose.
 //	H->scat_pos[0].x = H->domain.origin.x + 0.5f * H->domain.size.x;
@@ -1761,6 +1787,66 @@ void RS_update_debris_count(RSHandle *H) {
 }
 
 
+void RS_set_dsd(RSHandle *H, const float *pdf, const float *diameters, const int count, const char name) {
+
+    int i;
+    
+    H->dsd_name = name;
+    H->dsd_count = count;
+    
+    if (H->dsd_d != NULL) {
+        free(H->dsd_d);
+        free(H->dsd_pdf);
+        free(H->dsd_cdf);
+    }
+    H->dsd_d = (RSfloat *)malloc(count * sizeof(RSfloat));
+    H->dsd_pdf = (RSfloat *)malloc(count * sizeof(RSfloat));
+    H->dsd_cdf = (RSfloat *)malloc(count * sizeof(RSfloat));
+
+    RSfloat slow_cum = 0.0f;
+    
+    for (i=0; i<count; i++) {
+        H->dsd_d[i] = diameters[i];
+        H->dsd_pdf[i] = pdf[i];
+        H->dsd_cdf[i] = slow_cum;
+        slow_cum += pdf[i];
+        printf("%.1f mm - %.4f / %.4f\n", 1000.0f * H->dsd_d[i], H->dsd_pdf[i], H->dsd_cdf[i]);
+    }
+}
+
+void RS_set_dsd_to_mp(RSHandle *H) {
+    
+    int i;
+    
+    float d, sum = 0.0f;
+    
+    float ds[] = {0.0001f, 0.0002f, 0.0005f, 0.001f, 0.002f, 0.003, 0.004f, 0.005f};
+    
+    const int count = sizeof(ds) / sizeof(float);
+    
+    H->dsd_mu = 8000.0f;    // Brandes et al. 2006, mu = 8000 m^-3 m^-1
+    H->dsd_lambda = 2.3f;
+    
+    RSfloat *n = (RSfloat *)malloc(count * sizeof(RSfloat));
+    
+    // Derive a concentration curve
+    for (i=0; i<count; i++) {
+        d = ds[i];
+        n[i] = H->dsd_mu * exp(-H->dsd_lambda * d);
+        sum += n[i];
+    }
+    
+    // Convert concentration to pdf
+    for (i=0; i<count; i++) {
+        n[i] /= sum;
+    }
+    
+    RS_set_dsd(H, n, ds, count, RSDropSizeDistributionMarshallPalmer);
+    
+    free(n);
+}
+
+
 #pragma mark -
 #pragma mark Functions to set properties after RS_init()
 
@@ -1836,6 +1922,7 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
 #endif
 
     RS_table_free(table);
+
 }
 
 
@@ -2080,7 +2167,7 @@ void RS_set_wind_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
 	table.x_ = leslie->nx;    table.xm = (float)(table.x_ - 1);    table.xs = (float)leslie->nx / H->domain.size.x;    table.xo = -H->domain.origin.x * table.xs;
 	table.y_ = leslie->ny;    table.ym = (float)(table.y_ - 1);    table.ys = (float)leslie->ny / H->domain.size.y;    table.yo = -H->domain.origin.y * table.ys;
 //	table.z_ = leslie->nz;    table.zm = (float)(table.z_ - 1);    table.zs = (float)leslie->nz / H->domain.size.z;    table.zo = -H->domain.origin.z * table.zs;
-    table.z_ = leslie->nz;    table.zm = (float)(table.z_ - 1);    table.zs = (float)leslie->nz / 8000.0f;             table.zo = 0.0f;
+    table.z_ = leslie->nz;    table.zm = (float)(table.z_ - 1);    table.zs = (float)leslie->nz / 5000.0f;             table.zo = 0.0f;
 	
     // Some other parameters
     table.tr = leslie->tr;
@@ -2707,10 +2794,14 @@ void RS_explode(RSHandle *H) {
                              H->worker[i].angular_weight_desc,
                              sim_desc);
             
-            scat_clr_kernel(&H->worker[i].ndrange_scat[0],
-                            (cl_float4 *)H->worker[i].scat_clr,
-                            (cl_float4 *)H->worker[i].scat_att,
-                            (unsigned int)H->worker[i].num_scats);
+            scat_clr2_kernel(&H->worker[i].ndrange_scat[0],
+                             (cl_float4 *)H->worker[i].scat_clr,
+                             (cl_float4 *)H->worker[i].scat_pos,
+                             (cl_float4 *)H->worker[i].scat_att,
+                             (cl_float *)H->worker[i].angular_weight,
+                             H->worker[i].angular_weight_desc,
+                             H->beam_pos,
+                             (unsigned int)H->worker[i].num_scats);
 
 			dispatch_semaphore_signal(H->worker[i].sem);
 		});
@@ -2830,7 +2921,7 @@ void RS_populate(RSHandle *H) {
 	if (H->scat_pos != NULL) {
 		RS_free_scat_memory(H);
 	}
-	
+
 	posix_memalign((void **)&H->scat_pos, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
 	posix_memalign((void **)&H->scat_vel, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
 	posix_memalign((void **)&H->scat_ori, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
@@ -3066,11 +3157,25 @@ void RS_upload(RSHandle *H) {
 			gcl_memcpy(H->worker[i].scat_sig, H->scat_sig + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->worker[i].scat_rnd, H->scat_rnd + H->offset[i], H->worker[i].num_scats * sizeof(cl_uint4));
             
-			dispatch_semaphore_signal(H->worker[i].sem);
+            dispatch_semaphore_signal(H->worker[i].sem);
 		});
 		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
 	}
 	
+    // Set individual colors based on individual attributes: age, drop size, etc.
+    for (i=0; i<H->num_workers; i++) {
+        dispatch_async(H->worker[i].que, ^{
+            scat_clr_dsd_kernel(&H->worker[i].ndrange_scat[0],
+                                (cl_float4 *)H->worker[i].scat_clr,
+                                (cl_float4 *)H->worker[i].scat_pos,
+                                (cl_float4 *)H->worker[i].scat_att,
+                                (unsigned int)H->worker[i].num_scats);
+    
+            dispatch_semaphore_signal(H->worker[i].sem);
+        });
+        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+    }
+
 #else
 
     for (i=0; i<H->num_workers; i++) {
@@ -3164,11 +3269,11 @@ void RS_advance_time(RSHandle *H) {
                                  H->sim_desc);
             }
 
-            scat_clr_kernel(&H->worker[i].ndrange_scat[0],
-							(cl_float4 *)H->worker[i].scat_clr,
-							(cl_float4 *)H->worker[i].scat_att,
-							(unsigned int)H->worker[i].num_scats);
-
+//            scat_clr_kernel(&H->worker[i].ndrange_scat[0],
+//							(cl_float4 *)H->worker[i].scat_clr,
+//							(cl_float4 *)H->worker[i].scat_att,
+//							(unsigned int)H->worker[i].num_scats);
+//
             dispatch_semaphore_signal(H->worker[i].sem);
 		});
 	}
