@@ -363,23 +363,20 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
             // Calculate Reynold's number: Need to update with air density and viscousity
             const float rho_air = 1.225f;
             const float rho_mu_air = 6.7308e4;  // 1.225 / 1.82e-5 kg m^-1 s^-1 (David)
-            const float mass_particle = 4181.25f * pos.w * pos.w * pos.w; // rho * (4 / 3) * PI * R ^ 3 = (998.2 * 4 / 3 * PI) * R ^ 3
+            const float area_over_mass_particle = 0.0030054f / pos.w; // 4 * PI * R ^ 2 / ( ( 4 / 3 ) * PI * R ^ 3 * rho ) = 0.0030054 / r
             
             float rep = rho_mu_air * (2.0f * pos.w) * delta_v_abs;
             float cd = 24.0f / rep + 6.0f / (1.0f + sqrt(rep)) + 0.4f;
-            float4 dudt = (0.5f * rho_air / mass_particle * cd * delta_v_abs) * delta_v;
-            
+            float4 dudt = (0.5f * rho_air * cd * area_over_mass_particle * delta_v_abs) * delta_v;
+
+            vel += (dudt + (float4)(0.0f, 0.0f, -9.8f, 0.0f)) * dt;
+
             // Bound the velocity change
-            if (length(vel + dudt * dt) > 5.0f * bg_vel_abs) {
-                //vel += dudt * dt;
-                //vel = vel / length(vel) * bg_vel_abs + (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
-                
+            if (length(vel) > 2.0f * bg_vel_abs) {
                 vel = bg_vel + (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
-                
-                //vel = (bg_vel.x, bg_vel.y, vel.z + (dudt.z - 9.8f) * dt.z, 0.0f);
-            } else {
-                vel += (dudt + (float4)(0.0f, 0.0f, -9.8f, 0.0f)) * dt;
             }
+
+            
         } else {
 
             vel += (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
