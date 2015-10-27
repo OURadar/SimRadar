@@ -175,7 +175,6 @@ __kernel void dummy(__global float4 *i)
 
     quat_new_frame = quat_mult(quat_new_frame, quat_new_frame);
     
-    
     //    float4 az4 = (float4)( az,  az, az, az);
     //    float4 el4 = (float4)(-el, -el, el, el);
     //    float4 quat_new_frame
@@ -328,7 +327,7 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
     //    RSSimulationParameterBoundSizeY    =  13, // hi.s5
     //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
     //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
-    int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
+    int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456) | !all(isfinite(pos.xyz)) | !all(isfinite(ori)));
     
     if (is_outside) {
 
@@ -339,6 +338,8 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
         //pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
         pos.xyz = (fma(r, sim_desc.hi.s4567, sim_desc.hi.s0123)).xyz;
         vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
+        ori = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
+        tum = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
 
     } else {
     
@@ -347,12 +348,11 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
         
         float4 bg_vel = read_imagef(wind_uvw, sampler, wind_coord);
         
-        // Particle velocity will be slower due to drag
+        // Particle velocity due to drag
         float4 delta_v = bg_vel - vel;
         float delta_v_abs = length(delta_v.xyz);
         float bg_vel_abs = length(bg_vel);
         
-
 //        if (i < 10)
 //            printf("bg_vel = %.2v4f  vel = %.2v4f  delta_v = %.2v4f  bd = %.2v4f\n", bg_vel, vel, delta_v, bg_vel / dt);
 //        else if (i == 10)
@@ -360,10 +360,10 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
         
         if (delta_v_abs > 1.0e-5f) {
 
-            // Calculate Reynold's number: Need to update with air density and viscousity
-            const float rho_air = 1.225f;
-            const float rho_mu_air = 6.7308e4;  // 1.225 / 1.82e-5 kg m^-1 s^-1 (David)
-            const float area_over_mass_particle = 0.0030054f / pos.w; // 4 * PI * R ^ 2 / ( ( 4 / 3 ) * PI * R ^ 3 * rho ) = 0.0030054 / r
+            // Calculate Reynold's number with air density and viscousity
+            const float rho_air = 1.225f;                              // 1.225 kg m^-3
+            const float rho_mu_air = 6.7308e4;                         // 1.225 / 1.82e-5 kg m^-1 s^-1 (David)
+            const float area_over_mass_particle = 0.0030054f / pos.w;  // 4 * PI * R ^ 2 / ( ( 4 / 3 ) * PI * R ^ 3 * rho ) = 0.0030054 / r
             
             float rep = rho_mu_air * (2.0f * pos.w) * delta_v_abs;
             float cd = 24.0f / rep + 6.0f / (1.0f + sqrt(rep)) + 0.4f;
@@ -376,7 +376,6 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
                 vel = bg_vel + (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
             }
 
-            
         } else {
 
             vel += (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
@@ -384,9 +383,6 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
         }
 
     }
-    
-    // Calculate Area from particle size (radius)
-    // Calculate du
     
     // Range of the point
     aux.s0 = length(pos);
@@ -704,16 +700,24 @@ __kernel void scat_clr2(__global float4 *c,
 }
 
 
+__kernel void scat_sig_dsd(__global float4 *x,
+                           __global float4 *p,
+                           __global float4 *a)
+{
+    unsigned int i = get_global_id(0);
+    x[i] = (float4)(1.0f, 0.0f, 1.0f, 0.0f);
+}
+
+
 __kernel void scat_clr_dsd(__global float4 *c,
                            __global float4 *p,
-                           __global float4 *a,
-                           const unsigned int n)
+                           __global float4 *a)
 {
     unsigned int i = get_global_id(0);
     
-    c[i].x = clamp(2.0f + 0.5f * log10(p[i].w), 0.0f, 1.0f);   // diameter to bin index
-//    if (i < 10)
-//        printf("i=%d  d=%.1fmm  c=%.3f\n", i, p[i].w * 1000.0f, c[i].x);
+    c[i].x = clamp(4.8f + log10(0.3f * p[i].w), 0.0f, 1.0f);   // radius to bin index
+    //    if (i < 10)
+    //        printf("i=%d  d=%.1fmm  c=%.3f\n", i, p[i].w * 1000.0f, c[i].x);
 }
 
 
@@ -755,10 +759,12 @@ __kernel void make_pulse_pass_1(__global float4 *out,
     
     const float4 table_xs_4 = (float4)(table_xs, table_xs, table_xs, table_xs);
     const float4 table_x0_4 = (float4)(table_x0, table_x0, table_x0, table_x0) + (float4)(0.0f, 1.0f, 0.0f, 1.0f);
+    const float4 dr = (float4)(range_delta, range_delta, range_delta, range_delta);
     
-    float r;
     float r_a;
     float r_b;
+    
+    float4 r;
     
     float4 a;
     float4 b;
@@ -794,25 +800,24 @@ __kernel void make_pulse_pass_1(__global float4 *out,
         b = sig[i + local_size];
         r_a = att[i].s0;
         r_b = att[i + local_size].s0;
-        r = range_start;
+        r = (float4)(range_start, range_start, range_start, range_start);
         for (k=0; k<range_count; k++) {
-            float4 dr = (float4)(r_a, r_a, r_b, r_b) - (float4)(r, r, r, r);
+            float4 dr_from_center = (float4)(r_a, r_a, r_b, r_b) - r;
             
-            fidx_raw = clamp(fma(dr, table_xs_4, table_x0_4), 0.0f, table_xm);     // Index [0 ... xm] in float
-            fidx_dec = fract(fidx_raw, &fidx_int);                                 // The integer and decimal fraction
+            fidx_raw = clamp(fma(dr_from_center, table_xs_4, table_x0_4), 0.0f, table_xm);     // Index [0 ... xm] in float
+            fidx_dec = fract(fidx_raw, &fidx_int);                                             // The integer and decimal fraction
             iidx_int = convert_uint4(fidx_int);
             
             float2 w2 = mix((float2)(weight_table[iidx_int.s0], weight_table[iidx_int.s2]),
                             (float2)(weight_table[iidx_int.s1], weight_table[iidx_int.s3]),
                             fidx_dec.s02);
             
-//            if (a.s0 > 0.0f || b.s0 > 0.0f) {
-//                printf("xs = %.4f  x0 = %.2f  xm = %.2f\n", table_xs, table_x0, table_xm);
-//                printf("k=%2u  r=%5.2f  i=%2u  r_a=%6.3f  dr=% 5.3f  w_r=% 6.3f   % 5.2f -> % 2u/% 2u/% 3.2f  % 5.2f % 5.2f\n",
-//                       k, r, i,            r_a, dr.s0, w2.s0, fidx_raw.s0, iidx_int.s0, iidx_int.s1, fidx_dec.s0, weight_table[iidx_int.s0], weight_table[iidx_int.s1]);
-//                printf("k=%2u  r=%5.2f  i=%2u  r_b=%6.3f  dr=% 5.3f  w_r=% 6.3f   % 5.2f -> % 2u/% 2u/% 3.2f  % 5.2f % 5.2f\n",
-//                       k, r, i+local_size, r_b, dr.s2, w2.s1, fidx_raw.s2, iidx_int.s2, iidx_int.s3, fidx_dec.s2, weight_table[iidx_int.s2], weight_table[iidx_int.s3]);
-//            }
+            // Range attenuation
+            float2 atten = native_recip(r.s01);
+            atten *= atten;  // ()^-2
+            atten *= atten;  // ()^-4
+            
+            w2 *= atten;
             
             w_a = (float4)(w2.s0, w2.s0, w2.s0, w2.s0);
             w_b = (float4)(w2.s1, w2.s1, w2.s1, w2.s1);
@@ -820,7 +825,7 @@ __kernel void make_pulse_pass_1(__global float4 *out,
             shared[local_id + k * local_size] += (w_a * a + w_b * b);
             // printf("%d shared[%d] = %.2f  %.2f\n", group_id, local_id + k, shared[local_id + k].x, wr);
             
-            r += range_delta;
+            r += dr;
         }
         i += local_stride;
     }

@@ -7,8 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		B5110A4319CCCCE000EE0902 /* square.fsh in Resources */ = {isa = PBXBuildFile; fileRef = B5110A4119CCCCE000EE0902 /* square.fsh */; };
-		B5110A4419CCCCE000EE0902 /* square.vsh in Resources */ = {isa = PBXBuildFile; fileRef = B5110A4219CCCCE000EE0902 /* square.vsh */; };
+		B50E70AC1BE0104E00DBDB44 /* line_sc.fsh in Resources */ = {isa = PBXBuildFile; fileRef = B50E70AA1BE0104E00DBDB44 /* line_sc.fsh */; };
+		B50E70AD1BE0104E00DBDB44 /* line_sc.vsh in Resources */ = {isa = PBXBuildFile; fileRef = B50E70AB1BE0104E00DBDB44 /* line_sc.vsh */; };
+		B5110A4319CCCCE000EE0902 /* spheroid.fsh in Resources */ = {isa = PBXBuildFile; fileRef = B5110A4119CCCCE000EE0902 /* spheroid.fsh */; };
+		B5110A4419CCCCE000EE0902 /* spheroid.vsh in Resources */ = {isa = PBXBuildFile; fileRef = B5110A4219CCCCE000EE0902 /* spheroid.vsh */; };
 		B51767C118A2DFB700D47C27 /* Curious-Minion-Icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = B51767C018A2DFB700D47C27 /* Curious-Minion-Icon.icns */; };
 		B527893118A13C4400650679 /* radarsim.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281717D7C2F400E4DE66 /* radarsim.c */; };
 		B527893318A13C5F00650679 /* rs.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281917D7C4D500E4DE66 /* rs.c */; };
@@ -28,7 +30,7 @@
 		B55A0B5119D0AD4300875832 /* texture_32.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B4C19D0AD4300875832 /* texture_32.png */; };
 		B55A0B5319D0B00400875832 /* sphere64.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B5219D0B00400875832 /* sphere64.png */; };
 		B55A0B5519D0B93E00875832 /* disc64.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B5419D0B93E00875832 /* disc64.png */; };
-		B55FB66B1BDAB65D00D337D6 /* colormap.png in Resources */ = {isa = PBXBuildFile; fileRef = B55FB66A1BDAB65D00D337D6 /* colormap.png */; settings = {ASSET_TAGS = (); }; };
+		B55FB66B1BDAB65D00D337D6 /* colormap.png in Resources */ = {isa = PBXBuildFile; fileRef = B55FB66A1BDAB65D00D337D6 /* colormap.png */; };
 		B56077F617E356A70068C6BE /* cldemo.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A280617D7B1EC00E4DE66 /* cldemo.c */; };
 		B56077F717E356B10068C6BE /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
 		B567270E1AA11B2C00FF4436 /* spot256.png in Resources */ = {isa = PBXBuildFile; fileRef = B567270D1AA11B2C00FF4436 /* spot256.png */; };
@@ -180,8 +182,10 @@
 		B50A281617D7C21F00E4DE66 /* rs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = rs.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		B50A281717D7C2F400E4DE66 /* radarsim.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = radarsim.c; sourceTree = "<group>"; };
 		B50A281917D7C4D500E4DE66 /* rs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = rs.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		B5110A4119CCCCE000EE0902 /* square.fsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = square.fsh; sourceTree = "<group>"; };
-		B5110A4219CCCCE000EE0902 /* square.vsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = square.vsh; sourceTree = "<group>"; };
+		B50E70AA1BE0104E00DBDB44 /* line_sc.fsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = line_sc.fsh; sourceTree = "<group>"; };
+		B50E70AB1BE0104E00DBDB44 /* line_sc.vsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = line_sc.vsh; sourceTree = "<group>"; };
+		B5110A4119CCCCE000EE0902 /* spheroid.fsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = spheroid.fsh; sourceTree = "<group>"; };
+		B5110A4219CCCCE000EE0902 /* spheroid.vsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = spheroid.vsh; sourceTree = "<group>"; };
 		B51767C018A2DFB700D47C27 /* Curious-Minion-Icon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = "Curious-Minion-Icon.icns"; sourceTree = "<group>"; };
 		B52609D019D665E800709AFD /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		B527892C18A13C0100650679 /* radarsim */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = radarsim; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -522,10 +526,12 @@
 				B5EF31B818205A7B002DDEFC /* shape.vsh */,
 				B593683D188DE4BC00B4106C /* shape_sc.fsh */,
 				B593683E188DE4BC00B4106C /* shape_sc.vsh */,
-				B5110A4119CCCCE000EE0902 /* square.fsh */,
-				B5110A4219CCCCE000EE0902 /* square.vsh */,
+				B5110A4119CCCCE000EE0902 /* spheroid.fsh */,
+				B5110A4219CCCCE000EE0902 /* spheroid.vsh */,
 				B5D1B10E19D0EE8300769416 /* leaf.fsh */,
 				B5D1B10F19D0EE8300769416 /* leaf.vsh */,
+				B50E70AA1BE0104E00DBDB44 /* line_sc.fsh */,
+				B50E70AB1BE0104E00DBDB44 /* line_sc.vsh */,
 			);
 			path = Shaders;
 			sourceTree = "<group>";
@@ -746,10 +752,12 @@
 				B55A0B5119D0AD4300875832 /* texture_32.png in Resources */,
 				B567270E1AA11B2C00FF4436 /* spot256.png in Resources */,
 				B54DEB4518A582F100EBEC07 /* dsa_pub.pem in Resources */,
-				B5110A4319CCCCE000EE0902 /* square.fsh in Resources */,
-				B5110A4419CCCCE000EE0902 /* square.vsh in Resources */,
+				B5110A4319CCCCE000EE0902 /* spheroid.fsh in Resources */,
+				B5110A4419CCCCE000EE0902 /* spheroid.vsh in Resources */,
 				B541C630188DF896000AF6DD /* shape_sc.fsh in Resources */,
 				B541C631188DF896000AF6DD /* shape_sc.vsh in Resources */,
+				B50E70AC1BE0104E00DBDB44 /* line_sc.fsh in Resources */,
+				B50E70AD1BE0104E00DBDB44 /* line_sc.vsh in Resources */,
 				B5EF31BB18205AA8002DDEFC /* shape.fsh in Resources */,
 				B5EF31BC18205AAD002DDEFC /* shape.vsh in Resources */,
 				B5D1B11019D0EE8300769416 /* leaf.fsh in Resources */,

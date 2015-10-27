@@ -133,12 +133,16 @@
 
 - (void)populate
 {
+    RS_set_dsd_to_mp(S);
+    
 	RS_populate(S);
+
 //    float x = S->domain.origin.x + 0.5f * S->domain.size.x;
 //    float y = S->domain.origin.y + 0.5f * S->domain.size.y;
 //    float r = sqrtf(x * x + y * y);
 //    el_deg = atan2f(S->domain.origin.z + 0.5f * S->domain.size.z, r) * 180.0f / M_PI;
     el_deg = 5.0f;
+
     RS_set_beam_pos(S, az_deg, el_deg);
 }
 

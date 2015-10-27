@@ -225,6 +225,7 @@ typedef struct _rs_worker {
 	// Scatter bodies
 	size_t                 num_scats;
     
+    size_t                 species_global_offset;
     size_t                 species_origin[RS_MAX_SPECIES_TYPES];
     size_t                 species_population[RS_MAX_SPECIES_TYPES];
 	
@@ -292,6 +293,7 @@ typedef struct _rs_worker {
     cl_kernel              kern_bg_atts;
     cl_kernel              kern_ds_atts;
     cl_kernel              kern_scat_atts;
+    cl_kernel              kern_scat_sig_dsd;
 	cl_kernel              kern_make_pulse_pass_1;
 	cl_kernel              kern_make_pulse_pass_2;
 	cl_kernel              kern_make_pulse_pass_2_group;
@@ -375,7 +377,7 @@ typedef struct _rs_handle {
     int                   dsd_count;
     RSfloat               *dsd_pdf;
     RSfloat               *dsd_cdf;
-    RSfloat               *dsd_d;           // DSD diameters
+    RSfloat               *dsd_r;           // DSD radii
 	
 } RSHandle;
 
@@ -455,6 +457,8 @@ void RS_upload(RSHandle *H);
 void RS_download(RSHandle *H);
 void RS_download_position_only(RSHandle *H);
 void RS_download_pulse_only(RSHandle *H);
+
+void RS_sig_from_dsd(RSHandle *H);
 
 void RS_advance_time(RSHandle *H);
 //void RS_advance_time_cpu(RSHandle *H);

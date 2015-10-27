@@ -31,12 +31,6 @@ void main (void)
 	//varColor = inColor * drawColor;
     //varColor = texture(colormapTexture, vec2(inPosition.w * 250.0f, drawColor.x));
     varColor = texture(colormapTexture, vec2(inColor.x, drawColor.x));
-    varColor.w *= drawColor.w;
-	//varColor = 0.3*drawColor + 0.7*inColor;
-	//varColor = inColor - drawColor;
-	//varColor = min(0.5*drawColor + 0.5*inColor, 1.0);
-    
-//    if (inPosition.z < 0.0) {
-//        varColor *= 0.75;
-//    }
+
+    varColor.w = drawColor.w;
 }

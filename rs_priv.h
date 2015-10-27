@@ -56,6 +56,12 @@ enum RSDraggedSpheroidAttributeKernelArgument {
     RSDraggedSpheroidAttributeKernelArgumentSimulationDescription         = 11
 };
 
+enum RSScattererSignalDropSizeDistributionKernalArgument {
+    RSScattererSignalDropSizeDistributionKernalArgumentSignal    = 0,
+    RSScattererSignalDropSizeDistributionKernalArgumentPosition  = 1,
+    RSScattererSignalDropSizeDistributionKernalArgumentAttribute = 2
+};
+
 void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device_id *devices, cl_uint *num_cus, cl_int detail_level);
 void pfn_prog_notify(cl_program program, void *user_data);
 void pfn_notify(const char *errinfo, const void *private_info, size_t cb, void *user_data);
@@ -66,7 +72,7 @@ float read_table(const float *table, const float index_last, const float index);
 
 void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char **src_ptr, char verb);
 void RS_worker_free(RSWorker *C);
-void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_scats);
+void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_scats, const size_t offset);
 
 void RS_init_scat_pos(RSHandle *H);
 void RS_merge_pulse_tmp(RSHandle *H);

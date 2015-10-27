@@ -37,14 +37,14 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     
     // Set all the surface to null
     int i;
-    for (i=0; i<RS_MAX_VEL_TABLES; i++) {
+    for (i = 0; i < RS_MAX_VEL_TABLES; i++) {
         C->surf_vel[i] = NULL;
     }
-    for (i=0; i<RS_MAX_ADM_TABLES; i++) {
+    for (i = 0; i < RS_MAX_ADM_TABLES; i++) {
         C->surf_adm_cd[i] = NULL;
         C->surf_adm_cm[i] = NULL;
     }
-    for (i=0; i<RS_MAX_RCS_TABLES; i++) {
+    for (i = 0; i < RS_MAX_RCS_TABLES; i++) {
         C->surf_rcs_real[i] = NULL;
         C->surf_rcs_imag[i] = NULL;
     }
@@ -85,12 +85,12 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
         return;
     }
 	
-#define CHECK_CL_CREATE_KERNEL                                                                          \
-    if (ret != CL_SUCCESS) {                                                                            \
-        fprintf(stderr, "%s : RS : Error creating OpenCL kernel scat_mov().  ret = %d\n", now(), ret);  \
-        clReleaseProgram(C->prog);                                                                      \
-        clReleaseContext(C->context);                                                                   \
-        return;                                                                                         \
+#define CHECK_CL_CREATE_KERNEL                                                               \
+    if (ret != CL_SUCCESS) {                                                                 \
+        fprintf(stderr, "%s : RS : Error creating OpenCL kernel.  ret = %d\n", now(), ret);  \
+        clReleaseProgram(C->prog);                                                           \
+        clReleaseContext(C->context);                                                        \
+        return;                                                                              \
     }
 
     // Tie all kernels to the program
@@ -99,6 +99,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     C->kern_bg_atts = clCreateKernel(C->prog, "bg_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
     C->kern_ds_atts = clCreateKernel(C->prog, "ds_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
     C->kern_scat_atts = clCreateKernel(C->prog, "scat_atts", &ret);                               CHECK_CL_CREATE_KERNEL
+    C->kern_scat_sig_dsd = clCreateKernel(C->prog, "scat_sig_dsd", &ret);                         CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_1 = clCreateKernel(C->prog, "make_pulse_pass_1", &ret);               CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_2_group = clCreateKernel(C->prog, "make_pulse_pass_2_group", &ret);   CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_2_local = clCreateKernel(C->prog, "make_pulse_pass_2_range", &ret);   CHECK_CL_CREATE_KERNEL
@@ -147,6 +148,7 @@ void RS_worker_free(RSWorker *C) {
     clReleaseKernel(C->kern_bg_atts);
     clReleaseKernel(C->kern_ds_atts);
     clReleaseKernel(C->kern_scat_atts);
+    clReleaseKernel(C->kern_scat_sig_dsd);
     clReleaseKernel(C->kern_make_pulse_pass_1);
     clReleaseKernel(C->kern_make_pulse_pass_2_group);
     clReleaseKernel(C->kern_make_pulse_pass_2_local);
@@ -161,7 +163,7 @@ void RS_worker_free(RSWorker *C) {
 }
 
 
-void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_scats) {
+void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_scats, const size_t offset) {
 
     RSWorker *C = &H->worker[worker_id];
     
@@ -172,6 +174,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     
     // Copy the necessary parameters from host to compute workers
     C->num_scats = sub_num_scats;
+    C->species_global_offset = offset;
     
     size_t work_items = RS_CL_GROUP_ITEMS;
 
@@ -334,6 +337,16 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
         exit(EXIT_FAILURE);
     }
 
+    ret = CL_SUCCESS;
+    ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentSignal,    sizeof(cl_mem), &C->scat_sig);
+    ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentPosition,  sizeof(cl_mem), &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentAttribute, sizeof(cl_mem), &C->scat_att);
+    
+    if (ret != CL_SUCCESS) {
+        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_sig_dsd().\n", now());
+        exit(EXIT_FAILURE);
+    }
+
     if (C->verb > 1) {
 		printf("%s : RS : Pass 1   global =%6s   local = %3zu x %2d = %6s B   groups = %4d   N = %9s\n",
 			   now(),
@@ -485,6 +498,7 @@ void pfn_notify(const char *errinfo, const void *private_info, size_t cb, void *
 	fprintf(stderr, "%s : RS : %s (via pfn_notify)\n", now(), errinfo);
 }
 
+
 // CL_DEVICE_TYPE_GPU
 void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device_id *devices, cl_uint *num_cus, cl_int detail_level) {
 	
@@ -505,7 +519,7 @@ void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device
 	if (detail_level)
 		printf("* Number of OpenCL platforms: %d\n", num_platforms);
 	
-	for (; i<num_platforms; i++) {
+	for (; i < num_platforms; i++) {
 		
         CL_CHECK(clGetDeviceIDs(platforms[i], device_type, RS_MAX_GPU_DEVICE - *num_devices, &devices[*num_devices], &platform_num_devices));
 		
@@ -555,7 +569,7 @@ void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device
 #define FMT "%-35s"
 #define FMT2 "%-14s"
 			
-			for (j=0; j<platform_num_devices; j++) {
+			for (j = 0; j < platform_num_devices; j++) {
 				printf("      > DEVICE %d:\n", j);
 				CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_NAME, RS_MAX_STR, buf_char, NULL));
 				printf("        - " FMT " = %s\n", "CL_DEVICE_NAME", buf_char);
@@ -597,12 +611,12 @@ void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device
 						printf("          " FMT "   " FMT2 " %7s\n\n", "", "3D_MAX_DEPTH", commaint(work_sizes[0]));
 					}
 				}
-			} // for (; j<platform_num_devices; j++)
+			} // for (; j < platform_num_devices; j++)
 		} else {
-			for (; j<platform_num_devices; j++)
+			for (; j < platform_num_devices; j++)
 				CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(buf_uint), &num_cus[j], NULL));
 		}
-	} // for (; i<num_platforms; i++)
+	} // for (; i < num_platforms; i++)
 }
 
 
@@ -617,10 +631,12 @@ cl_uint read_kernel_source_from_files(char *src_ptr[], ...) {
 	va_start(files, src_ptr);
 	char *filename = va_arg(files, char *);
 	while (filename != NULL && strlen(filename) > 0) {
+
 #ifdef DEBUG_KERNEL_READ
 		printf("%s : RS : src '%s' (%d)\n", now(), filename, (int)strlen(filename));
 #endif
-		// Read in the kernel source
+
+        // Read in the kernel source
 		FILE *fid = fopen(filename, "r");
 		if (fid == NULL) {
 			fprintf(stderr, "%s : RS : Error opening kernel source %s.\n", now(), filename);
@@ -651,7 +667,7 @@ cl_uint read_kernel_source_from_files(char *src_ptr[], ...) {
 	
 #ifdef DEBUG_KERNEL_READ
 	printf("%d lines\n", count);
-	for (int i=0; i<count; i++) {
+	for (int i = 0; i < count; i++) {
 		printf("%d:%s", i, src_ptr[i]);
 	}
 #endif
@@ -779,11 +795,11 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
     H->num_species = 1;
 	H->method = method;
 	
-	for (i=0; i<RS_MAX_GPU_DEVICE; i++) {
+	for (i = 0; i < RS_MAX_GPU_DEVICE; i++) {
 		H->worker[i].name = i;
 	}
     
-    for (i=0; i<RS_MAX_SPECIES_TYPES; i++) {
+    for (i = 0; i < RS_MAX_SPECIES_TYPES; i++) {
         H->species_population[i] = 0;
     }
 	
@@ -823,7 +839,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
     }
     gcl_gl_set_sharegroup(CGLGetShareGroup(cobj));
     
-    for (int i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         if (H->verb > 2) {
             printf("%s : RS : Initializing worker %d using %p\n", now(), i, H->devs[i]);
         }
@@ -852,7 +868,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
     
     H->num_workers = H->num_devs;
     
-    for (int i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         if (H->verb > 2) {
             printf("%s : RS : Initializing worker %d using %p\n", now(), i, H->devs[i]);
         }
@@ -881,8 +897,6 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
     RS_set_adm_data_to_unity(H);
     
     RS_set_rcs_data_to_unity(H);
-    
-    RS_set_dsd_to_mp(H);
 	
 	H->verb = user_verb;
 	
@@ -890,18 +904,18 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
 }
 
 
-RSHandle *RS_init() {
-	return RS_init_with_path(".", RS_METHOD_GPU, 0);
+RSHandle *RS_init_for_cpu_verbose(const char verb) {
+	return RS_init_with_path(".", RS_METHOD_CPU, verb);
 }
 
 
 RSHandle *RS_init_verbose(const char verb) {
-	return RS_init_with_path(".", RS_METHOD_GPU, verb);
+    return RS_init_with_path(".", RS_METHOD_GPU, verb);
 }
 
 
-RSHandle *RS_init_for_cpu_verbose(const char verb) {
-	return RS_init_with_path(".", RS_METHOD_CPU, verb);
+RSHandle *RS_init() {
+    return RS_init_with_path(".", RS_METHOD_GPU, 0);
 }
 
 
@@ -914,7 +928,7 @@ void RS_free_scat_memory(RSHandle *H) {
 	
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 	
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		if (H->worker[i].vbo_scat_pos == 0) {
 			fprintf(stderr, "%s : RS : Unexpected error. VBO was not shared.\n", now());
 			return;
@@ -933,7 +947,7 @@ void RS_free_scat_memory(RSHandle *H) {
 	
 #else
 	
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		clReleaseMemObject(H->worker[i].scat_pos);
 		clReleaseMemObject(H->worker[i].scat_vel);
 		clReleaseMemObject(H->worker[i].scat_ori);
@@ -961,7 +975,7 @@ void RS_free_scat_memory(RSHandle *H) {
 
 	free(H->pulse);
 	
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		free(H->pulse_tmp[i]);
 	}
 }
@@ -969,9 +983,11 @@ void RS_free_scat_memory(RSHandle *H) {
 
 void RS_free(RSHandle *H) {
 	
+    int i;
+    
 	char v = H->verb;
 	
-	for (int i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		RS_worker_free(&H->worker[i]);
 	}
 	
@@ -981,7 +997,7 @@ void RS_free(RSHandle *H) {
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 
-	for (int i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		gcl_free(H->worker[i].range_weight);
 		gcl_free(H->worker[i].angular_weight);
 		gcl_release_image(H->worker[i].vel[t]);
@@ -993,7 +1009,7 @@ void RS_free(RSHandle *H) {
 	
 #else
 	
-	for (int i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		clReleaseMemObject(H->worker[i].range_weight);
 		clReleaseMemObject(H->worker[i].angular_weight);
 		clReleaseMemObject(H->worker[i].vel[t]);
@@ -1097,7 +1113,7 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint user_m
 void RS_init_scat_pos(RSHandle *H) {
     
     int counts[H->dsd_count];
-    int k, bin;
+    int i, k, bin;
     float a;
     
     memset(counts, 0, H->dsd_count * sizeof(int));
@@ -1105,25 +1121,11 @@ void RS_init_scat_pos(RSHandle *H) {
 	//
 	// Initialize the scatter body positions & velocities
 	//
-	for (int i=0; i<H->num_scats; i++) {
+	for (i = 0; i < H->num_scats; i++) {
 		H->scat_pos[i].x = (float)rand() / RAND_MAX * H->domain.size.x + H->domain.origin.x;
 		H->scat_pos[i].y = (float)rand() / RAND_MAX * H->domain.size.y + H->domain.origin.y;
 		H->scat_pos[i].z = (float)rand() / RAND_MAX * H->domain.size.z + H->domain.origin.z;
-		//H->scat_pos[i].w = ;   // Use this to store the size of hydrometeor
         
-        a = (float)rand() / RAND_MAX;
-        k = H->dsd_count;
-        bin = 0;
-        while (k > 0) {
-            k--;
-            if (a >= H->dsd_cdf[k]) {
-                bin = k;
-                break;
-            }
-        }
-        counts[bin]++;
-        H->scat_pos[i].w = H->dsd_d[bin];
-
 		H->scat_att[i].s0 = 0.0f;                      // Use this to store range
         H->scat_att[i].s1 = (float)rand() / RAND_MAX;  // Use this to store age
 		H->scat_att[i].s2 = 0.0f;
@@ -1165,8 +1167,37 @@ void RS_init_scat_pos(RSHandle *H) {
         H->scat_rnd[i].s3 = rand();
 	}
     
-    for (k=0; k<H->dsd_count; k++) {
-        printf("bin %d - %.1f mm - %d = %.4f\n", k, H->dsd_d[k] * 1000.0f, counts[k], (float)counts[k] / (float)H->num_scats);
+    // Parameterized drop radius as scat_pos.w if DSD has been set
+    if (H->dsd_name != RSDropSizeDistributionUndefined) {
+        for (i = 0; i < H->num_scats; i++) {
+            a = (float)rand() / RAND_MAX;
+            k = H->dsd_count;
+            bin = 0;
+            while (k > 0) {
+                k--;
+                if (a >= H->dsd_cdf[k]) {
+                    bin = k;
+                    break;
+                }
+            }
+            counts[bin]++;
+            H->scat_pos[i].w = H->dsd_r[bin];
+        }
+        
+        if (H->verb > 1) {
+            printf("%s : RS : Actual DSD Specifications:\n", now());
+            for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
+                printf("                 o %.2f mm - PDF %.5f / %.5f / %d particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)counts[i] / (float)H->num_scats, counts[i]);
+            }
+            if (H->dsd_count > 8) {
+                printf("                 o  :      -      :     /  :     /\n");
+                printf("                 o  :      -      :     /  :     /\n");
+                i = MAX(4, H->dsd_count - 1);
+            }
+            for (; i < H->dsd_count; i++) {
+                printf("                 o %.2f mm - PDF %.5f / %.5f / %d particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)counts[i] / (float)H->num_scats, counts[i]);
+            }
+        }
     }
 	
 	// Replace a few points for debugging purpose.
@@ -1249,7 +1280,7 @@ void RS_init_scat_pos(RSHandle *H) {
     }
     
     int t = 0;
-    for (int i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         H->worker[i].adm_desc[t].s[RSTableDescriptionRecipInLnX] = H->inv_inln.x;
         H->worker[i].adm_desc[t].s[RSTableDescriptionRecipInLnY] = H->inv_inln.y;
         H->worker[i].adm_desc[t].s[RSTableDescriptionRecipInLnZ] = H->inv_inln.z;
@@ -1263,7 +1294,7 @@ void RS_init_scat_pos(RSHandle *H) {
 void RS_set_prt(RSHandle *H, const float prt) {
 	H->params.prt = prt;
 	H->params.prf = 1.0f / prt;
-//	for (int i=0; i<H->num_scats; i++) {
+//	for (int i = 0; i < H->num_scats; i++) {
 //		H->scat_att[i].s1 = (float)rand() / RAND_MAX * 1000.0f;
 //	}
 //    H->sim_desc.s[RSSimulationParameterPRT] = H->params.prt;
@@ -1350,7 +1381,7 @@ void RS_set_scan_box(RSHandle *H,
         return;
     }
 	H->num_anchors  = 2 * naz * nel + 1;  // Save one for radar origin
-	//printf("%s : RS : Number of anchors needed = %d\n", now(), (int)H->num_anchors);
+	// printf("%s : RS : Number of anchors needed = %d  (naz = %d  nel = %d)\n", now(), (int)H->num_anchors, naz, nel);
 	if (H->anchor_pos) {
 		if (H->verb > 2) {
 			printf("%s : RS : Freeing existing anchor memory.\n", now());
@@ -1369,9 +1400,9 @@ void RS_set_scan_box(RSHandle *H,
 	ymin = INFINITY, ymax = -INFINITY,
     zmin = INFINITY, zmax = -INFINITY;
 	el = el_lo / 180.0f * M_PI;
-	while (el <= el_hi / 180.0f * M_PI + tiny && ii < H->num_anchors - 3) {
+	while (el <= el_hi / 180.0f * M_PI + tiny && ii < H->num_anchors - 1) {
 		az = az_lo / 180.0f * M_PI;
-		while (az <= az_hi / 180.0f * M_PI + tiny && ii < H->num_anchors - 3) {
+		while (az <= az_hi / 180.0f * M_PI + tiny && ii < H->num_anchors - 1) {
 			H->anchor_pos[ii].x = r_lo * cos(el) * sin(az);
 			H->anchor_pos[ii].y = r_lo * cos(el) * cos(az);
 			H->anchor_pos[ii].z = r_lo * sin(el);
@@ -1697,7 +1728,7 @@ void RS_set_debris_count(RSHandle *H, const int species_id, const size_t count) 
     H->species_population[species_id] = count;
 
     H->num_species = 0;
-    for (i=0; i<RS_MAX_SPECIES_TYPES; i++) {
+    for (i = 0; i < RS_MAX_SPECIES_TYPES; i++) {
         if (H->species_population[i] > 0) {
             H->num_species++;
         }
@@ -1739,8 +1770,9 @@ void RS_update_debris_count(RSHandle *H) {
     H->species_population[0] = count;
 
     if (H->verb > 1) {
-        for (k=0; k<RS_MAX_SPECIES_TYPES; k++) {
-            printf("%s : RS : Global species_population[%d] = %s\n", now(), k, commaint(H->species_population[k]));
+        printf("%s : RS : Population details:\n", now());
+        for (k = 0; k < RS_MAX_SPECIES_TYPES; k++) {
+            printf("                 o Global species_population[%d] = %s\n", k, commaint(H->species_population[k]));
         }
     }
 
@@ -1754,7 +1786,7 @@ void RS_update_debris_count(RSHandle *H) {
         // Groups of debris types
         size_t round_up_down_toggle = k % H->num_workers;
         size_t sub_species_population = (H->species_population[k] + round_up_down_toggle) / H->num_workers;
-        for (i=0; i<H->num_workers-1; i++) {
+        for (i = 0; i < H->num_workers-1; i++) {
             H->worker[i].species_population[k] = sub_species_population;
             species_count_left -= sub_species_population;
         }
@@ -1762,7 +1794,7 @@ void RS_update_debris_count(RSHandle *H) {
         H->worker[i].species_population[k] = species_count_left;
     }
     
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         k = RS_MAX_SPECIES_TYPES;
         size_t origin = H->worker[i].num_scats;
         while (k > 1) {
@@ -1775,9 +1807,10 @@ void RS_update_debris_count(RSHandle *H) {
     }
     
     if (H->verb > 2) {
-        for (i=0; i<H->num_workers; i++) {
-            for (k=0; k<RS_MAX_SPECIES_TYPES; k++) {
-                printf("%s : RS : worker[%d], species_population[%d] - [ %9s, %9s, %9s ]\n", now(), i, k,
+        for (i = 0; i < H->num_workers; i++) {
+            printf("%s : RS : worker[%d] with total population %s  offset %s\n", now(), i, commaint(H->worker[i].num_scats), commaint(H->worker[i].species_global_offset));
+            for (k = 0; k < RS_MAX_SPECIES_TYPES; k++) {
+                printf("                 o species_population[%d] - [ %9s, %9s, %9s ]\n", k,
                        commaint(H->worker[i].species_origin[k]),
                        commaint(H->worker[i].species_population[k]),
                        commaint(H->worker[i].species_origin[k] + H->worker[i].species_population[k]));
@@ -1794,25 +1827,40 @@ void RS_set_dsd(RSHandle *H, const float *pdf, const float *diameters, const int
     H->dsd_name = name;
     H->dsd_count = count;
     
-    if (H->dsd_d != NULL) {
-        free(H->dsd_d);
+    if (H->dsd_r != NULL) {
+        free(H->dsd_r);
         free(H->dsd_pdf);
         free(H->dsd_cdf);
     }
-    H->dsd_d = (RSfloat *)malloc(count * sizeof(RSfloat));
+    H->dsd_r = (RSfloat *)malloc(count * sizeof(RSfloat));
     H->dsd_pdf = (RSfloat *)malloc(count * sizeof(RSfloat));
     H->dsd_cdf = (RSfloat *)malloc(count * sizeof(RSfloat));
 
-    RSfloat slow_cum = 0.0f;
+    RSfloat lo = 0.0f;
     
-    for (i=0; i<count; i++) {
-        H->dsd_d[i] = diameters[i];
+    for (i = 0; i < count; i++) {
+        H->dsd_r[i] = 0.5f * diameters[i];
         H->dsd_pdf[i] = pdf[i];
-        H->dsd_cdf[i] = slow_cum;
-        slow_cum += pdf[i];
-        printf("%.1f mm - %.4f / %.4f\n", 1000.0f * H->dsd_d[i], H->dsd_pdf[i], H->dsd_cdf[i]);
+        H->dsd_cdf[i] = lo;
+        lo += pdf[i];
+    }
+
+    if (H->verb) {
+        printf("%s : RS : User set DSD specifications:\n", now());
+        for (i = 0; i < MIN(count - 2, 3); i++) {
+            printf("                 o %.2f mm - PDF %.4f / TH %.4f\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], H->dsd_cdf[i]);
+        }
+        if (count > 5) {
+            printf("                 o  :      -      :     /     :\n");
+            printf("                 o  :      -      :     /     :\n");
+            i = MAX(4, count - 1);
+        }
+        for (; i < count; i++) {
+            printf("                 o %.2f mm - PDF %.4f / TH %.4f\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], H->dsd_cdf[i]);
+        }
     }
 }
+
 
 void RS_set_dsd_to_mp(RSHandle *H) {
     
@@ -1820,25 +1868,25 @@ void RS_set_dsd_to_mp(RSHandle *H) {
     
     float d, sum = 0.0f;
     
-    //float ds[] = {0.0001f, 0.0002f, 0.0005f, 0.001f, 0.002f, 0.003, 0.004f, 0.005f};
-    float ds[] = {0.0001f, 0.0002f, 0.005f};
+    //float ds[] = {0.0001f, 0.0002f, 0.0005f, 0.001f, 0.002f, 0.003f, 0.004f, 0.005f};
+    float ds[] = {0.0001f, 0.001f};
     
     const int count = sizeof(ds) / sizeof(float);
     
-    H->dsd_mu = 8000.0f;    // Brandes et al. 2006, mu = 8000 m^-3 m^-1
-    H->dsd_lambda = 2.3f;
+    H->dsd_mu = 8000.0f;              // Brandes et al. 2006, mu = 8000 m^-3 m^-1
+    H->dsd_lambda = 2.3f * 1000.0f;
     
     RSfloat *n = (RSfloat *)malloc(count * sizeof(RSfloat));
     
     // Derive a concentration curve
-    for (i=0; i<count; i++) {
+    for (i = 0; i < count; i++) {
         d = ds[i];
         n[i] = H->dsd_mu * exp(-H->dsd_lambda * d);
         sum += n[i];
     }
     
     // Convert concentration to pdf
-    for (i=0; i<count; i++) {
+    for (i = 0; i < count; i++) {
         n[i] /= sum;
     }
     
@@ -1871,7 +1919,7 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
 		
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 		
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         if (H->worker[i].range_weight != NULL) {
             if (H->verb > 1) {
                 printf("%s : RS : worker[%d] setting range weight.\n", now(), i);
@@ -1894,7 +1942,7 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
 #else
 		
     cl_int ret;
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         if (H->worker[i].range_weight != NULL) {
             if (H->verb > 1) {
                 printf("%s : RS : worker[%d] setting range weight.\n", now(), i);
@@ -1953,7 +2001,7 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         if (H->worker[i].angular_weight != NULL) {
             if (H->verb > 1) {
                 printf("%s : RS : worker[%d] setting angular weight.\n", now(), i);
@@ -1976,7 +2024,7 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
 #else
 		
     cl_int ret;
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         if (H->worker[i].angular_weight != NULL) {
             if (H->verb > 1) {
                 printf("%s : RS : worker[%d] setting angular weight.\n", now(), i);
@@ -2024,7 +2072,7 @@ void RS_set_angular_weight_to_standard(RSHandle *H, float beamwidth_rad) {
 	
     float delta = 1.0f / 360.0f * M_PI;
     
-	for (int i=0; i<n; i++) {
+	for (int i = 0; i < n; i++) {
 		a = (float)i * delta;
 		c = b * sinf(a);
 		if (i == 0) {
@@ -2066,7 +2114,7 @@ void RS_set_wind_data(RSHandle *H, const RSTable3D table) {
 #endif
 	
     
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		if (H->worker[i].vel[t] != NULL) {
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
@@ -2123,7 +2171,7 @@ void RS_set_wind_data(RSHandle *H, const RSTable3D table) {
 
     }
 	
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 
@@ -2174,7 +2222,7 @@ void RS_set_wind_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
     table.tr = leslie->tr;
 
 	// Need to arrange LES values into float4, then upload to GPU's global memory
-	for (i=0; i<leslie->nn; i++) {
+	for (i = 0; i < leslie->nn; i++) {
 		table.data[i].x = leslie->u[i];
 		table.data[i].y = leslie->v[i];
 		table.data[i].z = leslie->w[i];
@@ -2222,7 +2270,7 @@ void RS_set_wind_data_to_cube27(RSHandle *H) {
 	
 	const float v = 1.0f;
 	
-	for (i=0; i<27; i++) {
+	for (i = 0; i < 27; i++) {
 		table.data[i].x = (float) (i % 3)      * v - v;
 		table.data[i].y = (float)((i % 9) / 3) * v - v;
 		table.data[i].z = (float) (i / 9)      * v - v;
@@ -2262,7 +2310,7 @@ void RS_set_wind_data_to_cube125(RSHandle *H) {
 	
 	const float v = 0.5f;
 	
-	for (i=0; i<125; i++) {
+	for (i = 0; i < 125; i++) {
 		table.data[i].x = (float) (i %  5)      * v - 2.0f * v;
 		table.data[i].y = (float)((i % 25) / 5) * v - 2.0f * v;
 		table.data[i].z = (float) (i / 25)      * v - 2.0f * v;
@@ -2278,7 +2326,7 @@ void RS_set_wind_data_to_cube125(RSHandle *H) {
 
 void RS_clear_wind_data(RSHandle *H) {
     // Technically the video RAM hasn't been freed but we will assume there is enough room and this memory gets freed when a new table comes in
-    for (int i=0; i<H->num_workers; i++) {
+    for (int i = 0; i < H->num_workers; i++) {
         cl_uint nx = (cl_uint)H->worker[i].vel_desc.s[RSTableDescriptionMaximumX] + 1;
         cl_uint ny = (cl_uint)H->worker[i].vel_desc.s[RSTableDescriptionMaximumY] + 1;
         cl_uint nz = (cl_uint)H->worker[i].vel_desc.s[RSTableDescriptionMaximumZ] + 1;
@@ -2319,7 +2367,7 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
     
 #endif
     
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         if (H->worker[i].adm_cd[t] != NULL && H->worker[i].adm_cm[t] != NULL) {
             
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
@@ -2383,7 +2431,7 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
         
     }
     
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 
@@ -2429,7 +2477,7 @@ void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *adam) {
     cm.y_ = adam->na;    cm.ym = (float)(cm.y_ - 1);    cm.ys = (float)adam->na / M_PI;             cm.yo = 0.0f;
 
     // Arrange ADM values into float4, getting ready for GPU's global memory
-    for (i=0; i<adam->nn; i++) {
+    for (i = 0; i < adam->nn; i++) {
         cd.data[i].x = adam->cdx[i];
         cd.data[i].y = adam->cdy[i];
         cd.data[i].z = adam->cdz[i];
@@ -2459,7 +2507,7 @@ void RS_set_adm_data_to_unity(RSHandle *H) {
     table.x_ = 3;    table.xm = 2.0f;    table.xs = 3.0f / (2.0f * M_PI);    table.xo = -(-M_PI) * table.xs;
     table.y_ = 3;    table.ym = 2.0f;    table.ys = 3.0f / M_PI;             table.yo = 0.0f;
 
-    for (i=0; i<9; i++) {
+    for (i = 0; i < 9; i++) {
         table.data[i].x = 1.0f;
         table.data[i].y = 1.0f;
         table.data[i].z = 1.0f;
@@ -2473,8 +2521,8 @@ void RS_set_adm_data_to_unity(RSHandle *H) {
 
 
 void RS_clear_adm_data(RSHandle *H) {
-    for (int i=0; i<H->num_workers; i++) {
-        for (int t=0; t<H->adm_count; t++) {
+    for (int i = 0; i < H->num_workers; i++) {
+        for (int t = 0; t < H->adm_count; t++) {
             cl_uint nx = (cl_uint)H->worker[i].adm_desc[t].s[RSTableDescriptionMaximumX] + 1;
             cl_uint ny = (cl_uint)H->worker[i].adm_desc[t].s[RSTableDescriptionMaximumY] + 1;
             H->worker[i].mem_size -= nx * ny * 2 * sizeof(cl_float4);
@@ -2516,7 +2564,7 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
 #endif
     
     
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         if (H->worker[i].rcs_real[t] != NULL && H->worker[i].rcs_imag[t] != NULL) {
             
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
@@ -2580,7 +2628,7 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
         
     }
     
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
         
@@ -2625,7 +2673,7 @@ void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *rosie) {
     imag.y_ = rosie->nb;    imag.ym = (float)(imag.y_ - 1);    imag.ys = (float)rosie->nb / M_PI;             imag.yo = 0.0f;
     
     // Arrange RCS values into float4, getting ready for GPU's global memory
-    for (i=0; i<rosie->nn; i++) {
+    for (i = 0; i < rosie->nn; i++) {
         real.data[i].x = rosie->hh_real[i];
         real.data[i].y = rosie->vv_real[i];
         real.data[i].z = rosie->hv_real[i];
@@ -2661,7 +2709,7 @@ void RS_set_rcs_data_to_unity(RSHandle *H) {
     table_imag.x_ = 3;    table_imag.xm = 2.0f;    table_imag.xs = 3.0f / (2.0f * M_PI);    table_imag.xo = -(-M_PI) * table_imag.xs;
     table_imag.y_ = 3;    table_imag.ym = 2.0f;    table_imag.ys = 3.0f / M_PI;             table_imag.yo = 0.0f;
     
-    for (i=0; i<9; i++) {
+    for (i =  0; i < 9; i++) {
         table_real.data[i].x = 1.0f;
         table_real.data[i].y = 1.0f;
         table_real.data[i].z = 1.0f;
@@ -2681,8 +2729,8 @@ void RS_set_rcs_data_to_unity(RSHandle *H) {
 
 
 void RS_clear_rcs_data(RSHandle *H) {
-    for (int i=0; i<H->num_workers; i++) {
-        for (int t=0; t<H->rcs_count; t++) {
+    for (int i = 0; i < H->num_workers; i++) {
+        for (int t = 0; t < H->rcs_count; t++) {
             cl_uint nx = (cl_uint)H->worker[i].rcs_desc[t].s[RSTableDescriptionMaximumX] + 1;
             cl_uint ny = (cl_uint)H->worker[i].rcs_desc[t].s[RSTableDescriptionMaximumY] + 1;
             H->worker[i].mem_size -= nx * ny * 2 * sizeof(cl_float4);
@@ -2698,7 +2746,7 @@ void RS_clear_rcs_data(RSHandle *H) {
 #pragma mark Mac OS X Specific Functions
 
 void RS_share_mem_with_vbo(RSHandle *H, unsigned int *vbo) {
-	for (int i=0; i<H->num_workers; i++) {
+	for (int i = 0; i < H->num_workers; i++) {
 		H->worker[i].vbo_scat_pos = vbo[0];
 		H->worker[i].vbo_scat_clr = vbo[1];
 		H->worker[i].vbo_scat_ori = vbo[2];
@@ -2707,11 +2755,11 @@ void RS_share_mem_with_vbo(RSHandle *H, unsigned int *vbo) {
 
 
 void RS_derive_ndranges(RSHandle *H) {
-    for (int i=0; i<H->num_workers; i++) {
+    for (int i = 0; i < H->num_workers; i++) {
 
         RSWorker *C = &H->worker[i];
         
-        for (int k=0; k<RS_MAX_SPECIES_TYPES; k++) {
+        for (int k = 0; k < RS_MAX_SPECIES_TYPES; k++) {
             if (H->species_population[k] == 0) {
                 continue;
             }
@@ -2742,7 +2790,7 @@ void RS_update_colors_only(RSHandle *H) {
 	
 	int i;
 	
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		dispatch_async(H->worker[i].que, ^{
 			scat_clr2_kernel(&H->worker[i].ndrange_scat[0],
 							 (cl_float4 *)H->worker[i].scat_clr,
@@ -2755,7 +2803,7 @@ void RS_update_colors_only(RSHandle *H) {
 			dispatch_semaphore_signal(H->worker[i].sem);
 		});
 	}
-	for (i=0; i<H->num_workers; i++)
+	for (i = 0; i < H->num_workers; i++)
 		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
 }
 
@@ -2773,7 +2821,7 @@ void RS_explode(RSHandle *H) {
         H->sim_toc = H->sim_tic + (size_t)(5.0f / H->params.prt);
     }
     
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
             scat_atts_kernel(&H->worker[i].ndrange_scat[0],
                              (cl_float4 *)H->worker[i].scat_pos,
@@ -2808,7 +2856,7 @@ void RS_explode(RSHandle *H) {
 		});
 	}
 	
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
 	}
 }
@@ -2825,7 +2873,7 @@ void RS_io_test(RSHandle *H) {
     
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
     
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		dispatch_async(H->worker[i].que, ^{
 			io_kernel(&H->worker[i].ndrange_scat[0],
                       (cl_float4 *)H->worker[i].scat_pos,
@@ -2834,39 +2882,24 @@ void RS_io_test(RSHandle *H) {
 		});
 	}
     
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
 	}
     
 #else
     
-    
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
         clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_io, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, NULL);
 	}
     
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         clFlush(H->worker[i].que);
     }
 	
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         clFinish(H->worker[i].que);
     }
-	
-//    cl_event events[RS_MAX_GPU_DEVICE];
-//    
-//    for (i=0; i<H->num_workers; i++) {
-//        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_io, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, &events[i]);
-//    }
 
-//    for (i=0; i<H->num_workers; i++) {
-//        clWaitForEvents(1, &events[i]);
-//        clReleaseEvent(events[i]);
-//    }
-
-//    for (i=0; i<H->num_workers; i++) {
-//    }
-    
 #endif
 	
 }
@@ -2878,7 +2911,7 @@ void RS_dummy_test(RSHandle *H) {
     
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
     
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
             dummy_kernel(&H->worker[i].ndrange_scat[0],
                          (cl_float4 *)H->worker[i].scat_pos);
@@ -2886,7 +2919,7 @@ void RS_dummy_test(RSHandle *H) {
         });
     }
     
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
     }
     
@@ -2894,15 +2927,15 @@ void RS_dummy_test(RSHandle *H) {
     
     //	cl_event events[RS_MAX_GPU_DEVICE];
     
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_dummy, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, NULL);
     }
     
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         clFlush(H->worker[i].que);
     }
     
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         clFinish(H->worker[i].que);
     }
     
@@ -2947,7 +2980,7 @@ void RS_populate(RSHandle *H) {
 	
 	int i;
 	BOOL has_null = FALSE;
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		posix_memalign((void **)&H->pulse_tmp[i], RS_ALIGN_SIZE, H->params.range_count * sizeof(cl_float4));
 		has_null |= H->pulse_tmp[i] == NULL;
 	}
@@ -2965,12 +2998,12 @@ void RS_populate(RSHandle *H) {
 	// Divide the scatter bodies into (num_workers) chunks
 	size_t sub_num_scats = H->num_scats / MAX(1, H->num_workers);
 	
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         H->offset[i] = offset;
         if (H->verb > 1) {
             printf("%s : RS : worker[%d] num_scats = %s   offset = %s\n", now(), i, commaint(sub_num_scats), commaint(offset));
         }
-        RS_worker_malloc(H, i, sub_num_scats);
+        RS_worker_malloc(H, i, sub_num_scats, offset);
         offset += sub_num_scats;
     }
 	
@@ -2991,13 +3024,20 @@ void RS_populate(RSHandle *H) {
         printf("%s : RS : CL domain synchronized.\n", now());
     }
 	
+    if (H->dsd_name != RSDropSizeDistributionUndefined) {
+        RS_sig_from_dsd(H);
+        if (H->verb) {
+            printf("%s : RS : Drop-size derived RCS computed.\n", now());
+        }
+    }
+
 #if !defined (__APPLE__) || !defined (_SHARE_OBJ_)
 
 	// Update kernel arguments
 	cl_int ret = CL_SUCCESS;
     const int a = 0;
     const int r = 0;
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
         ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &H->worker[i].vel_desc);
         ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
 
@@ -3029,7 +3069,7 @@ void RS_download(RSHandle *H) {
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		dispatch_async(H->worker[i].que, ^{
 			gcl_memcpy(H->scat_pos + H->offset[i], H->worker[i].scat_pos, H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->scat_vel + H->offset[i], H->worker[i].scat_vel, H->worker[i].num_scats * sizeof(cl_float4));
@@ -3041,9 +3081,11 @@ void RS_download(RSHandle *H) {
 
 #else
 
+    int k;
+    
     cl_event events[H->num_workers][6];
     
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, &events[i][0]);
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_vel, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, &events[i][1]);
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, &events[i][2]);
@@ -3052,9 +3094,9 @@ void RS_download(RSHandle *H) {
         clEnqueueReadBuffer(H->worker[i].que, H->worker[i].pulse, CL_FALSE, 0, H->params.range_count * sizeof(cl_float4), H->pulse_tmp[i], 0, NULL, &events[i][5]);
 	}
 
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         clWaitForEvents(6, events[i]);
-        for (int k=0; k<6; k++) {
+        for (k = 0; k < 6; k++) {
             clReleaseEvent(events[i][k]);
         }
     }
@@ -3071,7 +3113,7 @@ void RS_download_position_only(RSHandle *H) {
 	
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 	
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		dispatch_async(H->worker[i].que, ^{
 			gcl_memcpy(H->scat_pos + H->offset[i], H->worker[i].scat_pos, H->worker[i].num_scats * sizeof(cl_float4));
 			dispatch_semaphore_signal(H->worker[i].sem);
@@ -3081,7 +3123,7 @@ void RS_download_position_only(RSHandle *H) {
 	
 #else
 	
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL,NULL);
 	}
 	
@@ -3091,8 +3133,8 @@ void RS_download_position_only(RSHandle *H) {
 
 void RS_merge_pulse_tmp(RSHandle *H) {
 	memcpy(H->pulse, H->pulse_tmp[0], H->params.range_count * sizeof(cl_float4));
-	for (int i=1; i<H->num_workers; i++) {
-		for (int k=0; k<H->params.range_count; k++) {
+	for (int i = 1; i < H->num_workers; i++) {
+		for (int k = 0; k < H->params.range_count; k++) {
 			H->pulse[k].s0 += H->pulse_tmp[i][k].s0;
 			H->pulse[k].s1 += H->pulse_tmp[i][k].s1;
 			H->pulse[k].s2 += H->pulse_tmp[i][k].s2;
@@ -3107,19 +3149,19 @@ void RS_download_pulse_only(RSHandle *H) {
 	
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 	
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		dispatch_async(H->worker[i].que, ^{
 			gcl_memcpy(H->pulse_tmp[i], H->worker[i].pulse, H->params.range_count * sizeof(cl_float4));
 			dispatch_semaphore_signal(H->worker[i].sem);
 		});
 	}
-	for (i=0; i<H->num_workers; i++)
+	for (i = 0; i < H->num_workers; i++)
 		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
 	
 #else
 	
     // Blocking read
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].pulse, CL_TRUE, 0, H->params.range_count * sizeof(cl_float4), H->pulse_tmp[i], 0, NULL, NULL);
 	}
 	
@@ -3134,7 +3176,7 @@ void RS_upload(RSHandle *H) {
 	int i;
 	
 	if (H->verb > 3) {
-		for (i=0; i<H->num_workers; i++) {
+		for (i = 0; i < H->num_workers; i++) {
 			printf("%s : RS : worker[%d].scat_pos @ %p\n", now(), i, H->worker[i].scat_pos);
 			printf("%s : RS : worker[%d].scat_vel @ %p\n", now(), i, H->worker[i].scat_vel);
 		}
@@ -3149,7 +3191,7 @@ void RS_upload(RSHandle *H) {
 	
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 	
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		dispatch_async(H->worker[i].que, ^{
 			gcl_memcpy(H->worker[i].scat_pos, H->scat_pos + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->worker[i].scat_vel, H->scat_vel + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
@@ -3164,13 +3206,13 @@ void RS_upload(RSHandle *H) {
 	}
 	
     // Set individual colors based on individual attributes: age, drop size, etc.
-    for (i=0; i<H->num_workers; i++) {
+    
+    for (i = 0; i < H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
             scat_clr_dsd_kernel(&H->worker[i].ndrange_scat[0],
                                 (cl_float4 *)H->worker[i].scat_clr,
                                 (cl_float4 *)H->worker[i].scat_pos,
-                                (cl_float4 *)H->worker[i].scat_att,
-                                (unsigned int)H->worker[i].num_scats);
+                                (cl_float4 *)H->worker[i].scat_att);
     
             dispatch_semaphore_signal(H->worker[i].sem);
         });
@@ -3179,7 +3221,7 @@ void RS_upload(RSHandle *H) {
 
 #else
 
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, NULL);
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_vel, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, NULL);
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, NULL);
@@ -3187,9 +3229,52 @@ void RS_upload(RSHandle *H) {
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_sig, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, NULL);
         clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_rnd, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_uint4),  H->scat_rnd + H->offset[i], 0, NULL, NULL);
 	}
-	
+    
 #endif
 	
+}
+
+
+// Signal strength as a function of drop size
+void RS_sig_from_dsd(RSHandle *H) {
+    
+    int i;
+    
+#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+
+    for (i = 0; i < H->num_workers; i++) {
+        dispatch_async(H->worker[i].que, ^{
+            scat_sig_dsd_kernel(&H->worker[i].ndrange_scat[0],
+                                (cl_float4 *)H->worker[i].scat_sig,
+                                (cl_float4 *)H->worker[i].scat_pos,
+                                (cl_float4 *)H->worker[i].scat_att);
+            
+            dispatch_semaphore_signal(H->worker[i].sem);
+        });
+        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+    }
+    
+#else
+
+    size_t local_item_size = 1;
+    
+    cl_event events[RS_MAX_GPU_DEVICE];
+    
+    for (i = 0; i < H->num_workers; i++) {
+        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_sig_dsd, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i]);
+    }
+    
+    for (i = 0; i < H->num_workers; i++) {
+        clFlush(H->worker[i].que);
+    }
+    
+    for (i = 0; i < H->num_workers; i++) {
+        clWaitForEvents(1, &events[i]);
+        clReleaseEvent(events[i]);
+    }
+    
+#endif
+
 }
 
 
@@ -3217,7 +3302,7 @@ void RS_advance_time(RSHandle *H) {
     }
     
 
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
 
 //            bg_atts_kernel(&H->worker[i].ndrange_scat[0],
@@ -3245,7 +3330,7 @@ void RS_advance_time(RSHandle *H) {
                            H->worker[i].angular_weight_desc,
                            H->sim_desc);
 
-            for (int k=1; k<RS_MAX_SPECIES_TYPES; k++) {
+            for (int k = 1; k < RS_MAX_SPECIES_TYPES; k++) {
                 if (H->worker[i].species_population[k] == 0) {
                     continue;
                 }
@@ -3279,7 +3364,7 @@ void RS_advance_time(RSHandle *H) {
 		});
 	}
 	
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
 	}
 
@@ -3295,7 +3380,7 @@ void RS_advance_time(RSHandle *H) {
     
     size_t local_item_size = 1;
     
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		// Need to refresh some parameters at each time update
         //clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
         //clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
@@ -3312,7 +3397,7 @@ void RS_advance_time(RSHandle *H) {
         clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_ds_atts, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i][0]);
         
         // Debris type
-        for (k=1; k<RS_MAX_SPECIES_TYPES; k++) {
+        for (k = 1; k < RS_MAX_SPECIES_TYPES; k++) {
             if (H->worker[i].species_population[k] == 0) {
                 continue;
             }
@@ -3321,13 +3406,13 @@ void RS_advance_time(RSHandle *H) {
         }
     }
 
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         clFlush(H->worker[i].que);
     }
     
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         clWaitForEvents(1, events[i]);
-        for (k=1; k<RS_MAX_SPECIES_TYPES; k++) {
+        for (k = 1; k < RS_MAX_SPECIES_TYPES; k++) {
             if (H->worker[i].species_population[k] == 0) {
                 continue;
             }
@@ -3335,8 +3420,8 @@ void RS_advance_time(RSHandle *H) {
         }
     }
 	
-    for (i=0; i<H->num_workers; i++) {
-        for (k=0; k<RS_MAX_SPECIES_TYPES; k++) {
+    for (i = 0; i < H->num_workers; i++) {
+        for (k=0; k < RS_MAX_SPECIES_TYPES; k++) {
             if (H->worker[i].species_population[k] == 0) {
                 continue;
             }
@@ -3362,7 +3447,7 @@ void RS_make_pulse(RSHandle *H) {
 	
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 	
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		dispatch_async(H->worker[i].que, ^{
             make_pulse_pass_1_kernel(&H->worker[i].ndrange_pulse_pass_1,
                                      (cl_float4 *)H->worker[i].work,
@@ -3409,7 +3494,7 @@ void RS_make_pulse(RSHandle *H) {
 		});
 	}
 	
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
 	}
 	
@@ -3417,14 +3502,14 @@ void RS_make_pulse(RSHandle *H) {
 	
     cl_event pass_1_events[H->num_workers];
 	cl_event pass_2_events[H->num_workers];
-	for (i=0; i<H->num_workers; i++) {
+	for (i = 0; i < H->num_workers; i++) {
 		RSWorker *C = &H->worker[i];
 		clEnqueueNDRangeKernel(C->que, C->kern_make_pulse_pass_1, 1, NULL, &C->make_pulse_params.global[0], &C->make_pulse_params.local[0], 0, NULL, &pass_1_events[i]);
 		clEnqueueNDRangeKernel(C->que, C->kern_make_pulse_pass_2, 1, NULL, &C->make_pulse_params.global[1], &C->make_pulse_params.local[1], 1, &pass_1_events[i], &pass_2_events[i]);
         clFlush(C->que);
 	}
 	
-    for (i=0; i<H->num_workers; i++) {
+    for (i = 0; i < H->num_workers; i++) {
         clWaitForEvents(1, &pass_2_events[i]);
 		clReleaseEvent(pass_1_events[i]);
 		clReleaseEvent(pass_2_events[i]);
@@ -3509,16 +3594,16 @@ void RS_table3d_free(RSTable3D T) {
 #pragma mark -
 #pragma mark Display
 
-static void RS_show_scat_i(RSHandle *H, const int i) {
-	printf(" %7d - ( %9.2f, %9.2f, %9.2f, %4.2f )  %7.2f %7.2f %7.2f   %7.4f %7.4f %7.4f %7.4f\n", i,
+static void RS_show_scat_i(RSHandle *H, const size_t i) {
+	printf(" %7lu - ( %9.2f, %9.2f, %9.2f, %4.2f )  %7.2f %7.2f %7.2f   %7.4f %7.4f %7.4f %7.4f\n", i,
 		   H->scat_pos[i].x, H->scat_pos[i].y, H->scat_pos[i].z, H->scat_pos[i].w,
 		   H->scat_vel[i].x, H->scat_vel[i].y, H->scat_vel[i].z,
            H->scat_ori[i].x, H->scat_ori[i].y, H->scat_ori[i].z, H->scat_ori[i].w);
 }
 
 
-static void RS_show_rcs_i(RSHandle *H, const int i) {
-    printf(" %7d - ( %9.2f, %9.2f, %9.2f )  %7.4f %7.4f %7.4f %7.4f  [ %7.2f %7.2f %7.2f %7.2f ] %.2f\n", i,
+static void RS_show_rcs_i(RSHandle *H, const size_t i) {
+    printf(" %7lu - ( %9.2f, %9.2f, %9.2f )  %7.4f %7.4f %7.4f %7.4f  [ %7.2f %7.2f %7.2f %7.2f ] %.2f\n", i,
            H->scat_pos[i].x, H->scat_pos[i].y, H->scat_pos[i].z,
            H->scat_ori[i].x, H->scat_ori[i].y, H->scat_ori[i].z, H->scat_ori[i].w,
            H->scat_sig[i].x, H->scat_sig[i].y, H->scat_sig[i].z, H->scat_sig[i].w,
@@ -3527,39 +3612,44 @@ static void RS_show_rcs_i(RSHandle *H, const int i) {
 
 
 void RS_show_scat_pos(RSHandle *H) {
-	int i;
-	// for (i=0; i<10; i++) {
-	// 	RS_show_scat_i(H, i);
-	// }
-	for (i=0; i<H->num_scats-1; i+=H->num_scats/9) {
-		RS_show_scat_i(H, i);
-	}
-	i = (int)(H->num_scats - 1);
+	size_t i, w;
+    for (w = 0; w < H->num_workers; w++) {
+        for (i = H->worker[w].species_origin[0];
+             i < H->worker[w].species_origin[0] + H->worker[w].species_population[0];
+             i += H->worker[w].species_population[0] / 9) {
+            RS_show_scat_i(H, i);
+        }
+    }
+	i = H->worker[w].species_origin[0] + H->worker[w].species_population[0] - 1;
 	RS_show_scat_i(H, i);
 }
 
 
 void RS_show_scat_sig(RSHandle *H) {
-    int i;
+    size_t i, w;
     printf("background:\n");
-    for (i=0; i<H->species_population[0]; i+=H->species_population[0] / 9) {
-        RS_show_rcs_i(H, i);
+    for (w = 0; w < H->num_workers; w++) {
+        for (i = 0; i < H->worker[w].species_population[0]; i += H->worker[w].species_population[0] / 9) {
+            RS_show_rcs_i(H, H->worker[w].species_global_offset + H->worker[w].species_origin[0] + i);
+        }
     }
     if (H->species_population[1] == 0) {
         return;
     }
     // Show the debris
-    i = (int)H->species_population[0] / H->num_workers;
-    printf("debris type #1 (%d)\n", i);
-    for (; i<H->species_population[0] / H->num_workers + H->species_population[1]; i++) {
-        RS_show_rcs_i(H, i);
+    //i = (int)H->species_population[0] / H->num_workers;
+    printf("debris type #1:\n");
+    for (w = 0; w < H->num_workers; w++) {
+        for (i = 0; i < H->worker[w].species_population[1]; i++) {
+            RS_show_rcs_i(H, H->worker[w].species_global_offset + H->worker[w].species_origin[1] + i);
+        }
     }
 }
 
 void RS_show_pulse(RSHandle *H) {
 	unsigned int i;
 	printf(" %7zu - [", H->sim_tic);
-	for (i=0; i<MIN(4, H->params.range_count); i++) {
+	for (i = 0; i < MIN(4, H->params.range_count); i++) {
 		if (i > 0) {
 			printf(",");
 		}

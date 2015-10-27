@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
     ADMHandle *A;
     LESHandle *L;
     RCSHandle *R;
-    ARPSHandle *O;
+//    ARPSHandle *O;
     
     // Initialize the RS framework
     if (accel_type == ACCEL_TYPE_CPU) {
@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
     
     RS_set_range_weight_to_triangle(S, 250.0f);
     
-    RS_set_debris_count(S, 1, 1000);
+    RS_set_debris_count(S, 1, 10);
     
     RS_clear_wind_data(S);
     for (int k=0; k<RS_MAX_VEL_TABLES; k++) {
@@ -158,6 +158,8 @@ int main(int argc, char *argv[]) {
     RS_clear_rcs_data(S);
     RS_set_rcs_data_to_RCS_table(S, RCS_get_frame(R));
     
+    RS_set_dsd_to_mp(S);
+
     // Populate the domain with scatter bodies.
     // This is also the function that triggers kernel compilation, GPU memory allocation and
     // upload all the parameters to the GPU.
@@ -209,6 +211,8 @@ int main(int argc, char *argv[]) {
 //        }
 //    }
     
+    //RS_sig_from_dsd(S);
+    
     gettimeofday(&t1, NULL);
     
     float az_deg = 0.0f, el_deg = 0.0f;
@@ -221,6 +225,7 @@ int main(int argc, char *argv[]) {
 
         //RS_download_pulse_only(S);
         if (verb > 1) {
+            RS_download(S);
             RS_show_scat_sig(S);
             
             if (verb < 2) {

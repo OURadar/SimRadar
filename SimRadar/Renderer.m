@@ -505,17 +505,16 @@
         glUniform4f(resource.sizeUI, 1.0f, 1.0f, 1.0f, 1.0f);
     }
     
-	// Get texture location
-	resource.textureUI = glGetUniformLocation(resource.program, "drawTexture");
-	if (resource.textureUI < 0) {
-		// NSLog(@"No drawTexture %d", resource.textureUI);
-	} else {
+    // Use drawTemplate1, drawTemplate2, etc. for various drawing shapes
+	if ((resource.textureUI = glGetUniformLocation(resource.program, "drawTemplate1")) >= 0) {
         //resource.texture = [self loadTexture:@"texture_32.png"];
         //resource.texture = [self loadTexture:@"sphere1.png"];
         //resource.texture = [self loadTexture:@"depth.png"];
-        //resource.texture = [self loadTexture:@"sphere64.png"];
-		resource.texture = [self loadTexture:@"disc64.png"];
-//        resource.texture = [self loadTexture:@"spot256.png"];
+        resource.texture = [self loadTexture:@"disc64.png"];
+        resource.textureID = [resource.texture name];
+        glUniform1i(resource.textureUI, 0);
+    } else if ((resource.textureUI = glGetUniformLocation(resource.program, "drawTemplate2")) >= 0) {
+        resource.texture = [self loadTexture:@"sphere64.png"];
         resource.textureID = [resource.texture name];
         glUniform1i(resource.textureUI, 0);
     }
@@ -653,16 +652,21 @@
 	NSLog(@"Aliased / smoothed line width: %d ... %d / %d ... %d", v[0], v[1], v[2], v[3]);
 	
 	// Set up VAO and shaders
-    bodyRenderer = [self createRenderResourceFromVertexShader:@"square" fragmentShader:@"square"];
-	gridRenderer = [self createRenderResourceFromVertexShader:@"shape_sc" fragmentShader:@"shape_sc"];
-	anchorRenderer = [self createRenderResourceFromProgram:gridRenderer.program];
+    bodyRenderer = [self createRenderResourceFromVertexShader:@"spheroid" fragmentShader:@"spheroid"];
+    gridRenderer = [self createRenderResourceFromVertexShader:@"line_sc" fragmentShader:@"line_sc"];
+    anchorRenderer = [self createRenderResourceFromVertexShader:@"shape_sc" fragmentShader:@"shape_sc"];
 	anchorLineRenderer = [self createRenderResourceFromProgram:gridRenderer.program];
 	leafRenderer = [self createRenderResourceFromVertexShader:@"leaf" fragmentShader:@"leaf"];
 	hudRenderer = [self createRenderResourceFromProgram:gridRenderer.program];
 
     // Make body renderer's color a bit translucent
     glUniform4f(bodyRenderer.colorUI, 1.0f, 1.0f, 1.0f, 0.75f);
-    NSLog(@"bodyRenderer.colormap %p", bodyRenderer.colormap);
+
+    // Set default colormap index
+    bodyRenderer.colormapIndex = 1;
+    bodyRenderer.colormapIndexNormalized = ((GLfloat)bodyRenderer.colormapIndex + 0.5f) / bodyRenderer.colormapCount;
+
+    //NSLog(@"bodyRenderer.colormap %p", bodyRenderer.colormap);
 
     GLfloat colors[] = {
         0.00f, 0.00f, 0.00f,
@@ -897,7 +901,7 @@
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBindVertexArray(gridRenderer.vao);
 	glUseProgram(gridRenderer.program);
-	glUniform4f(gridRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
+	glUniform4f(gridRenderer.colorUI, 0.4f, 1.0f, 1.0f, 1.0f);
 	glUniformMatrix4fv(gridRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
 	glDrawArrays(GL_LINES, 0, gridRenderer.count);
 
@@ -909,11 +913,14 @@
 	glDrawArrays(GL_LINES, 0, anchorLineRenderer.count);
 
 	// Anchors
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBindVertexArray(anchorRenderer.vao);
-	glPointSize(5.0f * devicePixelRatio);
+	glPointSize(MIN(MAX(50.0f * pixelsPerUnit, 5.0f), 64.0f) * devicePixelRatio);
 	glUseProgram(anchorRenderer.program);
-	glUniform4f(anchorRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
+	glUniform4f(anchorRenderer.colorUI, 0.4f, 1.0f, 1.0f, 1.0f);
 	glUniformMatrix4fv(anchorRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, anchorRenderer.textureID);
 	glDrawArrays(GL_POINTS, 0, anchorRenderer.count);
 	
 	// The scatter bodies
@@ -968,9 +975,8 @@
         glUniform4f(hudRenderer.colorUI, 0.0f, 0.0f, 0.0f, 0.8f);
         glUniformMatrix4fv(hudRenderer.mvpUI, 1, GL_FALSE, hudModelViewProjection.m);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        glUniform4f(hudRenderer.colorUI, 0.0f, 1.0f, 1.0f, 1.0f);
+        glUniform4f(hudRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
         glDrawArrays(GL_LINE_STRIP, 4, 5);
-        
         
         // Objects on HUD (beam's view)
         glViewport(hudOrigin.x * devicePixelRatio, hudOrigin.y * devicePixelRatio, hudSize.width * devicePixelRatio, hudSize.height * devicePixelRatio);
@@ -1153,7 +1159,7 @@
 
 - (void)decreaseBackgroundOpacity
 {
-    backgroundOpacity = MAX(0.1f, backgroundOpacity - 0.05f);
+    backgroundOpacity = MAX(0.05f, backgroundOpacity - 0.05f);
 }
 
 

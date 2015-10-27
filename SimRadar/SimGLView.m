@@ -174,7 +174,7 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	CGLFlushDrawable([[self openGLContext] CGLContextObj]);
 
 #ifdef GEN_IMG
-    if (tic > 1000 && tic < 3000) {
+    if (tic > 3000 && tic <= 6000) {
 		NSString *filename = [NSString stringWithFormat:@"~/Desktop/figs/img%04d.png", tic];
 		NSLog(@"tic=%d  filename=%@\n", tic, filename.stringByExpandingTildeInPath);
         [self viewToFile:filename.stringByExpandingTildeInPath];

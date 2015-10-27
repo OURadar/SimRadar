@@ -65,6 +65,8 @@ NSWindow *standardWindow;
 	sim = [newSim retain];
 	
 	RSVolume domain = [sim simulationDomain];
+    
+    //NSLog(@"sim.anchorCount = %d", sim.anchorCount);
 
 	[glView.renderer setBodyCount:(GLuint)sim.pointCount];
 	[glView.renderer setGridAtOrigin:(GLfloat *)&domain.origin size:(GLfloat *)&domain.size];
