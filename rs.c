@@ -1137,16 +1137,16 @@ void RS_init_scat_pos(RSHandle *H) {
 		H->scat_vel[i].w = 0.0f;
 
         // Facing the sky
-//        H->scat_ori[i].x =  0.0f;
-//        H->scat_ori[i].y = -0.707106781186547f;
-//        H->scat_ori[i].z =  0.0f;
-//        H->scat_ori[i].w =  0.707106781186548f;
+        H->scat_ori[i].x =  0.0f;
+        H->scat_ori[i].y = -0.707106781186547f;
+        H->scat_ori[i].z =  0.0f;
+        H->scat_ori[i].w =  0.707106781186548f;
 
         // Facing the beam
-        H->scat_ori[i].x =  0.5f;
-        H->scat_ori[i].y = -0.5f;
-        H->scat_ori[i].z = -0.5f;
-        H->scat_ori[i].w =  0.5f;
+//        H->scat_ori[i].x =  0.5f;
+//        H->scat_ori[i].y = -0.5f;
+//        H->scat_ori[i].z = -0.5f;
+//        H->scat_ori[i].w =  0.5f;
 		
         // Tumbling vector for orientation update
         H->scat_tum[i].x = 0.0f;
@@ -1206,7 +1206,7 @@ void RS_init_scat_pos(RSHandle *H) {
 //	H->scat_pos[0].z = H->domain.origin.z + 0.5f * H->domain.size.z;
 	
     if (H->species_population[1]) {
-        int k = (int)H->species_population[0] / H->num_workers;
+        k = (int)H->species_population[0] / H->num_workers;
         H->scat_pos[k].x = 0.0f;
         H->scat_pos[k].y = H->params.range_start + floorf(H->params.range_count * 0.5f) * H->params.range_delta;
         H->scat_pos[k].z = 0.0f;

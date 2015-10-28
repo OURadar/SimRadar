@@ -33,6 +33,8 @@ float4 quat_get_y(float4 quat);
 float4 quat_get_z(float4 quat);
 float4 quat_rotate(float4 vector, float4 quat);
 float4 quat_identity(void);
+float4 complex_multiply(const float4 a, const float4 b);
+float4 two_way_effects(const float4 sig_in, const float range, const float wav_num);
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -140,6 +142,54 @@ float4 quat_rotate(float4 vector, float4 quat)
 }
 
 #define quat_identity  (float4)(0.0f, 0.0f, 0.0f, 1.0f)
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+//
+// Complex arithmetics
+//
+//   - s0123 = (IH, QH, IV, QV)
+//
+//   - s01 is treated as one number while s23 is another
+//   - s01 is only affected by another s01 and so on
+//
+
+float4 complex_multiply(const float4 a, const float4 b)
+{
+//    return (float4)(a.s0 * b.s0 - a.s1 * b.s1,
+//                    a.s1 * b.s0 + a.s0 * b.s1,
+//                    a.s2 * b.s2 - a.s3 * b.s3,
+//                    a.s3 * b.s2 + a.s2 * b.s3);
+    float4 iiqq = (float4)(a.s02 * b.s02 - a.s13 * b.s13,
+                           a.s13 * b.s02 + a.s02 * b.s13);
+    return shuffle(iiqq, (uint4)(0, 2, 1, 3));
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+//
+// Two-way effects
+//
+
+float4 two_way_effects(const float4 sig_in, const float range, const float wav_num)
+{
+    // Range attenuation R ^ -4
+    float4 atten = pown((float4)(range, range, range, range), (int4)(-4, -4, -4, -4));
+//    float rinv = native_recip(range);
+//    rinv *= rinv;  // () ^ -2
+//    rinv *= rinv;  // () ^ -4
+//    float4 atten = (float4)(rinv, rinv, rinv, rinv);
+
+    // Return phase due to two-way path
+    float phase = range * wav_num;
+
+    // cosine & sine to represent exp(j phase)
+    float c, s;
+    s = sincos(phase, &c);
+    
+    return complex_multiply(sig_in, (float4)(c, s, c, s)) * atten;
+}
+
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -252,7 +302,7 @@ __kernel void bg_atts(__global float4 *p,
     vel = read_imagef(wind_uvw, sampler, wind_coord);
     
     // Range of the point
-    aux.s0 = length(pos);
+    aux.s0 = length(pos.xyz);
 
     aux.s3 = compute_angular_weight(pos, angular_weight, angular_weight_desc, sim_desc);
     
@@ -372,7 +422,7 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
             vel += (dudt + (float4)(0.0f, 0.0f, -9.8f, 0.0f)) * dt;
 
             // Bound the velocity change
-            if (length(vel) > 2.0f * bg_vel_abs) {
+            if (length(vel) > 3.0f * bg_vel_abs) {
                 vel = bg_vel + (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
             }
 
@@ -385,9 +435,22 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
     }
     
     // Range of the point
-    aux.s0 = length(pos);
-    
+    aux.s0 = length(pos.xyz);
+    //aux.s1 = aux.s1 + sim_desc.sf;
     aux.s3 = compute_angular_weight(pos, angular_weight, angular_weight_desc, sim_desc);
+    
+    const float wav_num = M_PI_F * 4.0f * native_recip(0.03f);  // 4 * PI / lambda
+
+    // Ratio is usually in ( semi-major : semi-minor ) = ( H : V );
+    // Use (1.0, 0.0) for H and (v, 0.0) for V
+    // v = 1.0048 + 5.7e-4 * D - 2.628e-2 * D ^ 2 + 3.682e-3 * D ^ 3 - 1.667e-4 * D ^ 4
+    // Reminder: pos.w = drop radius in m; equation below uses D in mm
+    float D = 2000.0f * pos.w;
+    float4 DD = pown((float4)(D, D, D, D), (int4)(1, 2, 3, 4));
+    float vv = 1.0048f + dot((float4)(5.7e-4f, -2.628e-2f, 3.682e-3f, -1.667e-4f), DD);
+
+    // Parameterize sig_in as a function of drop size
+    sig = two_way_effects((float4)(1.0f, 0.0f, vv, 0.0f), aux.s0, wav_num);
 
     p[i] = pos;
     v[i] = vel;
@@ -643,10 +706,15 @@ __kernel void scat_atts(__global float4 *p,
     // - s1 = age
     // - s2 =
     // - s3 = angular weight
-    aux.s0 = length(pos);
+    aux.s0 = length(pos.xyz);
     aux.s1 = aux.s1 + sim_desc.sf;
     aux.s3 = compute_angular_weight(pos, angular_weight, angular_weight_desc, sim_desc);
 
+    const float wav_num = M_PI_F * 4.0f * native_recip(0.03f);  // 4 * PI / lambda
+
+    // Range attenuation and phase adjustment
+    sig = two_way_effects(sig, aux.s0, wav_num);
+    
     // Copy back to global memory space
     p[i] = pos;
     o[i] = ori;
@@ -812,12 +880,20 @@ __kernel void make_pulse_pass_1(__global float4 *out,
                             (float2)(weight_table[iidx_int.s1], weight_table[iidx_int.s3]),
                             fidx_dec.s02);
             
-            // Range attenuation
-            float2 atten = native_recip(r.s01);
-            atten *= atten;  // ()^-2
-            atten *= atten;  // ()^-4
-            
-            w2 *= atten;
+//            // Range attenuation
+//            float2 atten = native_recip((float2)(r_a, r_b));
+//            atten *= atten;  // ()^-2
+//            atten *= atten;  // ()^-4
+//
+//            w2 *= atten;
+//            
+//            // Return phase due to two-way path
+//            float2 phase = (float2)(r_a, r_b) * wave_num;
+//            float2 cos_phase = cos(phase);
+//            float2 sin_phase = sin(phase);
+//            
+//            a = complex_multiply(a, (float4)(cos_phase.s0, sin_phase.s0, cos_phase.s0, sin_phase.s0));
+//            b = complex_multiply(b, (float4)(cos_phase.s1, sin_phase.s1, cos_phase.s1, sin_phase.s1));
             
             w_a = (float4)(w2.s0, w2.s0, w2.s0, w2.s0);
             w_b = (float4)(w2.s1, w2.s1, w2.s1, w2.s1);

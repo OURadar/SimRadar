@@ -235,7 +235,7 @@
     leafRenderer.count = 1;
 	
 	for (int i=0; i<24; i++) {
-		leafRenderer.positions[i] *= 40.0f;
+		leafRenderer.positions[i] *= 20.0f;
 	}
 	
 	vbosNeedUpdate = TRUE;
@@ -509,7 +509,6 @@
 	if ((resource.textureUI = glGetUniformLocation(resource.program, "drawTemplate1")) >= 0) {
         //resource.texture = [self loadTexture:@"texture_32.png"];
         //resource.texture = [self loadTexture:@"sphere1.png"];
-        //resource.texture = [self loadTexture:@"depth.png"];
         resource.texture = [self loadTexture:@"disc64.png"];
         resource.textureID = [resource.texture name];
         glUniform1i(resource.textureUI, 0);
@@ -1153,13 +1152,13 @@
 
 - (void)increaseBackgroundOpacity
 {
-    backgroundOpacity = MIN(1.0f, backgroundOpacity + 0.05f);
+    backgroundOpacity = MIN(1.0f, backgroundOpacity + 0.01f);
 }
 
 
 - (void)decreaseBackgroundOpacity
 {
-    backgroundOpacity = MAX(0.05f, backgroundOpacity - 0.05f);
+    backgroundOpacity = MAX(0.01f, backgroundOpacity - 0.01f);
 }
 
 
