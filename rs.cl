@@ -783,7 +783,8 @@ __kernel void scat_clr_dsd(__global float4 *c,
 {
     unsigned int i = get_global_id(0);
     
-    c[i].x = clamp(4.8f + log10(0.3f * p[i].w), 0.0f, 1.0f);   // radius to bin index
+    //c[i].x = clamp(4.8f + log10(0.3f * p[i].w), 0.0f, 1.0f);   // radius to bin index
+    c[i].x = clamp(a[i].s2, 0.0f, 1.0f);
     //    if (i < 10)
     //        printf("i=%d  d=%.1fmm  c=%.3f\n", i, p[i].w * 1000.0f, c[i].x);
 }

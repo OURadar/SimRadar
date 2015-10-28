@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		B50E70AC1BE0104E00DBDB44 /* line_sc.fsh in Resources */ = {isa = PBXBuildFile; fileRef = B50E70AA1BE0104E00DBDB44 /* line_sc.fsh */; };
 		B50E70AD1BE0104E00DBDB44 /* line_sc.vsh in Resources */ = {isa = PBXBuildFile; fileRef = B50E70AB1BE0104E00DBDB44 /* line_sc.vsh */; };
+		B50E70B01BE166CB00DBDB44 /* mesh.fsh in Resources */ = {isa = PBXBuildFile; fileRef = B50E70AE1BE166CB00DBDB44 /* mesh.fsh */; };
+		B50E70B11BE166CB00DBDB44 /* mesh.vsh in Resources */ = {isa = PBXBuildFile; fileRef = B50E70AF1BE166CB00DBDB44 /* mesh.vsh */; };
 		B5110A4319CCCCE000EE0902 /* spheroid.fsh in Resources */ = {isa = PBXBuildFile; fileRef = B5110A4119CCCCE000EE0902 /* spheroid.fsh */; };
 		B5110A4419CCCCE000EE0902 /* spheroid.vsh in Resources */ = {isa = PBXBuildFile; fileRef = B5110A4219CCCCE000EE0902 /* spheroid.vsh */; };
 		B51767C118A2DFB700D47C27 /* Curious-Minion-Icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = B51767C018A2DFB700D47C27 /* Curious-Minion-Icon.icns */; };
@@ -184,6 +186,8 @@
 		B50A281917D7C4D500E4DE66 /* rs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = rs.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		B50E70AA1BE0104E00DBDB44 /* line_sc.fsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = line_sc.fsh; sourceTree = "<group>"; };
 		B50E70AB1BE0104E00DBDB44 /* line_sc.vsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = line_sc.vsh; sourceTree = "<group>"; };
+		B50E70AE1BE166CB00DBDB44 /* mesh.fsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = mesh.fsh; sourceTree = "<group>"; };
+		B50E70AF1BE166CB00DBDB44 /* mesh.vsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = mesh.vsh; sourceTree = "<group>"; };
 		B5110A4119CCCCE000EE0902 /* spheroid.fsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = spheroid.fsh; sourceTree = "<group>"; };
 		B5110A4219CCCCE000EE0902 /* spheroid.vsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = spheroid.vsh; sourceTree = "<group>"; };
 		B51767C018A2DFB700D47C27 /* Curious-Minion-Icon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = "Curious-Minion-Icon.icns"; sourceTree = "<group>"; };
@@ -532,6 +536,8 @@
 				B5D1B10F19D0EE8300769416 /* leaf.vsh */,
 				B50E70AA1BE0104E00DBDB44 /* line_sc.fsh */,
 				B50E70AB1BE0104E00DBDB44 /* line_sc.vsh */,
+				B50E70AE1BE166CB00DBDB44 /* mesh.fsh */,
+				B50E70AF1BE166CB00DBDB44 /* mesh.vsh */,
 			);
 			path = Shaders;
 			sourceTree = "<group>";
@@ -750,6 +756,7 @@
 				B55A0B4E19D0AD4300875832 /* sphere1.png in Resources */,
 				B55A0B5519D0B93E00875832 /* disc64.png in Resources */,
 				B55A0B5119D0AD4300875832 /* texture_32.png in Resources */,
+				B50E70B11BE166CB00DBDB44 /* mesh.vsh in Resources */,
 				B567270E1AA11B2C00FF4436 /* spot256.png in Resources */,
 				B54DEB4518A582F100EBEC07 /* dsa_pub.pem in Resources */,
 				B5110A4319CCCCE000EE0902 /* spheroid.fsh in Resources */,
@@ -758,6 +765,7 @@
 				B541C631188DF896000AF6DD /* shape_sc.vsh in Resources */,
 				B50E70AC1BE0104E00DBDB44 /* line_sc.fsh in Resources */,
 				B50E70AD1BE0104E00DBDB44 /* line_sc.vsh in Resources */,
+				B50E70B01BE166CB00DBDB44 /* mesh.fsh in Resources */,
 				B5EF31BB18205AA8002DDEFC /* shape.fsh in Resources */,
 				B5EF31BC18205AAD002DDEFC /* shape.vsh in Resources */,
 				B5D1B11019D0EE8300769416 /* leaf.fsh in Resources */,

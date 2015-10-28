@@ -295,6 +295,7 @@
 
 
     // Stick
+    
     prim = &primitives[2];
     pos = prim->vertices;
     pos[0]  = -1.0f;   pos[1]  = -1.0f;   pos[2]  = -1.0f;   pos[3]  = 0.0f;
@@ -395,7 +396,7 @@
 	RenderResource resource;
 
     memset(&resource, 0, sizeof(RenderResource));
-	
+
 	glGenVertexArrays(1, &resource.vao);
 	glBindVertexArray(resource.vao);
 
@@ -423,6 +424,7 @@
 	resource.rotationAI = glGetAttribLocation(resource.program, "inRotation");
     resource.quaternionAI = glGetAttribLocation(resource.program, "inQuaternion");
 	resource.translationAI = glGetAttribLocation(resource.program, "inTranslation");
+    resource.textureCoordAI = glGetAttribLocation(resource.program, "inTextureCoord");
 
 	return resource;
 }
@@ -501,11 +503,10 @@
     // Get size location
     resource.sizeUI = glGetUniformLocation(resource.program, "drawSize");
     if (resource.sizeUI >= 0) {
-        NSLog(@"has drawSize");
         glUniform4f(resource.sizeUI, 1.0f, 1.0f, 1.0f, 1.0f);
     }
     
-    // Use drawTemplate1, drawTemplate2, etc. for various drawing shapes
+    // Use drawTemplate1, drawTemplate2, etc. for various drawing shapes; All to TEXTURE0
 	if ((resource.textureUI = glGetUniformLocation(resource.program, "drawTemplate1")) >= 0) {
         //resource.texture = [self loadTexture:@"texture_32.png"];
         //resource.texture = [self loadTexture:@"sphere1.png"];
@@ -514,6 +515,11 @@
         glUniform1i(resource.textureUI, 0);
     } else if ((resource.textureUI = glGetUniformLocation(resource.program, "drawTemplate2")) >= 0) {
         resource.texture = [self loadTexture:@"sphere64.png"];
+        resource.textureID = [resource.texture name];
+        glUniform1i(resource.textureUI, 0);
+    } else if ((resource.textureUI = glGetUniformLocation(resource.program, "diffuseTexture")) >= 0) {
+        NSLog(@"has diffuseTexture");
+        resource.texture = [self loadTexture:@"colormap.png"];
         resource.textureID = [resource.texture name];
         glUniform1i(resource.textureUI, 0);
     }
@@ -525,7 +531,7 @@
         resource.colormapID = [resource.colormap name];
         resource.colormapCount = resource.colormap.height;
         resource.colormapIndex = 0;
-        glUniform1i(resource.colormapUI, 1);
+        glUniform1i(resource.colormapUI, 1);  // TEXTURE1 for colormap
         NSLog(@"Colormap has %d maps, each with %d colors", resource.colormap.height, resource.colormap.width);
     }
     
@@ -535,7 +541,11 @@
 	resource.rotationAI = glGetAttribLocation(resource.program, "inRotation");
     resource.quaternionAI = glGetAttribLocation(resource.program, "inQuaternion");
 	resource.translationAI = glGetAttribLocation(resource.program, "inTranslation");
+    resource.textureCoordAI = glGetAttribLocation(resource.program, "inTextureCoord");
 
+    // Others
+    resource.modelViewProjection = GLKMatrix4Identity;
+    
 	return resource;
 }
 
@@ -657,7 +667,10 @@
 	anchorLineRenderer = [self createRenderResourceFromProgram:gridRenderer.program];
 	leafRenderer = [self createRenderResourceFromVertexShader:@"leaf" fragmentShader:@"leaf"];
 	hudRenderer = [self createRenderResourceFromProgram:gridRenderer.program];
-
+    meshRenderer = [self createRenderResourceFromVertexShader:@"mesh" fragmentShader:@"mesh"];
+    
+    NSLog(@"meshRenderer's drawColor @ %d  ..  %d %d", meshRenderer.colorUI, meshRenderer.positionAI, meshRenderer.textureCoordAI);
+    
     // Make body renderer's color a bit translucent
     glUniform4f(bodyRenderer.colorUI, 1.0f, 1.0f, 1.0f, 0.75f);
 
@@ -779,22 +792,48 @@
     glDeleteBuffers(1, hudRenderer.vbo);
 	glGenBuffers(1, hudRenderer.vbo);
     
-	glBindBuffer(GL_ARRAY_BUFFER, hudRenderer.vbo[0]);
-	float pos[] = {0.0f, 0.0f, 0.0f, 0.0f,
-		           0.0f, 1.0f, 0.0f, 0.0f,
-                   1.0f, 0.0f, 0.0f, 0.0f,
-                   1.0f, 1.0f, 0.0f, 0.0f,
-                   0.0f, 0.0f, 0.0f, 0.0f,
-				   1.0f, 0.0f, 0.0f, 0.0f,
-		           1.0f, 1.0f, 0.0f, 0.0f,
-		           0.0f, 1.0f, 0.0f, 0.0f,
-				   0.0f, 0.0f, 0.0f, 0.0f};
+    float pos[] = {0.0f, 0.0f, 0.0f, 1.0f,   // First part is for the dark area
+                   0.0f, 1.0f, 0.0f, 1.0f,
+                   1.0f, 0.0f, 0.0f, 1.0f,
+                   1.0f, 1.0f, 0.0f, 1.0f,
+                   0.0f, 0.0f, 0.0f, 1.0f,   // Second part is for the outline
+                   1.0f, 0.0f, 0.0f, 1.0f,
+                   1.0f, 1.0f, 0.0f, 1.0f,
+                   0.0f, 1.0f, 0.0f, 1.0f,
+                   0.0f, 0.0f, 0.0f, 1.0f};
     
+    glBindBuffer(GL_ARRAY_BUFFER, hudRenderer.vbo[0]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(pos), pos, GL_STATIC_DRAW);
     glVertexAttribPointer(hudRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(hudRenderer.positionAI);
 	
 	
+    // Mesh 1 : colorbar
+    glBindVertexArray(meshRenderer.vao);
+    
+    glDeleteBuffers(2, meshRenderer.vbo);
+    glGenBuffers(2, meshRenderer.vbo);
+    
+    float texCoord[] = {0.0f, bodyRenderer.colormapIndexNormalized,
+                        0.0f, bodyRenderer.colormapIndexNormalized,
+                        1.0f, bodyRenderer.colormapIndexNormalized,
+                        1.0f, bodyRenderer.colormapIndexNormalized,
+                        0.0f, 0.0f,
+                        0.0f, 0.0f,
+                        0.0f, 0.0f,
+                        0.0f, 0.0f,
+                        0.0f, 0.0f};
+    
+    glBindBuffer(GL_ARRAY_BUFFER, meshRenderer.vbo[0]);  // position
+    glBufferData(GL_ARRAY_BUFFER, sizeof(pos), pos, GL_STATIC_DRAW);
+    glVertexAttribPointer(meshRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(meshRenderer.positionAI);
+
+    glBindBuffer(GL_ARRAY_BUFFER, meshRenderer.vbo[1]);  // textureCoord
+    glBufferData(GL_ARRAY_BUFFER, sizeof(texCoord), texCoord, GL_STATIC_DRAW);
+    glVertexAttribPointer(meshRenderer.textureCoordAI, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(meshRenderer.textureCoordAI);
+
 	#ifdef DEBUG
 	NSLog(@"VBOs %d %d %d ...", bodyRenderer.vbo[0], bodyRenderer.vbo[1], anchorRenderer.vbo[0]);
 	#endif
@@ -937,7 +976,6 @@
     glBindTexture(GL_TEXTURE_2D, bodyRenderer.textureID);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, bodyRenderer.colormapID);
-	//glDrawArrays(GL_POINTS, leafRenderer.count, bodyRenderer.count);
     glDrawArrays(GL_POINTS, 0, bodyRenderer.count);
 	
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -994,13 +1032,13 @@
 
         glBindVertexArray(anchorLineRenderer.vao);
         glUseProgram(anchorLineRenderer.program);
-        glUniform4f(gridRenderer.colorUI, 1.0f, 1.0f, 0.0f, 0.8f);
+        glUniform4f(anchorLineRenderer.colorUI, 1.0f, 1.0f, 0.0f, 0.8f);
         glUniformMatrix4fv(anchorLineRenderer.mvpUI, 1, GL_FALSE, beamModelViewProjection.m);
         glDrawArrays(GL_LINES, 0, anchorLineRenderer.count);
         
         glBindVertexArray(gridRenderer.vao);
         glUseProgram(gridRenderer.program);
-        glUniform4f(gridRenderer.colorUI, 1.0f, 1.0f, 1.0f, 0.8f);
+        glUniform4f(gridRenderer.colorUI, 0.4f, 1.0f, 1.0f, 0.8f);
         glUniformMatrix4fv(gridRenderer.mvpUI, 1, GL_FALSE, beamModelViewProjection.m);
         glDrawArrays(GL_LINES, 0, gridRenderer.count);
     }
@@ -1029,6 +1067,35 @@
         snprintf(statusMessage[3], 128, "EL %.2f   AZ %.2f", beamElevation / M_PI * 180.0f, beamAzimuth / M_PI * 180.0f);
         [textRenderer drawText:statusMessage[3] origin:NSMakePoint(hudOrigin.x + 15.0f, hudOrigin.y + 15.0f) scale:0.25f];
     }
+
+    // Colorbar
+    glBindVertexArray(hudRenderer.vao);
+    glUseProgram(hudRenderer.program);
+    glUniformMatrix4fv(hudRenderer.mvpUI, 1, GL_FALSE, meshRenderer.modelViewProjectionOffTwo.m);
+    glUniform4f(hudRenderer.colorUI, 0.0f, 0.0f, 0.0f, 0.6f);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glUniform4f(hudRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
+    glDrawArrays(GL_LINE_STRIP, 4, 5);
+
+    glBindVertexArray(meshRenderer.vao);
+    glUseProgram(meshRenderer.program);
+    if (colorbarNeedsUpdate) {
+        float texCoord[] = {0.0f, bodyRenderer.colormapIndexNormalized,
+            0.0f, bodyRenderer.colormapIndexNormalized,
+            1.0f, bodyRenderer.colormapIndexNormalized,
+            1.0f, bodyRenderer.colormapIndexNormalized,
+            0.0f, 0.0f,
+            0.0f, 0.0f,
+            0.0f, 0.0f,
+            0.0f, 0.0f,
+            0.0f, 0.0f};
+        glBindBuffer(GL_ARRAY_BUFFER, meshRenderer.vbo[1]);  // textureCoord
+        glBufferData(GL_ARRAY_BUFFER, sizeof(texCoord), texCoord, GL_STATIC_DRAW);
+    }
+    glUniformMatrix4fv(meshRenderer.mvpUI, 1, GL_FALSE, meshRenderer.modelViewProjection.m);
+    glUniform4f(meshRenderer.colorUI, 1.0f, 1.0f, 1.0f, 0.9f);
+    glBindTexture(GL_TEXTURE_2D, meshRenderer.textureID);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     glBindVertexArray(0);
     glUseProgram(0);
@@ -1070,6 +1137,23 @@
     mat = GLKMatrix4RotateX(mat, -beamElevation);
     mat = GLKMatrix4RotateX(mat, -M_PI_2);
     beamModelViewProjection = GLKMatrix4Multiply(beamProjection, mat);
+    
+    float cx = roundf(0.25f * width);
+    float cy = 36.0f;
+    float cw = roundf(0.5f * width);
+    float ch = roundf(0.0125f * width);
+    
+    mat = GLKMatrix4MakeTranslation(cx, cy, 0.0f);
+    mat = GLKMatrix4Scale(mat, cw, ch, 1.0f);
+    meshRenderer.modelViewProjection = GLKMatrix4Multiply(hudProjection, mat);
+
+    mat = GLKMatrix4MakeTranslation(cx - 0.5f, cy - 0.5f, 0.0f);
+    mat = GLKMatrix4Scale(mat, cw + 1.0f, ch + 1.0f, 1.0f);
+    meshRenderer.modelViewProjectionOffOne = GLKMatrix4Multiply(hudProjection, mat);
+
+    mat = GLKMatrix4MakeTranslation(cx - 1.5f, cy - 1.5f, 0.0f);
+    mat = GLKMatrix4Scale(mat, cw + 3.0f, ch + 3.0f, 1.0f);
+    meshRenderer.modelViewProjectionOffTwo = GLKMatrix4Multiply(hudProjection, mat);
     
     [textRenderer setModelViewProjection:hudProjection];
 }
@@ -1167,6 +1251,7 @@
     bodyRenderer.colormapIndex = bodyRenderer.colormapIndex >= bodyRenderer.colormapCount - 1 ? 0 : bodyRenderer.colormapIndex + 1;
     bodyRenderer.colormapIndexNormalized = ((GLfloat)bodyRenderer.colormapIndex + 0.5f) / bodyRenderer.colormapCount;
     NSLog(@"colormapIndex = %d", bodyRenderer.colormapIndex);
+    colorbarNeedsUpdate = TRUE;
 }
 
 
@@ -1175,6 +1260,7 @@
     bodyRenderer.colormapIndex = bodyRenderer.colormapIndex <= 0 ? bodyRenderer.colormapCount - 1 : bodyRenderer.colormapIndex - 1;
     bodyRenderer.colormapIndexNormalized = ((GLfloat)bodyRenderer.colormapIndex + 0.5f) / bodyRenderer.colormapCount;
     NSLog(@"colormapIndex = %d", bodyRenderer.colormapIndex);
+    colorbarNeedsUpdate = TRUE;
 }
 
 @end

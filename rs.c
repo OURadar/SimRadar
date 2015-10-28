@@ -1182,6 +1182,7 @@ void RS_init_scat_pos(RSHandle *H) {
             }
             counts[bin]++;
             H->scat_pos[i].w = H->dsd_r[bin];
+            H->scat_att[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // temporary use this to store normlized bin index
         }
         
         if (H->verb > 1) {

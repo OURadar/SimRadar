@@ -26,13 +26,15 @@ typedef struct _draw_resource {
     GLint textureUI;
     GLint colormapUI;
 	GLuint count;
-	GLfloat *positions;  // CPU side position
-	GLfloat *colors;     // CPU side color
-	GLuint *indices;     // CPU side indexing for instancing
+	GLfloat *positions;    // CPU side position
+	GLfloat *colors;       // CPU side color
+    GLfloat *textureCoord; // CPU side texture coordinate
+	GLuint *indices;       // CPU side indexing for instancing
     GLint positionAI;
 	GLint rotationAI;
     GLint quaternionAI;
 	GLint translationAI;
+    GLint textureCoordAI;
 	GLint colorAI;
     GLKTextureInfo *texture;
     GLuint textureID;
@@ -44,6 +46,9 @@ typedef struct _draw_resource {
     GLuint sourceOffset;
     GLuint instanceSize;
     GLenum drawMode;
+    GLKMatrix4 modelViewProjection;
+    GLKMatrix4 modelViewProjectionOffOne;
+    GLKMatrix4 modelViewProjectionOffTwo;
 } RenderResource;
 
 
@@ -91,6 +96,7 @@ typedef struct _draw_primitive {
 	id<RendererDelegate> delegate;
     
     BOOL showHUD;
+    BOOL colorbarNeedsUpdate;
 	
 	@private
 	
@@ -109,6 +115,7 @@ typedef struct _draw_primitive {
     RenderResource leafRenderer;
     RenderResource speciesRenderer[RENDERER_MAX_SPECIES_COUNT];
     RenderResource hudRenderer;
+    RenderResource meshRenderer;
 
     RenderPrimitive primitives[4];
     

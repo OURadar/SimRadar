@@ -373,7 +373,7 @@
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bitmapWidth, bitmapHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, bitmap);
     glGenerateMipmap(GL_TEXTURE_2D);
     
-    glGenBuffers(2, vbo);
+    glGenBuffers(1, vbo);
     
     glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
     glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(GLTextVertex), textureAnchors, GL_STATIC_DRAW);
