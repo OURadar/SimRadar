@@ -1125,6 +1125,7 @@ void RS_init_scat_pos(RSHandle *H) {
 		H->scat_pos[i].x = (float)rand() / RAND_MAX * H->domain.size.x + H->domain.origin.x;
 		H->scat_pos[i].y = (float)rand() / RAND_MAX * H->domain.size.y + H->domain.origin.y;
 		H->scat_pos[i].z = (float)rand() / RAND_MAX * H->domain.size.z + H->domain.origin.z;
+        H->scat_pos[i].w = 0.0f;                       // Use this to store drop radius
         
 		H->scat_att[i].s0 = 0.0f;                      // Use this to store range
         H->scat_att[i].s1 = (float)rand() / RAND_MAX;  // Use this to store age
@@ -1182,7 +1183,7 @@ void RS_init_scat_pos(RSHandle *H) {
             }
             counts[bin]++;
             H->scat_pos[i].w = H->dsd_r[bin];
-            H->scat_att[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // temporary use this to store normlized bin index
+            H->scat_att[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // temporary use this to store normalized bin index
         }
         
         if (H->verb > 1) {
@@ -1229,7 +1230,7 @@ void RS_init_scat_pos(RSHandle *H) {
     H->sim_desc.s[RSSimulationParameterBoundOriginY] = H->domain.origin.y;
     H->sim_desc.s[RSSimulationParameterBoundOriginZ] = H->domain.origin.z;
     H->sim_desc.s[RSSimulationParameterPRT] = H->params.prt;
-    H->sim_desc.s[RSSimulationParameterDebrisCount] = 10001.0f;
+    H->sim_desc.s[RSSimulationParameterDebrisCount] = 0.0f;
     H->sim_desc.s[RSSimulationParameterAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTableDescriptionRefreshTime];
 
     // Plate dimension in meters
@@ -1869,8 +1870,8 @@ void RS_set_dsd_to_mp(RSHandle *H) {
     
     float d, sum = 0.0f;
     
-    //float ds[] = {0.0001f, 0.0002f, 0.0005f, 0.001f, 0.002f, 0.003f, 0.004f, 0.005f};
-    float ds[] = {0.0001f, 0.001f};
+    float ds[] = {0.0001f, 0.0002f, 0.0005f, 0.001f, 0.002f, 0.003f, 0.004f, 0.005f};
+    //float ds[] = {0.0001f, 0.001f};
     
     const int count = sizeof(ds) / sizeof(float);
     

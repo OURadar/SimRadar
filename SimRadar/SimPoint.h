@@ -63,8 +63,8 @@
 
 - (RSVolume)simulationDomain;
 
-- (GLuint)decreasePopulationForSpecies:(const int)speciesId;
-- (GLuint)increasePopulationForSpecies:(const int)speciesId;
-- (GLuint)populationForSpecies:(const int)speciesId;
+- (GLint)decreasePopulationForSpecies:(const int)speciesId;
+- (GLint)increasePopulationForSpecies:(const int)speciesId;
+- (GLint)populationForSpecies:(const int)speciesId;
 
 @end

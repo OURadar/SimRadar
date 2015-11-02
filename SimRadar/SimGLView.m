@@ -39,7 +39,7 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 {
 	// NSLog(@"%@ awakeFromNib", self);
 	NSOpenGLPixelFormatAttribute attr[] = {
-		NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
+		NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion4_1Core,
 		NSOpenGLPFAAccelerated,
 		NSOpenGLPFADoubleBuffer,
 		NSOpenGLPFADepthSize, 24,

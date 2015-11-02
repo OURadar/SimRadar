@@ -1,6 +1,3 @@
-#define DEG2RAD(x)  (x * 0.017453292519943f)
-#define RAD2DEG(x)  (x * 57.295779513082323f)
-
 enum RSSimulationParameter {
     RSSimulationParameterBeamUnitX     =  0,
     RSSimulationParameterBeamUnitY     =  1,
@@ -67,7 +64,6 @@ float4 set_clr(float4 att)
     c.x = clamp(0.4f * att.s1, 0.0f, 1.0f) + 0.6f * g;
     c.y = 0.9f * g;
     c.z = clamp(1.0f - c.x - 3.5f * g, 0.0f, 1.0f) + 0.2f * (g - 0.1f);
-    //c.w = 0.3f;
     c.w = 1.0f;
     
     return c;
@@ -384,8 +380,6 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
         uint4 seed = y[i];
         float4 r = rand(&seed);
         y[i] = seed;
-        //pos.xyz = r.xyz * (sim_desc.hi.s456 - (float3)(0.0f, 0.0f, 150.0f)) + sim_desc.hi.s012 + (float3)(0.0f, 0.0f, 150.0f);
-        //pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
         pos.xyz = (fma(r, sim_desc.hi.s4567, sim_desc.hi.s0123)).xyz;
         vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
         ori = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
@@ -395,36 +389,36 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
     
         // Background wind
         float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
-        
         float4 bg_vel = read_imagef(wind_uvw, sampler, wind_coord);
         
         // Particle velocity due to drag
         float4 delta_v = bg_vel - vel;
         float delta_v_abs = length(delta_v.xyz);
-        float bg_vel_abs = length(bg_vel);
         
 //        if (i < 10)
 //            printf("bg_vel = %.2v4f  vel = %.2v4f  delta_v = %.2v4f  bd = %.2v4f\n", bg_vel, vel, delta_v, bg_vel / dt);
 //        else if (i == 10)
 //            printf("--------\n");
         
-        if (delta_v_abs > 1.0e-5f) {
+        if (delta_v_abs > 1.0e-3f) {
 
             // Calculate Reynold's number with air density and viscousity
-            const float rho_air = 1.225f;                              // 1.225 kg m^-3
-            const float rho_mu_air = 6.7308e4;                         // 1.225 / 1.82e-5 kg m^-1 s^-1 (David)
-            const float area_over_mass_particle = 0.0030054f / pos.w;  // 4 * PI * R ^ 2 / ( ( 4 / 3 ) * PI * R ^ 3 * rho ) = 0.0030054 / r
+            const float rho_air = 1.225f;                                // 1.225 kg m^-3
+            const float rho_over_mu_air = 6.7308e4f;                     // 1.225 / 1.82e-5 kg m^-1 s^-1 = 6.7308e4 (David)
+            const float area_over_mass_particle = 0.003006012f / pos.w;  // 4 * PI * R ^ 2 / ( ( 4 / 3 ) * PI * R ^ 3 * rho ) = 0.0030054 / r (rho = 998)
             
-            float rep = rho_mu_air * (2.0f * pos.w) * delta_v_abs;
-            float cd = 24.0f / rep + 6.0f / (1.0f + sqrt(rep)) + 0.4f;
-            float4 dudt = (0.5f * rho_air * cd * area_over_mass_particle * delta_v_abs) * delta_v;
+            float re = rho_over_mu_air * (2.0f * pos.w) * delta_v_abs;
+            float cd = 24.0f / re + 6.0f / (1.0f + sqrt(re)) + 0.4f;
+            float4 dudt = (0.5f * rho_air * cd * area_over_mass_particle * delta_v_abs) * delta_v + (float4)(0.0f, 0.0f, -9.8f, 0.0f);
+            //float4 dudt = (float4)(0.0f, 0.0f, -9.8f, 0.0f);
 
-            vel += (dudt + (float4)(0.0f, 0.0f, -9.8f, 0.0f)) * dt;
+            vel += dudt * dt;
 
             // Bound the velocity change
-            if (length(vel) > 3.0f * bg_vel_abs) {
+            if (length(vel) > 2.0f * length(bg_vel)) {
                 vel = bg_vel + (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
             }
+            
 
         } else {
 
@@ -594,7 +588,7 @@ __kernel void scat_atts(__global float4 *p,
     
     // Euler method: dudt is just a scaled version of drag coefficient
     float4 dudt = Ta * ur_norm_sq * cd + (float4)(0.0f, 0.0f, -9.8f, 0.0f);
-    float4 dw = DEG2RAD((dt * Ta * ur_norm_sq * inv_inln) * cm);
+    float4 dw = radians((dt * Ta * ur_norm_sq * inv_inln) * cm);
     
     // Runge-Kutta: dudt is a two-point average
 //    float4 dudt1 = Ta * ur_norm_sq * cd;
@@ -627,7 +621,7 @@ __kernel void scat_atts(__global float4 *p,
 //               );
 //    }
 
-    //float4 dw = DEG2RAD((dt * Ta * 0.5f * (ur_norm_sq + ur2_norm_sq) * inv_inln) * cm);
+    //float4 dw = radians((dt * Ta * 0.5f * (ur_norm_sq + ur2_norm_sq) * inv_inln) * cm);
     
     float4 c = cos(dw);
     float4 s = sin(dw);
@@ -660,7 +654,7 @@ __kernel void scat_atts(__global float4 *p,
 //           i,
 //           ori.x, ori.y, ori.z, ori.w,
 //           quat_rel.x, quat_rel.y, quat_rel.z, quat_rel.w,
-//           RAD2DEG(alpha), RAD2DEG(beta), RAD2DEG(gamma));
+//           degrees(alpha), degrees(beta), degrees(gamma));
 
     // RCS values are stored as real(hh, vv, hv, __) + imag(hh, vv, hv, __)
     float2 rcs_coord = fma((float2)(alpha, beta), rcs_desc.s01, rcs_desc.s45);

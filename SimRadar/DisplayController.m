@@ -185,7 +185,7 @@ NSWindow *standardWindow;
 {
 	unichar c = [[event charactersIgnoringModifiers] characterAtIndex:0];
 	
-    GLuint pop;
+    GLint ret;
     
 	switch (c)
 	{
@@ -259,17 +259,17 @@ NSWindow *standardWindow;
 			break;
 
 		case ']':
-            pop = [sim increasePopulationForSpecies:speciesId];
-            if (pop) {
-                [glView.renderer setPopulationTo:pop forSpecies:speciesId];
+            ret = [sim increasePopulationForSpecies:speciesId];
+            if (ret >= 0) {
+                [glView.renderer setPopulationTo:ret forSpecies:speciesId];
                 [glView.renderer setDebrisCountsHaveChanged:TRUE];
             }
 			break;
             
 		case '[':
-            pop = [sim decreasePopulationForSpecies:speciesId];
-            if (pop) {
-                [glView.renderer setPopulationTo:pop forSpecies:speciesId];
+            ret = [sim decreasePopulationForSpecies:speciesId];
+            if (ret >= 0) {
+                [glView.renderer setPopulationTo:ret forSpecies:speciesId];
                 [glView.renderer setDebrisCountsHaveChanged:TRUE];
             }
 			break;

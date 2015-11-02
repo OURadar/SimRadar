@@ -26,7 +26,6 @@
 @synthesize width, height;
 @synthesize beamAzimuth, beamElevation;
 @synthesize showHUD;
-@synthesize debrisCountsHaveChanged;
 
 #pragma mark Properties
 
@@ -185,7 +184,7 @@
         return;
     }
     speciesRenderer[speciesId].count = count;
-    debrisCountsHaveChanged = TRUE;
+    statusMessageNeedsUpdate = TRUE;
 }
 
 
@@ -578,10 +577,12 @@
              bodyRenderer.count);
     snprintf(statusMessage[1],
              sizeof(statusMessage[1]),
-             "Debris Pop. %d, %d, %d",
+             "Debris Pop. %d, %d, %d    Color %d / %.3f",
              speciesRenderer[1].count,
              speciesRenderer[2].count,
-             speciesRenderer[3].count);
+             speciesRenderer[3].count,
+             bodyRenderer.colormapIndex,
+             backgroundOpacity);
 }
 
 
@@ -611,7 +612,7 @@
         
         hudModelViewProjection = GLKMatrix4Identity;
         beamModelViewProjection = GLKMatrix4Identity;
-        backgroundOpacity = 0.3f;
+        backgroundOpacity = 0.1f;
         
         // Add device pixel ratio here
         devicePixelRatio = pixelRatio;
@@ -906,8 +907,8 @@
 		[self allocateVBO];
 	}
 	
-    if (debrisCountsHaveChanged) {
-        debrisCountsHaveChanged = FALSE;
+    if (statusMessageNeedsUpdate) {
+        statusMessageNeedsUpdate = FALSE;
         [self updateBodyToDebrisMappings];
         [self updateStatusMessage];
     }
@@ -963,6 +964,7 @@
 	
 	// The scatter bodies
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBindVertexArray(bodyRenderer.vao);
 	glPointSize(MIN(MAX(15.0f * pixelsPerUnit, 1.0f), 64.0f) * devicePixelRatio);
 	glUseProgram(bodyRenderer.program);
@@ -1055,9 +1057,9 @@
     snprintf(statusMessage[2], 256, "Frame %d", iframe);
     
     [textRenderer drawText:"SimRadar" origin:NSMakePoint(25.0f, height - 60.0f) scale:0.5f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
-    [textRenderer drawText:statusMessage[0] origin:NSMakePoint(25.0f, height - 90.0f) scale:0.333f];
-    [textRenderer drawText:statusMessage[1] origin:NSMakePoint(25.0f, height - 120.0f) scale:0.333f];
-    [textRenderer drawText:statusMessage[2] origin:NSMakePoint(25.0f, height - 150.0f) scale:0.333f];
+    [textRenderer drawText:statusMessage[0] origin:NSMakePoint(25.0f, height - 90.0f) scale:0.3f];
+    [textRenderer drawText:statusMessage[1] origin:NSMakePoint(25.0f, height - 120.0f) scale:0.3f];
+    [textRenderer drawText:statusMessage[2] origin:NSMakePoint(25.0f, height - 150.0f) scale:0.3f];
 
 #ifndef GEN_IMG
     [textRenderer drawText:fpsString origin:NSMakePoint(width - 30.0f, 20.0f) scale:0.333f red:1.0f green:0.9f blue:0.2f alpha:1.0f align:GLTextAlignmentRight];
@@ -1237,12 +1239,14 @@
 - (void)increaseBackgroundOpacity
 {
     backgroundOpacity = MIN(1.0f, backgroundOpacity + 0.01f);
+    statusMessageNeedsUpdate = TRUE;
 }
 
 
 - (void)decreaseBackgroundOpacity
 {
     backgroundOpacity = MAX(0.01f, backgroundOpacity - 0.01f);
+    statusMessageNeedsUpdate = TRUE;
 }
 
 
@@ -1250,7 +1254,7 @@
 {
     bodyRenderer.colormapIndex = bodyRenderer.colormapIndex >= bodyRenderer.colormapCount - 1 ? 0 : bodyRenderer.colormapIndex + 1;
     bodyRenderer.colormapIndexNormalized = ((GLfloat)bodyRenderer.colormapIndex + 0.5f) / bodyRenderer.colormapCount;
-    NSLog(@"colormapIndex = %d", bodyRenderer.colormapIndex);
+    statusMessageNeedsUpdate = TRUE;
     colorbarNeedsUpdate = TRUE;
 }
 
@@ -1259,7 +1263,7 @@
 {
     bodyRenderer.colormapIndex = bodyRenderer.colormapIndex <= 0 ? bodyRenderer.colormapCount - 1 : bodyRenderer.colormapIndex - 1;
     bodyRenderer.colormapIndexNormalized = ((GLfloat)bodyRenderer.colormapIndex + 0.5f) / bodyRenderer.colormapCount;
-    NSLog(@"colormapIndex = %d", bodyRenderer.colormapIndex);
+    statusMessageNeedsUpdate = TRUE;
     colorbarNeedsUpdate = TRUE;
 }
 

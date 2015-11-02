@@ -104,9 +104,8 @@ typedef struct _draw_primitive {
 
     BOOL vbosNeedUpdate;
     BOOL viewParametersNeedUpdate;
+    BOOL statusMessageNeedsUpdate;
     GLchar spinModel;
-    
-    BOOL debrisCountsHaveChanged;
     
     RenderResource gridRenderer;
     RenderResource bodyRenderer;

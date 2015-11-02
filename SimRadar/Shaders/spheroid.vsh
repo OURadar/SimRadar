@@ -32,5 +32,7 @@ void main (void)
     //varColor = texture(colormapTexture, vec2(inPosition.w * 250.0f, drawColor.x));
     varColor = texture(colormapTexture, vec2(inColor.x, drawColor.x));
 
-    varColor.w = drawColor.w;
+    varColor.w = drawColor.w * log(1.0 + 10.0 * inColor.x);
+    
+    //gl_PointSize = clamp(inColor.x * 32.0, 4.0, 32.0);
 }

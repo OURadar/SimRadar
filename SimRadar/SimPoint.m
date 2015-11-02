@@ -75,7 +75,7 @@
 //        RS_set_debris_count(S, 2, 2000);
 //        RS_set_debris_count(S, 3, 500);
 
-        RS_set_debris_count(S, 1, 101);
+//        RS_set_debris_count(S, 1, (size_t)roundf(30000 / 64) * 64);
         
 		//RS_set_physics_data_to_cube125(S);
 		//RS_set_physics_data_to_cube27(S);
@@ -259,25 +259,27 @@
 #pragma mark -
 #pragma mark Simulation parameters
 
-- (GLuint)decreasePopulationForSpecies:(const int)speciesId
+- (GLint)decreasePopulationForSpecies:(const int)speciesId
 {
     if (speciesId == 0) {
-        return 0;
+        return -1;
     }
     size_t pop = RS_get_debris_count(S, speciesId);
     if (pop > 2000) {
         pop -= 1000;
-    } else if (pop > 100) {
+    } else if (pop >= 100) {
         pop -= 100;
+    } else if (pop == 0) {
+        return -1;
     }
     RS_set_debris_count(S, speciesId, pop);
     return (GLuint)pop;
 }
 
-- (GLuint)increasePopulationForSpecies:(const int)speciesId
+- (GLint)increasePopulationForSpecies:(const int)speciesId
 {
     if (speciesId == 0) {
-        return 0;
+        return -1;
     }
     size_t pop = RS_get_debris_count(S, speciesId);
     if (pop >= 1000 && pop < S->num_scats - 1000) {
@@ -289,9 +291,9 @@
     return (GLuint)pop;
 }
 
-- (GLuint)populationForSpecies:(const int)speciesId
+- (GLint)populationForSpecies:(const int)speciesId
 {
-    return (GLuint)RS_get_debris_count(S, speciesId);
+    return (GLint)RS_get_debris_count(S, speciesId);
 }
 
 
