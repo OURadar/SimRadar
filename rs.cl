@@ -388,7 +388,14 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
     } else {
     
         // Background wind
+        // dz(k) = a * r ^ 1.05
+        // z(k) = a * (1 - r^k) / (1 - r)
+        // k = 1 / log(r) * log( 1 - ( 1 - r ) / a * z(k));  a = 2.7, r 1.05
+        //   = 1 / log(r) * log( 1 + 0.018518518518519 * z(k))
+        //   = 20.495934314287851 * log1p (0.018518518518519 * z(k))
         float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
+        // wind_coord.z = 20.495934314287851f * log1p(0.018518518518519f * pos.z);
+        wind_coord.z = 10.492058687257062f * log1p(0.037037037037037f * pos.z);
         float4 bg_vel = read_imagef(wind_uvw, sampler, wind_coord);
         
         // Particle velocity due to drag
@@ -415,7 +422,7 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
             vel += dudt * dt;
 
             // Bound the velocity change
-            if (length(vel) > 2.0f * length(bg_vel)) {
+            if (length(vel) > 3.0f * length(bg_vel)) {
                 vel = bg_vel + (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
             }
             

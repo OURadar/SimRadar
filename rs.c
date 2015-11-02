@@ -2218,7 +2218,7 @@ void RS_set_wind_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
 	table.x_ = leslie->nx;    table.xm = (float)(table.x_ - 1);    table.xs = (float)leslie->nx / H->domain.size.x;    table.xo = -H->domain.origin.x * table.xs;
 	table.y_ = leslie->ny;    table.ym = (float)(table.y_ - 1);    table.ys = (float)leslie->ny / H->domain.size.y;    table.yo = -H->domain.origin.y * table.ys;
 //	table.z_ = leslie->nz;    table.zm = (float)(table.z_ - 1);    table.zs = (float)leslie->nz / H->domain.size.z;    table.zo = -H->domain.origin.z * table.zs;
-    table.z_ = leslie->nz;    table.zm = (float)(table.z_ - 1);    table.zs = (float)leslie->nz / 5000.0f;             table.zo = 0.0f;
+    table.z_ = leslie->nz;    table.zm = (float)(table.z_ - 1);    table.zs = (float)leslie->nz / 2000.0f;             table.zo = 0.0f;
 	
     // Some other parameters
     table.tr = leslie->tr;
