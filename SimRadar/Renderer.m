@@ -517,7 +517,6 @@
         resource.textureID = [resource.texture name];
         glUniform1i(resource.textureUI, 0);
     } else if ((resource.textureUI = glGetUniformLocation(resource.program, "diffuseTexture")) >= 0) {
-        NSLog(@"has diffuseTexture");
         resource.texture = [self loadTexture:@"colormap.png"];
         resource.textureID = [resource.texture name];
         glUniform1i(resource.textureUI, 0);
@@ -531,7 +530,9 @@
         resource.colormapCount = resource.colormap.height;
         resource.colormapIndex = 0;
         glUniform1i(resource.colormapUI, 1);  // TEXTURE1 for colormap
+        #ifdef DEBUG_GL
         NSLog(@"Colormap has %d maps, each with %d colors", resource.colormap.height, resource.colormap.width);
+        #endif
     }
     
 	// Get attributes
@@ -560,11 +561,13 @@
     {
         NSLog(@"Error loading file: %@", [error localizedDescription]);
     }
+    #ifdef DEBUG_GL
     else
     {
         NSLog(@"Texture with %d x %d pixels", texture.width, texture.height);
     }
-    
+    #endif
+
     return texture;
 }
 
@@ -1141,9 +1144,10 @@
     beamModelViewProjection = GLKMatrix4Multiply(beamProjection, mat);
     
     float cx = roundf(0.25f * width);
-    float cy = 36.0f;
+    float cy = 25.0f;
     float cw = roundf(0.5f * width);
-    float ch = roundf(0.0125f * width);
+    float ch = 20.0f;
+    //float ch = MIN(MAX(roundf(0.0125f * width), 16.0f), 30.0f);
     
     mat = GLKMatrix4MakeTranslation(cx, cy, 0.0f);
     mat = GLKMatrix4Scale(mat, cw, ch, 1.0f);

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B50CD9EE1BE8117E0034B5BB /* Recorder.m in Sources */ = {isa = PBXBuildFile; fileRef = B50CD9ED1BE8117E0034B5BB /* Recorder.m */; };
 		B50E70AC1BE0104E00DBDB44 /* line_sc.fsh in Resources */ = {isa = PBXBuildFile; fileRef = B50E70AA1BE0104E00DBDB44 /* line_sc.fsh */; };
 		B50E70AD1BE0104E00DBDB44 /* line_sc.vsh in Resources */ = {isa = PBXBuildFile; fileRef = B50E70AB1BE0104E00DBDB44 /* line_sc.vsh */; };
 		B50E70B01BE166CB00DBDB44 /* mesh.fsh in Resources */ = {isa = PBXBuildFile; fileRef = B50E70AE1BE166CB00DBDB44 /* mesh.fsh */; };
@@ -184,6 +185,8 @@
 		B50A281617D7C21F00E4DE66 /* rs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = rs.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		B50A281717D7C2F400E4DE66 /* radarsim.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = radarsim.c; sourceTree = "<group>"; };
 		B50A281917D7C4D500E4DE66 /* rs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = rs.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
+		B50CD9EC1BE8117E0034B5BB /* Recorder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Recorder.h; sourceTree = "<group>"; };
+		B50CD9ED1BE8117E0034B5BB /* Recorder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Recorder.m; sourceTree = "<group>"; };
 		B50E70AA1BE0104E00DBDB44 /* line_sc.fsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = line_sc.fsh; sourceTree = "<group>"; };
 		B50E70AB1BE0104E00DBDB44 /* line_sc.vsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = line_sc.vsh; sourceTree = "<group>"; };
 		B50E70AE1BE166CB00DBDB44 /* mesh.fsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = mesh.fsh; sourceTree = "<group>"; };
@@ -492,6 +495,8 @@
 				B5EF31AA18205244002DDEFC /* DisplayController.m */,
 				B5EF31AF182052B8002DDEFC /* Renderer.h */,
 				B5EF31B0182052B8002DDEFC /* Renderer.m */,
+				B50CD9EC1BE8117E0034B5BB /* Recorder.h */,
+				B50CD9ED1BE8117E0034B5BB /* Recorder.m */,
 				B5EF31AC1820526F002DDEFC /* SimGLView.h */,
 				B5EF31AD1820526F002DDEFC /* SimGLView.m */,
 				B5576B8918315B3B0012E6F5 /* SimPoint.h */,
@@ -878,6 +883,7 @@
 				B5EF317E18204B5C002DDEFC /* main.m in Sources */,
 				B5EF318518204B5C002DDEFC /* AppDelegate.m in Sources */,
 				B5EF31C51820619E002DDEFC /* RootController.m in Sources */,
+				B50CD9EE1BE8117E0034B5BB /* Recorder.m in Sources */,
 				B5576B8B18315B3B0012E6F5 /* SimPoint.m in Sources */,
 				B5EF31AB18205244002DDEFC /* DisplayController.m in Sources */,
 				B5EF31B1182052B8002DDEFC /* Renderer.m in Sources */,

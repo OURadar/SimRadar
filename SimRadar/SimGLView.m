@@ -18,6 +18,7 @@
 
 @synthesize animating;
 @synthesize renderer;
+@synthesize recorder;
 
 // This is the renderer output callback function
 static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
@@ -336,5 +337,10 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	[data writeToFile:filename atomically:NO];
 }
 
+
+- (void)detachRecorder {
+    [recorder release];
+    [self setRecorder:nil];
+}
 
 @end

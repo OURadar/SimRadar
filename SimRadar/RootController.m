@@ -15,6 +15,8 @@
 
 @implementation RootController
 
+@synthesize startRecordMenuItem, stopRecordMenuItem;
+
 #pragma mark -
 #pragma mark Private Methods
 
@@ -71,6 +73,22 @@
 	[sim upload];
 }
 
+- (IBAction)startRecord:(id)sender
+{
+    if ([dc.glView recorder]) {
+        NSLog(@"Recorder exists.");
+        return;
+    }
+    Recorder *recorder = [[Recorder alloc] initForView:dc.glView];
+    [dc.glView setRecorder:recorder];
+}
+
+- (IBAction)stopRecord:(id)sender
+{
+    [dc.glView detachRecorder];
+}
+
+
 #pragma mark -
 
 - (void)awakeFromNib
@@ -79,6 +97,11 @@
 	icons = [[[NSFileManager defaultManager] contentsOfDirectoryAtPath:iconFolder error:nil] retain];
 
     state = 2;
+    
+    NSLog(@"%@ %@", startRecordMenuItem, stopRecordMenuItem);
+    
+//    [startRecordMenuItem setEnabled:TRUE];
+//    [stopRecordMenuItem setEnabled:FALSE];
     
 	[self newLiveDisplay:self];
 }

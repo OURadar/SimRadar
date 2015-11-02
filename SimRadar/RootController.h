@@ -18,14 +18,22 @@
 
 	DisplayController *dc;
 	
-	@private
+    IBOutlet NSMenuItem *startRecordMenuItem;
+    IBOutlet NSMenuItem *stopRecordMenuItem;
+
+@private
 	
 	NSString *iconFolder;
 	NSArray *icons;
+
 }
+
+@property (nonatomic, retain) NSMenuItem *startRecordMenuItem, *stopRecordMenuItem;
 
 - (IBAction)newLiveDisplay:(id)sender;
 - (IBAction)playPause:(id)sender;
 - (IBAction)resetSimulator:(id)sender;
+- (IBAction)startRecord:(id)sender;
+- (IBAction)stopRecord:(id)sender;
 
 @end

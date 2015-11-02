@@ -37,7 +37,7 @@
 		S = RS_init_verbose(2);
         
         if (S->num_cus[0] < 32) {
-            RS_set_density(S, 8.0f);
+            RS_set_density(S, 3.0f);
         }
 
 		//L = LES_init();
@@ -69,7 +69,7 @@
 		RS_set_scan_box(S,
 						10.0e3, 15.0e3, 250.0f,         // Range
 						-12.0f, 12.0f, 2.0f,            // Azimuth
-						0.0f, 6.0f, 1.0f);              // Elevation
+						0.0f, 5.0f, 1.0f);              // Elevation
 	
 //        RS_set_debris_count(S, 1, 4000);
 //        RS_set_debris_count(S, 2, 2000);
@@ -100,7 +100,8 @@
         
 		//RS_set_prt(S, 1.0f);
         //RS_set_prt(S, 0.5f);
-		RS_set_prt(S, 0.05f);
+        //RS_set_prt(S, 0.05f);
+		RS_set_prt(S, 0.01f);
 
 		az_deg = 0.0f;
         el_deg = 4.9f;

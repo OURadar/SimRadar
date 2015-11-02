@@ -107,6 +107,7 @@ NSWindow *standardWindow;
 	if (self) {
 		rootSender = sender;
         speciesId = 1;
+        NSLog(@"Allocating recorder ...");
 	}
 	return self;
 }
@@ -127,6 +128,10 @@ NSWindow *standardWindow;
 	#ifdef DEBUG
 	NSLog(@"Stopping animation ...");
 	#endif
+    
+    if (recorder) {
+        [self stopRecord:self];
+    }
 	
     [glView stopAnimation];
 }

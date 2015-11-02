@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="6249" systemVersion="14D130a" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="9059" systemVersion="15B42" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
     <dependencies>
         <deployment identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="6249"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="9059"/>
     </dependencies>
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="NSApplication">
@@ -110,6 +110,18 @@
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="revertDocumentToSaved:" target="-1" id="364"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Start Recording" enabled="NO" id="pyp-ih-5On">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="startRecord:" target="GhL-Pn-w7R" id="0sx-XI-1Rt"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Stop Recording" enabled="NO" id="Gco-OC-wOk">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="stopRecord:" target="GhL-Pn-w7R" id="pDc-92-Spi"/>
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="74">
@@ -710,6 +722,7 @@
             <view key="contentView" id="372">
                 <rect key="frame" x="0.0" y="0.0" width="335" height="143"/>
                 <autoresizingMask key="autoresizingMask"/>
+                <animations/>
             </view>
         </window>
         <customObject id="494" customClass="AppDelegate">
@@ -718,7 +731,12 @@
             </connections>
         </customObject>
         <customObject id="420" customClass="NSFontManager"/>
-        <customObject id="GhL-Pn-w7R" customClass="RootController"/>
+        <customObject id="GhL-Pn-w7R" customClass="RootController">
+            <connections>
+                <outlet property="startRecordMenuItem" destination="pyp-ih-5On" id="a2z-dV-UD8"/>
+                <outlet property="stopRecordMenuItem" destination="Gco-OC-wOk" id="HT6-1i-x2I"/>
+            </connections>
+        </customObject>
         <customObject id="z8a-Aq-4k2" customClass="SUUpdater"/>
     </objects>
 </document>

@@ -9,6 +9,7 @@
 #import <Cocoa/Cocoa.h>
 #import "SimPoint.h"
 #import "SimGLView.h"
+#import "Recorder.h"
 
 @interface DisplayController : NSWindowController <NSWindowDelegate> {
 	
@@ -21,6 +22,8 @@
 	NSTimer *inputMonitorTimer;
 
     int speciesId;
+    
+    Recorder *recorder;
 }
 
 @property (nonatomic, retain) SimPoint *sim;
