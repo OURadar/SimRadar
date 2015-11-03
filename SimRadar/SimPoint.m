@@ -100,8 +100,8 @@
         
 		//RS_set_prt(S, 1.0f);
         //RS_set_prt(S, 0.5f);
-        //RS_set_prt(S, 0.05f);
-		RS_set_prt(S, 0.01f);
+        RS_set_prt(S, 0.05f);
+		//RS_set_prt(S, 0.01f);
 
 		az_deg = 0.0f;
         el_deg = 4.9f;

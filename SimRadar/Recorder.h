@@ -6,6 +6,9 @@
 //
 
 #import <Foundation/Foundation.h>
+#import <AVFoundation/AVFoundation.h>
+#import <CoreVideo/CoreVideo.h>
+#import <CoreMedia/CoreMedia.h>
 
 @interface Recorder : NSObject {
     
@@ -15,6 +18,11 @@
     NSImage *overlayLogo;
     NSRect overlayRect;
 
+    @private
+    
+    AVAssetWriter *videoWriter;
+    AVAssetWriterInputPixelBufferAdaptor *adaptor;
+    
 }
 
 @property (nonatomic) NSSize videoSize;

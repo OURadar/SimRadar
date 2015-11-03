@@ -27,6 +27,45 @@
         NSString *timeString = [formatter stringFromDate:[NSDate dateWithTimeIntervalSinceNow:0]];
         outputFilename = [storePath stringByAppendingPathComponent:[NSString stringWithFormat:@"simradar-%@.mp4", timeString]];
         NSLog(@"output Filename: %@  view @ %@ %.1f x %.1f", outputFilename, view, videoSize.width, videoSize.height);
+
+        NSError *error;
+
+        NSDictionary *videoSettings = [NSDictionary dictionaryWithObjectsAndKeys:
+                                       [NSNumber numberWithInteger:videoSize.width], AVVideoWidthKey,
+                                       [NSNumber numberWithInteger:videoSize.height], AVVideoHeightKey,
+                                       AVVideoCodecH264, AVVideoCodecKey,
+                                       [NSDictionary dictionaryWithObjectsAndKeys:
+                                        [NSNumber numberWithInteger:bitrate], AVVideoAverageBitRateKey,
+                                        nil], AVVideoCompressionPropertiesKey,
+                                       nil];
+        
+        AVAssetWriterInput *videoWriterInput = [AVAssetWriterInput
+                                                assetWriterInputWithMediaType:AVMediaTypeVideo
+                                                outputSettings:videoSettings];
+        
+        videoWriter = [[AVAssetWriter alloc] initWithURL:[NSURL URLWithString:outputFilename]
+                                                fileType:AVFileTypeMPEG4
+                                                   error:&error];
+
+        adaptor = [AVAssetWriterInputPixelBufferAdaptor
+                   assetWriterInputPixelBufferAdaptorWithAssetWriterInput:videoWriterInput
+                   sourcePixelBufferAttributes:nil];
+
+        [videoWriterInput setExpectsMediaDataInRealTime:YES];
+        if ([videoWriter canAddInput:videoWriterInput]) {
+            NSLog(@"Info: Video writer can be added.\n");
+        } else {
+            NSLog(@"Error: Video writer cannot be added.\n");
+        }
+        [videoWriter addInput:videoWriterInput];
+
+        BOOL started = [videoWriter startWriting];
+        if (started) {
+            NSLog(@"Info: Session started.\n");
+        } else {
+            NSLog(@"Error: Session NOT started.\n");
+        }
+        [videoWriter startSessionAtSourceTime:kCMTimeZero];
     }
     return self;
 }
@@ -45,6 +84,7 @@
 - (void)addFrame:(NSView *)view {
     // Setup movie file, etc.
     NSLog(@"add frame");
+   // [adaptor appendPixelBuffer:<#(nonnull CVPixelBufferRef)#> withPresentationTime:<#(CMTime)#>]
 }
 
 - (void)stopRecording {

@@ -423,6 +423,7 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
 
             // Bound the velocity change
             if (length(vel) > max(1.0f, 3.0f * length(bg_vel))) {
+                //vel = normalize(vel) * length(bg_vel) + (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
                 vel = bg_vel + (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
             }
 
