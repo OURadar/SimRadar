@@ -2195,6 +2195,7 @@ void RS_set_wind_data(RSHandle *H, const RSTable3D table) {
         
         //H->sim_desc.s[RSSimulationParameterAgeIncrement] = H->sim_desc.s[RSSimulationParameterPRT] / table.tr;
 	}
+
     H->vel_count++;
 }
 
@@ -2206,22 +2207,44 @@ void RS_set_wind_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
 	RSTable3D table = RS_table3d_init(leslie->nn);
     if (table.data == NULL) {
         return;
-    } else if (H->verb > 2) {
-		printf("%s : RS : LES @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
-			   now(),
-			   H->domain.origin.x, H->domain.origin.x + H->domain.size.x,
-			   H->domain.origin.y, H->domain.origin.y + H->domain.size.y,
-			   H->domain.origin.z, H->domain.origin.z + H->domain.size.z);
-	}
-	
+    }
+
 	// Set up the mapping coefficients
 	table.x_ = leslie->nx;    table.xm = (float)(table.x_ - 1);    table.xs = (float)leslie->nx / H->domain.size.x;    table.xo = -H->domain.origin.x * table.xs;
 	table.y_ = leslie->ny;    table.ym = (float)(table.y_ - 1);    table.ys = (float)leslie->ny / H->domain.size.y;    table.yo = -H->domain.origin.y * table.ys;
-//	table.z_ = leslie->nz;    table.zm = (float)(table.z_ - 1);    table.zs = (float)leslie->nz / H->domain.size.z;    table.zo = -H->domain.origin.z * table.zs;
-    table.z_ = leslie->nz;    table.zm = (float)(table.z_ - 1);    table.zs = (float)leslie->nz / 2000.0f;             table.zo = 0.0f;
-	
+
+    // For LES tables:
+    //
+    // dz(k) = a * r ^ 1.05
+    //
+    //  z(k) = a * ( 1 - r ^ k ) / (1 - r)
+    //
+    //     k = 1 / log(r) * log( 1 - ( 1 - r ) / a * z( k ) )
+    //       = 1 / log(r) * log( 1 + ( r - 1 ) / a * z( k ) )
+    //
+    // For a = 2.7, r = 1.05, these values may be documented in the data files at some point
+    //
+    //     k = 20.495934314287851 * log1p ( 0.018518518518519 * z( k ) )
+
+    const float a = 2.7f, r = 1.05f;
+    table.z_ = leslie->nz;    table.zm = (float)(table.z_ - 1);    table.zs = 1.0f / log(r);             table.zo = ( r - 1.0f ) / a;
+
+    if (H->verb > 0 && H->vel_count == 0) {
+        printf("%s : RS : LES stretched z-grid using %.6f * log1p( %.6f * z )    Top = %.2f m\n", now(), table.zs, table.zo, a * (1.0f - powf(r, table.zm)) / (1.0f - r));
+    }
+    
+    if (H->verb > 1) {
+        printf("%s : RS : LES[%2d] @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
+               now(),
+               H->vel_count,
+               H->domain.origin.x, H->domain.origin.x + H->domain.size.x,
+               H->domain.origin.y, H->domain.origin.y + H->domain.size.y,
+               H->domain.origin.z, H->domain.origin.z + H->domain.size.z);
+    }
+    
     // Some other parameters
     table.tr = leslie->tr;
+    table.stretched = RSTableSpacingStretchedZ;
 
 	// Need to arrange LES values into float4, then upload to GPU's global memory
 	for (i = 0; i < leslie->nn; i++) {
@@ -2236,7 +2259,7 @@ void RS_set_wind_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
         }
 	}
 	
-	RS_set_wind_data(H, table);
+    RS_set_wind_data(H, table);
 	
     RS_table3d_free(table);
 }
@@ -3572,6 +3595,8 @@ void RS_table2d_free(RSTable2D T) {
 RSTable3D RS_table3d_init(size_t numel) {
 	RSTable3D table;
 	
+    table.stretched = RSTableSpacingUniform;
+    
 	table.xs = 1.0f;      table.ys = 1.0f;      table.zs = 1.0f;
 	table.xo = 0.0f;      table.yo = 0.0f;      table.zo = 0.0f;
 	table.xm = 1.0f;      table.ym = 1.0f;      table.zm = 1.0f;

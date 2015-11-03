@@ -130,7 +130,8 @@ NSWindow *standardWindow;
 	#endif
     
     if (recorder) {
-        [self stopRecord:self];
+        [recorder stopRecording];
+        recorder = nil;
     }
 	
     [glView stopAnimation];

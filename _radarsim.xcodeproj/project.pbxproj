@@ -19,6 +19,9 @@
 		B527893318A13C5F00650679 /* rs.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281917D7C4D500E4DE66 /* rs.c */; };
 		B527893418A13C6D00650679 /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
 		B527893518A13C6D00650679 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5EF31BD18205EC8002DDEFC /* OpenGL.framework */; };
+		B52B2BDA1BE8F75C00F1F91D /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B52B2BD91BE8F75C00F1F91D /* AVFoundation.framework */; };
+		B52B2BDC1BE8F76E00F1F91D /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B52B2BDB1BE8F76E00F1F91D /* CoreVideo.framework */; };
+		B52B2BDE1BE8F77C00F1F91D /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B52B2BDD1BE8F77C00F1F91D /* CoreMedia.framework */; };
 		B535159D1AD32077004C0F50 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = B535159C1AD32077004C0F50 /* MainMenu.xib */; };
 		B541C630188DF896000AF6DD /* shape_sc.fsh in Resources */ = {isa = PBXBuildFile; fileRef = B593683D188DE4BC00B4106C /* shape_sc.fsh */; };
 		B541C631188DF896000AF6DD /* shape_sc.vsh in Resources */ = {isa = PBXBuildFile; fileRef = B593683E188DE4BC00B4106C /* shape_sc.vsh */; };
@@ -196,6 +199,9 @@
 		B51767C018A2DFB700D47C27 /* Curious-Minion-Icon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = "Curious-Minion-Icon.icns"; sourceTree = "<group>"; };
 		B52609D019D665E800709AFD /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		B527892C18A13C0100650679 /* radarsim */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = radarsim; sourceTree = BUILT_PRODUCTS_DIR; };
+		B52B2BD91BE8F75C00F1F91D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		B52B2BDB1BE8F76E00F1F91D /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
+		B52B2BDD1BE8F77C00F1F91D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
 		B535159B1AD31E12004C0F50 /* versions.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = versions.html; path = delivery/versions.html; sourceTree = "<group>"; };
 		B535159C1AD32077004C0F50 /* MainMenu.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
 		B54DEB3618A5453800EBEC07 /* Minion-Icons */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "Minion-Icons"; sourceTree = "<group>"; };
@@ -343,6 +349,9 @@
 				B5576B8E1831612A0012E6F5 /* OpenCL.framework in Frameworks */,
 				B5EF31BE18205EC8002DDEFC /* OpenGL.framework in Frameworks */,
 				B5EF31C018205ED1002DDEFC /* QuartzCore.framework in Frameworks */,
+				B52B2BDA1BE8F75C00F1F91D /* AVFoundation.framework in Frameworks */,
+				B52B2BDC1BE8F76E00F1F91D /* CoreVideo.framework in Frameworks */,
+				B52B2BDE1BE8F77C00F1F91D /* CoreMedia.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -391,6 +400,9 @@
 		B50A281317D7B27500E4DE66 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				B52B2BDD1BE8F77C00F1F91D /* CoreMedia.framework */,
+				B52B2BDB1BE8F76E00F1F91D /* CoreVideo.framework */,
+				B52B2BD91BE8F75C00F1F91D /* AVFoundation.framework */,
 				B56C7FA41ADC22E300552B1E /* Sparkle.framework */,
 				B52609D019D665E800709AFD /* CoreGraphics.framework */,
 				B5EF31BF18205ED1002DDEFC /* QuartzCore.framework */,

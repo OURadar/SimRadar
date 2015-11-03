@@ -17,6 +17,25 @@ enum RSSimulationParameter {
     RSSimulationParameterAgeIncrement  =  15  // PRT / vel_desc.tr
 };
 
+enum {
+    RSTableDescriptionScaleX      =  0,
+    RSTableDescriptionScaleY      =  1,
+    RSTableDescriptionScaleZ      =  2,
+    RSTableDescriptionRefreshTime =  3,
+    RSTableDescriptionOriginX     =  4,
+    RSTableDescriptionOriginY     =  5,
+    RSTableDescriptionOriginZ     =  6,
+    RSTableDescription7           =  7,
+    RSTableDescriptionMaximumX    =  8,
+    RSTableDescriptionMaximumY    =  9,
+    RSTableDescriptionMaximumZ    = 10,
+    RSTableDescription11          = 11,
+    RSTableDescriptionRecipInLnX  = 12,
+    RSTableDescriptionRecipInLnY  = 13,
+    RSTableDescriptionRecipInLnZ  = 14,
+    RSTableDescriptionTachikawa   = 15,
+};
+
 float4 rand(uint4 *seed);
 float4 set_clr(float4 att);
 float compute_angular_weight(float4 pos,
@@ -388,14 +407,19 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
     } else {
     
         // Background wind
-        // dz(k) = a * r ^ 1.05
-        // z(k) = a * (1 - r^k) / (1 - r)
-        // k = 1 / log(r) * log( 1 - ( 1 - r ) / a * z(k));  a = 2.7, r 1.05
-        //   = 1 / log(r) * log( 1 + 0.018518518518519 * z(k))
-        //   = 20.495934314287851 * log1p (0.018518518518519 * z(k))
         float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
-        // wind_coord.z = 20.495934314287851f * log1p(0.018518518518519f * pos.z);
-        wind_coord.z = 10.492058687257062f * log1p(0.037037037037037f * pos.z);
+
+        // Get the "m" & "n" parameters for the reverse lookup z[i] = m * log1p( n * z ); where ScaleZ = m, OriginZ = n
+        //    RSTableDescriptionScaleX      =  0,
+        //    RSTableDescriptionScaleY      =  1,
+        //    RSTableDescriptionScaleZ      =  2,
+        //    RSTableDescriptionRefreshTime =  3,
+        //    RSTableDescriptionOriginX     =  4,
+        //    RSTableDescriptionOriginY     =  5,
+        //    RSTableDescriptionOriginZ     =  6,
+        //    RSTableDescription7           =  7,
+        wind_coord.z = wind_desc.s2 * log1p(wind_desc.s6 * pos.z);
+
         float4 bg_vel = read_imagef(wind_uvw, sampler, wind_coord);
         
         // Particle velocity due to drag
