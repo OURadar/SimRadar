@@ -1870,8 +1870,8 @@ void RS_set_dsd_to_mp(RSHandle *H) {
     
     float d, sum = 0.0f;
     
-    float ds[] = {0.0001f, 0.0002f, 0.0005f, 0.001f, 0.002f, 0.003f, 0.004f, 0.005f};
-    //float ds[] = {0.0001f, 0.001f};
+    //float ds[] = {0.0001f, 0.0002f, 0.0005f, 0.001f, 0.002f, 0.003f, 0.004f, 0.005f};
+    float ds[] = {0.001f, 0.002f};
     
     const int count = sizeof(ds) / sizeof(float);
     
