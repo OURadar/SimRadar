@@ -25,6 +25,19 @@ int main(int argc, const char **argv) {
     ADM_show_table_summary(table);
     
     ADM_free(A);
+    
+    // Specified the debris type
+    A = ADM_init_with_config_path(ADMConfigSquarePlate, NULL);
+
+    if (A == NULL) {
+        printf("No specified ADM table.\n");
+        return EXIT_FAILURE;
+    }
+
+    table = ADM_get_frame(A);
+    ADM_show_table_summary(table);
+    
+    ADM_free(A);
 
     return EXIT_SUCCESS;
 }
