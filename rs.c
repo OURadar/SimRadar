@@ -1169,6 +1169,8 @@ void RS_init_scat_pos(RSHandle *H) {
 	}
     
     // Parameterized drop radius as scat_pos.w if DSD has been set
+    // May want to add maximum relaxation time of each drop size
+    // Potential places: vel.w, aux.s2
     if (H->dsd_name != RSDropSizeDistributionUndefined) {
         for (i = 0; i < H->num_scats; i++) {
             a = (float)rand() / RAND_MAX;
