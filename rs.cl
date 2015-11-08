@@ -51,6 +51,7 @@ float4 quat_rotate(float4 vector, float4 quat);
 float4 quat_identity(void);
 float4 complex_multiply(const float4 a, const float4 b);
 float4 two_way_effects(const float4 sig_in, const float range, const float wav_num);
+float4 wind_table_index(const float4 pos, const float16 wind_desc);
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -205,6 +206,34 @@ float4 two_way_effects(const float4 sig_in, const float range, const float wav_n
     return complex_multiply(sig_in, (float4)(c, s, c, s)) * atten;
 }
 
+float4 wind_table_index(const float4 pos, const float16 wind_desc) {
+    // Background wind
+    //float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
+    
+    // Get the "m" & "n" parameters for the reverse lookup z[i] = m * log1p( n * z ); where ScaleZ = m, OriginZ = n
+    //    RSTableDescriptionScaleX      =  0,
+    //    RSTableDescriptionScaleY      =  1,
+    //    RSTableDescriptionScaleZ      =  2,
+    //    RSTableDescriptionRefreshTime =  3,
+    //    RSTableDescriptionOriginX     =  4,
+    //    RSTableDescriptionOriginY     =  5,
+    //    RSTableDescriptionOriginZ     =  6,
+    //    RSTableDescription7           =  7,
+    // wind_coord.z = wind_desc.s2 * log1p(wind_desc.s6 * pos.z);
+    
+    //    RSStaggeredTableDescriptionBaseChangeX     =  0,
+    //    RSStaggeredTableDescriptionBaseChangeY     =  1,
+    //    RSStaggeredTableDescriptionBaseChangeZ     =  2,
+    //    RSStaggeredTableDescriptionRefreshTime     =  3,
+    //    RSStaggeredTableDescriptionPositionScaleX  =  4,
+    //    RSStaggeredTableDescriptionPositionScaleY  =  5,
+    //    RSStaggeredTableDescriptionPositionScaleZ  =  6,
+    //    RSStaggeredTableDescription7               =  7,
+    //    RSStaggeredTableDescriptionOffsetX         =  8,
+    //    RSStaggeredTableDescriptionOffsetY         =  9,
+    //    RSStaggeredTableDescriptionOffsetZ         = 10,
+    return (float4)(copysign(wind_desc.s012, pos.xyz) * log1p(wind_desc.s456 * fabs(pos.xyz)) + wind_desc.s89a, 0.0f);
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -406,33 +435,17 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
 
     } else {
     
-        // Background wind
-        //float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
+        //float4 wind_coord = (float4)(copysign(wind_desc.s012, pos.xyz) * log1p(wind_desc.s456 * fabs(pos.xyz)) + wind_desc.s89a, 0.0f);
+        float4 wind_coord = wind_table_index(pos, wind_desc);
 
-        // Get the "m" & "n" parameters for the reverse lookup z[i] = m * log1p( n * z ); where ScaleZ = m, OriginZ = n
-        //    RSTableDescriptionScaleX      =  0,
-        //    RSTableDescriptionScaleY      =  1,
-        //    RSTableDescriptionScaleZ      =  2,
-        //    RSTableDescriptionRefreshTime =  3,
-        //    RSTableDescriptionOriginX     =  4,
-        //    RSTableDescriptionOriginY     =  5,
-        //    RSTableDescriptionOriginZ     =  6,
-        //    RSTableDescription7           =  7,
-       // wind_coord.z = wind_desc.s2 * log1p(wind_desc.s6 * pos.z);
-        
-        //    RSStaggeredTableDescriptionBaseChangeX     =  0,
-        //    RSStaggeredTableDescriptionBaseChangeY     =  1,
-        //    RSStaggeredTableDescriptionBaseChangeZ     =  2,
-        //    RSStaggeredTableDescriptionRefreshTime     =  3,
-        //    RSStaggeredTableDescriptionPositionScaleX  =  4,
-        //    RSStaggeredTableDescriptionPositionScaleY  =  5,
-        //    RSStaggeredTableDescriptionPositionScaleZ  =  6,
-        //    RSStaggeredTableDescription7               =  7,
-        //    RSStaggeredTableDescriptionOffsetX         =  8,
-        //    RSStaggeredTableDescriptionOffsetY         =  9,
-        //    RSStaggeredTableDescriptionOffsetZ         = 10,
-        float4 wind_coord = (float4)(copysign(wind_desc.s012, pos.xyz) * log1p(wind_desc.s456 * fabs(pos.xyz)) + wind_desc.s89a, 0.0f);
         float4 bg_vel = read_imagef(wind_uvw, sampler, wind_coord);
+
+//        if (i == 0) {
+//            printf("offset = [ %8.2v3f ]\n", wind_desc.s89a);
+//        }
+//        if (i < 10) {
+//            printf("pos = [ %8.2v4f ]   coord = [ %8.2v4f ]   bg_vel = [ %8.2v4f ]\n", pos, wind_coord, bg_vel);
+//        }
         
         // Particle velocity due to drag
         float4 delta_v = bg_vel - vel;
