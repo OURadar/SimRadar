@@ -407,7 +407,7 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
     } else {
     
         // Background wind
-        float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
+        //float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
 
         // Get the "m" & "n" parameters for the reverse lookup z[i] = m * log1p( n * z ); where ScaleZ = m, OriginZ = n
         //    RSTableDescriptionScaleX      =  0,
@@ -418,8 +418,20 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
         //    RSTableDescriptionOriginY     =  5,
         //    RSTableDescriptionOriginZ     =  6,
         //    RSTableDescription7           =  7,
-        wind_coord.z = wind_desc.s2 * log1p(wind_desc.s6 * pos.z);
-
+       // wind_coord.z = wind_desc.s2 * log1p(wind_desc.s6 * pos.z);
+        
+        //    RSStaggeredTableDescriptionBaseChangeX     =  0,
+        //    RSStaggeredTableDescriptionBaseChangeY     =  1,
+        //    RSStaggeredTableDescriptionBaseChangeZ     =  2,
+        //    RSStaggeredTableDescriptionRefreshTime     =  3,
+        //    RSStaggeredTableDescriptionPositionScaleX  =  4,
+        //    RSStaggeredTableDescriptionPositionScaleY  =  5,
+        //    RSStaggeredTableDescriptionPositionScaleZ  =  6,
+        //    RSStaggeredTableDescription7               =  7,
+        //    RSStaggeredTableDescriptionOffsetX         =  8,
+        //    RSStaggeredTableDescriptionOffsetY         =  9,
+        //    RSStaggeredTableDescriptionOffsetZ         = 10,
+        float4 wind_coord = (float4)(copysign(wind_desc.s012, pos.xyz) * log1p(wind_desc.s456 * fabs(pos.xyz)) + wind_desc.s89a, 0.0f);
         float4 bg_vel = read_imagef(wind_uvw, sampler, wind_coord);
         
         // Particle velocity due to drag
@@ -536,7 +548,41 @@ __kernel void scat_atts(__global float4 *p,
     const float az = atan2(sim_desc.s0, sim_desc.s1);
 
     // Background wind
-    float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
+    //    RSTableDescriptionScaleX      =  0,
+    //    RSTableDescriptionScaleY      =  1,
+    //    RSTableDescriptionScaleZ      =  2,
+    //    RSTableDescriptionRefreshTime =  3,
+    //    RSTableDescriptionOriginX     =  4,
+    //    RSTableDescriptionOriginY     =  5,
+    //    RSTableDescriptionOriginZ     =  6,
+    //    RSTableDescription7           =  7,
+    //    RSTableDescriptionMaximumX    =  8,
+    //    RSTableDescriptionMaximumY    =  9,
+    //    RSTableDescriptionMaximumZ    = 10,
+    //    RSTableDescription11          = 11,
+    //    RSTableDescriptionRecipInLnX  = 12,
+    //    RSTableDescriptionRecipInLnY  = 13,
+    //    RSTableDescriptionRecipInLnZ  = 14,
+    //    RSTableDescriptionTachikawa   = 15,
+    //float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
+    
+    //    RSStaggeredTableDescriptionBaseChangeX     =  0,
+    //    RSStaggeredTableDescriptionBaseChangeY     =  1,
+    //    RSStaggeredTableDescriptionBaseChangeZ     =  2,
+    //    RSStaggeredTableDescriptionRefreshTime     =  3,
+    //    RSStaggeredTableDescriptionPositionScaleX  =  4,
+    //    RSStaggeredTableDescriptionPositionScaleY  =  5,
+    //    RSStaggeredTableDescriptionPositionScaleZ  =  6,
+    //    RSStaggeredTableDescription7               =  7,
+    //    RSStaggeredTableDescriptionOffsetX         =  8,
+    //    RSStaggeredTableDescriptionOffsetY         =  9,
+    //    RSStaggeredTableDescriptionOffsetZ         = 10,
+    //    RSStaggeredTableDescription11              = 11,
+    //    RSStaggeredTableDescriptionRecipInLnX      = 12,
+    //    RSStaggeredTableDescriptionRecipInLnY      = 13,
+    //    RSStaggeredTableDescriptionRecipInLnZ      = 14,
+    //    RSStaggeredTableDescriptionTachikawa       = 15,
+    float4 wind_coord = (float4)(copysign(wind_desc.s012, pos.xyz) * log1p(wind_desc.s456 * fabs(pos.xyz)) + wind_desc.s89a, 0.0f);
     float4 vel_bg = read_imagef(wind_uvw, sampler, wind_coord);
     
     //

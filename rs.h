@@ -187,6 +187,25 @@ enum {
 };
 
 enum {
+    RSStaggeredTableDescriptionBaseChangeX     =  0,
+    RSStaggeredTableDescriptionBaseChangeY     =  1,
+    RSStaggeredTableDescriptionBaseChangeZ     =  2,
+    RSStaggeredTableDescriptionRefreshTime     =  3,
+    RSStaggeredTableDescriptionPositionScaleX  =  4,
+    RSStaggeredTableDescriptionPositionScaleY  =  5,
+    RSStaggeredTableDescriptionPositionScaleZ  =  6,
+    RSStaggeredTableDescription7               =  7,
+    RSStaggeredTableDescriptionOffsetX         =  8,
+    RSStaggeredTableDescriptionOffsetY         =  9,
+    RSStaggeredTableDescriptionOffsetZ         = 10,
+    RSStaggeredTableDescription11              = 11,
+    RSStaggeredTableDescriptionRecipInLnX      = 12,
+    RSStaggeredTableDescriptionRecipInLnY      = 13,
+    RSStaggeredTableDescriptionRecipInLnZ      = 14,
+    RSStaggeredTableDescriptionTachikawa       = 15,
+};
+
+enum {
     RSSimulationParameterBeamUnitX     =  0,
     RSSimulationParameterBeamUnitY     =  1,
     RSSimulationParameterBeamUnitZ     =  2,
