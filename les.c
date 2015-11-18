@@ -208,6 +208,11 @@ LESTable *LES_table_create(const LESGrid *grid) {
         free(table);
 		return NULL;
 	}
+    memset(table->u, 0, table->nn * sizeof(float));
+    memset(table->v, 0, table->nn * sizeof(float));
+    memset(table->w, 0, table->nn * sizeof(float));
+    memset(table->p, 0, table->nn * sizeof(float));
+    memset(table->t, 0, table->nn * sizeof(float));
 	return table;
 }
 
@@ -225,7 +230,9 @@ void LES_table_free(LESTable *table) {
 
 
 void LES_show_table_summary(const LESTable *table) {
-	
+
+    printf(" nx = %d   ny = %d   nz = %d   nt = %d\n\n", table->nx, table->ny, table->nz, table->nt);
+    
 	printf(" u =\n");
 	LES_show_volume(table->u, table->nx, table->ny, table->nz);
 
@@ -240,6 +247,14 @@ void LES_show_table_summary(const LESTable *table) {
 //
 	printf(" t =\n");
 	LES_show_volume(table->t, table->nx, table->ny, table->nz);
+}
+
+
+void LES_show_handle_summary(const LESHandle *i) {
+    LESMem *h = (LESMem *)i;
+    printf("LES Configuration:\n");
+    printf(" path: %s\n", h->data_path);
+    printf("   v0: %.2f m/s\n", h->v0);
 }
 
 
@@ -311,7 +326,7 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
 	h->ibuf = 0;
 	h->tr = 50.0f;
     if (!strcmp(config, LESConfigSuctionVortices)) {
-        h->v0 = 300.0f;
+        h->v0 = 100.0f;
     } else if (!strcmp(config, LESConfigTwoCell)) {
         h->v0 = 225.0f;
     }
@@ -354,7 +369,7 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
 }
 
 LESHandle *LES_init() {
-    return LES_init_with_config_path(LESConfigTwoCell, NULL);
+    return LES_init_with_config_path(LESConfigSuctionVortices, NULL);
 }
 
 

@@ -435,8 +435,9 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
 
     } else {
     
-        //float4 wind_coord = (float4)(copysign(wind_desc.s012, pos.xyz) * log1p(wind_desc.s456 * fabs(pos.xyz)) + wind_desc.s89a, 0.0f);
-        float4 wind_coord = wind_table_index(pos, wind_desc);
+        float4 pos_rel = pos - (float4)(sim_desc.hi.s01 + 0.5f * sim_desc.hi.s45, 0.0f, 0.0f);
+        float4 wind_coord = copysign(wind_desc.s0123, pos_rel) * log1p(wind_desc.s4567 * fabs(pos_rel)) + wind_desc.s89ab;
+        //float4 wind_coord = wind_table_index(pos, wind_desc);
 
         float4 bg_vel = read_imagef(wind_uvw, sampler, wind_coord);
 

@@ -14,6 +14,8 @@ int main(int argc, const char **argv) {
         return EXIT_FAILURE;
     }
 	
+    LES_show_handle_summary(L);
+    
 	table = LES_get_frame(L, 0);
 	LES_show_table_summary(table);
 

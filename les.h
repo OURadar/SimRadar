@@ -10,7 +10,7 @@
 #define _radarsim_les_h
 
 #define LESConfigTwoCell          "twocell"
-#define LESConfigSuctionVortices  "suct_vort"
+#define LESConfigSuctionVortices  "suctvort"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -70,5 +70,7 @@ LESTable *LES_get_frame(const LESHandle *, const int n);
 char *LES_data_path(const LESHandle *);
 
 void LES_show_table_summary(const LESTable *table);
+
+void LES_show_handle_summary(const LESHandle *);
 
 #endif
