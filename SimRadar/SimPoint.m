@@ -67,9 +67,9 @@
 		RS_set_antenna_params(S, 1.0f, 44.5f);
 		
 		RS_set_scan_box(S,
-						10.0e3, 15.0e3, 250.0f,         // Range
-						-12.0f, 12.0f, 2.0f,            // Azimuth
-						0.0f, 5.0f, 1.0f);              // Elevation
+                         5.0e3, 8.0e3, 250.0f,         // Range
+						-10.0f, 10.0f, 2.0f,            // Azimuth
+						0.0f, 7.0f, 1.0f);              // Elevation
 	
 //        RS_set_debris_count(S, 1, 4000);
 //        RS_set_debris_count(S, 2, 2000);

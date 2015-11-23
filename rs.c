@@ -2229,19 +2229,26 @@ void RS_set_wind_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
     //
     //     k = 20.495934314287851 * log1p ( 0.018518518518519 * z( k ) )
 
-    printf(" --- LESLIE %d %d %d --- \n", leslie->nx, leslie->ny, leslie->nz);
     
     a = 2.0f;
     r = 1.0212f;
-    table.x_ = (leslie->nx - 1) / 2;    table.xm = 0.5f * table.x_;    table.xs = 1.0f / log(r);    table.xo = (r - 1.0f) / a;
-    table.y_ = (leslie->ny - 1) / 2;    table.ym = 0.5f * table.y_;    table.ys = 1.0f / log(r);    table.yo = (r - 1.0f) / a;
+    table.x_ = leslie->nx;    table.xm = 0.5f * (float)(leslie->nx - 1);    table.xs = 1.0f / log(r);    table.xo = (r - 1.0f) / a;
+    table.y_ = leslie->ny;    table.ym = 0.5f * (float)(leslie->ny - 1);    table.ys = 1.0f / log(r);    table.yo = (r - 1.0f) / a;
     
+    if (H->verb > 0 && H->vel_count == 0) {
+        printf("%s : RS : LES stretched x-grid using %.6f * log1p( %.6f * x )    Max = %.2f m\n",
+               now(), table.xs, table.xo,
+               a * (1.0f - powf(r, table.xm)) / (1.0f - r));
+    }
+
     a = 2.0f;
     r = 1.05f;
     table.z_ = leslie->nz;    table.zm = (float)(leslie->nz - 1);  table.zs = 1.0f / log(r);    table.zo = (r - 1.0f) / a;
 
     if (H->verb > 0 && H->vel_count == 0) {
-        printf("%s : RS : LES stretched z-grid using %.6f * log1p( %.6f * z )    Top = %.2f m\n", now(), table.zs, table.zo, a * (1.0f - powf(r, table.zm)) / (1.0f - r));
+        printf("%s : RS : LES stretched z-grid using %.6f * log1p( %.6f * z )    Top = %.2f m\n",
+               now(), table.zs, table.zo,
+               a * (1.0f - powf(r, table.zm)) / (1.0f - r));
     }
     
     if (H->verb > 1) {

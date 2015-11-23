@@ -34,7 +34,7 @@ void LES_show_slice_dots(void);
 
 //LESTable *LES_table_from_file(const char *grid_filename, const char *table_filename);
 LESGrid *LES_enclosing_grid_create_from_file(const char *filename);
-LESGrid *LES_data_grid_create_from_enclosing_grid(LESGrid *grid);
+LESGrid *LES_data_grid_create_from_enclosing_grid(LESGrid *grid, const int ox, const int oy);
 void LES_grid_free(LESGrid *grid);
 void LES_show_grid_summary(const LESGrid *grid);
 
@@ -109,6 +109,8 @@ LESGrid *LES_enclosing_grid_create_from_file(const char *filename) {
 	}
     // First 4 uint32_t describes the dimensions
 	fread(grid, 1, 4 * sizeof(uint32_t), fid);
+    // Show the number of cells
+    fprintf(stderr, "Raw grid counts : [ %d %d %d ]\n", grid->nx, grid->ny, grid->nz);
 	// Now, we know how many the cell counts
 	size_t count = grid->nx * grid->ny * grid->nz;
 	grid->x = (float *)malloc(count * sizeof(float));
@@ -130,12 +132,12 @@ LESGrid *LES_enclosing_grid_create_from_file(const char *filename) {
 }
 
 
-LESGrid *LES_data_grid_create_from_enclosing_grid(LESGrid *grid) {
+LESGrid *LES_data_grid_create_from_enclosing_grid(LESGrid *grid, const int ox, const int oy) {
 	LESGrid *subgrid = (LESGrid *)malloc(sizeof(LESGrid));
 	// Sub-domain size
-	subgrid->nx = grid->nx - 30;
-	subgrid->ny = grid->ny - 30;
-	subgrid->nz = 51;
+	subgrid->nx = grid->nx - (2 * ox);
+	subgrid->ny = grid->ny - (2 * oy);
+	subgrid->nz = grid->nz;
 	size_t count = subgrid->nx * subgrid->ny * subgrid->nz;
     fprintf(stderr, "subgrid [ %d %d %d ]\n", subgrid->nx, subgrid->ny, subgrid->nz);
 	subgrid->x = (float *)malloc(count * sizeof(float));
@@ -148,9 +150,9 @@ LESGrid *LES_data_grid_create_from_enclosing_grid(LESGrid *grid) {
 	}
 	int k = 0;
 	for (int iz = 0; iz < subgrid->nz; iz++) {
-		for (int iy = 0; iy < grid->ny - 30; iy++) {
-			size_t o = iz * grid->ny * grid->nx + (iy + 14) * grid->nx + 14;
-			for (int i=0; i<grid->nx - 30; i++) {
+		for (int iy = 0; iy < subgrid->ny; iy++) {
+			size_t o = iz * grid->ny * grid->nx + (iy + oy) * grid->nx + ox;
+			for (int i=0; i<subgrid->nx; i++) {
 				subgrid->x[k] = grid->x[i + o];
 				subgrid->y[k] = grid->y[i + o];
 				subgrid->z[k] = grid->z[i + o];
@@ -340,7 +342,7 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
 #endif
     
 	h->enclosing_grid = LES_enclosing_grid_create_from_file(grid_file);
-	h->data_grid = LES_data_grid_create_from_enclosing_grid(h->enclosing_grid);
+	h->data_grid = LES_data_grid_create_from_enclosing_grid(h->enclosing_grid, 0, 0);
     
     // Scale the velocity by v0 ^ 2 / g
     float s = h->v0 * h->v0 / 9.8f;
