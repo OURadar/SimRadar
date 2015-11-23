@@ -137,6 +137,7 @@ LESGrid *LES_data_grid_create_from_enclosing_grid(LESGrid *grid) {
 	subgrid->ny = grid->ny - 30;
 	subgrid->nz = 51;
 	size_t count = subgrid->nx * subgrid->ny * subgrid->nz;
+    fprintf(stderr, "subgrid [ %d %d %d ]\n", subgrid->nx, subgrid->ny, subgrid->nz);
 	subgrid->x = (float *)malloc(count * sizeof(float));
 	subgrid->y = (float *)malloc(count * sizeof(float));
 	subgrid->z = (float *)malloc(count * sizeof(float));
@@ -146,7 +147,7 @@ LESGrid *LES_data_grid_create_from_enclosing_grid(LESGrid *grid) {
 		return NULL;
 	}
 	int k = 0;
-	for (int iz = 0; iz < 51; iz++) {
+	for (int iz = 0; iz < subgrid->nz; iz++) {
 		for (int iy = 0; iy < grid->ny - 30; iy++) {
 			size_t o = iz * grid->ny * grid->nx + (iy + 14) * grid->nx + 14;
 			for (int i=0; i<grid->nx - 30; i++) {
