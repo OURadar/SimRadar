@@ -437,15 +437,16 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
     
         float4 pos_rel = pos - (float4)(sim_desc.hi.s01 + 0.5f * sim_desc.hi.s45, 0.0f, 0.0f);
         float4 wind_coord = copysign(wind_desc.s0123, pos_rel) * log1p(wind_desc.s4567 * fabs(pos_rel)) + wind_desc.s89ab;
+
         //float4 wind_coord = wind_table_index(pos, wind_desc);
 
         float4 bg_vel = read_imagef(wind_uvw, sampler, wind_coord);
 
 //        if (i == 0) {
-//            printf("offset = [ %8.2v3f ]\n", wind_desc.s89a);
+//            printf("params = [%.2v4f  ;  %.4v4f  ;  %.2v4f]\n", wind_desc.s0123, wind_desc.s4567, wind_desc.s89ab);
 //        }
 //        if (i < 10) {
-//            printf("pos = [ %8.2v4f ]   coord = [ %8.2v4f ]   bg_vel = [ %8.2v4f ]\n", pos, wind_coord, bg_vel);
+//            printf("pos_rel = [ %8.2v4f ]   coord = [ %8.2v4f ]   bg_vel = [ %8.2v4f ]\n", pos_rel, wind_coord, bg_vel);
 //        }
         
         // Particle velocity due to drag
@@ -626,7 +627,7 @@ __kernel void scat_atts(__global float4 *p,
         y[i] = seed;
         
         pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
-        pos.z = 150.0f;
+        pos.z = 10.0f;
         
         vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
         tum = (float4)(0.0f, 0.0f, 0.0f, 1.0f);

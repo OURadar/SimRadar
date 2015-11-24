@@ -64,12 +64,14 @@
 		RS_set_verbosity(S, 2);
 		#endif
 
-		RS_set_antenna_params(S, 1.0f, 44.5f);
+		RS_set_antenna_params(S, 1.0f, 44.5f);                // 1.0-deg, 44.5 dBi gain
 		
+        RS_set_tx_params(S, 60.0f * 2.0f / 3.0e8f, 10.0e3);   // 60-m resolution, 10.0 kW
+        
 		RS_set_scan_box(S,
-                         5.0e3, 8.0e3, 250.0f,         // Range
-						-10.0f, 10.0f, 2.0f,            // Azimuth
-						0.0f, 7.0f, 1.0f);              // Elevation
+                        2.3e3, 2.8e3, 60.0f,                  // Range
+                        -7.0f, 7.0f, 1.0f,                    // Azimuth
+                        0.0f, 12.0f, 1.0f);                   // Elevation
 	
 //        RS_set_debris_count(S, 1, 4000);
 //        RS_set_debris_count(S, 2, 2000);
@@ -100,7 +102,7 @@
         
 		//RS_set_prt(S, 1.0f);
         //RS_set_prt(S, 0.5f);
-        RS_set_prt(S, 0.05f);
+        RS_set_prt(S, 0.03f);
 		//RS_set_prt(S, 0.01f);
 
 		az_deg = 0.0f;

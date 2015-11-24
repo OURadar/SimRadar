@@ -11,7 +11,7 @@
 #import "glUtil.h"
 #import "GLText.h"
 
-#define RENDERER_NEAR_RANGE         1000.0f
+#define RENDERER_NEAR_RANGE         100.0f
 #define RENDERER_FAR_RANGE          100000.0f
 #define RENDERER_TIC_COUNT          10
 #define RENDERER_MAX_SPECIES_COUNT  4

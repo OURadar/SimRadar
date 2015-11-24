@@ -2236,19 +2236,19 @@ void RS_set_wind_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
     table.y_ = leslie->ny;    table.ym = 0.5f * (float)(leslie->ny - 1);    table.ys = 1.0f / log(r);    table.yo = (r - 1.0f) / a;
     
     if (H->verb > 0 && H->vel_count == 0) {
-        printf("%s : RS : LES stretched x-grid using %.6f * log1p( %.6f * x )    Max = %.2f m\n",
+        printf("%s : RS : LES stretched x-grid using %.6f * log1p( %.6f * x )    Mid = %.2f m\n",
                now(), table.xs, table.xo,
                a * (1.0f - powf(r, table.xm)) / (1.0f - r));
     }
 
     a = 2.0f;
     r = 1.05f;
-    table.z_ = leslie->nz;    table.zm = (float)(leslie->nz - 1);  table.zs = 1.0f / log(r);    table.zo = (r - 1.0f) / a;
+    table.z_ = leslie->nz;    table.zm = 0.0f;  table.zs = 1.0f / log(r);    table.zo = (r - 1.0f) / a;
 
     if (H->verb > 0 && H->vel_count == 0) {
-        printf("%s : RS : LES stretched z-grid using %.6f * log1p( %.6f * z )    Top = %.2f m\n",
+        printf("%s : RS : LES stretched z-grid using %.6f * log1p( %.6f * z )    Mid = %.2f m\n",
                now(), table.zs, table.zo,
-               a * (1.0f - powf(r, table.zm)) / (1.0f - r));
+               a * (1.0f - powf(r, (float)table.z_)) / (1.0f - r));
     }
     
     if (H->verb > 1) {

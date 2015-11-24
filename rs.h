@@ -46,7 +46,7 @@
 #define RS_MAX_NUM_SCATS      4000000
 #define RS_BODY_PER_CELL           50.0
 #define RS_CL_GROUP_ITEMS          64
-#define RS_MAX_VEL_TABLES          20
+#define RS_MAX_VEL_TABLES          10
 #define RS_MAX_ADM_TABLES           4
 #define RS_MAX_RCS_TABLES           4
 #define RS_MAX_SPECIES_TYPES        4

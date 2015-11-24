@@ -608,10 +608,10 @@
 		// View size in pixel counts
 		width = 1;
 		height = 1;
-        spinModel = 1;
+        //spinModel = 1;
 		aspectRatio = 1.0f;
         
-        showHUD = TRUE;
+        //showHUD = TRUE;
         
         hudModelViewProjection = GLKMatrix4Identity;
         beamModelViewProjection = GLKMatrix4Identity;
@@ -957,7 +957,7 @@
 	// Anchors
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBindVertexArray(anchorRenderer.vao);
-	glPointSize(MIN(MAX(50.0f * pixelsPerUnit, 5.0f), 64.0f) * devicePixelRatio);
+	glPointSize(MIN(MAX(10.0f * pixelsPerUnit, 5.0f), 64.0f) * devicePixelRatio);
 	glUseProgram(anchorRenderer.program);
 	glUniform4f(anchorRenderer.colorUI, 0.4f, 1.0f, 1.0f, 1.0f);
 	glUniformMatrix4fv(anchorRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
@@ -969,7 +969,7 @@
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBindVertexArray(bodyRenderer.vao);
-	glPointSize(MIN(MAX(15.0f * pixelsPerUnit, 1.0f), 64.0f) * devicePixelRatio);
+	glPointSize(MIN(MAX(4.0f * pixelsPerUnit, 1.0f), 64.0f) * devicePixelRatio);
 	glUseProgram(bodyRenderer.program);
     if (range < 1000.0f) {
         glUniform4f(bodyRenderer.colorUI, bodyRenderer.colormapIndexNormalized, 1.0f, 1.0f, MIN(1.0f, backgroundOpacity * 1000.0f / range));
@@ -987,7 +987,7 @@
     
     // Various debris types
     glUseProgram(leafRenderer.program);
-    glUniform4f(leafRenderer.sizeUI, 0.5f, 0.5f, 0.5f, 0.5f);
+    glUniform4f(leafRenderer.sizeUI, 0.1f, 0.1f, 0.1f, 1.0f);
     glUniformMatrix4fv(leafRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
 
     for (int k=1; k<RENDERER_MAX_SPECIES_COUNT; k++) {
@@ -1198,9 +1198,9 @@
 //	range = 20000.0f;
 //	modelRotate = GLKMatrix4MakeTranslation(-modelCenter.x, -modelCenter.y, -modelCenter.z);
 
-	rotateX = 0.35f * M_PI;
-	rotateY = -0.1f;
-	range = 5000.0f;
+	rotateX = 0.0f;
+	rotateY = 1.5f;
+	range = 1000.0f;
 
     modelRotate = GLKMatrix4MakeRotation(rotateY, 0.0f, 1.0f, 0.0f);
     modelRotate = GLKMatrix4RotateX(modelRotate, rotateX);
