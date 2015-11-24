@@ -219,27 +219,6 @@
 }
 
 
-- (void)makeOneLeaf
-{
-	if (leafRenderer.positions == NULL) {
-		leafRenderer.positions = (GLfloat *)malloc(24 * sizeof(GLfloat));
-	}
-    leafRenderer.positions[0]  =  0.0f;   leafRenderer.positions[1]  =  0.0f;   leafRenderer.positions[2]  =  1.0f;   leafRenderer.positions[3]  = 0.0f;
-    leafRenderer.positions[4]  =  0.0f;   leafRenderer.positions[5]  =  0.0f;   leafRenderer.positions[6]  = -1.0f;   leafRenderer.positions[7]  = 0.0f;
-    leafRenderer.positions[8]  =  0.0f;   leafRenderer.positions[9]  = -2.0f;   leafRenderer.positions[10] =  0.0f;   leafRenderer.positions[11] = 0.0f;
-    leafRenderer.positions[12] =  0.0f;   leafRenderer.positions[13] =  1.0f;   leafRenderer.positions[14] =  0.0f;   leafRenderer.positions[15] = 0.0f;
-    leafRenderer.positions[16] = -0.5f;   leafRenderer.positions[17] =  1.0f;   leafRenderer.positions[18] =  0.0f;   leafRenderer.positions[19] = 0.0f;
-    leafRenderer.positions[20] =  0.0f;   leafRenderer.positions[21] =  0.0f;   leafRenderer.positions[22] =  0.0f;   leafRenderer.positions[23] = 0.0f;
-
-    leafRenderer.count = 1;
-	
-	for (int i=0; i<24; i++) {
-		leafRenderer.positions[i] *= 20.0f;
-	}
-	
-	vbosNeedUpdate = TRUE;
-}
-
 - (void)makePrimitives
 {
     GLfloat *pos;
@@ -257,7 +236,7 @@
     pos[20] =  0.0f;   pos[21] =  0.0f;   pos[22] =  0.0f;   pos[23] = 0.0f;
     prim->vertexSize = 24 * sizeof(GLfloat);
     for (int i=0; i<24; i++) {
-        pos[i] *= 40.0f;
+        pos[i] *= 2.5f;
     }
     prim->instanceSize = 7;
     GLuint ind0[] = {5, 1, 2, 0, 5, 3, 4};
@@ -278,9 +257,9 @@
     pos[24] = -1.0f;   pos[25] =  1.0f;   pos[26] =  1.0f;   pos[27] = 0.0f;
     pos[28] =  1.0f;   pos[29] =  1.0f;   pos[30] =  1.0f;   pos[31] = 0.0f;
     for (int i=0; i<8; i++) {
-        pos[4 * i]     *= 30.0f;
-        pos[4 * i + 1] *= 30.0f;
-        pos[4 * i + 2] *= 30.0f;
+        pos[4 * i]     *= 2.0f;
+        pos[4 * i + 1] *= 2.0f;
+        pos[4 * i + 2] *= 2.0f;
     }
     prim->vertexSize = 32 * sizeof(GLfloat);
     GLuint ind1[] = {
@@ -305,12 +284,12 @@
     pos[20] =  1.0f;   pos[21] = -1.0f;   pos[22] =  1.0f;   pos[23] = 0.0f;
     pos[24] = -1.0f;   pos[25] =  1.0f;   pos[26] =  1.0f;   pos[27] = 0.0f;
     pos[28] =  1.0f;   pos[29] =  1.0f;   pos[30] =  1.0f;   pos[31] = 0.0f;
-    pos[32] =  0.0f;   pos[33] = -2.0f;   pos[34] =  0.0f;   pos[35] = 0.0f;
-    pos[36] =  0.0f;   pos[37] =  1.2f;   pos[38] =  0.0f;   pos[39] = 0.0f;
+    pos[32] =  0.0f;   pos[33] = -1.3f;   pos[34] =  0.0f;   pos[35] = 0.0f;
+    pos[36] =  0.0f;   pos[37] =  1.1f;   pos[38] =  0.0f;   pos[39] = 0.0f;
     for (int i=0; i<10; i++) {
-        pos[4 * i]     *= 10.0f;
-        pos[4 * i + 1] *= 80.0f;
-        pos[4 * i + 2] *= 20.0f;
+        pos[4 * i]     *= 0.4f;
+        pos[4 * i + 1] *= 8.0f;
+        pos[4 * i + 2] *= 1.0f;
     }
     prim->vertexSize = 40 * sizeof(GLfloat);
     GLuint ind2[] = {
@@ -502,6 +481,7 @@
     // Get size location
     resource.sizeUI = glGetUniformLocation(resource.program, "drawSize");
     if (resource.sizeUI >= 0) {
+        NSLog(@"%@ has drawSize", vShader);
         glUniform4f(resource.sizeUI, 1.0f, 1.0f, 1.0f, 1.0f);
     }
     
@@ -716,7 +696,6 @@
 	//glClearColor(0.0f, 0.2f, 0.25f, 1.0f);
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
-	//[self makeOneLeaf];
     [self makePrimitives];
     
     // Tell whatever controller that the OpenGL context is ready for sharing and set up renderer's body count
@@ -987,7 +966,7 @@
     
     // Various debris types
     glUseProgram(leafRenderer.program);
-    glUniform4f(leafRenderer.sizeUI, 0.1f, 0.1f, 0.1f, 1.0f);
+//    glUniform4f(leafRenderer.sizeUI, 1.0f, 1.0f, 1.0f, 1.0f);
     glUniformMatrix4fv(leafRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
 
     for (int k=1; k<RENDERER_MAX_SPECIES_COUNT; k++) {

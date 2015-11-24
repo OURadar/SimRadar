@@ -15,7 +15,9 @@
 
 typedef struct _les_mem {
     char data_path[1024];
-    char files[LES_num/LES_file_nblock+1][1024];
+    char files[1024][1024];
+    size_t nfiles;
+    size_t nvol;
 	LESGrid *enclosing_grid;
 	LESGrid *data_grid;
 	int ibuf;
@@ -109,11 +111,10 @@ LESGrid *LES_enclosing_grid_create_from_file(const char *filename) {
 	}
     // First 4 uint32_t describes the dimensions
 	fread(grid, 1, 4 * sizeof(uint32_t), fid);
-    // Show the number of cells
-    fprintf(stderr, "Raw grid counts : [ %d %d %d ]\n", grid->nx, grid->ny, grid->nz);
 	// Now, we know how many the cell counts
 	size_t count = grid->nx * grid->ny * grid->nz;
-	grid->x = (float *)malloc(count * sizeof(float));
+    // Allocate spaces for the data
+    grid->x = (float *)malloc(count * sizeof(float));
 	grid->y = (float *)malloc(count * sizeof(float));
 	grid->z = (float *)malloc(count * sizeof(float));
 	if (grid->x == NULL || grid->y == NULL || grid->z == NULL) {
@@ -139,7 +140,7 @@ LESGrid *LES_data_grid_create_from_enclosing_grid(LESGrid *grid, const int ox, c
 	subgrid->ny = grid->ny - (2 * oy);
 	subgrid->nz = grid->nz;
 	size_t count = subgrid->nx * subgrid->ny * subgrid->nz;
-    fprintf(stderr, "subgrid [ %d %d %d ]\n", subgrid->nx, subgrid->ny, subgrid->nz);
+    //fprintf(stderr, "subgrid [ %d %d %d ]\n", subgrid->nx, subgrid->ny, subgrid->nz);
 	subgrid->x = (float *)malloc(count * sizeof(float));
 	subgrid->y = (float *)malloc(count * sizeof(float));
 	subgrid->z = (float *)malloc(count * sizeof(float));
@@ -245,9 +246,9 @@ void LES_show_table_summary(const LESTable *table) {
 	printf(" w =\n");
 	LES_show_volume(table->w, table->nx, table->ny, table->nz);
 
-//	printf(" p =\n");
-//	show_volume(table->p, table->nx, table->ny, table->nz);
-//
+	printf(" p =\n");
+	LES_show_volume(table->p, table->nx, table->ny, table->nz);
+
 	printf(" t =\n");
 	LES_show_volume(table->t, table->nx, table->ny, table->nz);
 }
@@ -295,7 +296,7 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
     int file_ret;
     int found_dir = 0;
     
-    for (int i=0; i<sizeof(search_paths)/sizeof(search_paths[0]); i++) {
+    for (int i=0; i<sizeof(search_paths) / sizeof(search_paths[0]); i++) {
         les_path = search_paths[i];
 		snprintf(les_file_path, 1024, "%s/%s/fort.10_2", les_path, config);
         dir_ret = stat(les_path, &path_stat);
@@ -334,29 +335,55 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
         h->v0 = 225.0f;
     }
     
-    char grid_file[1024];
-    snprintf(grid_file, 1024, "%s/fort.10_2", h->data_path);
+//    char grid_file[1024];
+//    snprintf(grid_file, 1024, "%s/fort.10_2", h->data_path);
     
-#ifdef DEBUG
-    printf("index @ %s\n", grid_file);
-#endif
+    #ifdef DEBUG
+    printf("index @ %s\n", les_file_path);
+    #endif
     
-	h->enclosing_grid = LES_enclosing_grid_create_from_file(grid_file);
-	h->data_grid = LES_data_grid_create_from_enclosing_grid(h->enclosing_grid, 0, 0);
+	h->enclosing_grid = LES_enclosing_grid_create_from_file(les_file_path);
+    if (h->enclosing_grid == NULL) {
+        fprintf(stderr, "Unable to get the enclosing grid for LES framework.\n");
+        return NULL;
+    }
+    // printf("enclosing_grid = %u x %u x %u\n", h->enclosing_grid->nx, h->enclosing_grid->ny, h->enclosing_grid->nz);
+
+    // Extract only a sub-domain. This is not complete, will come back for it.
+    h->data_grid = LES_data_grid_create_from_enclosing_grid(h->enclosing_grid, 0, 0);
     
-    // Scale the velocity by v0 ^ 2 / g
-    float s = h->v0 * h->v0 / 9.8f;
-    for (int i=0; i<h->data_grid->nx * h->data_grid->ny * h->data_grid->nz; i++) {
-        h->data_grid->x[i] *= s;
-        h->data_grid->y[i] *= s;
-        h->data_grid->z[i] *= s;
+#define LES_FRAME_TIME_STAMP_BYTES  4
+#define LES_FRAME_PADDING_BYTES     8
+    
+    // Go through and check available tables
+    int k = 0;
+    while (1) {
+        snprintf(h->files[k], sizeof(h->files[k]), "%s/LES_mean_1_6_fnum%d.dat", h->data_path, k + 1);
+        if (access(h->files[k], F_OK) != -1) {
+            if (h->nfiles == 0) {
+                // Use the first file to derive the number of volumes in a file
+                file_ret = stat(h->files[k], &file_stat);
+                if (file_ret == 0) {
+                    size_t s = file_stat.st_size;
+                    // 5 variables: u, v, w, p, t
+                    size_t nn = h->enclosing_grid->nx * h->enclosing_grid->ny * h->enclosing_grid->nz * 5;
+                    h->nvol = s / (LES_FRAME_TIME_STAMP_BYTES + LES_FRAME_PADDING_BYTES + nn * sizeof(float) + LES_FRAME_PADDING_BYTES);
+                } else {
+                    fprintf(stderr, "Unable to get filesize. Assume %d\n", LES_file_nblock);
+                    h->nvol = LES_file_nblock;
+                }
+                if (h->nvol != LES_file_nblock) {
+                    fprintf(stderr, "Each LES data file contains %zu volumes, expected %d.\n", h->nvol, LES_file_nblock);
+                }
+            }
+            h->nfiles++;
+        } else {
+            break;
+        }
+        k++;
     }
 
-    const int file_count = LES_num / LES_file_nblock;
-    
-    for (int k=0; k<file_count; k++) {
-        snprintf(h->files[k], sizeof(h->files[k]), "%s/LES_mean_1_6_fnum%d.dat", h->data_path, k + 1);
-    }
+    // printf("file count = %zu    nvol = %zu\n", h->nfiles, h->nvol);
     
 	// Allocate data boxes
 	for (int i=0; i<LES_num; i++) {
