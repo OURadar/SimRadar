@@ -206,7 +206,7 @@ float4 two_way_effects(const float4 sig_in, const float range, const float wav_n
     return complex_multiply(sig_in, (float4)(c, s, c, s)) * atten;
 }
 
-float4 wind_table_index(const float4 pos, const float16 wind_desc) {
+float4 wind_table_index(const float4 pos_rel, const float16 wind_desc) {
     // Background wind
     //float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
     
@@ -232,7 +232,8 @@ float4 wind_table_index(const float4 pos, const float16 wind_desc) {
     //    RSStaggeredTableDescriptionOffsetX         =  8,
     //    RSStaggeredTableDescriptionOffsetY         =  9,
     //    RSStaggeredTableDescriptionOffsetZ         = 10,
-    return (float4)(copysign(wind_desc.s012, pos.xyz) * log1p(wind_desc.s456 * fabs(pos.xyz)) + wind_desc.s89a, 0.0f);
+    //return (float4)(copysign(wind_desc.s012, pos.xyz) * log1p(wind_desc.s456 * fabs(pos.xyz)) + wind_desc.s89a, 0.0f);
+    return copysign(wind_desc.s0123, pos_rel) * log1p(wind_desc.s4567 * fabs(pos_rel)) + wind_desc.s89ab;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -436,9 +437,9 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
     } else {
     
         float4 pos_rel = pos - (float4)(sim_desc.hi.s01 + 0.5f * sim_desc.hi.s45, 0.0f, 0.0f);
-        float4 wind_coord = copysign(wind_desc.s0123, pos_rel) * log1p(wind_desc.s4567 * fabs(pos_rel)) + wind_desc.s89ab;
+        //float4 wind_coord = copysign(wind_desc.s0123, pos_rel) * log1p(wind_desc.s4567 * fabs(pos_rel)) + wind_desc.s89ab;
 
-        //float4 wind_coord = wind_table_index(pos, wind_desc);
+        float4 wind_coord = wind_table_index(pos_rel, wind_desc);
 
         float4 bg_vel = read_imagef(wind_uvw, sampler, wind_coord);
 
@@ -597,7 +598,12 @@ __kernel void scat_atts(__global float4 *p,
     //    RSStaggeredTableDescriptionRecipInLnY      = 13,
     //    RSStaggeredTableDescriptionRecipInLnZ      = 14,
     //    RSStaggeredTableDescriptionTachikawa       = 15,
-    float4 wind_coord = (float4)(copysign(wind_desc.s012, pos.xyz) * log1p(wind_desc.s456 * fabs(pos.xyz)) + wind_desc.s89a, 0.0f);
+   // float4 wind_coord = wind_table_index();
+    
+    float4 pos_rel = pos - (float4)(sim_desc.hi.s01 + 0.5f * sim_desc.hi.s45, 0.0f, 0.0f);
+    
+    float4 wind_coord = wind_table_index(pos_rel, wind_desc);
+    
     float4 vel_bg = read_imagef(wind_uvw, sampler, wind_coord);
     
     //

@@ -528,7 +528,7 @@
         resource.colormap = [self loadTexture:@"colormap.png"];
         resource.colormapID = [resource.colormap name];
         resource.colormapCount = resource.colormap.height;
-        resource.colormapIndex = 0;
+        resource.colormapIndex = 3;
         glUniform1i(resource.colormapUI, 1);  // TEXTURE1 for colormap
         #ifdef DEBUG_GL
         NSLog(@"Colormap has %d maps, each with %d colors", resource.colormap.height, resource.colormap.width);
@@ -679,7 +679,7 @@
     glUniform4f(bodyRenderer.colorUI, 1.0f, 1.0f, 1.0f, 0.75f);
 
     // Set default colormap index
-    bodyRenderer.colormapIndex = 1;
+    bodyRenderer.colormapIndex = 3;
     bodyRenderer.colormapIndexNormalized = ((GLfloat)bodyRenderer.colormapIndex + 0.5f) / bodyRenderer.colormapCount;
 
     //NSLog(@"bodyRenderer.colormap %p", bodyRenderer.colormap);
