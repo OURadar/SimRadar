@@ -89,35 +89,8 @@ float4 set_clr(float4 att)
     return c;
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////
-//
-// Angular weighting function
-//
-
-float compute_angular_weight(float4 pos,
-                             __constant float *angular_weight,
-                             const float4 angular_weight_desc,
-                             const float16 sim_desc)
-{
-    //    RSSimulationParameterBeamUnitX     =  0,
-    //    RSSimulationParameterBeamUnitY     =  1,
-    //    RSSimulationParameterBeamUnitZ     =  2,
-    float angle = acos(dot(sim_desc.s012, normalize(pos.xyz)));
-    
-    float2 table_s = (float2)(angular_weight_desc.s0, angular_weight_desc.s0);
-    float2 table_o = (float2)(angular_weight_desc.s1, angular_weight_desc.s1) + (float2)(0.0f, 1.0f);
-    float2 angle_2 = (float2)(angle, angle);
-
-    // scale, offset, clamp to edge
-    uint2  iidx_int;
-    float2 fidx_int;
-    float2 fidx_raw = clamp(fma(angle_2, table_s, table_o), 0.0f, angular_weight_desc.s2);
-    float2 fidx_dec = fract(fidx_raw, &fidx_int);
-    
-    iidx_int = convert_uint2(fidx_int);
-    
-    return mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
-}
+#pragma mark -
+#pragma mark Quaternion Fun
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -159,6 +132,8 @@ float4 quat_rotate(float4 vector, float4 quat)
 
 #define quat_identity  (float4)(0.0f, 0.0f, 0.0f, 1.0f)
 
+#pragma mark -
+#pragma mark Generic Functions
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -206,6 +181,41 @@ float4 two_way_effects(const float4 sig_in, const float range, const float wav_n
     return complex_multiply(sig_in, (float4)(c, s, c, s)) * atten;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////
+//
+// Angular weighting function
+//
+
+float compute_angular_weight(float4 pos,
+                             __constant float *angular_weight,
+                             const float4 angular_weight_desc,
+                             const float16 sim_desc)
+{
+    //    RSSimulationParameterBeamUnitX     =  0,
+    //    RSSimulationParameterBeamUnitY     =  1,
+    //    RSSimulationParameterBeamUnitZ     =  2,
+    float angle = acos(dot(sim_desc.s012, normalize(pos.xyz)));
+    
+    float2 table_s = (float2)(angular_weight_desc.s0, angular_weight_desc.s0);
+    float2 table_o = (float2)(angular_weight_desc.s1, angular_weight_desc.s1) + (float2)(0.0f, 1.0f);
+    float2 angle_2 = (float2)(angle, angle);
+    
+    // scale, offset, clamp to edge
+    uint2  iidx_int;
+    float2 fidx_int;
+    float2 fidx_raw = clamp(fma(angle_2, table_s, table_o), 0.0f, angular_weight_desc.s2);
+    float2 fidx_dec = fract(fidx_raw, &fidx_int);
+    
+    iidx_int = convert_uint2(fidx_int);
+    
+    return mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+//
+// Wind table index
+//
+
 float4 wind_table_index(const float4 pos_rel, const float16 wind_desc) {
     // Background wind
     //float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
@@ -235,6 +245,9 @@ float4 wind_table_index(const float4 pos_rel, const float16 wind_desc) {
     //return (float4)(copysign(wind_desc.s012, pos.xyz) * log1p(wind_desc.s456 * fabs(pos.xyz)) + wind_desc.s89a, 0.0f);
     return copysign(wind_desc.s0123, pos_rel) * log1p(wind_desc.s4567 * fabs(pos_rel)) + wind_desc.s89ab;
 }
+
+#pragma mark -
+#pragma mark OpenCL Kernel Functions
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //
