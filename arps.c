@@ -51,7 +51,7 @@ ARPSHandle *ARPS_init_with_config_path(const ARPSConfig config, const char *path
 
     struct stat path_stat;
     struct stat file_stat;
-    char *dir_path;
+    char *dir_path = NULL;
     char file_path[1024];
     int dir_ret;
     int file_ret;
@@ -76,7 +76,7 @@ ARPSHandle *ARPS_init_with_config_path(const ARPSConfig config, const char *path
             break;
         }
     }
-    if (found_dir == 0) {
+    if (found_dir == 0 || dir_path == NULL) {
         fprintf(stderr, "Unable to find the ARPS data folder.\n");
         return NULL;
     }

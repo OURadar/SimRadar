@@ -99,8 +99,8 @@
 		B57241DF1C0CA2CC00B76BCB /* colormap.png in Resources */ = {isa = PBXBuildFile; fileRef = B55FB66A1BDAB65D00D337D6 /* colormap.png */; };
 		B57241E01C0CA2F400B76BCB /* Minion-Icons in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB3618A5453800EBEC07 /* Minion-Icons */; };
 		B57241E21C0CA3B600B76BCB /* Sparkle.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = B56C7FA41ADC22E300552B1E /* Sparkle.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		B57241E31C0CA70800B76BCB /* rs.cl in Sources */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
 		B57241E41C0CA7C000B76BCB /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB4418A582F100EBEC07 /* dsa_pub.pem */; };
+		B57241E61C0CB0D900B76BCB /* rs.cl in Resources */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
 		B5760EA818A938F2008DAF83 /* test_clreduce.c in Sources */ = {isa = PBXBuildFile; fileRef = B5760EA718A938F2008DAF83 /* test_clreduce.c */; };
 		B5760EAA18A93AA4008DAF83 /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
 		B5760EAC18A93ABC008DAF83 /* rs.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281917D7C4D500E4DE66 /* rs.c */; };
@@ -143,6 +143,19 @@
 		B5F3C32E18F2FDF700092A72 /* les.c in Sources */ = {isa = PBXBuildFile; fileRef = B5F3C31C18F2F86700092A72 /* les.c */; };
 		B5FDCAE519D453B10016C2F7 /* GLText.m in Sources */ = {isa = PBXBuildFile; fileRef = B5FDCAE419D453B10016C2F7 /* GLText.m */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXBuildRule section */
+		B57241E51C0CA91400B76BCB /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			fileType = sourcecode.opencl;
+			isEditable = 1;
+			outputFiles = (
+				"${DERIVED_FILES_DIR}/${INPUT_FILE_BASE}.cls",
+			);
+			script = "# <com.apple.compilers.opencl>\ncp ${INPUT_FILE_PATH} ${DERIVED_FILES_DIR}/${INPUT_FILE_BASE}.cls\ncp ${INPUT_FILE_PATH} ${CONFIGURATION_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/${INPUT_FILE_BASE}.cl\n";
+		};
+/* End PBXBuildRule section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		B527892A18A13C0100650679 /* CopyFiles */ = {
@@ -714,6 +727,7 @@
 				B57241E11C0CA39D00B76BCB /* CopyFiles */,
 			);
 			buildRules = (
+				B57241E51C0CA91400B76BCB /* PBXBuildRule */,
 			);
 			dependencies = (
 			);
@@ -903,6 +917,7 @@
 				B57241DE1C0CA2CC00B76BCB /* texture_32.png in Resources */,
 				B57241DF1C0CA2CC00B76BCB /* colormap.png in Resources */,
 				B57241E41C0CA7C000B76BCB /* dsa_pub.pem in Resources */,
+				B57241E61C0CB0D900B76BCB /* rs.cl in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -998,7 +1013,6 @@
 			files = (
 				B57241BA1C0CA1F000B76BCB /* main.m in Sources */,
 				B57241B91C0CA1E100B76BCB /* AppDelegate.m in Sources */,
-				B57241E31C0CA70800B76BCB /* rs.cl in Sources */,
 				B57241B11C0CA11300B76BCB /* rs.c in Sources */,
 				B57241B21C0CA11500B76BCB /* les.c in Sources */,
 				B57241B31C0CA11700B76BCB /* adm.c in Sources */,
@@ -1738,7 +1752,7 @@
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				MTL_ENABLE_DEBUG_INFO = NO;
-				OTHER_CFLAGS = "-D_SHARE_OBJ_";
+				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = (
 					"-L",
 					/usr/local/lib,
@@ -1792,7 +1806,7 @@
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				MTL_ENABLE_DEBUG_INFO = NO;
-				OTHER_CFLAGS = "-D_SHARE_OBJ_";
+				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = (
 					"-L",
 					/usr/local/lib,
@@ -1851,7 +1865,7 @@
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				MTL_ENABLE_DEBUG_INFO = YES;
-				OTHER_CFLAGS = "-D_SHARE_OBJ_";
+				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = (
 					"-L",
 					/usr/local/lib,
@@ -1910,7 +1924,7 @@
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				MTL_ENABLE_DEBUG_INFO = YES;
-				OTHER_CFLAGS = "-D_SHARE_OBJ_";
+				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = (
 					"-L",
 					/usr/local/lib,

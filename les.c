@@ -290,7 +290,7 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
 	
     struct stat path_stat;
     struct stat file_stat;
-    char *les_path;
+    char *les_path = NULL;
     char les_file_path[1024];
     int dir_ret;
     int file_ret;
@@ -314,7 +314,7 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
             break;
         }
     }
-    if (found_dir == 0) {
+    if (found_dir == 0 || les_path == NULL) {
         fprintf(stderr, "Unable to find the LES data folder.\n");
         return NULL;
     }

@@ -33,15 +33,17 @@
 {
 	self = [super init];
 	if (self) {
+        NSString *resourcePath = [[NSBundle mainBundle] resourcePath];
 		//S  = RS_init();
-		S = RS_init_verbose(2);
+		//S = RS_init_verbose(2);
+        NSLog(@"resourcePath = %@", resourcePath);
+        S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, 2);
         
         if (S->num_cus[0] < 32) {
             RS_set_density(S, 3.0f);
         }
 
 		//L = LES_init();
-        NSString *resourcePath = [[NSBundle mainBundle] resourcePath];
         
 		L = LES_init_with_config_path(LESConfigSuctionVortices, [resourcePath UTF8String]);
         //L = LES_init_with_config_path(LESConfigTwoCell, [resourcePath UTF8String]);
@@ -66,10 +68,10 @@
 
 		RS_set_antenna_params(S, 1.0f, 44.5f);                // 1.0-deg, 44.5 dBi gain
 		
-        RS_set_tx_params(S, 60.0f * 2.0f / 3.0e8f, 10.0e3);   // 60-m resolution, 10.0 kW
+        RS_set_tx_params(S, 30.0f * 2.0f / 3.0e8f, 10.0e3);   // Resolution in m, power in W
         
 		RS_set_scan_box(S,
-                        2.3e3, 2.8e3, 60.0f,                  // Range
+                        2.3e3, 2.8e3, 30.0f,                  // Range
                         -7.0f, 7.0f, 1.0f,                    // Azimuth
                         0.0f, 12.0f, 1.0f);                   // Elevation
 	

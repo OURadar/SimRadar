@@ -134,13 +134,13 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 
 #pragma mark -
 
-- (void)renewGState
-{
-	// Called whenever graphics state updated (such as window resize)
-	[[self window] disableScreenUpdatesUntilFlush];
-	
-	[super renewGState];
-}
+//- (void)renewGState
+//{
+//	// Called whenever graphics state updated (such as window resize)
+//	[[self window] disableScreenUpdatesUntilFlush];
+//	
+//	[super renewGState];
+//}
 
 
 - (void)setFrame:(NSRect)frameRect {
@@ -196,7 +196,7 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 
 
 - (void)startAnimation {
-    [self renewGState];
+    //[self renewGState];
 	if (!animating) {
 		// Activate the display link
 		CVDisplayLinkStart(displayLink);

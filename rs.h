@@ -267,6 +267,7 @@ typedef struct _rs_worker {
 	cl_mem                 scat_att;   // type, dot products, range, etc.
 	cl_mem                 scat_sig;   // signal: Ih Qh Iv Qv
 	cl_mem                 scat_rnd;   // random seed
+    cl_mem                 scat_clr;   // color
 	cl_mem                 work;
 	cl_mem                 pulse;
 
@@ -289,6 +290,11 @@ typedef struct _rs_worker {
 
     cl_uint                mem_size;
 
+    // GPU side memory for VBOs
+    unsigned int           vbo_scat_pos;
+    unsigned int           vbo_scat_clr;
+    unsigned int           vbo_scat_ori;
+    
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 	
 	dispatch_queue_t       que;
@@ -296,13 +302,6 @@ typedef struct _rs_worker {
 	cl_ndrange             ndrange_scat[RS_MAX_SPECIES_TYPES];
 	cl_ndrange             ndrange_pulse_pass_1;
 	cl_ndrange             ndrange_pulse_pass_2;
-	
-	// GPU side VBO's
-	unsigned int           vbo_scat_pos;
-	unsigned int           vbo_scat_clr;
-	unsigned int           vbo_scat_ori;
-
-	cl_mem                 scat_clr;   // color
 	
     IOSurfaceRef           surf_adm_cd[RS_MAX_ADM_TABLES];
     IOSurfaceRef           surf_adm_cm[RS_MAX_ADM_TABLES];
@@ -466,13 +465,15 @@ void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *table);
 void RS_set_rcs_data_to_unity(RSHandle *H);
 void RS_clear_rcs_data(RSHandle *H);
 
+void RS_update_colors_only(RSHandle *H);
+void RS_explode(RSHandle *H);
+
+void RS_share_mem_with_vbo(RSHandle *H, unsigned int *vbo);
+
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 #pragma mark -
 
-void RS_share_mem_with_vbo(RSHandle *H, unsigned int *vbo);
 void RS_derive_ndranges(RSHandle *H);
-void RS_update_colors_only(RSHandle *H);
-void RS_explode(RSHandle *H);
 
 #endif
 
