@@ -24,6 +24,11 @@
 			<key>orderHint</key>
 			<integer>2</integer>
 		</dict>
+		<key>SimRadarEx.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>11</integer>
+		</dict>
 		<key>cldemo.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
@@ -123,6 +128,11 @@
 			<true/>
 		</dict>
 		<key>B567F8BA1A6D66E700F40660</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>B572419D1C0CA05F00B76BCB</key>
 		<dict>
 			<key>primary</key>
 			<true/>

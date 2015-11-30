@@ -47,9 +47,60 @@
 		B56C7FA31ADC221500552B1E /* rcs.c in Sources */ = {isa = PBXBuildFile; fileRef = B55716851AB7519D001984E0 /* rcs.c */; };
 		B56C7FA71ADC231400552B1E /* Sparkle.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = B56C7FA41ADC22E300552B1E /* Sparkle.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		B56C7FAA1ADC250500552B1E /* Sparkle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B56C7FA41ADC22E300552B1E /* Sparkle.framework */; };
-		B570B0B118BC5B5500391717 /* rs.cl in Sources */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
 		B570B0B418BC5B7900391717 /* rs.cl in CopyFiles */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
 		B570B0B518BC5B8400391717 /* rs.cl in CopyFiles */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
+		B57241A71C0CA06000B76BCB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B57241A61C0CA06000B76BCB /* Assets.xcassets */; };
+		B57241B11C0CA11300B76BCB /* rs.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281917D7C4D500E4DE66 /* rs.c */; };
+		B57241B21C0CA11500B76BCB /* les.c in Sources */ = {isa = PBXBuildFile; fileRef = B5F3C31C18F2F86700092A72 /* les.c */; };
+		B57241B31C0CA11700B76BCB /* adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B11A6D522F00F40660 /* adm.c */; };
+		B57241B41C0CA11900B76BCB /* arps.c in Sources */ = {isa = PBXBuildFile; fileRef = B59A64251B8CEB0200747CD5 /* arps.c */; };
+		B57241B51C0CA11D00B76BCB /* rcs.c in Sources */ = {isa = PBXBuildFile; fileRef = B55716851AB7519D001984E0 /* rcs.c */; };
+		B57241B61C0CA16700B76BCB /* rs.cl in Sources */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
+		B57241B71C0CA1BF00B76BCB /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = B535159C1AD32077004C0F50 /* MainMenu.xib */; };
+		B57241B81C0CA1C100B76BCB /* LiveDisplay.xib in Resources */ = {isa = PBXBuildFile; fileRef = B5EF31C1182060E1002DDEFC /* LiveDisplay.xib */; };
+		B57241B91C0CA1E100B76BCB /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = B5EF318418204B5C002DDEFC /* AppDelegate.m */; };
+		B57241BA1C0CA1F000B76BCB /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = B5EF317D18204B5C002DDEFC /* main.m */; };
+		B57241BB1C0CA20C00B76BCB /* RootController.m in Sources */ = {isa = PBXBuildFile; fileRef = B5EF31C41820619E002DDEFC /* RootController.m */; };
+		B57241BC1C0CA21000B76BCB /* DisplayController.m in Sources */ = {isa = PBXBuildFile; fileRef = B5EF31AA18205244002DDEFC /* DisplayController.m */; };
+		B57241BD1C0CA21300B76BCB /* Renderer.m in Sources */ = {isa = PBXBuildFile; fileRef = B5EF31B0182052B8002DDEFC /* Renderer.m */; };
+		B57241BE1C0CA21700B76BCB /* Recorder.m in Sources */ = {isa = PBXBuildFile; fileRef = B50CD9ED1BE8117E0034B5BB /* Recorder.m */; };
+		B57241BF1C0CA21900B76BCB /* SimGLView.m in Sources */ = {isa = PBXBuildFile; fileRef = B5EF31AD1820526F002DDEFC /* SimGLView.m */; };
+		B57241C01C0CA21C00B76BCB /* SimPoint.m in Sources */ = {isa = PBXBuildFile; fileRef = B5576B8A18315B3B0012E6F5 /* SimPoint.m */; };
+		B57241C11C0CA21F00B76BCB /* FullscreenWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = B5A5142618328A2F00921ACE /* FullscreenWindow.m */; };
+		B57241C21C0CA22200B76BCB /* GLText.m in Sources */ = {isa = PBXBuildFile; fileRef = B5FDCAE419D453B10016C2F7 /* GLText.m */; };
+		B57241C31C0CA22900B76BCB /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5EF31BF18205ED1002DDEFC /* QuartzCore.framework */; };
+		B57241C41C0CA23700B76BCB /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5EF317118204B5C002DDEFC /* Cocoa.framework */; };
+		B57241C51C0CA24B00B76BCB /* Sparkle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B56C7FA41ADC22E300552B1E /* Sparkle.framework */; };
+		B57241C61C0CA25500B76BCB /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5EF31B4182055D5002DDEFC /* GLKit.framework */; };
+		B57241C71C0CA25800B76BCB /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
+		B57241C81C0CA26500B76BCB /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5EF31BD18205EC8002DDEFC /* OpenGL.framework */; };
+		B57241C91C0CA27300B76BCB /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B52B2BD91BE8F75C00F1F91D /* AVFoundation.framework */; };
+		B57241CA1C0CA28200B76BCB /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B52B2BDB1BE8F76E00F1F91D /* CoreVideo.framework */; };
+		B57241CB1C0CA28400B76BCB /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B52B2BDD1BE8F77C00F1F91D /* CoreMedia.framework */; };
+		B57241CC1C0CA2B000B76BCB /* shape.fsh in Resources */ = {isa = PBXBuildFile; fileRef = B5EF31B718205A7B002DDEFC /* shape.fsh */; };
+		B57241CD1C0CA2B000B76BCB /* shape.vsh in Resources */ = {isa = PBXBuildFile; fileRef = B5EF31B818205A7B002DDEFC /* shape.vsh */; };
+		B57241CE1C0CA2B000B76BCB /* shape_sc.fsh in Resources */ = {isa = PBXBuildFile; fileRef = B593683D188DE4BC00B4106C /* shape_sc.fsh */; };
+		B57241CF1C0CA2B000B76BCB /* shape_sc.vsh in Resources */ = {isa = PBXBuildFile; fileRef = B593683E188DE4BC00B4106C /* shape_sc.vsh */; };
+		B57241D01C0CA2B000B76BCB /* spheroid.fsh in Resources */ = {isa = PBXBuildFile; fileRef = B5110A4119CCCCE000EE0902 /* spheroid.fsh */; };
+		B57241D11C0CA2B000B76BCB /* spheroid.vsh in Resources */ = {isa = PBXBuildFile; fileRef = B5110A4219CCCCE000EE0902 /* spheroid.vsh */; };
+		B57241D21C0CA2B000B76BCB /* leaf.fsh in Resources */ = {isa = PBXBuildFile; fileRef = B5D1B10E19D0EE8300769416 /* leaf.fsh */; };
+		B57241D31C0CA2B000B76BCB /* leaf.vsh in Resources */ = {isa = PBXBuildFile; fileRef = B5D1B10F19D0EE8300769416 /* leaf.vsh */; };
+		B57241D41C0CA2B000B76BCB /* line_sc.fsh in Resources */ = {isa = PBXBuildFile; fileRef = B50E70AA1BE0104E00DBDB44 /* line_sc.fsh */; };
+		B57241D51C0CA2B000B76BCB /* line_sc.vsh in Resources */ = {isa = PBXBuildFile; fileRef = B50E70AB1BE0104E00DBDB44 /* line_sc.vsh */; };
+		B57241D61C0CA2B000B76BCB /* mesh.fsh in Resources */ = {isa = PBXBuildFile; fileRef = B50E70AE1BE166CB00DBDB44 /* mesh.fsh */; };
+		B57241D71C0CA2B000B76BCB /* mesh.vsh in Resources */ = {isa = PBXBuildFile; fileRef = B50E70AF1BE166CB00DBDB44 /* mesh.vsh */; };
+		B57241D81C0CA2CC00B76BCB /* disc64.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B5419D0B93E00875832 /* disc64.png */; };
+		B57241D91C0CA2CC00B76BCB /* sphere1.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B4919D0AD4300875832 /* sphere1.png */; };
+		B57241DA1C0CA2CC00B76BCB /* sphere16.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B4A19D0AD4300875832 /* sphere16.png */; };
+		B57241DB1C0CA2CC00B76BCB /* SphereAda.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B4B19D0AD4300875832 /* SphereAda.png */; };
+		B57241DC1C0CA2CC00B76BCB /* sphere64.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B5219D0B00400875832 /* sphere64.png */; };
+		B57241DD1C0CA2CC00B76BCB /* spot256.png in Resources */ = {isa = PBXBuildFile; fileRef = B567270D1AA11B2C00FF4436 /* spot256.png */; };
+		B57241DE1C0CA2CC00B76BCB /* texture_32.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B4C19D0AD4300875832 /* texture_32.png */; };
+		B57241DF1C0CA2CC00B76BCB /* colormap.png in Resources */ = {isa = PBXBuildFile; fileRef = B55FB66A1BDAB65D00D337D6 /* colormap.png */; };
+		B57241E01C0CA2F400B76BCB /* Minion-Icons in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB3618A5453800EBEC07 /* Minion-Icons */; };
+		B57241E21C0CA3B600B76BCB /* Sparkle.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = B56C7FA41ADC22E300552B1E /* Sparkle.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		B57241E31C0CA70800B76BCB /* rs.cl in Sources */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
+		B57241E41C0CA7C000B76BCB /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB4418A582F100EBEC07 /* dsa_pub.pem */; };
 		B5760EA818A938F2008DAF83 /* test_clreduce.c in Sources */ = {isa = PBXBuildFile; fileRef = B5760EA718A938F2008DAF83 /* test_clreduce.c */; };
 		B5760EAA18A93AA4008DAF83 /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
 		B5760EAC18A93ABC008DAF83 /* rs.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281917D7C4D500E4DE66 /* rs.c */; };
@@ -131,6 +182,16 @@
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 1;
+		};
+		B57241E11C0CA39D00B76BCB /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				B57241E21C0CA3B600B76BCB /* Sparkle.framework in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 		B5760E9C18A938D3008DAF83 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -227,6 +288,9 @@
 		B567F8BB1A6D66E700F40660 /* test_adm */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_adm; sourceTree = BUILT_PRODUCTS_DIR; };
 		B56C7FA41ADC22E300552B1E /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Sparkle.framework; path = SimRadar/Sparkle.framework; sourceTree = "<group>"; };
 		B570B0AF18BC5B5500391717 /* rs.cl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.opencl; path = rs.cl; sourceTree = "<group>"; };
+		B572419E1C0CA05F00B76BCB /* SimRadarEx.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimRadarEx.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B57241A61C0CA06000B76BCB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B57241AB1C0CA06000B76BCB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B5760E9E18A938D3008DAF83 /* test_clreduce */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_clreduce; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5760EA718A938F2008DAF83 /* test_clreduce.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = test_clreduce.c; sourceTree = "<group>"; };
 		B5760EAD18A94328008DAF83 /* reduce.cl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.opencl; path = reduce.cl; sourceTree = "<group>"; };
@@ -308,6 +372,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B572419B1C0CA05F00B76BCB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B57241C41C0CA23700B76BCB /* Cocoa.framework in Frameworks */,
+				B57241C51C0CA24B00B76BCB /* Sparkle.framework in Frameworks */,
+				B57241C61C0CA25500B76BCB /* GLKit.framework in Frameworks */,
+				B57241C81C0CA26500B76BCB /* OpenGL.framework in Frameworks */,
+				B57241C71C0CA25800B76BCB /* OpenCL.framework in Frameworks */,
+				B57241C31C0CA22900B76BCB /* QuartzCore.framework in Frameworks */,
+				B57241C91C0CA27300B76BCB /* AVFoundation.framework in Frameworks */,
+				B57241CA1C0CA28200B76BCB /* CoreVideo.framework in Frameworks */,
+				B57241CB1C0CA28400B76BCB /* CoreMedia.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B5760E9B18A938D3008DAF83 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -376,6 +456,7 @@
 				B50A281517D7BF0900E4DE66 /* Sources */,
 				B519295217D9153C00AB3687 /* Programs */,
 				B5EF317718204B5C002DDEFC /* SimRadar */,
+				B572419F1C0CA05F00B76BCB /* SimRadarEx */,
 				B50A281317D7B27500E4DE66 /* Frameworks */,
 				B50A280C17D7B22B00E4DE66 /* Products */,
 			);
@@ -393,6 +474,7 @@
 				B5F3C32418F2FD8F00092A72 /* test_les */,
 				B567F8BB1A6D66E700F40660 /* test_adm */,
 				B5C2D1F31ADC155700DD91B1 /* test_rcs */,
+				B572419E1C0CA05F00B76BCB /* SimRadarEx.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -473,6 +555,15 @@
 			);
 			name = images;
 			path = SimRadar/images;
+			sourceTree = "<group>";
+		};
+		B572419F1C0CA05F00B76BCB /* SimRadarEx */ = {
+			isa = PBXGroup;
+			children = (
+				B57241A61C0CA06000B76BCB /* Assets.xcassets */,
+				B57241AB1C0CA06000B76BCB /* Info.plist */,
+			);
+			path = SimRadarEx;
 			sourceTree = "<group>";
 		};
 		B57ADA5F17E2068F00B03074 /* Kernels */ = {
@@ -613,6 +704,24 @@
 			productReference = B567F8BB1A6D66E700F40660 /* test_adm */;
 			productType = "com.apple.product-type.tool";
 		};
+		B572419D1C0CA05F00B76BCB /* SimRadarEx */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B57241B01C0CA06000B76BCB /* Build configuration list for PBXNativeTarget "SimRadarEx" */;
+			buildPhases = (
+				B572419A1C0CA05F00B76BCB /* Sources */,
+				B572419B1C0CA05F00B76BCB /* Frameworks */,
+				B572419C1C0CA05F00B76BCB /* Resources */,
+				B57241E11C0CA39D00B76BCB /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SimRadarEx;
+			productName = SimRadarEx;
+			productReference = B572419E1C0CA05F00B76BCB /* SimRadarEx.app */;
+			productType = "com.apple.product-type.application";
+		};
 		B5760E9D18A938D3008DAF83 /* test_clreduce */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = B5760EA618A938D3008DAF83 /* Build configuration list for PBXNativeTarget "test_clreduce" */;
@@ -729,6 +838,9 @@
 					B567F8BA1A6D66E700F40660 = {
 						CreatedOnToolsVersion = 6.1;
 					};
+					B572419D1C0CA05F00B76BCB = {
+						CreatedOnToolsVersion = 7.1.1;
+					};
 					B5C2D1F21ADC155700DD91B1 = {
 						CreatedOnToolsVersion = 6.1;
 					};
@@ -749,18 +861,51 @@
 			targets = (
 				B56077EE17E356910068C6BE /* cldemo */,
 				B527892B18A13C0100650679 /* radarsim */,
-				B5EF316F18204B5C002DDEFC /* SimRadar */,
 				B5760E9D18A938D3008DAF83 /* test_clreduce */,
 				B5D1420E18AA72F80041566E /* test_make_pulse */,
 				B5BAD55718B67E8B007AC15D /* test_rs */,
 				B5F3C32318F2FD8F00092A72 /* test_les */,
 				B567F8BA1A6D66E700F40660 /* test_adm */,
 				B5C2D1F21ADC155700DD91B1 /* test_rcs */,
+				B5EF316F18204B5C002DDEFC /* SimRadar */,
+				B572419D1C0CA05F00B76BCB /* SimRadarEx */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		B572419C1C0CA05F00B76BCB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B57241A71C0CA06000B76BCB /* Assets.xcassets in Resources */,
+				B57241B71C0CA1BF00B76BCB /* MainMenu.xib in Resources */,
+				B57241B81C0CA1C100B76BCB /* LiveDisplay.xib in Resources */,
+				B57241E01C0CA2F400B76BCB /* Minion-Icons in Resources */,
+				B57241CC1C0CA2B000B76BCB /* shape.fsh in Resources */,
+				B57241CD1C0CA2B000B76BCB /* shape.vsh in Resources */,
+				B57241CE1C0CA2B000B76BCB /* shape_sc.fsh in Resources */,
+				B57241CF1C0CA2B000B76BCB /* shape_sc.vsh in Resources */,
+				B57241D01C0CA2B000B76BCB /* spheroid.fsh in Resources */,
+				B57241D11C0CA2B000B76BCB /* spheroid.vsh in Resources */,
+				B57241D21C0CA2B000B76BCB /* leaf.fsh in Resources */,
+				B57241D31C0CA2B000B76BCB /* leaf.vsh in Resources */,
+				B57241D41C0CA2B000B76BCB /* line_sc.fsh in Resources */,
+				B57241D51C0CA2B000B76BCB /* line_sc.vsh in Resources */,
+				B57241D61C0CA2B000B76BCB /* mesh.fsh in Resources */,
+				B57241D71C0CA2B000B76BCB /* mesh.vsh in Resources */,
+				B57241D81C0CA2CC00B76BCB /* disc64.png in Resources */,
+				B57241D91C0CA2CC00B76BCB /* sphere1.png in Resources */,
+				B57241DA1C0CA2CC00B76BCB /* sphere16.png in Resources */,
+				B57241DB1C0CA2CC00B76BCB /* SphereAda.png in Resources */,
+				B57241DC1C0CA2CC00B76BCB /* sphere64.png in Resources */,
+				B57241DD1C0CA2CC00B76BCB /* spot256.png in Resources */,
+				B57241DE1C0CA2CC00B76BCB /* texture_32.png in Resources */,
+				B57241DF1C0CA2CC00B76BCB /* colormap.png in Resources */,
+				B57241E41C0CA7C000B76BCB /* dsa_pub.pem in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B5EF316E18204B5C002DDEFC /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -768,30 +913,30 @@
 				B5916CC61ABC7069007EA0B9 /* README.md in Resources */,
 				B535159D1AD32077004C0F50 /* MainMenu.xib in Resources */,
 				B5EF31C2182060E1002DDEFC /* LiveDisplay.xib in Resources */,
-				B55A0B5019D0AD4300875832 /* SphereAda.png in Resources */,
-				B55A0B5319D0B00400875832 /* sphere64.png in Resources */,
-				B55A0B4E19D0AD4300875832 /* sphere1.png in Resources */,
-				B55A0B5519D0B93E00875832 /* disc64.png in Resources */,
-				B55A0B5119D0AD4300875832 /* texture_32.png in Resources */,
-				B50E70B11BE166CB00DBDB44 /* mesh.vsh in Resources */,
-				B567270E1AA11B2C00FF4436 /* spot256.png in Resources */,
-				B54DEB4518A582F100EBEC07 /* dsa_pub.pem in Resources */,
-				B5110A4319CCCCE000EE0902 /* spheroid.fsh in Resources */,
-				B5110A4419CCCCE000EE0902 /* spheroid.vsh in Resources */,
+				B5EF31BB18205AA8002DDEFC /* shape.fsh in Resources */,
+				B5EF31BC18205AAD002DDEFC /* shape.vsh in Resources */,
 				B541C630188DF896000AF6DD /* shape_sc.fsh in Resources */,
 				B541C631188DF896000AF6DD /* shape_sc.vsh in Resources */,
+				B5110A4319CCCCE000EE0902 /* spheroid.fsh in Resources */,
+				B5110A4419CCCCE000EE0902 /* spheroid.vsh in Resources */,
+				B5D1B11019D0EE8300769416 /* leaf.fsh in Resources */,
+				B5D1B11119D0EE8300769416 /* leaf.vsh in Resources */,
 				B50E70AC1BE0104E00DBDB44 /* line_sc.fsh in Resources */,
 				B50E70AD1BE0104E00DBDB44 /* line_sc.vsh in Resources */,
 				B50E70B01BE166CB00DBDB44 /* mesh.fsh in Resources */,
-				B5EF31BB18205AA8002DDEFC /* shape.fsh in Resources */,
-				B5EF31BC18205AAD002DDEFC /* shape.vsh in Resources */,
-				B5D1B11019D0EE8300769416 /* leaf.fsh in Resources */,
-				B5D1B11119D0EE8300769416 /* leaf.vsh in Resources */,
+				B50E70B11BE166CB00DBDB44 /* mesh.vsh in Resources */,
+				B55A0B5519D0B93E00875832 /* disc64.png in Resources */,
+				B55A0B4E19D0AD4300875832 /* sphere1.png in Resources */,
+				B55A0B4F19D0AD4300875832 /* sphere16.png in Resources */,
+				B55A0B5019D0AD4300875832 /* SphereAda.png in Resources */,
+				B55A0B5319D0B00400875832 /* sphere64.png in Resources */,
+				B567270E1AA11B2C00FF4436 /* spot256.png in Resources */,
+				B55A0B5119D0AD4300875832 /* texture_32.png in Resources */,
+				B55FB66B1BDAB65D00D337D6 /* colormap.png in Resources */,
+				B54DEB4518A582F100EBEC07 /* dsa_pub.pem in Resources */,
 				B5EF317C18204B5C002DDEFC /* InfoPlist.strings in Resources */,
 				B5EF318218204B5C002DDEFC /* Credits.rtf in Resources */,
-				B55FB66B1BDAB65D00D337D6 /* colormap.png in Resources */,
 				B54DEB3718A5453800EBEC07 /* Minion-Icons in Resources */,
-				B55A0B4F19D0AD4300875832 /* sphere16.png in Resources */,
 				B51767C118A2DFB700D47C27 /* Curious-Minion-Icon.icns in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -847,6 +992,29 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B572419A1C0CA05F00B76BCB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B57241BA1C0CA1F000B76BCB /* main.m in Sources */,
+				B57241B91C0CA1E100B76BCB /* AppDelegate.m in Sources */,
+				B57241E31C0CA70800B76BCB /* rs.cl in Sources */,
+				B57241B11C0CA11300B76BCB /* rs.c in Sources */,
+				B57241B21C0CA11500B76BCB /* les.c in Sources */,
+				B57241B31C0CA11700B76BCB /* adm.c in Sources */,
+				B57241B41C0CA11900B76BCB /* arps.c in Sources */,
+				B57241B51C0CA11D00B76BCB /* rcs.c in Sources */,
+				B57241BB1C0CA20C00B76BCB /* RootController.m in Sources */,
+				B57241BC1C0CA21000B76BCB /* DisplayController.m in Sources */,
+				B57241BD1C0CA21300B76BCB /* Renderer.m in Sources */,
+				B57241BE1C0CA21700B76BCB /* Recorder.m in Sources */,
+				B57241BF1C0CA21900B76BCB /* SimGLView.m in Sources */,
+				B57241C01C0CA21C00B76BCB /* SimPoint.m in Sources */,
+				B57241C11C0CA21F00B76BCB /* FullscreenWindow.m in Sources */,
+				B57241C21C0CA22200B76BCB /* GLText.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B5760E9A18A938D3008DAF83 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -887,7 +1055,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B570B0B118BC5B5500391717 /* rs.cl in Sources */,
+				B57241B61C0CA16700B76BCB /* rs.cl in Sources */,
 				B5C0D40F183178A000564D83 /* rs.c in Sources */,
 				B5F3C31E18F2F86700092A72 /* les.c in Sources */,
 				B567F8B31A6D522F00F40660 /* adm.c in Sources */,
@@ -1128,8 +1296,6 @@
 				ENABLE_NS_ASSERTIONS = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)",
-					"$(PROJECT_DIR)",
 					"$(PROJECT_DIR)/SimRadar",
 				);
 				GCC_C_LANGUAGE_STANDARD = gnu99;
@@ -1154,7 +1320,12 @@
 					"-D_SHARE_OBJ_",
 					"-DDEBUG_GL",
 				);
-				OTHER_LDFLAGS = "-Wl,-rpath,@loader_path/../Frameworks";
+				OTHER_LDFLAGS = (
+					"-L",
+					/usr/local/lib,
+					"-lhdf5",
+					"-Wl,-rpath,@loader_path/../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "edu.ou.arrc.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -1525,6 +1696,232 @@
 			};
 			name = Debug;
 		};
+		B57241AC1C0CA06000B76BCB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/SimRadar",
+				);
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = /usr/local/include;
+				INFOPLIST_FILE = SimRadarEx/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				LIBRARY_SEARCH_PATHS = /usr/local/lib;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				OTHER_CFLAGS = "-D_SHARE_OBJ_";
+				OTHER_LDFLAGS = (
+					"-L",
+					/usr/local/lib,
+					"-lhdf5",
+					"-Wl,-rpath,@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadarEx;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		B57241AD1C0CA06000B76BCB /* GEN_IMG */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/SimRadar",
+				);
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = /usr/local/include;
+				INFOPLIST_FILE = SimRadarEx/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				LIBRARY_SEARCH_PATHS = /usr/local/lib;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				OTHER_CFLAGS = "-D_SHARE_OBJ_";
+				OTHER_LDFLAGS = (
+					"-L",
+					/usr/local/lib,
+					"-lhdf5",
+					"-Wl,-rpath,@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadarEx;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = GEN_IMG;
+		};
+		B57241AE1C0CA06000B76BCB /* Debug GL */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/SimRadar",
+				);
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = /usr/local/include;
+				INFOPLIST_FILE = SimRadarEx/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				LIBRARY_SEARCH_PATHS = /usr/local/lib;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				OTHER_CFLAGS = "-D_SHARE_OBJ_";
+				OTHER_LDFLAGS = (
+					"-L",
+					/usr/local/lib,
+					"-lhdf5",
+					"-Wl,-rpath,@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadarEx;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = "Debug GL";
+		};
+		B57241AF1C0CA06000B76BCB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/SimRadar",
+				);
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = /usr/local/include;
+				INFOPLIST_FILE = SimRadarEx/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				LIBRARY_SEARCH_PATHS = /usr/local/lib;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				OTHER_CFLAGS = "-D_SHARE_OBJ_";
+				OTHER_LDFLAGS = (
+					"-L",
+					/usr/local/lib,
+					"-lhdf5",
+					"-Wl,-rpath,@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadarEx;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
 		B5760EA418A938D3008DAF83 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1700,8 +2097,6 @@
 				ENABLE_NS_ASSERTIONS = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)",
-					"$(PROJECT_DIR)",
 					"$(PROJECT_DIR)/SimRadar",
 				);
 				GCC_C_LANGUAGE_STANDARD = gnu99;
@@ -1726,7 +2121,12 @@
 					"-D_SHARE_OBJ_",
 					"-DGEN_IMG",
 				);
-				OTHER_LDFLAGS = "-Wl,-rpath,@loader_path/../Frameworks";
+				OTHER_LDFLAGS = (
+					"-L",
+					/usr/local/lib,
+					"-lhdf5",
+					"-Wl,-rpath,@loader_path/../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "edu.ou.arrc.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -2163,8 +2563,6 @@
 				ENABLE_NS_ASSERTIONS = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)",
-					"$(PROJECT_DIR)",
 					"$(PROJECT_DIR)/SimRadar",
 				);
 				GCC_C_LANGUAGE_STANDARD = gnu99;
@@ -2186,7 +2584,12 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				OTHER_CFLAGS = "-D_SHARE_OBJ_";
-				OTHER_LDFLAGS = "-Wl,-rpath,@loader_path/../Frameworks";
+				OTHER_LDFLAGS = (
+					"-L",
+					/usr/local/lib,
+					"-lhdf5",
+					"-Wl,-rpath,@loader_path/../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "edu.ou.arrc.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -2215,8 +2618,6 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)",
-					"$(PROJECT_DIR)",
 					"$(PROJECT_DIR)/SimRadar",
 				);
 				GCC_C_LANGUAGE_STANDARD = gnu99;
@@ -2246,7 +2647,12 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = "-D_SHARE_OBJ_";
-				OTHER_LDFLAGS = "-Wl,-rpath,@loader_path/../Frameworks";
+				OTHER_LDFLAGS = (
+					"-L",
+					/usr/local/lib,
+					"-lhdf5",
+					"-Wl,-rpath,@loader_path/../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "edu.ou.arrc.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -2369,6 +2775,16 @@
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
+		};
+		B57241B01C0CA06000B76BCB /* Build configuration list for PBXNativeTarget "SimRadarEx" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B57241AC1C0CA06000B76BCB /* Release */,
+				B57241AD1C0CA06000B76BCB /* GEN_IMG */,
+				B57241AE1C0CA06000B76BCB /* Debug GL */,
+				B57241AF1C0CA06000B76BCB /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
 		};
 		B5760EA618A938D3008DAF83 /* Build configuration list for PBXNativeTarget "test_clreduce" */ = {
 			isa = XCConfigurationList;
