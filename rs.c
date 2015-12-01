@@ -154,8 +154,6 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
         printf("%s : RS : Creating command queue[%d] failed  (ret = %d).\n", now(), C->name, ret);
     }
     
-    sleep(1);
-	
 #endif
 
 }
@@ -233,14 +231,20 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 	
-    printf("Creating cl_mem from vbo ... %d %d %d \n", C->vbo_scat_pos, C->vbo_scat_clr, C->vbo_scat_ori);
+    // printf("Creating cl_mem from vbo ... %d %d %d \n", C->vbo_scat_pos, C->vbo_scat_clr, C->vbo_scat_ori);
     C->scat_pos = gcl_gl_create_ptr_from_buffer(C->vbo_scat_pos);
-    C->scat_clr = gcl_gl_create_ptr_from_buffer(C->vbo_scat_clr);
-    C->scat_ori = gcl_gl_create_ptr_from_buffer(C->vbo_scat_ori);
-    if (C->scat_pos == NULL || C->scat_clr == NULL || C->scat_ori == NULL) {
-        fprintf(stderr, "%s : RS : Error in gcl_gl_create_ptr_from_buffer().\n", now());
+    if (C->scat_pos == NULL) {
+        fprintf(stderr, "%s : RS : Error in gcl_gl_create_ptr_from_buffer() for scat_pos.\n", now());
         C->scat_pos = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
+    }
+    C->scat_clr = gcl_gl_create_ptr_from_buffer(C->vbo_scat_clr);
+    if (C->scat_clr == NULL) {
+        fprintf(stderr, "%s : RS : Error in gcl_gl_create_ptr_from_buffer() for scat_clr.\n", now());
         C->scat_clr = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
+    }
+    C->scat_ori = gcl_gl_create_ptr_from_buffer(C->vbo_scat_ori);
+    if (C->scat_ori == NULL) {
+        fprintf(stderr, "%s : RS : Error in gcl_gl_create_ptr_from_buffer() for scat_ori.\n", now());
         C->scat_ori = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
     }
     
@@ -1030,6 +1034,7 @@ void RS_free_scat_memory(RSHandle *H) {
 	
 	for (i = 0; i < H->num_workers; i++) {
 		clReleaseMemObject(H->worker[i].scat_pos);
+        clReleaseMemObject(H->worker[i].scat_clr);
 		clReleaseMemObject(H->worker[i].scat_vel);
 		clReleaseMemObject(H->worker[i].scat_ori);
         clReleaseMemObject(H->worker[i].scat_tum);
@@ -3184,31 +3189,28 @@ void RS_populate(RSHandle *H) {
         }
     }
 
-#if !defined (__APPLE__) || !defined (_SHARE_OBJ_)
-
 	// Update kernel arguments
-	cl_int ret = CL_SUCCESS;
-    const int a = 0;
-    const int r = 0;
-	for (i = 0; i < H->num_workers; i++) {
-        ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription,      sizeof(cl_float16), &H->worker[i].vel_desc);
-        ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,              sizeof(cl_float16), &H->sim_desc);
-
-        ret |= clSetKernelArg(H->worker[i].kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &H->worker[i].vel_desc);
-        ret |= clSetKernelArg(H->worker[i].kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
-
-        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentBackgroundVelocityDescription,     sizeof(cl_float16), &H->worker[i].vel_desc);
-        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentAirDragModelDescription,           sizeof(cl_float16), &H->worker[i].adm_desc[a]);
-        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentRadarCrossSectionDescription,      sizeof(cl_float16), &H->worker[i].rcs_desc[r]);
-        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentSimulationDescription,             sizeof(cl_float16), &H->sim_desc);
-	}
-
-	if (ret != CL_SUCCESS) {
-		fprintf(stderr, "%s : RS : Error: Failed to update kernel arguments in RS_populate().\n", now());
-		exit(EXIT_FAILURE);
-	}
-
-#endif
+    if (H->worker[0].kern_bg_atts) {
+        cl_int ret = CL_SUCCESS;
+        const int a = 0;
+        const int r = 0;
+        for (i = 0; i < H->num_workers; i++) {
+            ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription,      sizeof(cl_float16), &H->worker[i].vel_desc);
+            ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,              sizeof(cl_float16), &H->sim_desc);
+            
+            ret |= clSetKernelArg(H->worker[i].kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &H->worker[i].vel_desc);
+            ret |= clSetKernelArg(H->worker[i].kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
+            
+            ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentBackgroundVelocityDescription,     sizeof(cl_float16), &H->worker[i].vel_desc);
+            ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentAirDragModelDescription,           sizeof(cl_float16), &H->worker[i].adm_desc[a]);
+            ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentRadarCrossSectionDescription,      sizeof(cl_float16), &H->worker[i].rcs_desc[r]);
+            ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentSimulationDescription,             sizeof(cl_float16), &H->sim_desc);
+        }
+        if (ret != CL_SUCCESS) {
+            fprintf(stderr, "%s : RS : Error: Failed to update kernel arguments in RS_populate().\n", now());
+            exit(EXIT_FAILURE);
+        }
+    }
 
 	H->status = RS_STATUS_DOMAIN_POPULATED;
 	
@@ -3548,6 +3550,7 @@ void RS_advance_time(RSHandle *H) {
     int k;
 
     cl_event events[RS_MAX_GPU_DEVICE][RS_MAX_SPECIES_TYPES];
+    memset(events, 0, sizeof(events));
 	
 	if (H->sim_tic >= H->sim_toc) {
 		H->sim_toc = H->sim_tic + (size_t)(1.0f / H->params.prt);
@@ -3573,11 +3576,10 @@ void RS_advance_time(RSHandle *H) {
         
         // Debris type
         for (k = 1; k < RS_MAX_SPECIES_TYPES; k++) {
-            if (H->worker[i].species_population[k] == 0) {
-                continue;
+            if (H->worker[i].species_population[k]) {
+                //printf("H->worker[%d].species_population[%d] = %d from %d --> debris\n", i, k, (int)H->worker[i].species_population[k], (int)H->worker[i].species_origin[k]);
+                clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_atts, 1, &H->worker[i].species_origin[k], &H->worker[i].species_population[k], &local_item_size, 0, NULL, &events[i][k]);
             }
-            //printf("H->worker[%d].species_population[%d] = %d from %d --> debris\n", i, k, (int)H->worker[i].species_population[k], (int)H->worker[i].species_origin[k]);
-            clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_atts, 1, &H->worker[i].species_origin[k], &H->worker[i].species_population[k], &local_item_size, 0, NULL, &events[i][k]);
         }
     }
 
@@ -3588,19 +3590,17 @@ void RS_advance_time(RSHandle *H) {
     for (i = 0; i < H->num_workers; i++) {
         clWaitForEvents(1, events[i]);
         for (k = 1; k < RS_MAX_SPECIES_TYPES; k++) {
-            if (H->worker[i].species_population[k] == 0) {
-                continue;
+            if (H->worker[i].species_population[k]) {
+                clWaitForEvents(1, &events[i][k]);
             }
-            clWaitForEvents(1, &events[i][k]);
         }
     }
 	
     for (i = 0; i < H->num_workers; i++) {
         for (k=0; k < RS_MAX_SPECIES_TYPES; k++) {
-            if (H->worker[i].species_population[k] == 0) {
-                continue;
+            if (H->worker[i].species_population[k]) {
+                clReleaseEvent(events[i][k]);
             }
-            clReleaseEvent(events[i][k]);
         }
     }
 	
