@@ -3189,29 +3189,31 @@ void RS_populate(RSHandle *H) {
         }
     }
 
-	// Update kernel arguments
-    if (H->worker[0].kern_bg_atts) {
-        cl_int ret = CL_SUCCESS;
-        const int a = 0;
-        const int r = 0;
-        for (i = 0; i < H->num_workers; i++) {
-            ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription,      sizeof(cl_float16), &H->worker[i].vel_desc);
-            ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,              sizeof(cl_float16), &H->sim_desc);
-            
-            ret |= clSetKernelArg(H->worker[i].kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &H->worker[i].vel_desc);
-            ret |= clSetKernelArg(H->worker[i].kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
-            
-            ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentBackgroundVelocityDescription,     sizeof(cl_float16), &H->worker[i].vel_desc);
-            ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentAirDragModelDescription,           sizeof(cl_float16), &H->worker[i].adm_desc[a]);
-            ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentRadarCrossSectionDescription,      sizeof(cl_float16), &H->worker[i].rcs_desc[r]);
-            ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentSimulationDescription,             sizeof(cl_float16), &H->sim_desc);
-        }
-        if (ret != CL_SUCCESS) {
-            fprintf(stderr, "%s : RS : Error: Failed to update kernel arguments in RS_populate().\n", now());
-            exit(EXIT_FAILURE);
-        }
+#if !(defined (__APPLE__) && defined (_SHARE_OBJ_))
+
+    // Update kernel arguments
+    cl_int ret = CL_SUCCESS;
+    const int a = 0;
+    const int r = 0;
+    for (i = 0; i < H->num_workers; i++) {
+        ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription,      sizeof(cl_float16), &H->worker[i].vel_desc);
+        ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,              sizeof(cl_float16), &H->sim_desc);
+        
+        ret |= clSetKernelArg(H->worker[i].kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &H->worker[i].vel_desc);
+        ret |= clSetKernelArg(H->worker[i].kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
+        
+        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentBackgroundVelocityDescription,     sizeof(cl_float16), &H->worker[i].vel_desc);
+        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentAirDragModelDescription,           sizeof(cl_float16), &H->worker[i].adm_desc[a]);
+        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentRadarCrossSectionDescription,      sizeof(cl_float16), &H->worker[i].rcs_desc[r]);
+        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentSimulationDescription,             sizeof(cl_float16), &H->sim_desc);
+    }
+    if (ret != CL_SUCCESS) {
+        fprintf(stderr, "%s : RS : Error: Failed to update kernel arguments in RS_populate().\n", now());
+        exit(EXIT_FAILURE);
     }
 
+#endif
+    
 	H->status = RS_STATUS_DOMAIN_POPULATED;
 	
 	return;

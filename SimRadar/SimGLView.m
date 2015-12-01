@@ -314,7 +314,7 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 																	  colorSpaceName:NSDeviceRGBColorSpace
 																		 bytesPerRow:0
 																		bitsPerPixel:0] autorelease];
-	
+
 	bitmapData = [imageRep bitmapData];
 	bytesPerRow = (int)[imageRep bytesPerRow];
     
