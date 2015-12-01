@@ -13,6 +13,11 @@
 #include "rs.cl.h"
 #endif
 
+#if defined (__APPLE__)
+#include <OpenGL/OpenGL.h>
+#include <OpenCL/opencl.h>
+#endif
+
 #pragma mark -
 #pragma mark Private Functions
 
@@ -51,8 +56,24 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     
 #else
 	
-	cl_int ret;
-	
+    cl_int ret;
+
+#if defined (__APPLE__)
+
+    CGLContextObj kCGLContext = CGLGetCurrentContext();
+    CGLShareGroupObj kCGLShareGroup = CGLGetShareGroup(kCGLContext);
+    
+    cl_context_properties prop[] = {
+        CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE,
+        (cl_context_properties)kCGLShareGroup, 0
+    };
+    
+    // Create a context from a CGL share group
+    //
+    C->context = clCreateContext(prop, 0, 0, clLogMessagesToStdoutAPPLE, 0, 0);
+
+#else
+
     // The OpenCL context
     C->context = clCreateContext(NULL, 1, &C->dev, &pfn_notify, NULL, &ret);
     if (ret != CL_SUCCESS) {
@@ -61,7 +82,9 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     } else if (verb) {
         printf("%s : RS : OpenCL context[%d] created.\n", now(), (int)C->name);
     }
-    
+
+#endif
+
     // Program
     C->prog = clCreateProgramWithSource(C->context, src_size, (const char **)src_ptr, NULL, &ret);
     if (ret != CL_SUCCESS) {
@@ -225,17 +248,31 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 
 #else
 	
-	cl_int ret;
-	
 #define CHECK_CL_CREATE_BUFFER                                                             \
     if (ret != CL_SUCCESS) {                                                               \
         fprintf(stderr, "%s : RS : Error in clCreateBuffer().  ret = %d\n", now(), ret);   \
         return;                                                                            \
     }
-	
-	C->scat_pos = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
-	C->scat_vel = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
-	C->scat_ori = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
+    
+    cl_int ret;
+    
+    printf("shared_vbo: %d %d %d\n", C->vbo_scat_pos, C->vbo_scat_clr, C->vbo_scat_ori);
+
+    if (H->has_vbo_from_gl) {
+        C->scat_pos = clCreateFromGLBuffer(C->context, CL_MEM_READ_WRITE, C->vbo_scat_pos, &ret);
+        C->scat_clr = clCreateFromGLBuffer(C->context, CL_MEM_READ_WRITE, C->vbo_scat_clr, &ret);
+        C->scat_ori = clCreateFromGLBuffer(C->context, CL_MEM_READ_WRITE, C->vbo_scat_ori, &ret);
+        if (C->scat_pos == NULL || C->scat_clr == NULL || C->scat_ori == NULL || ret != CL_SUCCESS) {
+            fprintf(stderr, "%s : RS : Error in clCreateFromGLBuffer().  ret = %d\n", now(), ret);
+            return;
+        }
+    } else {
+        C->scat_pos = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
+        C->scat_clr = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
+        C->scat_ori = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
+    }
+
+    C->scat_vel = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
     C->scat_tum = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
 	C->scat_att = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
 	C->scat_sig = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
@@ -847,7 +884,24 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
     }
 		
 #else
-		
+    
+    #if defined (__APPLE__)
+    
+    CGLContextObj kCGLContext = CGLGetCurrentContext();
+    CGLShareGroupObj kCGLShareGroup = CGLGetShareGroup(kCGLContext);
+    
+    cl_context_properties akProperties[] = {
+        CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE,
+        (cl_context_properties)kCGLShareGroup, 0
+    };
+    
+    // Create a context from a CGL share group
+    //
+    //m_kContext = clCreateContext(akProperties, 0, 0, clLogMessagesToStdoutAPPLE, 0, 0);
+    
+
+    #endif
+
     cl_uint count;
     char *src_ptr[RS_MAX_KERNEL_LINES];
     
@@ -855,18 +909,32 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
     if (!strcmp(bundle_path, ".")) {
         count = read_kernel_source_from_files(src_ptr, "rs.cl", NULL);
     } else {
-        //char types_h_path[RS_MAX_STR];
-        //snprintf(types_h_path, RS_MAX_STR, "%s/rs_types.h", bundle_path);
+        #ifdef INCLUDE_TYPES_IN_KERNEL
+        
+        // This version combines special types along with the kernel functions
+        char types_h_path[RS_MAX_STR];
+        char kern_src_path[RS_MAX_STR];
+        snprintf(types_h_path, RS_MAX_STR, "%s/rs_types.h", bundle_path);
+        snprintf(kern_src_path, RS_MAX_STR, "%s/rs.cl", bundle_path);
+        count = read_kernel_source_from_files(src_ptr, types_h_path, kern_src_path, NULL);
+
+        #else
+        
+        // This version does not depend on custom types
         char kern_src_path[RS_MAX_STR];
         snprintf(kern_src_path, RS_MAX_STR, "%s/rs.cl", bundle_path);
-        //count = read_kernel_source_from_files(src_ptr, types_h_path, kern_src_path, NULL);
         count = read_kernel_source_from_files(src_ptr, kern_src_path, NULL);
+        
+        #endif
     }
+    
     if (count == 0) {
         return NULL;
     }
     
     H->num_workers = H->num_devs;
+    
+    H->num_workers = 1;
     
     for (i = 0; i < H->num_workers; i++) {
         if (H->verb > 2) {
@@ -2864,12 +2932,16 @@ void RS_explode(RSHandle *H) {
 }
 
 
-void RS_share_mem_with_vbo(RSHandle *H, unsigned int *vbo) {
-    for (int i = 0; i < H->num_workers; i++) {
-        H->worker[i].vbo_scat_pos = vbo[0];
-        H->worker[i].vbo_scat_clr = vbo[1];
-        H->worker[i].vbo_scat_ori = vbo[2];
+void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[RS_MAX_GPU_DEVICE][n]) {
+    if (H->verb) {
+        printf("%s : RS : RS_share_mem_with_vbo()\n", now());
     }
+    for (int i = 0; i < H->num_workers; i++) {
+        H->worker[i].vbo_scat_pos = vbo[i][0];
+        H->worker[i].vbo_scat_clr = vbo[i][1];
+        H->worker[i].vbo_scat_ori = vbo[i][2];
+    }
+    H->has_vbo_from_gl = 1;
 }
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)

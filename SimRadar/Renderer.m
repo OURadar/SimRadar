@@ -464,7 +464,7 @@
 	// Get matrix location
 	resource.mvpUI = glGetUniformLocation(resource.program, "modelViewProjectionMatrix");
 	if (resource.mvpUI < 0) {
-		NSLog(@"No modelViewProjection Matrix %d", resource.mvpUI);
+		NSLog(@"%@ shader has no modelViewProjection Matrix %d", vShader, resource.mvpUI);
 	} else {
 		GLKMatrix4 idMat = GLKMatrix4Identity;
 		glUniformMatrix4fv(resource.mvpUI, 1, GL_FALSE, idMat.m);
@@ -473,7 +473,7 @@
 	// Get color location
 	resource.colorUI = glGetUniformLocation(resource.program, "drawColor");
 	if (resource.colorUI < 0) {
-		NSLog(@"No drawColor %d", resource.colorUI);
+		NSLog(@"%@ shader has no drawColor %d", vShader, resource.colorUI);
 	} else {
         glUniform4f(resource.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
     }
@@ -481,7 +481,7 @@
     // Get size location
     resource.sizeUI = glGetUniformLocation(resource.program, "drawSize");
     if (resource.sizeUI >= 0) {
-        NSLog(@"%@ has drawSize", vShader);
+        //NSLog(@"%@ has drawSize", vShader);
         glUniform4f(resource.sizeUI, 1.0f, 1.0f, 1.0f, 1.0f);
     }
     

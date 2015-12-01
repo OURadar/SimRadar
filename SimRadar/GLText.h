@@ -14,7 +14,9 @@
 //  Copyright (c) 2014 Boon Leng Cheong. All rights reserved.
 //
 
-#define GL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED
+#ifndef GL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED
+#define GL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED 1
+#endif
 
 #import <Foundation/Foundation.h>
 #import <OpenGL/OpenGL.h>

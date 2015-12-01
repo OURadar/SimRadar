@@ -383,6 +383,9 @@ typedef struct _rs_handle {
 	cl_uint                num_cus[RS_MAX_GPU_DEVICE];
 	cl_device_id           devs[RS_MAX_GPU_DEVICE];
 
+    // OpenGL sharing
+    char                   has_vbo_from_gl;
+    
 	// GPU side memory
 	RSWorker               worker[RS_MAX_GPU_DEVICE];
 	size_t                 offset[RS_MAX_GPU_DEVICE];
@@ -468,7 +471,7 @@ void RS_clear_rcs_data(RSHandle *H);
 void RS_update_colors_only(RSHandle *H);
 void RS_explode(RSHandle *H);
 
-void RS_share_mem_with_vbo(RSHandle *H, unsigned int *vbo);
+void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[RS_MAX_GPU_DEVICE][n]);
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 #pragma mark -

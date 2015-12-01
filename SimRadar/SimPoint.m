@@ -125,7 +125,11 @@
 
 - (void)shareVBOsWithGL:(GLuint *)vbos
 {
-	RS_share_mem_with_vbo(S, vbos);
+    unsigned int vbo_array[RS_MAX_GPU_DEVICE][4];
+    vbo_array[0][0] = vbos[0];
+    vbo_array[0][1] = vbos[1];
+    vbo_array[0][2] = vbos[2];
+	RS_share_mem_with_vbo(S, 4, vbo_array);
 }
 
 - (void)upload
