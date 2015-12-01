@@ -25,13 +25,13 @@
 #include "rcs.h"
 #include "arps.h"
 
-#ifdef __APPLE__
+#if defined (__APPLE__)
 #include <OpenCL/opencl.h>
 #else
 #include <CL/cl.h>
 #endif
 
-#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+#if defined (GUI) || defined (_SHARE_OBJ_)
 #include <OpenGL/OpenGL.h>
 #endif
 
@@ -477,7 +477,9 @@ void RS_clear_rcs_data(RSHandle *H);
 void RS_update_colors_only(RSHandle *H);
 void RS_explode(RSHandle *H);
 
+#if defined (GUI) || defined (_SHARE_OBJ_)
 void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[][n]);
+#endif
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 #pragma mark -

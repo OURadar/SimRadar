@@ -112,7 +112,8 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
     [renderer setSize:size];
 
     // Allocate VAO based on the number of CL devices
-    [renderer allocateVAO:RS_gpu_count()];
+    //[renderer allocateVAO:RS_gpu_count()];
+    [renderer allocateVAO:1];
     
 	// Create a display link capable of being used with all active displays
 	CVDisplayLinkCreateWithActiveCGDisplays(&displayLink);

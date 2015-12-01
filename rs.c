@@ -13,11 +13,6 @@
 #include "rs.cl.h"
 #endif
 
-#if defined (__APPLE__)
-#include <OpenGL/OpenGL.h>
-#include <OpenCL/opencl.h>
-#endif
-
 #pragma mark -
 #pragma mark Private Functions
 
@@ -58,31 +53,31 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
 	
     cl_int ret;
 
-#if defined (__APPLE__)
+    #if defined (GUI)
 
-    CGLContextObj kCGLContext = CGLGetCurrentContext();
-    CGLShareGroupObj kCGLShareGroup = CGLGetShareGroup(kCGLContext);
+    CGLContextObj context = CGLGetCurrentContext();
+    CGLShareGroupObj obj = CGLGetShareGroup(context);
     
     cl_context_properties prop[] = {
         CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE,
-        (cl_context_properties)kCGLShareGroup, 0
+        (cl_context_properties)obj, 0
     };
     
     // Create a context from a CGL share group
     C->context = clCreateContext(prop, 1, &C->dev, &pfn_notify, NULL, &ret);
 
-#else
+    #else
 
     // Create an independent OpenCL context
     C->context = clCreateContext(NULL, 1, &C->dev, &pfn_notify, NULL, &ret);
 
-#endif
+    #endif
 
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error creating OpenCL context.  ret = %d\n", now(), ret);
         exit(EXIT_FAILURE);
     } else if (verb) {
-        printf("%s : RS : OpenCL context[%d] created.\n", now(), (int)C->name);
+        printf("%s : RS : OpenCL context[%d] created (context @ %p, device_id @ %p).\n", now(), (int)C->name, C->context, dev);
     }
     
 
@@ -92,14 +87,13 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
         fprintf(stderr, "%s : RS : Error creating OpenCL program.  ret = %d\n", now(), ret);
         clReleaseContext(C->context);
         return;
-    } else if (verb) {
-        printf("%s : RS : OpenCL program[%d] created.\n", now(), (int)C->name);
     }
     if (verb) {
         ret = clBuildProgram(C->prog, 1, &C->dev, "", &pfn_prog_notify, NULL);
     } else {
         ret = clBuildProgram(C->prog, 1, &C->dev, "", NULL, NULL);
     }
+
     if (ret != CL_SUCCESS) {
         char char_buf[RS_MAX_STR] = "";
         clGetProgramBuildInfo(C->prog, C->dev, CL_PROGRAM_BUILD_LOG, RS_MAX_STR, char_buf, NULL);
@@ -107,6 +101,8 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
         clReleaseProgram(C->prog);
         clReleaseContext(C->context);
         return;
+    } else if (verb) {
+        printf("%s : RS : OpenCL program[%d] created (program @ %p).\n", now(), (int)C->name, C->prog);
     }
 	
 #define CHECK_CL_CREATE_KERNEL                                                               \
@@ -130,29 +126,37 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     C->kern_make_pulse_pass_2_range = clCreateKernel(C->prog, "make_pulse_pass_2_local", &ret);   CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_2 = C->kern_make_pulse_pass_2_group;
     
-    if (C->verb > 3) {
-        size_t pref_size;
-        CL_CHECK(clGetKernelWorkGroupInfo(C->kern_scat_atts, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
-        printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   scat_atts()\n", now(), pref_size);
-        
-        CL_CHECK(clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_1, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
-        printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_1()\n", now(), pref_size);
-        
-        CL_CHECK(clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_2_group, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
-        printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_2_group()\n", now(), pref_size);
-        
-        CL_CHECK(clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_2_local, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
-        printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_2_local()\n", now(), pref_size);
-        
-        CL_CHECK(clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_2_range, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
-        printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_2_range()\n", now(), pref_size);
+    if (verb) {
+        printf("%s : RS : Kernels for program[%d] created.\n", now(), (int)C->name);
+        if (C->verb > 3) {
+            size_t pref_size;
+            CL_CHECK(clGetKernelWorkGroupInfo(C->kern_scat_atts, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
+            printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   scat_atts()\n", now(), pref_size);
+            
+            CL_CHECK(clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_1, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
+            printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_1()\n", now(), pref_size);
+            
+            CL_CHECK(clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_2_group, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
+            printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_2_group()\n", now(), pref_size);
+            
+            CL_CHECK(clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_2_local, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
+            printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_2_local()\n", now(), pref_size);
+            
+            CL_CHECK(clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_2_range, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
+            printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_2_range()\n", now(), pref_size);
+        }
     }
-	
+
     // A queue for the CL work of each device
     C->que = clCreateCommandQueue(C->context, C->dev, 0, &ret);
+    if (ret != CL_SUCCESS) {
+        printf("%s : RS : Creating command queue[%d] failed  (ret = %d).\n", now(), C->name, ret);
+    }
+    
+    sleep(1);
 	
 #endif
-	
+
 }
 
 
@@ -227,13 +231,15 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 	
-    // printf("Creating cl_mem from vbo ... %d %d\n", C->vbo_scat_pos, C->vbo_scat_clr);
+    printf("Creating cl_mem from vbo ... %d %d %d \n", C->vbo_scat_pos, C->vbo_scat_clr, C->vbo_scat_ori);
     C->scat_pos = gcl_gl_create_ptr_from_buffer(C->vbo_scat_pos);
     C->scat_clr = gcl_gl_create_ptr_from_buffer(C->vbo_scat_clr);
     C->scat_ori = gcl_gl_create_ptr_from_buffer(C->vbo_scat_ori);
     if (C->scat_pos == NULL || C->scat_clr == NULL || C->scat_ori == NULL) {
         fprintf(stderr, "%s : RS : Error in gcl_gl_create_ptr_from_buffer().\n", now());
-        return;
+        C->scat_pos = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
+        C->scat_clr = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
+        C->scat_ori = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
     }
     
     C->scat_vel = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
@@ -265,7 +271,9 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
         C->scat_ori = clCreateFromGLBuffer(C->context, CL_MEM_READ_WRITE, C->vbo_scat_ori, &ret);
         if (C->scat_pos == NULL || C->scat_clr == NULL || C->scat_ori == NULL || ret != CL_SUCCESS) {
             fprintf(stderr, "%s : RS : Error in clCreateFromGLBuffer().  ret = %d\n", now(), ret);
-            return;
+            C->scat_pos = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
+            C->scat_clr = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
+            C->scat_ori = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
         }
     } else {
         C->scat_pos = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
@@ -876,8 +884,11 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
         return NULL;
     }
 
-#if defined (__APPLE__) && defined (_SHARE_OBJ_)
-		
+    H->num_workers = H->num_devs;
+
+#if defined (GUI) || defined (_SHARE_OBJ_)
+    
+    // Force to one GPU at the moment. Seems like OpenGL context can be shared with only one OpenCL context
     H->num_workers = 1;
     
     CGLContextObj cobj = CGLGetCurrentContext();
@@ -885,6 +896,11 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
         fprintf(stderr, "No GL context yet.\n");
         return NULL;
     }
+    
+#endif
+
+#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+
     gcl_gl_set_sharegroup(CGLGetShareGroup(cobj));
     
     for (i = 0; i < H->num_workers; i++) {
@@ -895,7 +911,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
     }
 		
 #else
-    
+
     cl_uint count;
     char *src_ptr[RS_MAX_KERNEL_LINES];
     
@@ -925,8 +941,6 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
     if (count == 0) {
         return NULL;
     }
-    
-    H->num_workers = H->num_devs;
     
     for (i = 0; i < H->num_workers; i++) {
         if (H->verb > 2) {
@@ -2021,8 +2035,6 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
 
 #else
     
-    printf(" ========== number of workers = %d\n", H->num_workers);
-    
     cl_int ret;
     for (i = 0; i < H->num_workers; i++) {
         if (H->worker[i].range_weight != NULL) {
@@ -2862,7 +2874,9 @@ void RS_clear_rcs_data(RSHandle *H) {
 
 
 #pragma mark -
-#pragma mark Mac OS X Specific Functions
+#pragma mark GUI Specific Functions
+
+#if defined (GUI) || defined (_SHARE_OBJ_)
 
 void RS_update_colors_only(RSHandle *H) {
     
@@ -2939,7 +2953,6 @@ void RS_explode(RSHandle *H) {
 //    }
 }
 
-
 void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[][n]) {
     if (H->verb) {
         printf("%s : RS : RS_share_mem_with_vbo()   [ %d %d %d ]   [ %d %d %d ]\n", now(),
@@ -2953,6 +2966,8 @@ void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[][n]) {
     }
     H->has_vbo_from_gl = 1;
 }
+
+#endif
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 
@@ -3164,16 +3179,16 @@ void RS_populate(RSHandle *H) {
     const int a = 0;
     const int r = 0;
 	for (i = 0; i < H->num_workers; i++) {
-        ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &H->worker[i].vel_desc);
-        ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
+        ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription,      sizeof(cl_float16), &H->worker[i].vel_desc);
+        ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,              sizeof(cl_float16), &H->sim_desc);
 
         ret |= clSetKernelArg(H->worker[i].kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &H->worker[i].vel_desc);
         ret |= clSetKernelArg(H->worker[i].kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
 
-        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &H->worker[i].vel_desc);
-        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &H->worker[i].adm_desc[a]);
-        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &H->worker[i].rcs_desc[r]);
-        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
+        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentBackgroundVelocityDescription,     sizeof(cl_float16), &H->worker[i].vel_desc);
+        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentAirDragModelDescription,           sizeof(cl_float16), &H->worker[i].adm_desc[a]);
+        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentRadarCrossSectionDescription,      sizeof(cl_float16), &H->worker[i].rcs_desc[r]);
+        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentSimulationDescription,             sizeof(cl_float16), &H->sim_desc);
 	}
 
 	if (ret != CL_SUCCESS) {

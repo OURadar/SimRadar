@@ -123,12 +123,6 @@
 
 - (void)shareVBOsWithGL:(GLuint [][8])vbos
 {
-//    unsigned int vbo_array[RS_MAX_GPU_DEVICE][8];
-//    for (int i = 0; i < S->num_devs; i++) {
-//        vbo_array[i][0] = vbos[i][0];
-//        vbo_array[i][1] = vbos[i][1];
-//        vbo_array[i][2] = vbos[i][2];
-//    }
 	RS_share_mem_with_vbo(S, 8, vbos);
 }
 
