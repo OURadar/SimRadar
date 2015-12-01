@@ -34,9 +34,7 @@
 	self = [super init];
 	if (self) {
         NSString *resourcePath = [[NSBundle mainBundle] resourcePath];
-		//S  = RS_init();
-		//S = RS_init_verbose(2);
-        NSLog(@"resourcePath = %@", resourcePath);
+
         S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, 2);
         
         if (S->num_cus[0] < 32) {
@@ -85,7 +83,7 @@
 		//RS_set_physics_data_to_cube27(S);
 		
         RS_clear_wind_data(S);
-        for (table_id=0; table_id<RS_MAX_VEL_TABLES; table_id++) {
+        for (table_id = 0; table_id < RS_MAX_VEL_TABLES; table_id++) {
             LESTable *les = LES_get_frame(L, table_id);
             //LES_show_table_summary(les);
             RS_set_wind_data_to_LES_table(S, les);
@@ -123,13 +121,15 @@
 #pragma mark -
 #pragma mark Simulation State
 
-- (void)shareVBOsWithGL:(GLuint *)vbos
+- (void)shareVBOsWithGL:(GLuint [][8])vbos
 {
-    unsigned int vbo_array[RS_MAX_GPU_DEVICE][4];
-    vbo_array[0][0] = vbos[0];
-    vbo_array[0][1] = vbos[1];
-    vbo_array[0][2] = vbos[2];
-	RS_share_mem_with_vbo(S, 4, vbo_array);
+//    unsigned int vbo_array[RS_MAX_GPU_DEVICE][8];
+//    for (int i = 0; i < S->num_devs; i++) {
+//        vbo_array[i][0] = vbos[i][0];
+//        vbo_array[i][1] = vbos[i][1];
+//        vbo_array[i][2] = vbos[i][2];
+//    }
+	RS_share_mem_with_vbo(S, 8, vbos);
 }
 
 - (void)upload
@@ -240,6 +240,11 @@
 	return (NSInteger)S->num_scats;
 }
 
+- (NSInteger)pointCountForDevice:(cl_uint)deviceId
+{
+    return (NSInteger)S->worker[deviceId].num_scats;
+}
+
 - (cl_float4 *)anchors
 {
 	return S->anchor_pos;
@@ -305,5 +310,9 @@
     return (GLint)RS_get_debris_count(S, speciesId);
 }
 
+- (GLint)populationForSpecies:(const int)speciesId forDevice:(const int)deviceId
+{
+    return (GLint)RS_get_worker_debris_count(S, deviceId, speciesId);
+}
 
 @end

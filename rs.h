@@ -391,23 +391,23 @@ typedef struct _rs_handle {
 	size_t                 offset[RS_MAX_GPU_DEVICE];
 
 	// Anchors
-	ssize_t               num_anchors;
-	ssize_t               num_anchor_lines;
+	ssize_t                num_anchors;
+	ssize_t                num_anchor_lines;
 
 	// CPU side memory
-	cl_float4             *anchor_pos;
-	cl_float4             *anchor_lines;
-	cl_float4             beam_pos;
+	cl_float4              *anchor_pos;
+	cl_float4              *anchor_lines;
+	cl_float4              beam_pos;
     
     // DSD parameters
-    char                  dsd_name;
-    RSfloat               dsd_n0;           // DSD parameter for MP, gamma
-    RSfloat               dsd_lambda;       // DSD parameter for MP, gamma
-    RSfloat               dsd_mu;           // DSD pameter for gamma
-    int                   dsd_count;
-    RSfloat               *dsd_pdf;
-    RSfloat               *dsd_cdf;
-    RSfloat               *dsd_r;           // DSD radii
+    char                   dsd_name;
+    RSfloat                dsd_n0;           // DSD parameter for MP, gamma
+    RSfloat                dsd_lambda;       // DSD parameter for MP, gamma
+    RSfloat                dsd_mu;           // DSD pameter for gamma
+    int                    dsd_count;
+    RSfloat                *dsd_pdf;
+    RSfloat                *dsd_cdf;
+    RSfloat                *dsd_r;           // DSD radii
 	
 } RSHandle;
 
@@ -415,6 +415,10 @@ typedef struct _rs_handle {
 char *commaint(long long num);
 char *now();
 char *nowlong();
+
+#pragma mark -
+
+cl_uint RS_gpu_count(void);
 
 #pragma mark -
 
@@ -441,6 +445,7 @@ void RS_set_beam_pos(RSHandle *H, RSfloat az_deg, RSfloat el_deg);
 void RS_set_verbosity(RSHandle *H, const char verb);
 void RS_set_debris_count(RSHandle *H, const int species_id, const size_t count);
 size_t RS_get_debris_count(RSHandle *H, const int species_id);
+size_t RS_get_worker_debris_count(RSHandle *H, const int worker_id, const int species_id);
 
 void RS_set_dsd(RSHandle *H, const float *cdf, const float *diameters, const int count, const char name);
 void RS_set_dsd_to_mp(RSHandle *H);
@@ -471,7 +476,7 @@ void RS_clear_rcs_data(RSHandle *H);
 void RS_update_colors_only(RSHandle *H);
 void RS_explode(RSHandle *H);
 
-void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[RS_MAX_GPU_DEVICE][n]);
+void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[][n]);
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 #pragma mark -

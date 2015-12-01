@@ -803,6 +803,15 @@ float read_table(const float *table, const float index_last, const float index) 
 	return table[i] + alpha * (table[i + 1] - table[i]);
 }
 
+#pragma mark -
+#pragma mark RS Convenient functions
+
+cl_uint RS_gpu_count(void) {
+    cl_uint          num_devs, num_cus;
+    cl_device_id     devs[RS_MAX_GPU_DEVICE];
+    get_device_info(CL_DEVICE_TYPE_GPU, &num_devs, devs, &num_cus, 0);
+    return num_devs;
+}
 
 #pragma mark -
 #pragma mark RS Initialization and Deallocation
@@ -864,7 +873,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
         fprintf(stderr, "%s : RS : Error. No OpenCL devices found.\n", now());
         return NULL;
     }
-			
+
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 		
     H->num_workers = 1;
@@ -885,23 +894,6 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
 		
 #else
     
-    #if defined (__APPLE__)
-    
-    CGLContextObj kCGLContext = CGLGetCurrentContext();
-    CGLShareGroupObj kCGLShareGroup = CGLGetShareGroup(kCGLContext);
-    
-    cl_context_properties akProperties[] = {
-        CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE,
-        (cl_context_properties)kCGLShareGroup, 0
-    };
-    
-    // Create a context from a CGL share group
-    //
-    //m_kContext = clCreateContext(akProperties, 0, 0, clLogMessagesToStdoutAPPLE, 0, 0);
-    
-
-    #endif
-
     cl_uint count;
     char *src_ptr[RS_MAX_KERNEL_LINES];
     
@@ -1825,6 +1817,11 @@ void RS_set_debris_count(RSHandle *H, const int species_id, const size_t count) 
 
 size_t RS_get_debris_count(RSHandle *H, const int species_id) {
     return H->species_population[species_id];
+}
+
+
+size_t RS_get_worker_debris_count(RSHandle *H, const int worker_id, const int species_id) {
+    return H->worker[worker_id].species_population[species_id];
 }
 
 
@@ -2932,7 +2929,7 @@ void RS_explode(RSHandle *H) {
 }
 
 
-void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[RS_MAX_GPU_DEVICE][n]) {
+void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[][n]) {
     if (H->verb) {
         printf("%s : RS : RS_share_mem_with_vbo()\n", now());
     }

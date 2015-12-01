@@ -15,6 +15,7 @@
 #define RENDERER_FAR_RANGE          100000.0f
 #define RENDERER_TIC_COUNT          10
 #define RENDERER_MAX_SPECIES_COUNT  4
+#define RENDERER_MAX_VBO_GROUPS     8
 
 typedef struct _draw_resource {
 	GLuint program;
@@ -63,7 +64,7 @@ typedef struct _draw_primitive {
 @protocol RendererDelegate <NSObject>
 
 - (void)glContextVAOPrepared;
-- (void)vbosAllocated:(GLuint *)vbos;
+- (void)vbosAllocated:(GLuint)vbos[RENDERER_MAX_VBO_GROUPS][8];
 - (void)willDrawScatterBody;
 
 @end
@@ -100,6 +101,8 @@ typedef struct _draw_primitive {
 	
 	@private
 	
+    cl_uint clDeviceCount;
+    
 	cl_float4 modelCenter;
 
     BOOL vbosNeedUpdate;
@@ -107,11 +110,12 @@ typedef struct _draw_primitive {
     BOOL statusMessageNeedsUpdate;
     GLchar spinModel;
     
+    RenderResource bodyRenderer[8];
+    RenderResource leafRenderer[8];
+
     RenderResource gridRenderer;
-    RenderResource bodyRenderer;
     RenderResource anchorRenderer;
     RenderResource anchorLineRenderer;
-    RenderResource leafRenderer;
     RenderResource speciesRenderer[RENDERER_MAX_SPECIES_COUNT];
     RenderResource hudRenderer;
     RenderResource meshRenderer;
@@ -139,15 +143,15 @@ typedef struct _draw_primitive {
 - (id)initWithDevicePixelRatio:(GLfloat)pixelRatio;
 
 - (void)setSize:(CGSize)size;
-- (void)setBodyCount:(GLuint)number;
-- (void)setPopulationTo:(GLuint)count forSpecies:(GLuint)speciesId;
+- (void)setBodyCount:(GLuint)number forDevice:(GLuint)deviceId;
+- (void)setPopulationTo:(GLuint)count forSpecies:(GLuint)speciesId forDevice:(GLuint)deviceId;
 - (void)setGridAtOrigin:(GLfloat *)origin size:(GLfloat *)size;
 - (void)setAnchorPoints:(GLfloat *)points number:(GLuint)number;
 - (void)setAnchorLines:(GLfloat *)lines number:(GLuint)number;
 - (void)setCenterPoisitionX:(GLfloat)x y:(GLfloat)y z:(GLfloat)z;
 - (void)setBeamElevation:(GLfloat)elevation azimuth:(GLfloat)azimuth;
 
-- (void)allocateVAO;
+- (void)allocateVAO:(GLuint)count;
 - (void)updateBodyToDebrisMappings;
 
 - (void)render;

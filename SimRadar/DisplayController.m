@@ -68,7 +68,7 @@ NSWindow *standardWindow;
     
     //NSLog(@"sim.anchorCount = %d", sim.anchorCount);
 
-	[glView.renderer setBodyCount:(GLuint)sim.pointCount];
+	[glView.renderer setBodyCount:(GLuint)sim.pointCount forDevice:0];
 	[glView.renderer setGridAtOrigin:(GLfloat *)&domain.origin size:(GLfloat *)&domain.size];
 	[glView.renderer setAnchorPoints:(GLfloat *)sim.anchors number:(GLuint)sim.anchorCount];
 	[glView.renderer setAnchorLines:(GLfloat *)sim.anchorLines number:(GLuint)sim.anchorLineCount];

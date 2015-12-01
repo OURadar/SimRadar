@@ -41,7 +41,7 @@
 @property (nonatomic, readonly, getter=azimuthInDegrees) float az_deg;
 @property (nonatomic, readonly, getter=elevationInDegrees) float el_deg;
 
-- (void)shareVBOsWithGL:(GLuint *)vbos;
+- (void)shareVBOsWithGL:(GLuint [][8])vbos;
 - (void)upload;
 - (void)populate;
 - (void)explode;
@@ -54,6 +54,7 @@
 
 - (cl_float4 *)points;
 - (NSInteger)pointCount;
+- (NSInteger)pointCountForDevice:(cl_uint)deviceId;
 
 - (cl_float4 *)anchors;
 - (NSInteger)anchorCount;
@@ -66,5 +67,6 @@
 - (GLint)decreasePopulationForSpecies:(const int)speciesId;
 - (GLint)increasePopulationForSpecies:(const int)speciesId;
 - (GLint)populationForSpecies:(const int)speciesId;
+- (GLint)populationForSpecies:(const int)speciesId forDevice:(const int)deviceId;
 
 @end

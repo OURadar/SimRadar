@@ -7,6 +7,7 @@
 //
 
 #import "SimGLView.h"
+#import "rs.h"
 
 @interface SimGLView()
 - (NSBitmapImageRep *)bitmapImageRepFromView;
@@ -58,7 +59,7 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	
 	CGLContextObj cglContext = [context CGLContextObj];
 	gcl_gl_set_sharegroup(CGLGetShareGroup(cglContext));
-	
+
 	[self setOpenGLContext:context];
 	
 	[context release];
@@ -107,8 +108,11 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	// OSX (but not iOS since iOS apps must create their own FBO)
 	CGSize size = CGSizeMake(self.bounds.size.width, self.bounds.size.height);
 
+    // Set the render size to bound size
     [renderer setSize:size];
-    [renderer allocateVAO];
+
+    // Allocate VAO based on the number of CL devices
+    [renderer allocateVAO:RS_gpu_count()];
     
 	// Create a display link capable of being used with all active displays
 	CVDisplayLinkCreateWithActiveCGDisplays(&displayLink);
