@@ -321,6 +321,7 @@ typedef struct _rs_worker {
     cl_kernel              kern_ds_atts;
     cl_kernel              kern_scat_atts;
     cl_kernel              kern_scat_sig_dsd;
+    cl_kernel              kern_scat_clr_dsd;
 	cl_kernel              kern_make_pulse_pass_1;
 	cl_kernel              kern_make_pulse_pass_2;
 	cl_kernel              kern_make_pulse_pass_2_group;

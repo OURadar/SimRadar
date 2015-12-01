@@ -120,6 +120,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     C->kern_ds_atts = clCreateKernel(C->prog, "ds_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
     C->kern_scat_atts = clCreateKernel(C->prog, "scat_atts", &ret);                               CHECK_CL_CREATE_KERNEL
     C->kern_scat_sig_dsd = clCreateKernel(C->prog, "scat_sig_dsd", &ret);                         CHECK_CL_CREATE_KERNEL
+    C->kern_scat_clr_dsd = clCreateKernel(C->prog, "scat_clr_dsd", &ret);                         CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_1 = clCreateKernel(C->prog, "make_pulse_pass_1", &ret);               CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_2_group = clCreateKernel(C->prog, "make_pulse_pass_2_group", &ret);   CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_2_local = clCreateKernel(C->prog, "make_pulse_pass_2_range", &ret);   CHECK_CL_CREATE_KERNEL
@@ -177,6 +178,7 @@ void RS_worker_free(RSWorker *C) {
     clReleaseKernel(C->kern_ds_atts);
     clReleaseKernel(C->kern_scat_atts);
     clReleaseKernel(C->kern_scat_sig_dsd);
+    clReleaseKernel(C->kern_scat_clr_dsd);
     clReleaseKernel(C->kern_make_pulse_pass_1);
     clReleaseKernel(C->kern_make_pulse_pass_2_group);
     clReleaseKernel(C->kern_make_pulse_pass_2_local);
@@ -333,7 +335,6 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentAngularWeight,                 sizeof(cl_mem),     &C->angular_weight);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentAngularWeightDescription,      sizeof(cl_float4),  &C->angular_weight_desc);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
-    
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_bg_atts().\n", now());
         exit(EXIT_FAILURE);
@@ -352,7 +353,6 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentAngularWeight,                 sizeof(cl_mem),     &C->angular_weight);
     ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentAngularWeightDescription,      sizeof(cl_float4),  &C->angular_weight_desc);
     ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
-    
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_ds_atts().\n", now());
         exit(EXIT_FAILURE);
@@ -377,7 +377,6 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentAngularWeight,                 sizeof(cl_mem),     &C->angular_weight);
 	ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentAngularWeightDescription,      sizeof(cl_float4),  &C->angular_weight_desc);
     ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
-
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_atts().\n", now());
         exit(EXIT_FAILURE);
@@ -387,9 +386,17 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentSignal,    sizeof(cl_mem), &C->scat_sig);
     ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentPosition,  sizeof(cl_mem), &C->scat_pos);
     ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentAttribute, sizeof(cl_mem), &C->scat_att);
-    
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_sig_dsd().\n", now());
+        exit(EXIT_FAILURE);
+    }
+
+    ret = CL_SUCCESS;
+    ret |= clSetKernelArg(C->kern_scat_clr_dsd, RSScattererColorDropSizeDistributionKernalArgumentColor,     sizeof(cl_mem), &C->scat_clr);
+    ret |= clSetKernelArg(C->kern_scat_clr_dsd, RSScattererColorDropSizeDistributionKernalArgumentPosition,  sizeof(cl_mem), &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_scat_clr_dsd, RSScattererColorDropSizeDistributionKernalArgumentAttribute, sizeof(cl_mem), &C->scat_att);
+    if (ret != CL_SUCCESS) {
+        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_clr_dsd().\n", now());
         exit(EXIT_FAILURE);
     }
 
@@ -2955,9 +2962,14 @@ void RS_explode(RSHandle *H) {
 
 void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[][n]) {
     if (H->verb) {
-        printf("%s : RS : RS_share_mem_with_vbo()   [ %d %d %d ]   [ %d %d %d ]\n", now(),
-               vbo[0][0], vbo[0][1], vbo[0][2],
-               vbo[1][0], vbo[1][1], vbo[1][2]);
+        if (H->num_workers == 1) {
+            printf("%s : RS : RS_share_mem_with_vbo()   [ %d %d %d ]\n", now(),
+                   vbo[0][0], vbo[0][1], vbo[0][2]);
+        } else {
+            printf("%s : RS : RS_share_mem_with_vbo()   [ %d %d %d ]   [ %d %d %d ]\n", now(),
+                   vbo[0][0], vbo[0][1], vbo[0][2],
+                   vbo[1][0], vbo[1][1], vbo[1][2]);
+        }
     }
     for (int i = 0; i < H->num_workers; i++) {
         H->worker[i].vbo_scat_pos = vbo[i][0];
@@ -3341,6 +3353,11 @@ void RS_upload(RSHandle *H) {
 			gcl_memcpy(H->worker[i].scat_sig, H->scat_sig + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->worker[i].scat_rnd, H->scat_rnd + H->offset[i], H->worker[i].num_scats * sizeof(cl_uint4));
             
+            scat_clr_dsd_kernel(&H->worker[i].ndrange_scat[0],
+                                (cl_float4 *)H->worker[i].scat_clr,
+                                (cl_float4 *)H->worker[i].scat_pos,
+                                (cl_float4 *)H->worker[i].scat_att);
+
             dispatch_semaphore_signal(H->worker[i].sem);
 		});
 		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
@@ -3348,17 +3365,17 @@ void RS_upload(RSHandle *H) {
 	
     // Set individual colors based on individual attributes: age, drop size, etc.
     
-    for (i = 0; i < H->num_workers; i++) {
-        dispatch_async(H->worker[i].que, ^{
-            scat_clr_dsd_kernel(&H->worker[i].ndrange_scat[0],
-                                (cl_float4 *)H->worker[i].scat_clr,
-                                (cl_float4 *)H->worker[i].scat_pos,
-                                (cl_float4 *)H->worker[i].scat_att);
-    
-            dispatch_semaphore_signal(H->worker[i].sem);
-        });
-        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
-    }
+//    for (i = 0; i < H->num_workers; i++) {
+//        dispatch_async(H->worker[i].que, ^{
+//            scat_clr_dsd_kernel(&H->worker[i].ndrange_scat[0],
+//                                (cl_float4 *)H->worker[i].scat_clr,
+//                                (cl_float4 *)H->worker[i].scat_pos,
+//                                (cl_float4 *)H->worker[i].scat_att);
+//    
+//            dispatch_semaphore_signal(H->worker[i].sem);
+//        });
+//        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+//    }
 
 #else
 
@@ -3371,6 +3388,23 @@ void RS_upload(RSHandle *H) {
         clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_rnd, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_uint4),  H->scat_rnd + H->offset[i], 0, NULL, NULL);
 	}
     
+    size_t local_item_size = 1;
+
+    cl_event events[RS_MAX_GPU_DEVICE];
+
+    for (i = 0; i < H->num_workers; i++) {
+        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_clr_dsd, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i]);
+    }
+    
+    for (i = 0; i < H->num_workers; i++) {
+        clFlush(H->worker[i].que);
+    }
+    
+    for (i = 0; i < H->num_workers; i++) {
+        clWaitForEvents(1, &events[i]);
+        clReleaseEvent(events[i]);
+    }
+
 #endif
 	
 }
