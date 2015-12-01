@@ -229,6 +229,10 @@
 #pragma mark -
 #pragma Simulation Citizens
 
+- (NSInteger)deviceCount
+{
+    return (NSInteger)S->num_workers;
+}
 
 - (cl_float4 *)points
 {
@@ -273,7 +277,7 @@
 #pragma mark -
 #pragma mark Simulation parameters
 
-- (GLint)decreasePopulationForSpecies:(const int)speciesId
+- (GLint)decreasePopulationForSpecies:(const int)speciesId returnCounts:(GLint *)counts
 {
     if (speciesId == 0) {
         return -1;
@@ -287,10 +291,17 @@
         return -1;
     }
     RS_set_debris_count(S, speciesId, pop);
+    
+    RS_get_all_worker_debris_counts(S, speciesId, returnCounts);
+
+    for (int i = 0; i < S->num_workers; i++) {
+        counts[i] = (GLint)returnCounts[i];
+    }
+    
     return (GLuint)pop;
 }
 
-- (GLint)increasePopulationForSpecies:(const int)speciesId
+- (GLint)increasePopulationForSpecies:(const int)speciesId returnCounts:(GLint *)counts
 {
     if (speciesId == 0) {
         return -1;
@@ -302,6 +313,13 @@
         pop += 100;
     }
     RS_set_debris_count(S, speciesId, pop);
+
+    RS_get_all_worker_debris_counts(S, speciesId, returnCounts);
+    
+    for (int i = 0; i < S->num_workers; i++) {
+        counts[i] = (GLint)returnCounts[i];
+    }
+
     return (GLuint)pop;
 }
 
@@ -312,7 +330,7 @@
 
 - (GLint)populationForSpecies:(const int)speciesId forDevice:(const int)deviceId
 {
-    return (GLint)RS_get_worker_debris_count(S, deviceId, speciesId);
+    return (GLint)RS_get_worker_debris_count(S, speciesId, deviceId);
 }
 
 @end

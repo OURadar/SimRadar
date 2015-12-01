@@ -619,8 +619,8 @@
 	if (gridRenderer.positions != NULL) {
 		free(gridRenderer.positions);
 	}
-	if (leafRenderer[0].positions != NULL) {
-		free(leafRenderer[0].positions);
+	if (leafRenderer.positions != NULL) {
+		free(leafRenderer.positions);
 	}
     for (int k=0; k<RENDERER_MAX_SPECIES_COUNT; k++) {
         free(speciesRenderer[k].colors);
@@ -648,18 +648,22 @@
 	NSLog(@"Aliased / smoothed line width: %d ... %d / %d ... %d", v[0], v[1], v[2], v[3]);
     
 	// Set up VAO and shaders
-    int i;
-    for (i=0; i<clDeviceCount; i++) {
-        bodyRenderer[i] = [self createRenderResourceFromVertexShader:@"spheroid" fragmentShader:@"spheroid"];
-        leafRenderer[i] = [self createRenderResourceFromVertexShader:@"leaf" fragmentShader:@"leaf"];
+    int i = 0;
 
-        // Make body renderer's color a bit translucent
-        glUniform4f(bodyRenderer[i].colorUI, 1.0f, 1.0f, 1.0f, 0.75f);
+    bodyRenderer[i] = [self createRenderResourceFromVertexShader:@"spheroid" fragmentShader:@"spheroid"];
+    // Make body renderer's color a bit translucent
+    glUniform4f(bodyRenderer[i].colorUI, 1.0f, 1.0f, 1.0f, 0.75f);
+    
+    // Set default colormap index
+    bodyRenderer[i].colormapIndex = 3;
+    bodyRenderer[i].colormapIndexNormalized = ((GLfloat)bodyRenderer[i].colormapIndex + 0.5f) / bodyRenderer[i].colormapCount;
 
-        // Set default colormap index
-        bodyRenderer[i].colormapIndex = 3;
-        bodyRenderer[i].colormapIndexNormalized = ((GLfloat)bodyRenderer[i].colormapIndex + 0.5f) / bodyRenderer[i].colormapCount;
+    // Make copies of render resource but use the same program
+    for (i = 1; i < clDeviceCount; i++) {
+        bodyRenderer[i] = [self createRenderResourceFromProgram:bodyRenderer[0].program];
     }
+
+    leafRenderer = [self createRenderResourceFromVertexShader:@"leaf" fragmentShader:@"leaf"];
 
     gridRenderer = [self createRenderResourceFromVertexShader:@"line_sc" fragmentShader:@"line_sc"];
     anchorRenderer = [self createRenderResourceFromVertexShader:@"shape_sc" fragmentShader:@"shape_sc"];
@@ -676,8 +680,8 @@
         1.00f, 0.65f, 0.25f
     };
     
-    for (int k=0; k<RENDERER_MAX_SPECIES_COUNT; k++) {
-        speciesRenderer[k] = [self createRenderResourceFromProgram:leafRenderer[0].program];
+    for (int k = 0; k < RENDERER_MAX_SPECIES_COUNT; k++) {
+        speciesRenderer[k] = [self createRenderResourceFromProgram:leafRenderer.program];
         speciesRenderer[k].colors = malloc(4 * sizeof(GLfloat));
         speciesRenderer[k].colors[0] = colors[(k % 4) * 3];
         speciesRenderer[k].colors[1] = colors[(k % 4) * 3 + 1];
@@ -688,7 +692,7 @@
 	textRenderer = [[GLText alloc] initWithDevicePixelRatio:devicePixelRatio];
     
 	NSLog(@"VAOs = bodyRenderer %d  gridRenderer %d  anchorRenderer %d  anchorLineRendrer %d  leafRendrer = %d",
-		  bodyRenderer[0].vao, gridRenderer.vao, anchorRenderer.vao, anchorLineRenderer.vao, leafRenderer[0].vao);
+		  bodyRenderer[0].vao, gridRenderer.vao, anchorRenderer.vao, anchorLineRenderer.vao, leafRenderer.vao);
 	// Depth test will always be enabled
 	//glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
@@ -824,9 +828,9 @@
     glEnableVertexAttribArray(meshRenderer.textureCoordAI);
 
 	#ifdef DEBUG
-	NSLog(@"VBOs   %d %d   %d %d   %d ...",
-          bodyRenderer[0].vbo[0], bodyRenderer[0].vbo[1],
-          bodyRenderer[1].vbo[0], bodyRenderer[1].vbo[1],
+	NSLog(@"VBOs   %d %d %d   %d %d %d   %d ...",
+          bodyRenderer[0].vbo[0], bodyRenderer[0].vbo[1], bodyRenderer[0].vbo[2],
+          bodyRenderer[1].vbo[0], bodyRenderer[1].vbo[1], bodyRenderer[1].vbo[2],
           anchorRenderer.vbo[0]);
 	#endif
 	
@@ -856,7 +860,7 @@
     }
     
     // Various Species
-    for (int k=1; k<RENDERER_MAX_SPECIES_COUNT; k++) {
+    for (int k = 1; k < RENDERER_MAX_SPECIES_COUNT; k++) {
         if (speciesRenderer[k].count == 0) {
             continue;
         }
@@ -872,7 +876,7 @@
         speciesRenderer[k].instanceSize = prim->instanceSize;
         speciesRenderer[k].drawMode = prim->drawMode;
         
-        glBindBuffer(GL_ARRAY_BUFFER, speciesRenderer[k].vbo[0]);           // 1-st VBO for position (primitive, we are instancing)
+        glBindBuffer(GL_ARRAY_BUFFER, speciesRenderer[k].vbo[0]);           // 1-st VBO for geometry (primitive, we are instancing)
         glBufferData(GL_ARRAY_BUFFER, prim->vertexSize, prim->vertices, GL_STATIC_DRAW);
         glVertexAttribPointer(speciesRenderer[k].positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
         glEnableVertexAttribArray(speciesRenderer[k].positionAI);
@@ -897,6 +901,7 @@
 
 - (void)render
 {
+    int i;
     static float theta = 0.0f;
     
 	if (vbosNeedUpdate) {
@@ -962,7 +967,7 @@
 	// The scatter bodies
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    for (int i = 0; i < clDeviceCount; i++) {
+    for (i = 0; i < clDeviceCount; i++) {
         glBindVertexArray(bodyRenderer[i].vao);
         glPointSize(MIN(MAX(4.0f * pixelsPerUnit, 1.0f), 64.0f) * devicePixelRatio);
         glUseProgram(bodyRenderer[i].program);
@@ -981,28 +986,29 @@
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
     // Various debris types
-    glUseProgram(leafRenderer[0].program);
-//    glUniform4f(leafRenderer.sizeUI, 1.0f, 1.0f, 1.0f, 1.0f);
-    glUniformMatrix4fv(leafRenderer[0].mvpUI, 1, GL_FALSE, modelViewProjection.m);
+    glUseProgram(leafRenderer.program);
+    glUniformMatrix4fv(leafRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
 
-    for (int k=1; k<RENDERER_MAX_SPECIES_COUNT; k++) {
-        if (speciesRenderer[k].count == 0) {
-            continue;
+    for (int k = 1; k < RENDERER_MAX_SPECIES_COUNT; k++) {
+        for (i = 0; i < clDeviceCount; i++) {
+            if (speciesRenderer[k].count == 0) {
+                continue;
+            }
+            // Update the VBOs by copy
+            glBindVertexArray(speciesRenderer[k].vao);
+            
+            glUniform4f(leafRenderer.colorUI, speciesRenderer[k].colors[0], speciesRenderer[k].colors[1], speciesRenderer[k].colors[2], speciesRenderer[k].colors[3]);
+
+            glBindBuffer(GL_COPY_READ_BUFFER, bodyRenderer[i].vbo[0]);              // positions of simulation particles
+            glBindBuffer(GL_COPY_WRITE_BUFFER, speciesRenderer[k].vbo[2]);       // translations of species[k]
+            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, speciesRenderer[k].sourceOffset * sizeof(cl_float4), 0, speciesRenderer[k].count * sizeof(cl_float4));
+            
+            glBindBuffer(GL_COPY_READ_BUFFER, bodyRenderer[i].vbo[2]);              // quaternions of simulation particles
+            glBindBuffer(GL_COPY_WRITE_BUFFER, speciesRenderer[k].vbo[3]);       // quaternions of species[k]
+            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, speciesRenderer[k].sourceOffset * sizeof(cl_float4), 0, speciesRenderer[k].count * sizeof(cl_float4));
+            
+            glDrawElementsInstanced(speciesRenderer[k].drawMode, speciesRenderer[k].instanceSize, GL_UNSIGNED_INT, NULL, speciesRenderer[k].count);
         }
-        // Update the VBOs by copy
-        glBindVertexArray(speciesRenderer[k].vao);
-        
-        glUniform4f(leafRenderer[0].colorUI, speciesRenderer[k].colors[0], speciesRenderer[k].colors[1], speciesRenderer[k].colors[2], speciesRenderer[k].colors[3]);
-
-        glBindBuffer(GL_COPY_READ_BUFFER, bodyRenderer.vbo[0]);              // positions of simulation particles
-        glBindBuffer(GL_COPY_WRITE_BUFFER, speciesRenderer[k].vbo[2]);       // translations of species[k]
-        glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, speciesRenderer[k].sourceOffset * sizeof(cl_float4), 0, speciesRenderer[k].count * sizeof(cl_float4));
-        
-        glBindBuffer(GL_COPY_READ_BUFFER, bodyRenderer.vbo[2]);              // quaternions of simulation particles
-        glBindBuffer(GL_COPY_WRITE_BUFFER, speciesRenderer[k].vbo[3]);       // quaternions of species[k]
-        glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, speciesRenderer[k].sourceOffset * sizeof(cl_float4), 0, speciesRenderer[k].count * sizeof(cl_float4));
-        
-        glDrawElementsInstanced(speciesRenderer[k].drawMode, speciesRenderer[k].instanceSize, GL_UNSIGNED_INT, NULL, speciesRenderer[k].count);
     }
     
     if (showHUD) {
@@ -1021,7 +1027,7 @@
         // Draw the debris again
         glUseProgram(leafRenderer.program);
         glUniformMatrix4fv(leafRenderer.mvpUI, 1, GL_FALSE, beamModelViewProjection.m);
-        for (int k=1; k<RENDERER_MAX_SPECIES_COUNT; k++) {
+        for (int k = 1; k < RENDERER_MAX_SPECIES_COUNT; k++) {
             if (speciesRenderer[k].count == 0) {
                 continue;
             }
@@ -1080,10 +1086,10 @@
     glBindVertexArray(meshRenderer.vao);
     glUseProgram(meshRenderer.program);
     if (colorbarNeedsUpdate) {
-        float texCoord[] = {0.0f, bodyRenderer.colormapIndexNormalized,
-            0.0f, bodyRenderer.colormapIndexNormalized,
-            1.0f, bodyRenderer.colormapIndexNormalized,
-            1.0f, bodyRenderer.colormapIndexNormalized,
+        float texCoord[] = {0.0f, bodyRenderer[0].colormapIndexNormalized,
+            0.0f, bodyRenderer[0].colormapIndexNormalized,
+            1.0f, bodyRenderer[0].colormapIndexNormalized,
+            1.0f, bodyRenderer[0].colormapIndexNormalized,
             0.0f, 0.0f,
             0.0f, 0.0f,
             0.0f, 0.0f,
@@ -1251,8 +1257,8 @@
 
 - (void)cycleForwardColormap
 {
-    bodyRenderer.colormapIndex = bodyRenderer.colormapIndex >= bodyRenderer.colormapCount - 1 ? 0 : bodyRenderer.colormapIndex + 1;
-    bodyRenderer.colormapIndexNormalized = ((GLfloat)bodyRenderer.colormapIndex + 0.5f) / bodyRenderer.colormapCount;
+    bodyRenderer[0].colormapIndex = bodyRenderer[0].colormapIndex >= bodyRenderer[0].colormapCount - 1 ? 0 : bodyRenderer[0].colormapIndex + 1;
+    bodyRenderer[0].colormapIndexNormalized = ((GLfloat)bodyRenderer[0].colormapIndex + 0.5f) / bodyRenderer[0].colormapCount;
     statusMessageNeedsUpdate = TRUE;
     colorbarNeedsUpdate = TRUE;
 }
@@ -1260,8 +1266,8 @@
 
 - (void)cycleReverseColormap
 {
-    bodyRenderer.colormapIndex = bodyRenderer.colormapIndex <= 0 ? bodyRenderer.colormapCount - 1 : bodyRenderer.colormapIndex - 1;
-    bodyRenderer.colormapIndexNormalized = ((GLfloat)bodyRenderer.colormapIndex + 0.5f) / bodyRenderer.colormapCount;
+    bodyRenderer[0].colormapIndex = bodyRenderer[0].colormapIndex <= 0 ? bodyRenderer[0].colormapCount - 1 : bodyRenderer[0].colormapIndex - 1;
+    bodyRenderer[0].colormapIndexNormalized = ((GLfloat)bodyRenderer[0].colormapIndex + 0.5f) / bodyRenderer[0].colormapCount;
     statusMessageNeedsUpdate = TRUE;
     colorbarNeedsUpdate = TRUE;
 }

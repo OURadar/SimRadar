@@ -69,21 +69,22 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     };
     
     // Create a context from a CGL share group
-    //
-    C->context = clCreateContext(prop, 0, 0, clLogMessagesToStdoutAPPLE, 0, 0);
+    C->context = clCreateContext(prop, 1, &C->dev, &pfn_notify, NULL, &ret);
 
 #else
 
-    // The OpenCL context
+    // Create an independent OpenCL context
     C->context = clCreateContext(NULL, 1, &C->dev, &pfn_notify, NULL, &ret);
+
+#endif
+
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error creating OpenCL context.  ret = %d\n", now(), ret);
         exit(EXIT_FAILURE);
     } else if (verb) {
         printf("%s : RS : OpenCL context[%d] created.\n", now(), (int)C->name);
     }
-
-#endif
+    
 
     // Program
     C->prog = clCreateProgramWithSource(C->context, src_size, (const char **)src_ptr, NULL, &ret);
@@ -807,9 +808,10 @@ float read_table(const float *table, const float index_last, const float index) 
 #pragma mark RS Convenient functions
 
 cl_uint RS_gpu_count(void) {
-    cl_uint          num_devs, num_cus;
+    cl_uint          num_devs;
     cl_device_id     devs[RS_MAX_GPU_DEVICE];
-    get_device_info(CL_DEVICE_TYPE_GPU, &num_devs, devs, &num_cus, 0);
+    cl_uint          num_cus[RS_MAX_GPU_DEVICE];
+    get_device_info(CL_DEVICE_TYPE_GPU, &num_devs, devs, num_cus, 0);
     return num_devs;
 }
 
@@ -925,8 +927,6 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
     }
     
     H->num_workers = H->num_devs;
-    
-    H->num_workers = 1;
     
     for (i = 0; i < H->num_workers; i++) {
         if (H->verb > 2) {
@@ -1820,8 +1820,19 @@ size_t RS_get_debris_count(RSHandle *H, const int species_id) {
 }
 
 
-size_t RS_get_worker_debris_count(RSHandle *H, const int worker_id, const int species_id) {
+size_t RS_get_worker_debris_count(RSHandle *H, const int species_id, const int worker_id) {
     return H->worker[worker_id].species_population[species_id];
+}
+
+
+size_t RS_get_all_worker_debris_counts(RSHandle *H, const int species_id, size_t counts[]) {
+    
+    int i;
+    
+    for (i = 0; i < H->num_workers; i++) {
+        counts[i] = H->worker[i].species_population[species_id];
+    }
+    return H->species_population[species_id];
 }
 
 
@@ -2931,7 +2942,9 @@ void RS_explode(RSHandle *H) {
 
 void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[][n]) {
     if (H->verb) {
-        printf("%s : RS : RS_share_mem_with_vbo()\n", now());
+        printf("%s : RS : RS_share_mem_with_vbo()   [ %d %d %d ]   [ %d %d %d ]\n", now(),
+               vbo[0][0], vbo[0][1], vbo[0][2],
+               vbo[1][0], vbo[1][1], vbo[1][2]);
     }
     for (int i = 0; i < H->num_workers; i++) {
         H->worker[i].vbo_scat_pos = vbo[i][0];

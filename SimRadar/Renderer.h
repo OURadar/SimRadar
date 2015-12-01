@@ -64,7 +64,7 @@ typedef struct _draw_primitive {
 @protocol RendererDelegate <NSObject>
 
 - (void)glContextVAOPrepared;
-- (void)vbosAllocated:(GLuint)vbos[RENDERER_MAX_VBO_GROUPS][8];
+- (void)vbosAllocated:(GLuint [][8])vbos;
 - (void)willDrawScatterBody;
 
 @end
@@ -111,7 +111,7 @@ typedef struct _draw_primitive {
     GLchar spinModel;
     
     RenderResource bodyRenderer[8];
-    RenderResource leafRenderer[8];
+    RenderResource leafRenderer;
 
     RenderResource gridRenderer;
     RenderResource anchorRenderer;

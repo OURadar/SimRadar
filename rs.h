@@ -445,7 +445,8 @@ void RS_set_beam_pos(RSHandle *H, RSfloat az_deg, RSfloat el_deg);
 void RS_set_verbosity(RSHandle *H, const char verb);
 void RS_set_debris_count(RSHandle *H, const int species_id, const size_t count);
 size_t RS_get_debris_count(RSHandle *H, const int species_id);
-size_t RS_get_worker_debris_count(RSHandle *H, const int worker_id, const int species_id);
+size_t RS_get_worker_debris_count(RSHandle *H, const int species_id, const int worker_id);
+size_t RS_get_all_worker_debris_counts(RSHandle *H, const int species_id, size_t counts[]);
 
 void RS_set_dsd(RSHandle *H, const float *cdf, const float *diameters, const int count, const char name);
 void RS_set_dsd_to_mp(RSHandle *H);

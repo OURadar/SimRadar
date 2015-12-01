@@ -192,7 +192,8 @@ NSWindow *standardWindow;
 	unichar c = [[event charactersIgnoringModifiers] characterAtIndex:0];
 	
     GLint ret;
-    
+    GLint counts[RS_MAX_GPU_DEVICE];
+
 	switch (c)
 	{
 		case 27:
@@ -265,17 +266,23 @@ NSWindow *standardWindow;
 			break;
 
 		case ']':
-            ret = [sim increasePopulationForSpecies:speciesId];
+            ret = [sim increasePopulationForSpecies:speciesId returnCounts:counts];
             if (ret >= 0) {
-                [glView.renderer setPopulationTo:ret forSpecies:speciesId];
+//                [glView.renderer setPopulationTo:ret forSpecies:speciesId];
+                for (int i = 0; i< sim.deviceCount; i++) {
+                    [glView.renderer setPopulationTo:counts[i] forSpecies:speciesId forDevice:i];
+                }
                 [glView.renderer setDebrisCountsHaveChanged:TRUE];
             }
 			break;
             
 		case '[':
-            ret = [sim decreasePopulationForSpecies:speciesId];
+            ret = [sim decreasePopulationForSpecies:speciesId returnCounts:counts];
             if (ret >= 0) {
-                [glView.renderer setPopulationTo:ret forSpecies:speciesId];
+//                [glView.renderer setPopulationTo:ret forSpecies:speciesId];
+                for (int i = 0; i< sim.deviceCount; i++) {
+                    [glView.renderer setPopulationTo:counts[i] forSpecies:speciesId forDevice:i];
+                }
                 [glView.renderer setDebrisCountsHaveChanged:TRUE];
             }
 			break;

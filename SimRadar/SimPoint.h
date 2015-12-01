@@ -33,6 +33,8 @@
 	LESHandle *L;
 	
 	int table_id;
+
+    size_t returnCounts[RS_MAX_GPU_DEVICE];
 }
 
 @property (nonatomic, readonly) BOOL busy;
@@ -52,6 +54,8 @@
 - (void)homeBeamPosition;
 - (void)run;
 
+- (NSInteger)deviceCount;
+
 - (cl_float4 *)points;
 - (NSInteger)pointCount;
 - (NSInteger)pointCountForDevice:(cl_uint)deviceId;
@@ -64,8 +68,8 @@
 
 - (RSVolume)simulationDomain;
 
-- (GLint)decreasePopulationForSpecies:(const int)speciesId;
-- (GLint)increasePopulationForSpecies:(const int)speciesId;
+- (GLint)decreasePopulationForSpecies:(const int)speciesId returnCounts:(GLint *)counts;
+- (GLint)increasePopulationForSpecies:(const int)speciesId returnCounts:(GLint *)counts;
 - (GLint)populationForSpecies:(const int)speciesId;
 - (GLint)populationForSpecies:(const int)speciesId forDevice:(const int)deviceId;
 
