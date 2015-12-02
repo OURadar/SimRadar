@@ -666,7 +666,7 @@
     leafRenderer = [self createRenderResourceFromVertexShader:@"leaf" fragmentShader:@"leaf"];
 
     gridRenderer = [self createRenderResourceFromVertexShader:@"line_sc" fragmentShader:@"line_sc"];
-    anchorRenderer = [self createRenderResourceFromVertexShader:@"shape_sc" fragmentShader:@"shape_sc"];
+    anchorRenderer = [self createRenderResourceFromVertexShader:@"anchor" fragmentShader:@"anchor"];
 	anchorLineRenderer = [self createRenderResourceFromProgram:gridRenderer.program];
 	hudRenderer = [self createRenderResourceFromProgram:gridRenderer.program];
     meshRenderer = [self createRenderResourceFromVertexShader:@"mesh" fragmentShader:@"mesh"];
