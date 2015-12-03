@@ -22,16 +22,8 @@
 		B55716861AB7519D001984E0 /* rcs.c in Sources */ = {isa = PBXBuildFile; fileRef = B55716851AB7519D001984E0 /* rcs.c */; };
 		B5576B8B18315B3B0012E6F5 /* SimPoint.m in Sources */ = {isa = PBXBuildFile; fileRef = B5576B8A18315B3B0012E6F5 /* SimPoint.m */; };
 		B5576B8E1831612A0012E6F5 /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
-		B55A0B4E19D0AD4300875832 /* sphere1.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B4919D0AD4300875832 /* sphere1.png */; };
-		B55A0B4F19D0AD4300875832 /* sphere16.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B4A19D0AD4300875832 /* sphere16.png */; };
-		B55A0B5019D0AD4300875832 /* SphereAda.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B4B19D0AD4300875832 /* SphereAda.png */; };
-		B55A0B5119D0AD4300875832 /* texture_32.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B4C19D0AD4300875832 /* texture_32.png */; };
-		B55A0B5319D0B00400875832 /* sphere64.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B5219D0B00400875832 /* sphere64.png */; };
-		B55A0B5519D0B93E00875832 /* disc64.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B5419D0B93E00875832 /* disc64.png */; };
-		B55FB66B1BDAB65D00D337D6 /* colormap.png in Resources */ = {isa = PBXBuildFile; fileRef = B55FB66A1BDAB65D00D337D6 /* colormap.png */; };
 		B56077F617E356A70068C6BE /* cldemo.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A280617D7B1EC00E4DE66 /* cldemo.c */; };
 		B56077F717E356B10068C6BE /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
-		B567270E1AA11B2C00FF4436 /* spot256.png in Resources */ = {isa = PBXBuildFile; fileRef = B567270D1AA11B2C00FF4436 /* spot256.png */; };
 		B567F8B21A6D522F00F40660 /* adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B11A6D522F00F40660 /* adm.c */; };
 		B567F8B31A6D522F00F40660 /* adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B11A6D522F00F40660 /* adm.c */; };
 		B567F8C41A6D671F00F40660 /* test_adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B41A6D635100F40660 /* test_adm.c */; };
@@ -71,14 +63,6 @@
 		B57241C91C0CA27300B76BCB /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B52B2BD91BE8F75C00F1F91D /* AVFoundation.framework */; };
 		B57241CA1C0CA28200B76BCB /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B52B2BDB1BE8F76E00F1F91D /* CoreVideo.framework */; };
 		B57241CB1C0CA28400B76BCB /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B52B2BDD1BE8F77C00F1F91D /* CoreMedia.framework */; };
-		B57241D81C0CA2CC00B76BCB /* disc64.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B5419D0B93E00875832 /* disc64.png */; };
-		B57241D91C0CA2CC00B76BCB /* sphere1.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B4919D0AD4300875832 /* sphere1.png */; };
-		B57241DA1C0CA2CC00B76BCB /* sphere16.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B4A19D0AD4300875832 /* sphere16.png */; };
-		B57241DB1C0CA2CC00B76BCB /* SphereAda.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B4B19D0AD4300875832 /* SphereAda.png */; };
-		B57241DC1C0CA2CC00B76BCB /* sphere64.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B5219D0B00400875832 /* sphere64.png */; };
-		B57241DD1C0CA2CC00B76BCB /* spot256.png in Resources */ = {isa = PBXBuildFile; fileRef = B567270D1AA11B2C00FF4436 /* spot256.png */; };
-		B57241DE1C0CA2CC00B76BCB /* texture_32.png in Resources */ = {isa = PBXBuildFile; fileRef = B55A0B4C19D0AD4300875832 /* texture_32.png */; };
-		B57241DF1C0CA2CC00B76BCB /* colormap.png in Resources */ = {isa = PBXBuildFile; fileRef = B55FB66A1BDAB65D00D337D6 /* colormap.png */; };
 		B57241E01C0CA2F400B76BCB /* Minion-Icons in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB3618A5453800EBEC07 /* Minion-Icons */; };
 		B57241E21C0CA3B600B76BCB /* Sparkle.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = B56C7FA41ADC22E300552B1E /* Sparkle.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		B57241E41C0CA7C000B76BCB /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB4418A582F100EBEC07 /* dsa_pub.pem */; };
@@ -102,6 +86,8 @@
 		B5D1421A18AA73220041566E /* test_make_pulse.c in Sources */ = {isa = PBXBuildFile; fileRef = B5D1420A18AA72E90041566E /* test_make_pulse.c */; };
 		B5D1421C18AA7D720041566E /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
 		B5D1421D18ABD4380041566E /* reduce.cl in CopyFiles */ = {isa = PBXBuildFile; fileRef = B5760EAD18A94328008DAF83 /* reduce.cl */; };
+		B5D22A181C10D62C00CE15EB /* images in Resources */ = {isa = PBXBuildFile; fileRef = B5D22A171C10D62C00CE15EB /* images */; };
+		B5D22A191C10D62C00CE15EB /* images in Resources */ = {isa = PBXBuildFile; fileRef = B5D22A171C10D62C00CE15EB /* images */; };
 		B5EF317218204B5C002DDEFC /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5EF317118204B5C002DDEFC /* Cocoa.framework */; };
 		B5EF317C18204B5C002DDEFC /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = B5EF317A18204B5C002DDEFC /* InfoPlist.strings */; };
 		B5EF317E18204B5C002DDEFC /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = B5EF317D18204B5C002DDEFC /* main.m */; };
@@ -258,15 +244,7 @@
 		B55716851AB7519D001984E0 /* rcs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rcs.c; sourceTree = "<group>"; };
 		B5576B8918315B3B0012E6F5 /* SimPoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SimPoint.h; sourceTree = "<group>"; };
 		B5576B8A18315B3B0012E6F5 /* SimPoint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SimPoint.m; sourceTree = "<group>"; };
-		B55A0B4919D0AD4300875832 /* sphere1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = sphere1.png; sourceTree = "<group>"; };
-		B55A0B4A19D0AD4300875832 /* sphere16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = sphere16.png; sourceTree = "<group>"; };
-		B55A0B4B19D0AD4300875832 /* SphereAda.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = SphereAda.png; sourceTree = "<group>"; };
-		B55A0B4C19D0AD4300875832 /* texture_32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = texture_32.png; sourceTree = "<group>"; };
-		B55A0B5219D0B00400875832 /* sphere64.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = sphere64.png; sourceTree = "<group>"; };
-		B55A0B5419D0B93E00875832 /* disc64.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = disc64.png; sourceTree = "<group>"; };
-		B55FB66A1BDAB65D00D337D6 /* colormap.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = colormap.png; sourceTree = "<group>"; };
 		B56077EF17E356910068C6BE /* cldemo */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = cldemo; sourceTree = BUILT_PRODUCTS_DIR; };
-		B567270D1AA11B2C00FF4436 /* spot256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = spot256.png; sourceTree = "<group>"; };
 		B567F8B01A6D520C00F40660 /* adm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = adm.h; sourceTree = "<group>"; };
 		B567F8B11A6D522F00F40660 /* adm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = adm.c; sourceTree = "<group>"; };
 		B567F8B41A6D635100F40660 /* test_adm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = test_adm.c; sourceTree = "<group>"; };
@@ -295,6 +273,7 @@
 		B5CFAD1F1ADF4A1800360E9A /* rs_priv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rs_priv.h; sourceTree = "<group>"; };
 		B5D1420A18AA72E90041566E /* test_make_pulse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_make_pulse.c; sourceTree = "<group>"; };
 		B5D1420F18AA72F80041566E /* test_make_pulse */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_make_pulse; sourceTree = BUILT_PRODUCTS_DIR; };
+		B5D22A171C10D62C00CE15EB /* images */ = {isa = PBXFileReference; lastKnownFileType = folder; name = images; path = SimRadar/images; sourceTree = "<group>"; };
 		B5EF317018204B5C002DDEFC /* SimRadar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimRadar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5EF317118204B5C002DDEFC /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		B5EF317418204B5C002DDEFC /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
@@ -431,7 +410,7 @@
 				B57ADA6117E225EE00B03074 /* Makefile */,
 				B5916CC51ABC7069007EA0B9 /* README.md */,
 				B535159B1AD31E12004C0F50 /* versions.html */,
-				B55A0B4719D0AD4300875832 /* images */,
+				B5D22A171C10D62C00CE15EB /* images */,
 				B57ADA5F17E2068F00B03074 /* Kernels */,
 				B50A281517D7BF0900E4DE66 /* Sources */,
 				B519295217D9153C00AB3687 /* Programs */,
@@ -519,22 +498,6 @@
 			);
 			name = Icons;
 			path = ..;
-			sourceTree = "<group>";
-		};
-		B55A0B4719D0AD4300875832 /* images */ = {
-			isa = PBXGroup;
-			children = (
-				B55A0B5419D0B93E00875832 /* disc64.png */,
-				B55A0B4919D0AD4300875832 /* sphere1.png */,
-				B55A0B4A19D0AD4300875832 /* sphere16.png */,
-				B55A0B4B19D0AD4300875832 /* SphereAda.png */,
-				B55A0B5219D0B00400875832 /* sphere64.png */,
-				B567270D1AA11B2C00FF4436 /* spot256.png */,
-				B55A0B4C19D0AD4300875832 /* texture_32.png */,
-				B55FB66A1BDAB65D00D337D6 /* colormap.png */,
-			);
-			name = images;
-			path = SimRadar/images;
 			sourceTree = "<group>";
 		};
 		B572419F1C0CA05F00B76BCB /* SimRadarEx */ = {
@@ -844,15 +807,8 @@
 				B57241B71C0CA1BF00B76BCB /* MainMenu.xib in Resources */,
 				B57241B81C0CA1C100B76BCB /* LiveDisplay.xib in Resources */,
 				B57241E01C0CA2F400B76BCB /* Minion-Icons in Resources */,
-				B57241D81C0CA2CC00B76BCB /* disc64.png in Resources */,
-				B57241D91C0CA2CC00B76BCB /* sphere1.png in Resources */,
+				B5D22A191C10D62C00CE15EB /* images in Resources */,
 				B56A7CE91C0F5AF700133ACF /* Shaders in Resources */,
-				B57241DA1C0CA2CC00B76BCB /* sphere16.png in Resources */,
-				B57241DB1C0CA2CC00B76BCB /* SphereAda.png in Resources */,
-				B57241DC1C0CA2CC00B76BCB /* sphere64.png in Resources */,
-				B57241DD1C0CA2CC00B76BCB /* spot256.png in Resources */,
-				B57241DE1C0CA2CC00B76BCB /* texture_32.png in Resources */,
-				B57241DF1C0CA2CC00B76BCB /* colormap.png in Resources */,
 				B57241E41C0CA7C000B76BCB /* dsa_pub.pem in Resources */,
 				B57241E61C0CB0D900B76BCB /* rs.cl in Resources */,
 			);
@@ -862,18 +818,11 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B5D22A181C10D62C00CE15EB /* images in Resources */,
 				B5916CC61ABC7069007EA0B9 /* README.md in Resources */,
 				B535159D1AD32077004C0F50 /* MainMenu.xib in Resources */,
 				B5EF31C2182060E1002DDEFC /* LiveDisplay.xib in Resources */,
-				B55A0B5519D0B93E00875832 /* disc64.png in Resources */,
-				B55A0B4E19D0AD4300875832 /* sphere1.png in Resources */,
-				B55A0B4F19D0AD4300875832 /* sphere16.png in Resources */,
-				B55A0B5019D0AD4300875832 /* SphereAda.png in Resources */,
 				B56A7CE81C0F5AF700133ACF /* Shaders in Resources */,
-				B55A0B5319D0B00400875832 /* sphere64.png in Resources */,
-				B567270E1AA11B2C00FF4436 /* spot256.png in Resources */,
-				B55A0B5119D0AD4300875832 /* texture_32.png in Resources */,
-				B55FB66B1BDAB65D00D337D6 /* colormap.png in Resources */,
 				B54DEB4518A582F100EBEC07 /* dsa_pub.pem in Resources */,
 				B5EF317C18204B5C002DDEFC /* InfoPlist.strings in Resources */,
 				B5EF318218204B5C002DDEFC /* Credits.rtf in Resources */,

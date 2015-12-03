@@ -21,6 +21,7 @@ typedef struct _draw_resource {
 	GLuint program;
 	GLuint vao;
 	GLuint vbo[5];       // positions, colors, tex_coord, wvp_mat, etc.
+    GLint mvUI;
 	GLint mvpUI;
     GLint sizeUI;
 	GLint colorUI;
@@ -47,6 +48,7 @@ typedef struct _draw_resource {
     GLuint sourceOffset;
     GLuint instanceSize;
     GLenum drawMode;
+    GLKMatrix4 modelView;
     GLKMatrix4 modelViewProjection;
     GLKMatrix4 modelViewProjectionOffOne;
     GLKMatrix4 modelViewProjectionOffTwo;

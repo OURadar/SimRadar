@@ -414,17 +414,20 @@
 
 	RenderResource resource;
 	
+    const GLKMatrix4 idMat = GLKMatrix4Identity;
+
     memset(&resource, 0, sizeof(RenderResource));
 
     glGenVertexArrays(1, &resource.vao);
 	glBindVertexArray(resource.vao);
 	
 	resource.program = glCreateProgram();
+    NSString *shaderPath = [[NSBundle mainBundle] pathForResource:@"Shaders" ofType:nil];
 	if (vShader) {
-		[self attachShader:[[NSBundle mainBundle] pathForResource:vShader ofType:@"vsh"] toProgram:resource.program];
+		[self attachShader:[shaderPath stringByAppendingString:[NSString stringWithFormat:@"/%@", vShader]] toProgram:resource.program];
 	}
 	if (fShader) {
-		[self attachShader:[[NSBundle mainBundle] pathForResource:fShader ofType:@"fsh"] toProgram:resource.program];
+		[self attachShader:[shaderPath stringByAppendingString:[NSString stringWithFormat:@"/%@", fShader]] toProgram:resource.program];
 	}
 
 	// Link
@@ -461,12 +464,19 @@
 	
 	glUseProgram(resource.program);
 	
-	// Get matrix location
+    // Get MV matrix location
+    resource.mvUI = glGetUniformLocation(resource.program, "modelViewMatrix");
+    if (resource.mvUI < 0) {
+        // NSLog(@"%@ shader has no modelView Matrix %d", vShader, resource.mvUI);
+    } else {
+        glUniformMatrix4fv(resource.mvUI, 1, GL_FALSE, idMat.m);
+    }
+
+    // Get MVP matrix location
 	resource.mvpUI = glGetUniformLocation(resource.program, "modelViewProjectionMatrix");
 	if (resource.mvpUI < 0) {
 		NSLog(@"%@ shader has no modelViewProjection Matrix %d", vShader, resource.mvpUI);
 	} else {
-		GLKMatrix4 idMat = GLKMatrix4Identity;
 		glUniformMatrix4fv(resource.mvpUI, 1, GL_FALSE, idMat.m);
 	}
 	
@@ -492,9 +502,12 @@
         resource.texture = [self loadTexture:@"disc64.png"];
         resource.textureID = [resource.texture name];
         glUniform1i(resource.textureUI, 0);
+//        glActiveTexture(GL_TEXTURE0);
+//        glBindTexture(GL_TEXTURE_2D, resource.textureID);
     } else if ((resource.textureUI = glGetUniformLocation(resource.program, "drawTemplate2")) >= 0) {
         //resource.texture = [self loadTexture:@"sphere64.png"];
-        resource.texture = [self loadTexture:@"spot256.png"];
+        resource.texture = [self loadTexture:@"spot64.png"];
+        //resource.texture = [self loadTexture:@"disc64.png"];
         resource.textureID = [resource.texture name];
         glUniform1i(resource.textureUI, 0);
     } else if ((resource.textureUI = glGetUniformLocation(resource.program, "diffuseTexture")) >= 0) {
@@ -536,8 +549,8 @@
     NSDictionary* options = @{[NSNumber numberWithBool:YES] : GLKTextureLoaderOriginBottomLeft};
     
     NSError *error;
-    NSString *path = [[NSBundle mainBundle] pathForResource:filename ofType:nil];
-    GLKTextureInfo *texture = [GLKTextureLoader textureWithContentsOfFile:path options:options error:&error];
+    NSString *path = [[NSBundle mainBundle] pathForResource:@"images" ofType:nil];
+    GLKTextureInfo *texture = [GLKTextureLoader textureWithContentsOfFile:[NSString stringWithFormat:@"%@/%@", path, filename] options:options error:&error];
     if (texture == nil)
     {
         NSLog(@"Error loading file: %@", [error localizedDescription]);
@@ -650,7 +663,9 @@
 	// Set up VAO and shaders
     int i = 0;
 
-    bodyRenderer[i] = [self createRenderResourceFromVertexShader:@"spheroid" fragmentShader:@"spheroid"];
+    // Only one renderer program needs to be created and the others can share the same program
+    bodyRenderer[i] = [self createRenderResourceFromVertexShader:@"spheroid.vsh" fragmentShader:@"spheroid.fsh"];
+
     // Make body renderer's color a bit translucent
     glUniform4f(bodyRenderer[i].colorUI, 1.0f, 1.0f, 1.0f, 0.75f);
     
@@ -663,13 +678,13 @@
         bodyRenderer[i] = [self createRenderResourceFromProgram:bodyRenderer[0].program];
     }
 
-    leafRenderer = [self createRenderResourceFromVertexShader:@"leaf" fragmentShader:@"leaf"];
+    leafRenderer       = [self createRenderResourceFromVertexShader:@"leaf.vsh" fragmentShader:@"leaf.fsh"];
 
-    gridRenderer = [self createRenderResourceFromVertexShader:@"line_sc" fragmentShader:@"line_sc"];
-    anchorRenderer = [self createRenderResourceFromVertexShader:@"anchor" fragmentShader:@"anchor"];
+    gridRenderer       = [self createRenderResourceFromVertexShader:@"line_sc.vsh" fragmentShader:@"line_sc.fsh"];
+    anchorRenderer     = [self createRenderResourceFromVertexShader:@"anchor.vsh" fragmentShader:@"anchor.fsh"];
 	anchorLineRenderer = [self createRenderResourceFromProgram:gridRenderer.program];
-	hudRenderer = [self createRenderResourceFromProgram:gridRenderer.program];
-    meshRenderer = [self createRenderResourceFromVertexShader:@"mesh" fragmentShader:@"mesh"];
+	hudRenderer        = [self createRenderResourceFromProgram:gridRenderer.program];
+    meshRenderer       = [self createRenderResourceFromVertexShader:@"mesh.vsh" fragmentShader:@"mesh.fsh"];
     
     //NSLog(@"meshRenderer's drawColor @ %d / %d / %d", meshRenderer.colorUI, meshRenderer.positionAI, meshRenderer.textureCoordAI);
     
@@ -691,8 +706,8 @@
 	
 	textRenderer = [[GLText alloc] initWithDevicePixelRatio:devicePixelRatio];
     
-	NSLog(@"VAOs = bodyRenderer %d  gridRenderer %d  anchorRenderer %d  anchorLineRendrer %d  leafRendrer = %d",
-		  bodyRenderer[0].vao, gridRenderer.vao, anchorRenderer.vao, anchorLineRenderer.vao, leafRenderer.vao);
+	NSLog(@"VAOs = bodyRenderer:%d  leafRendrer = %d  gridRenderer %d  anchorRenderer %d  anchorLineRendrer %d",
+		  bodyRenderer[0].vao, leafRenderer.vao, gridRenderer.vao, anchorRenderer.vao, anchorLineRenderer.vao);
 	// Depth test will always be enabled
 	//glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
@@ -700,7 +715,8 @@
 	// We will always cull back faces for better performance
 	//glEnable(GL_CULL_FACE);
     glEnable(GL_TEXTURE_2D);
-    
+    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+
 	// Always use this clear color
 	//glClearColor(0.0f, 0.2f, 0.25f, 1.0f);
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -956,14 +972,16 @@
 	// Anchors
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBindVertexArray(anchorRenderer.vao);
-	glPointSize(MIN(MAX(10.0f * pixelsPerUnit, 5.0f), 64.0f) * devicePixelRatio);
-	glUseProgram(anchorRenderer.program);
-	glUniform4f(anchorRenderer.colorUI, 0.4f, 1.0f, 1.0f, 1.0f);
+    glUseProgram(anchorRenderer.program);
+	//glPointSize(MIN(MAX(10.0f * pixelsPerUnit, 5.0f), 64.0f) * devicePixelRatio);
+    glUniform4f(anchorRenderer.sizeUI, pixelsPerUnit, pixelsPerUnit, pixelsPerUnit, pixelsPerUnit);
+	glUniform4f(anchorRenderer.colorUI, 0.4f, 1.0f, 1.0f, 0.8f);
+    glUniformMatrix4fv(anchorRenderer.mvUI, 1, GL_FALSE, modelView.m);
 	glUniformMatrix4fv(anchorRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, anchorRenderer.textureID);
 	glDrawArrays(GL_POINTS, 0, anchorRenderer.count);
-	
+
 	// The scatter bodies
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
