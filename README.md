@@ -1,7 +1,7 @@
 Simulation of a Radar
 =====================
 
-A polarimetric radar time-series emulator utilizing air-drag model for particle motions and a realistic radar cross library for particle back scattering calculations. Implemented with OpenCL for massively parallel computations. This is awesome!
+A polarimetric radar time-series emulator utilizing air-drag model for particle motions and a realistic radar cross library for particle back scattering calculations. Implemented with OpenCL for massive parallel computations. This is awesome!
 
 
 Get the Project
