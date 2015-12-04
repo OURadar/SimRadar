@@ -7,14 +7,14 @@
 	<key>IDESourceControlProjectIdentifier</key>
 	<string>096BB8F8-2E12-4C7F-9001-3383B06D5920</string>
 	<key>IDESourceControlProjectName</key>
-	<string>_radarsim</string>
+	<string>project</string>
 	<key>IDESourceControlProjectOriginsDictionary</key>
 	<dict>
 		<key>D3088CD1FB042216D895CA5186B217A4319C5234</key>
 		<string>http://git.arrc.ou.edu/cheo4524/simradar.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
-	<string>_radarsim.xcodeproj</string>
+	<string>_radarsim.xcodeproj/project.xcworkspace</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
 		<key>D3088CD1FB042216D895CA5186B217A4319C5234</key>
@@ -34,7 +34,7 @@
 			<key>IDESourceControlWCCIdentifierKey</key>
 			<string>D3088CD1FB042216D895CA5186B217A4319C5234</string>
 			<key>IDESourceControlWCCName</key>
-			<string>radarsim</string>
+			<string>simradar</string>
 		</dict>
 	</array>
 </dict>

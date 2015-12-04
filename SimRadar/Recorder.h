@@ -5,6 +5,7 @@
 //  Copyright © 2015 Boon Leng Cheong. All rights reserved.
 //
 
+#import <AppKit/AppKit.h>
 #import <Foundation/Foundation.h>
 #import <AVFoundation/AVFoundation.h>
 #import <CoreVideo/CoreVideo.h>

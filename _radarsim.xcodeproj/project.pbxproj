@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		322C68351C11FF1C00F0DBA4 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5EF317418204B5C002DDEFC /* AppKit.framework */; };
 		B50CD9EE1BE8117E0034B5BB /* Recorder.m in Sources */ = {isa = PBXBuildFile; fileRef = B50CD9ED1BE8117E0034B5BB /* Recorder.m */; };
 		B51767C118A2DFB700D47C27 /* Curious-Minion-Icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = B51767C018A2DFB700D47C27 /* Curious-Minion-Icon.icns */; };
 		B527893118A13C4400650679 /* radarsim.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281717D7C2F400E4DE66 /* radarsim.c */; };
@@ -335,6 +336,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				322C68351C11FF1C00F0DBA4 /* AppKit.framework in Frameworks */,
 				B57241C41C0CA23700B76BCB /* Cocoa.framework in Frameworks */,
 				B57241C51C0CA24B00B76BCB /* Sparkle.framework in Frameworks */,
 				B57241C61C0CA25500B76BCB /* GLKit.framework in Frameworks */,
@@ -1204,7 +1206,7 @@
 					"$(SRCROOT)",
 					/usr/local/lib,
 				);
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MACOSX_DEPLOYMENT_TARGET = "";
 				OTHER_CFLAGS = (
 					"-D_SHARE_OBJ_",
 					"-DDEBUG_GL",
@@ -1625,7 +1627,7 @@
 				INFOPLIST_FILE = SimRadarEx/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
-				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MACOSX_DEPLOYMENT_TARGET = "";
 				MTL_ENABLE_DEBUG_INFO = NO;
 				OTHER_CFLAGS = "-DGUI";
 				OTHER_LDFLAGS = (
@@ -1679,7 +1681,7 @@
 				INFOPLIST_FILE = SimRadarEx/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
-				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MACOSX_DEPLOYMENT_TARGET = "";
 				MTL_ENABLE_DEBUG_INFO = NO;
 				OTHER_CFLAGS = "-DGUI";
 				OTHER_LDFLAGS = (
@@ -1738,7 +1740,7 @@
 				INFOPLIST_FILE = SimRadarEx/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
-				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MACOSX_DEPLOYMENT_TARGET = "";
 				MTL_ENABLE_DEBUG_INFO = YES;
 				OTHER_CFLAGS = "-DGUI";
 				OTHER_LDFLAGS = (
@@ -1797,7 +1799,7 @@
 				INFOPLIST_FILE = SimRadarEx/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
-				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MACOSX_DEPLOYMENT_TARGET = "";
 				MTL_ENABLE_DEBUG_INFO = YES;
 				OTHER_CFLAGS = "-DGUI";
 				OTHER_LDFLAGS = (
@@ -2005,7 +2007,7 @@
 					"$(SRCROOT)",
 					/usr/local/lib,
 				);
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MACOSX_DEPLOYMENT_TARGET = "";
 				OTHER_CFLAGS = (
 					"-D_SHARE_OBJ_",
 					"-DGEN_IMG",
@@ -2471,7 +2473,7 @@
 					"$(SRCROOT)",
 					/usr/local/lib,
 				);
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MACOSX_DEPLOYMENT_TARGET = "";
 				OTHER_CFLAGS = "-D_SHARE_OBJ_";
 				OTHER_LDFLAGS = (
 					"-L",
@@ -2533,7 +2535,7 @@
 					"$(SRCROOT)",
 					/usr/local/lib,
 				);
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MACOSX_DEPLOYMENT_TARGET = "";
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = "-D_SHARE_OBJ_";
 				OTHER_LDFLAGS = (
