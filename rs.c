@@ -1927,8 +1927,13 @@ void RS_update_debris_count(RSHandle *H) {
 
 
 void RS_set_dsd(RSHandle *H, const float *pdf, const float *diameters, const int count, const char name) {
-
+    
     int i;
+    
+    if (count == 0) {
+        printf(" %s : RS : DSD bin count cannot be 0.\n", now());
+        return;
+    }
     
     H->dsd_name = name;
     H->dsd_count = count;
@@ -1941,7 +1946,7 @@ void RS_set_dsd(RSHandle *H, const float *pdf, const float *diameters, const int
     H->dsd_r = (RSfloat *)malloc(count * sizeof(RSfloat));
     H->dsd_pdf = (RSfloat *)malloc(count * sizeof(RSfloat));
     H->dsd_cdf = (RSfloat *)malloc(count * sizeof(RSfloat));
-
+    
     RSfloat lo = 0.0f;
     
     for (i = 0; i < count; i++) {
@@ -1950,10 +1955,10 @@ void RS_set_dsd(RSHandle *H, const float *pdf, const float *diameters, const int
         H->dsd_cdf[i] = lo;
         lo += pdf[i];
     }
-
+    
     if (H->verb) {
         printf("%s : RS : User set DSD specifications:\n", now());
-        for (i = 0; i < MIN(count - 2, 3); i++) {
+        for (i = 0; i < MIN(MAX(count - 2, 1), 3); i++) {
             printf("                 o %.2f mm - PDF %.4f / TH %.4f\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], H->dsd_cdf[i]);
         }
         if (count > 5) {
