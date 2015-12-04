@@ -9,8 +9,9 @@
 #ifndef _radarsim_les_h
 #define _radarsim_les_h
 
-#define LESConfigTwoCell          "twocell"
-#define LESConfigSuctionVortices  "suctvort"
+#define LESConfigTwoCell               "twocell"
+#define LESConfigSuctionVortices       "suctvort"
+#define LESConfigSuctionVorticesLarge  "suctvort_large"
 
 #include <stdio.h>
 #include <stdlib.h>
