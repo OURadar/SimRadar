@@ -549,7 +549,7 @@
     NSDictionary* options = @{[NSNumber numberWithBool:YES] : GLKTextureLoaderOriginBottomLeft};
     
     NSError *error;
-    NSString *path = [[NSBundle mainBundle] pathForResource:@"images" ofType:nil];
+    NSString *path = [[NSBundle mainBundle] pathForResource:@"Images" ofType:nil];
     GLKTextureInfo *texture = [GLKTextureLoader textureWithContentsOfFile:[NSString stringWithFormat:@"%@/%@", path, filename] options:options error:&error];
     if (texture == nil)
     {
