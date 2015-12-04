@@ -476,7 +476,6 @@ void RS_set_rcs_data_to_unity(RSHandle *H);
 void RS_clear_rcs_data(RSHandle *H);
 
 void RS_update_colors_only(RSHandle *H);
-void RS_explode(RSHandle *H);
 
 #if defined (GUI) || defined (_SHARE_OBJ_)
 void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[][n]);

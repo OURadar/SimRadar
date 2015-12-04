@@ -632,8 +632,8 @@
 	if (gridRenderer.positions != NULL) {
 		free(gridRenderer.positions);
 	}
-	if (leafRenderer.positions != NULL) {
-		free(leafRenderer.positions);
+	if (instancedGeometryRenderer.positions != NULL) {
+		free(instancedGeometryRenderer.positions);
 	}
     for (int k=0; k<RENDERER_MAX_SPECIES_COUNT; k++) {
         free(speciesRenderer[k].colors);
@@ -678,7 +678,7 @@
         bodyRenderer[i] = [self createRenderResourceFromProgram:bodyRenderer[0].program];
     }
 
-    leafRenderer       = [self createRenderResourceFromVertexShader:@"leaf.vsh" fragmentShader:@"leaf.fsh"];
+    instancedGeometryRenderer = [self createRenderResourceFromVertexShader:@"inst-geom.vsh" fragmentShader:@"inst-geom.fsh"];
 
     gridRenderer       = [self createRenderResourceFromVertexShader:@"line_sc.vsh" fragmentShader:@"line_sc.fsh"];
     anchorRenderer     = [self createRenderResourceFromVertexShader:@"anchor.vsh" fragmentShader:@"anchor.fsh"];
@@ -696,7 +696,7 @@
     };
     
     for (int k = 0; k < RENDERER_MAX_SPECIES_COUNT; k++) {
-        speciesRenderer[k] = [self createRenderResourceFromProgram:leafRenderer.program];
+        speciesRenderer[k] = [self createRenderResourceFromProgram:instancedGeometryRenderer.program];
         speciesRenderer[k].colors = malloc(4 * sizeof(GLfloat));
         speciesRenderer[k].colors[0] = colors[(k % 4) * 3];
         speciesRenderer[k].colors[1] = colors[(k % 4) * 3 + 1];
@@ -707,7 +707,7 @@
 	textRenderer = [[GLText alloc] initWithDevicePixelRatio:devicePixelRatio];
     
 	NSLog(@"VAOs = bodyRenderer:%d  leafRendrer = %d  gridRenderer %d  anchorRenderer %d  anchorLineRendrer %d",
-		  bodyRenderer[0].vao, leafRenderer.vao, gridRenderer.vao, anchorRenderer.vao, anchorLineRenderer.vao);
+		  bodyRenderer[0].vao, instancedGeometryRenderer.vao, gridRenderer.vao, anchorRenderer.vao, anchorLineRenderer.vao);
 	// Depth test will always be enabled
 	//glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
@@ -774,7 +774,7 @@
 	// Anchor
 	glBindVertexArray(anchorRenderer.vao);
 	
-    glDeleteBuffers(1, anchorLineRenderer.vbo);
+    glDeleteBuffers(1, anchorRenderer.vbo);
 	glGenBuffers(1, anchorRenderer.vbo);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, anchorRenderer.vbo[0]);
@@ -1004,8 +1004,8 @@
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
     // Various debris types
-    glUseProgram(leafRenderer.program);
-    glUniformMatrix4fv(leafRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
+    glUseProgram(instancedGeometryRenderer.program);
+    glUniformMatrix4fv(instancedGeometryRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
 
     for (int k = 1; k < RENDERER_MAX_SPECIES_COUNT; k++) {
         for (i = 0; i < clDeviceCount; i++) {
@@ -1015,7 +1015,7 @@
             // Update the VBOs by copy
             glBindVertexArray(speciesRenderer[k].vao);
             
-            glUniform4f(leafRenderer.colorUI, speciesRenderer[k].colors[0], speciesRenderer[k].colors[1], speciesRenderer[k].colors[2], speciesRenderer[k].colors[3]);
+            glUniform4f(instancedGeometryRenderer.colorUI, speciesRenderer[k].colors[0], speciesRenderer[k].colors[1], speciesRenderer[k].colors[2], speciesRenderer[k].colors[3]);
 
             glBindBuffer(GL_COPY_READ_BUFFER, bodyRenderer[i].vbo[0]);              // positions of simulation particles
             glBindBuffer(GL_COPY_WRITE_BUFFER, speciesRenderer[k].vbo[2]);       // translations of species[k]
@@ -1043,14 +1043,14 @@
         glViewport(hudOrigin.x * devicePixelRatio, hudOrigin.y * devicePixelRatio, hudSize.width * devicePixelRatio, hudSize.height * devicePixelRatio);
 
         // Draw the debris again
-        glUseProgram(leafRenderer.program);
-        glUniformMatrix4fv(leafRenderer.mvpUI, 1, GL_FALSE, beamModelViewProjection.m);
+        glUseProgram(instancedGeometryRenderer.program);
+        glUniformMatrix4fv(instancedGeometryRenderer.mvpUI, 1, GL_FALSE, beamModelViewProjection.m);
         for (int k = 1; k < RENDERER_MAX_SPECIES_COUNT; k++) {
             if (speciesRenderer[k].count == 0) {
                 continue;
             }
             glBindVertexArray(speciesRenderer[k].vao);
-            glUniform4f(leafRenderer.colorUI, speciesRenderer[k].colors[0], speciesRenderer[k].colors[1], speciesRenderer[k].colors[2], speciesRenderer[k].colors[3]);
+            glUniform4f(instancedGeometryRenderer.colorUI, speciesRenderer[k].colors[0], speciesRenderer[k].colors[1], speciesRenderer[k].colors[2], speciesRenderer[k].colors[3]);
             glDrawElementsInstanced(GL_LINE_STRIP, speciesRenderer[k].instanceSize, GL_UNSIGNED_INT, NULL, speciesRenderer[k].count);
         }
 

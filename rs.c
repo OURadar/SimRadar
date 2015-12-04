@@ -1526,7 +1526,7 @@ void RS_set_scan_box(RSHandle *H,
 	H->anchor_pos[ii].x = 0.0f;
 	H->anchor_pos[ii].y = 0.0f;
 	H->anchor_pos[ii].z = 0.0f;
-	H->anchor_pos[ii].w = 1.0f;
+	H->anchor_pos[ii].w = 5.0f;
 	
 	//printf("H->num_anchors = %zu   ii = %d\n", H->num_anchors, ii);
 	
@@ -2911,59 +2911,6 @@ void RS_update_colors_only(RSHandle *H) {
 //        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
 }
 
-
-void RS_explode(RSHandle *H) {
-    
-//    int i;
-//    int v = 0;
-//    int t = 0;
-//    
-//    cl_float16 sim_desc = H->sim_desc;
-//    sim_desc.s[RSSimulationParameterPRT] = 10000.0f;
-//    
-//    if (H->sim_tic >= H->sim_toc) {
-//        H->sim_toc = H->sim_tic + (size_t)(5.0f / H->params.prt);
-//    }
-//    
-//    for (i = 0; i < H->num_workers; i++) {
-//        dispatch_async(H->worker[i].que, ^{
-//            scat_atts_kernel(&H->worker[i].ndrange_scat[0],
-//                             (cl_float4 *)H->worker[i].scat_pos,
-//                             (cl_float4 *)H->worker[i].scat_ori,
-//                             (cl_float4 *)H->worker[i].scat_vel,
-//                             (cl_float4 *)H->worker[i].scat_tum,
-//                             (cl_float4 *)H->worker[i].scat_att,
-//                             (cl_float4 *)H->worker[i].scat_sig,
-//                             (cl_uint4 *)H->worker[i].scat_rnd,
-//                             (cl_image)H->worker[i].vel[v],
-//                             H->worker[i].vel_desc,
-//                             (cl_image)H->worker[i].adm_cd[t],
-//                             (cl_image)H->worker[i].adm_cm[t],
-//                             H->worker[i].adm_desc[t],
-//                             (cl_image)H->worker[i].rcs_real[t],
-//                             (cl_image)H->worker[i].rcs_imag[t],
-//                             H->worker[i].rcs_desc[t],
-//                             (cl_float *)H->worker[i].angular_weight,
-//                             H->worker[i].angular_weight_desc,
-//                             sim_desc);
-//            
-//            scat_clr2_kernel(&H->worker[i].ndrange_scat[0],
-//                             (cl_float4 *)H->worker[i].scat_clr,
-//                             (cl_float4 *)H->worker[i].scat_pos,
-//                             (cl_float4 *)H->worker[i].scat_att,
-//                             (cl_float *)H->worker[i].angular_weight,
-//                             H->worker[i].angular_weight_desc,
-//                             H->beam_pos,
-//                             (unsigned int)H->worker[i].num_scats);
-//            
-//            dispatch_semaphore_signal(H->worker[i].sem);
-//        });
-//    }
-//    
-//    for (i = 0; i < H->num_workers; i++) {
-//        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
-//    }
-}
 
 void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[][n]) {
     if (H->verb) {

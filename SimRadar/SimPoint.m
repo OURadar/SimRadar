@@ -149,11 +149,6 @@
     RS_set_beam_pos(S, az_deg, el_deg);
 }
 
-- (void)explode
-{
-	RS_explode(S);
-}
-
 - (void)advanceTime
 {
 	RS_advance_time(S);

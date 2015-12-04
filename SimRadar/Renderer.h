@@ -113,7 +113,7 @@ typedef struct _draw_primitive {
     GLchar spinModel;
     
     RenderResource bodyRenderer[8];
-    RenderResource leafRenderer;
+    RenderResource instancedGeometryRenderer;
 
     RenderResource gridRenderer;
     RenderResource anchorRenderer;

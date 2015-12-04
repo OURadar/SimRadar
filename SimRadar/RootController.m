@@ -40,8 +40,6 @@
 	}
 
 	[dc showWindow:self];
-	
-	//[sim explode];	
 }
 
 - (IBAction)playPause:(id)sender
