@@ -361,12 +361,15 @@ typedef struct _rs_handle {
     // Table related variables
     uint32_t               vel_idx;
     uint32_t               vel_count;
-    uint32_t               adm_idx;
-    uint32_t               adm_count;
-    uint32_t               rcs_idx;
-    uint32_t               rcs_count;
+    RSTable3D              vel_desc;
     cl_float4              inv_inln;
     cl_float               Ta;
+    uint32_t               adm_idx;
+    uint32_t               adm_count;
+    RSTable3D              adm_desc;
+    uint32_t               rcs_idx;
+    uint32_t               rcs_count;
+    RSTable2D              rcs_desc;
 
 	// Scatter bodies
 	size_t                 num_scats;

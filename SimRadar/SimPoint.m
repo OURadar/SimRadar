@@ -37,9 +37,9 @@
 
         S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, 2);
         
-//        if (S->num_cus[0] < 32) {
-//            RS_set_density(S, 3.0f);
-//        }
+        if (S->num_cus[0] < 32) {
+            RS_set_density(S, 3.0f);
+        }
 
 		//L = LES_init();
         

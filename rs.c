@@ -2336,6 +2336,13 @@ void RS_set_wind_data(RSHandle *H, const RSTable3D table) {
         //H->sim_desc.s[RSSimulationParameterAgeIncrement] = H->sim_desc.s[RSSimulationParameterPRT] / table.tr;
 	}
 
+    // Cache a copy of the parameters but not the data
+    H->vel_desc = table;
+    if (H->vel_desc.data != NULL) {
+        H->vel_desc.data = NULL;
+        printf("%s : RS : WARNING : vel_desc.data is not NULL.\n", now());
+    }
+    
     H->vel_count++;
 }
 
@@ -3880,7 +3887,7 @@ void RS_show_pulse(RSHandle *H) {
 RSBox RS_suggest_scan_doamin(RSHandle *H, const int nbeams) {
     RSBox box;
 
-    float half_width = H->worker[0].vel_desc.s[RSStaggeredTableDescriptionOffsetX];
+    float half_width = H->vel_desc.xs * log1pf(H->vel_desc.xo * (float)(H->vel_desc.x_ - 1));
     printf("%s : RS : half_width = %.3f\n", now(), half_width);
     
     box.origin.x = 0.0f;
