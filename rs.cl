@@ -17,6 +17,7 @@ enum RSSimulationParameter {
     RSSimulationParameterAgeIncrement  =  15  // PRT / vel_desc.tr
 };
 
+// These enums are for uniform grid
 enum {
     RSTableDescriptionScaleX      =  0,
     RSTableDescriptionScaleY      =  1,
@@ -34,6 +35,25 @@ enum {
     RSTableDescriptionRecipInLnY  = 13,
     RSTableDescriptionRecipInLnZ  = 14,
     RSTableDescriptionTachikawa   = 15,
+};
+
+enum {
+    RSStaggeredTableDescriptionBaseChangeX     =  0,
+    RSStaggeredTableDescriptionBaseChangeY     =  1,
+    RSStaggeredTableDescriptionBaseChangeZ     =  2,
+    RSStaggeredTableDescriptionRefreshTime     =  3,
+    RSStaggeredTableDescriptionPositionScaleX  =  4,
+    RSStaggeredTableDescriptionPositionScaleY  =  5,
+    RSStaggeredTableDescriptionPositionScaleZ  =  6,
+    RSStaggeredTableDescription7               =  7,
+    RSStaggeredTableDescriptionOffsetX         =  8,
+    RSStaggeredTableDescriptionOffsetY         =  9,
+    RSStaggeredTableDescriptionOffsetZ         = 10,
+    RSStaggeredTableDescription11              = 11,
+    RSStaggeredTableDescriptionRecipInLnX      = 12,
+    RSStaggeredTableDescriptionRecipInLnY      = 13,
+    RSStaggeredTableDescriptionRecipInLnZ      = 14,
+    RSStaggeredTableDescriptionTachikawa       = 15,
 };
 
 float4 rand(uint4 *seed);

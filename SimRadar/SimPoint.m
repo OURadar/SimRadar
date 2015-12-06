@@ -68,6 +68,9 @@
 		
         RS_set_tx_params(S, 30.0f * 2.0f / 3.0e8f, 10.0e3);   // Resolution in m, power in W
 
+        RS_suggest_scan_doamin(S, 10);
+        
+        
 		RS_set_scan_box(S,
                         2.3e3, 2.8e3, 30.0f,                  // Range
                         -7.0f, 7.0f, 1.0f,                    // Azimuth

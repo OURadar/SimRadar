@@ -530,6 +530,6 @@ void RS_show_pulse(RSHandle *H);
 
 #pragma mark -
 
-RSBox RS_suggest_scan_doamin(RSHandle *H);
+RSBox RS_suggest_scan_doamin(RSHandle *H, const int nbeams);
 
 #endif
