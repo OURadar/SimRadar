@@ -14,17 +14,23 @@
 // Private structure
 
 typedef struct _les_mem {
-    char data_path[1024];
-    char files[1024][1024];
-    size_t nfiles;
-    size_t nvol;
-	LESGrid *enclosing_grid;
-	LESGrid *data_grid;
-	int ibuf;
-	float tr;
-    float v0;
-	size_t data_id[LES_num];
-	LESTable *data_boxes[LES_num];
+    char      data_path[1024];
+    char      files[1024][1024];
+    size_t    nfiles;
+    size_t    nvol;
+	LESGrid   *enclosing_grid;
+	LESGrid   *data_grid;
+	int       ibuf;
+	float     tr;
+    float     v0;
+    float     ax;             // Base value "a" in geometric series a r ^ n in x direction
+    float     ay;             // Base value "a" in geometric series a r ^ n in y direction
+    float     az;             // Base value "a" in geometric series a r ^ n in z direction
+    float     rx;             // Ratio value "r" in the geometric series in x direction
+    float     ry;             // Ratio value "r" in the geometric series in y direction
+    float     rz;             // Ratio value "r" in the geometric series in z direction
+	size_t    data_id[LES_num];
+	LESTable  *data_boxes[LES_num];
 } LESMem;
 
 // Private functions
@@ -199,6 +205,7 @@ LESTable *LES_table_create(const LESGrid *grid) {
 	table->nz = grid->nz;
 	table->nn = grid->nz * grid->ny * grid->nx;
 	table->nt = LES_file_nblock;
+    table->tr = 0.0f;
 	table->x = grid->x;
 	table->y = grid->y;
 	table->z = grid->z;
@@ -208,9 +215,9 @@ LESTable *LES_table_create(const LESGrid *grid) {
 	table->p = (float *)malloc(table->nn * sizeof(float));
 	table->t = (float *)malloc(table->nn * sizeof(float));
 	if (table->u == NULL || table->v == NULL || table->w == NULL || table->p == NULL || table->t == NULL) {
-		fprintf(stderr, "Error allocating memory for [LESTable] values.\n");
+        fprintf(stderr, "Error allocating memory for [LESTable] values.\n");
         free(table);
-		return NULL;
+        return NULL;
 	}
     memset(table->u, 0, table->nn * sizeof(float));
     memset(table->v, 0, table->nn * sizeof(float));
@@ -325,14 +332,26 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
 		fprintf(stderr, "Unable to allocate resources for LES framework.\n");
 		return NULL;
 	}
-    
+
     snprintf(h->data_path, sizeof(h->data_path), "%s/%s", les_path, config);
 	h->ibuf = 0;
 	h->tr = 50.0f;
-    if (!strcmp(config, LESConfigSuctionVortices)) {
+    if (!strcmp(config, LESConfigSuctionVortices) || !strcmp(config, LESConfigSuctionVorticesLarge)) {
         h->v0 = 100.0f;
+        h->ax = 2.0f;
+        h->ay = 2.0f;
+        h->ax = 2.0f;
+        h->rx = 1.0212f;
+        h->ry = 1.0212f;
+        h->rz = 1.05f;
     } else if (!strcmp(config, LESConfigTwoCell)) {
         h->v0 = 225.0f;
+        h->ax = 1.0f;
+        h->ay = 1.0f;
+        h->az = 1.0f;
+        h->rx = 1.0f;
+        h->ry = 1.0f;
+        h->rz = 1.0f;
     }
     
 //    char grid_file[1024];
@@ -451,6 +470,15 @@ LESTable *LES_get_frame(const LESHandle *i, const int n) {
 			
 			table = h->data_boxes[h->ibuf];
 			
+            // Copy over some base parameters
+            table->ax = h->ax;
+            table->ay = h->ay;
+            table->az = h->az;
+            table->rx = h->rx;
+            table->ry = h->ry;
+            table->rz = h->rz;
+            
+            // Timestamp from the file
 			fread(&time, sizeof(float), 1, fid);
 			fseek(fid, 2 * sizeof(uint32_t), SEEK_CUR);
 

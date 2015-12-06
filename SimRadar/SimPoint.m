@@ -37,8 +37,8 @@
 
         S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, 2);
         
-        if (S->num_cus[0] < 32) {
-            RS_set_density(S, 3.0f);
+        if (S->num_cus[0] == 24) {
+            RS_set_density(S, 4.0f);
         }
 
 		//L = LES_init();
@@ -68,14 +68,6 @@
 		
         RS_set_tx_params(S, 30.0f * 2.0f / 3.0e8f, 10.0e3);   // Resolution in m, power in W
 
-        RS_suggest_scan_doamin(S, 10);
-        
-        
-		RS_set_scan_box(S,
-                        2.3e3, 2.8e3, 30.0f,                  // Range
-                        -7.0f, 7.0f, 1.0f,                    // Azimuth
-                        0.0f, 12.0f, 1.0f);                   // Elevation
-	
 //        RS_set_debris_count(S, 1, 4000);
 //        RS_set_debris_count(S, 2, 2000);
 //        RS_set_debris_count(S, 3, 500);
@@ -102,6 +94,13 @@
         RS_set_rcs_data_to_RCS_table(S, rcs);
         
         //RS_set_rcs_data_to_
+        
+        RS_suggest_scan_doamin(S, 10);
+        
+        RS_set_scan_box(S,
+                        2.3e3, 2.8e3, 30.0f,                  // Range
+                        -7.0f, 7.0f, 1.0f,                    // Azimuth
+                        0.0f, 12.0f, 1.0f);                   // Elevation
         
 		//RS_set_prt(S, 1.0f);
         //RS_set_prt(S, 0.5f);

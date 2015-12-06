@@ -2290,58 +2290,43 @@ void RS_set_wind_data(RSHandle *H, const RSTable3D table) {
 #endif
 
         // Copy over to CL worker
-//        H->worker[i].vel_desc.s[RSTableDescriptionScaleX] = table.xs;
-//        H->worker[i].vel_desc.s[RSTableDescriptionScaleY] = table.ys;
-//        H->worker[i].vel_desc.s[RSTableDescriptionScaleZ] = table.zs;
-//        H->worker[i].vel_desc.s[RSTableDescriptionOriginX] = table.xo;
-//        H->worker[i].vel_desc.s[RSTableDescriptionOriginY] = table.yo;
-//        H->worker[i].vel_desc.s[RSTableDescriptionOriginZ] = table.zo;
-//        H->worker[i].vel_desc.s[RSTableDescriptionMaximumX] = table.xm;
-//        H->worker[i].vel_desc.s[RSTableDescriptionMaximumY] = table.ym;
-//        H->worker[i].vel_desc.s[RSTableDescriptionMaximumZ] = table.zm;
-        
-        H->worker[i].vel_desc.s[RSStaggeredTableDescriptionBaseChangeX] = table.xs;
-        H->worker[i].vel_desc.s[RSStaggeredTableDescriptionBaseChangeY] = table.ys;
-        H->worker[i].vel_desc.s[RSStaggeredTableDescriptionBaseChangeZ] = table.zs;
-        H->worker[i].vel_desc.s[RSStaggeredTableDescriptionPositionScaleX] = table.xo;
-        H->worker[i].vel_desc.s[RSStaggeredTableDescriptionPositionScaleY] = table.yo;
-        H->worker[i].vel_desc.s[RSStaggeredTableDescriptionPositionScaleZ] = table.zo;
-        H->worker[i].vel_desc.s[RSStaggeredTableDescriptionOffsetX] = table.xm;
-        H->worker[i].vel_desc.s[RSStaggeredTableDescriptionOffsetY] = table.ym;
-        H->worker[i].vel_desc.s[RSStaggeredTableDescriptionOffsetZ] = table.zm;
-
+        if (table.spacing & RSTableSpacingStretchedX) {
+            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionBaseChangeX] = table.xs;
+            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionPositionScaleX] = table.xo;
+            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionOffsetX] = table.xm;
+        } else {
+            H->worker[i].vel_desc.s[RSTableDescriptionScaleX] = table.xs;
+            H->worker[i].vel_desc.s[RSTableDescriptionOriginX] = table.xo;
+            H->worker[i].vel_desc.s[RSTableDescriptionMaximumX] = table.xm;
+        }
+        if (table.spacing & RSTableSpacingStretchedY) {
+            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionBaseChangeY] = table.ys;
+            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionPositionScaleY] = table.yo;
+            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionOffsetY] = table.ym;
+        } else {
+            H->worker[i].vel_desc.s[RSTableDescriptionScaleY] = table.ys;
+            H->worker[i].vel_desc.s[RSTableDescriptionOriginY] = table.yo;
+            H->worker[i].vel_desc.s[RSTableDescriptionMaximumY] = table.ym;
+        }
+        if (table.spacing & RSTableSpacingStretchedZ) {
+            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionBaseChangeZ] = table.zs;
+            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionPositionScaleZ] = table.zo;
+            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionOffsetZ] = table.zm;
+        } else {
+            H->worker[i].vel_desc.s[RSTableDescriptionScaleZ] = table.zs;
+            H->worker[i].vel_desc.s[RSTableDescriptionOriginZ] = table.zo;
+            H->worker[i].vel_desc.s[RSTableDescriptionMaximumZ] = table.zm;
+        }
         H->worker[i].vel_desc.s[RSTableDescriptionRefreshTime] = table.tr;
-        
-        enum {
-            RSTableDescriptionScaleX      =  0,
-            RSTableDescriptionScaleY      =  1,
-            RSTableDescriptionScaleZ      =  2,
-            RSTableDescriptionRefreshTime =  3,
-            RSTableDescriptionOriginX     =  4,
-            RSTableDescriptionOriginY     =  5,
-            RSTableDescriptionOriginZ     =  6,
-            RSTableDescription7           =  7,
-            RSTableDescriptionMaximumX    =  8,
-            RSTableDescriptionMaximumY    =  9,
-            RSTableDescriptionMaximumZ    = 10,
-            RSTableDescription11          = 11,
-            RSTableDescriptionRecipInLnX  = 12,
-            RSTableDescriptionRecipInLnY  = 13,
-            RSTableDescriptionRecipInLnZ  = 14,
-            RSTableDescriptionTachikawa   = 15,
-        };
 
         H->worker[i].mem_size += (cl_uint)((table.xm + 1.0f) * (table.ym + 1.0f) * (table.zm + 1.0f)) * sizeof(cl_float4);
         
         //H->sim_desc.s[RSSimulationParameterAgeIncrement] = H->sim_desc.s[RSSimulationParameterPRT] / table.tr;
 	}
 
-    // Cache a copy of the parameters but not the data
+    // Cache a copy of the parameters but not the data, the data could be deallocated immediately after this function call.
     H->vel_desc = table;
-    if (H->vel_desc.data != NULL) {
-        H->vel_desc.data = NULL;
-        printf("%s : RS : WARNING : vel_desc.data is not NULL.\n", now());
-    }
+    H->vel_desc.data = NULL;
     
     H->vel_count++;
 }
@@ -2375,8 +2360,8 @@ void RS_set_wind_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
     //     k = 20.495934314287851 * log1p ( 0.018518518518519 * z( k ) )
 
     
-    a = 2.0f;
-    r = 1.0212f;
+    a = leslie->ax;
+    r = leslie->rx;
     table.x_ = leslie->nx;    table.xm = 0.5f * (float)(leslie->nx - 1);    table.xs = 1.0f / log(r);    table.xo = (r - 1.0f) / a;
     table.y_ = leslie->ny;    table.ym = 0.5f * (float)(leslie->ny - 1);    table.ys = 1.0f / log(r);    table.yo = (r - 1.0f) / a;
     
@@ -2391,23 +2376,29 @@ void RS_set_wind_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
     table.z_ = leslie->nz;    table.zm = 0.0f;  table.zs = 1.0f / log(r);    table.zo = (r - 1.0f) / a;
 
     if (H->verb > 0 && H->vel_count == 0) {
-        printf("%s : RS : LES stretched z-grid using %.6f * log1p( %.6f * z )    Mid = %.2f m\n",
+        printf("%s : RS : LES stretched z-grid using %.6f * log1p( %.6f * z )    Max = %.2f m\n",
                now(), table.zs, table.zo,
                a * (1.0f - powf(r, (float)table.z_)) / (1.0f - r));
     }
     
     if (H->verb > 1) {
+//        printf("%s : RS : LES[%2d] @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
+//               now(),
+//               H->vel_count,
+//               H->domain.origin.x, H->domain.origin.x + H->domain.size.x,
+//               H->domain.origin.y, H->domain.origin.y + H->domain.size.y,
+//               H->domain.origin.z, H->domain.origin.z + H->domain.size.z);
         printf("%s : RS : LES[%2d] @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
                now(),
                H->vel_count,
-               H->domain.origin.x, H->domain.origin.x + H->domain.size.x,
-               H->domain.origin.y, H->domain.origin.y + H->domain.size.y,
+               leslie->ax * (1.0f - powf(r, table.xm)) / (1.0f - r),
+               leslie->ay * (1.0f - powf(r, table.ym)) / (1.0f - r),
                H->domain.origin.z, H->domain.origin.z + H->domain.size.z);
     }
     
     // Some other parameters
     table.tr = leslie->tr;
-    table.stretched = RSTableSpacingStretchedX | RSTableSpacingStretchedY | RSTableSpacingStretchedZ;
+    table.spacing = RSTableSpacingStretchedX | RSTableSpacingStretchedY | RSTableSpacingStretchedZ;
 
 	// Need to arrange LES values into float4, then upload to GPU's global memory
 	for (i = 0; i < leslie->nn; i++) {
@@ -3737,7 +3728,7 @@ void RS_table2d_free(RSTable2D T) {
 RSTable3D RS_table3d_init(size_t numel) {
 	RSTable3D table;
 	
-    table.stretched = RSTableSpacingUniform;
+    table.spacing = RSTableSpacingUniform;
     
 	table.xs = 1.0f;      table.ys = 1.0f;      table.zs = 1.0f;
 	table.xo = 0.0f;      table.yo = 0.0f;      table.zo = 0.0f;
@@ -3888,6 +3879,7 @@ RSBox RS_suggest_scan_doamin(RSHandle *H, const int nbeams) {
     RSBox box;
 
     float half_width = H->vel_desc.xs * log1pf(H->vel_desc.xo * (float)(H->vel_desc.x_ - 1));
+//    float half_width = H->vel_desc.xs * log1p(<#double#>)
     printf("%s : RS : half_width = %.3f\n", now(), half_width);
     
     box.origin.x = 0.0f;

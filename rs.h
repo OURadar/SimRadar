@@ -145,7 +145,7 @@ typedef struct _rs_table2d {
 
 // A table (texture) for 3D wind parameters
 typedef struct _rs_table3d {
-	float         xs;                 // x scaling to map to table index
+	float         xs;                 // x scaling to map to table index              or "m" for stretched grid: m * log1p(n * pos.x);
 	float         xo;                 // x offset to the 1st element in the table
 	float         xm;                 // x maximum index in float
 	uint32_t      x_;
@@ -153,14 +153,14 @@ typedef struct _rs_table3d {
 	float         yo;                 // y offset to the 1st element in the table
 	float         ym;                 // y maximum index in float
 	uint32_t      y_;
-	float         zs;                 // z scaling to map to table index;             or "m" for stretched grid: m * log1p(n * pos.z);
-	float         zo;                 // z offset to the 1st element in the table;    or "n" for stretched grid: m * log1p(n * pos.z);
-	float         zm;                 // z maximum index in float
+	float         zs;                 // z scaling to map to table index;             or "m" for stretched grid: m * log1p(n * pos.z) + o;
+	float         zo;                 // z offset to the 1st element in the table;    or "n" for stretched grid: m * log1p(n * pos.z) + o;
+	float         zm;                 // z maximum index in float                     or "o" for stretched grid: m * log1p(n * pos.z) + o;
 	uint32_t      z_;
 	float         tr;                 // replenishing time constant
 	float         reserved1;          // n/a. simply pad to 128-bit
     float         reserved2;          // n/a. simply pad to 128-bit
-    uint32_t      stretched;          // indicating whether it is of stretched grid
+    uint32_t      spacing;          // indicating whether it is of stretched grid
 	cl_float4     *data;              // Data in float4 grid, e.g., u, v, w, t
 } RSTable3D;
 

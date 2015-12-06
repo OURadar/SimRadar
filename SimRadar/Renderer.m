@@ -715,7 +715,7 @@
 	// We will always cull back faces for better performance
 	//glEnable(GL_CULL_FACE);
     glEnable(GL_TEXTURE_2D);
-    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+//    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
 	// Always use this clear color
 	//glClearColor(0.0f, 0.2f, 0.25f, 1.0f);
@@ -732,6 +732,8 @@
 
 - (void)allocateVBO
 {
+    int i;
+    
 	#ifdef DEBUG
 	NSLog(@"Allocating (%d, %d) particles on GPU ...", bodyRenderer[0].count, bodyRenderer[1].count);
 	#endif
@@ -749,7 +751,7 @@
 	
 	
 	// Scatter body
-    for (int i=0; i<clDeviceCount; i++) {
+    for (i = 0; i < clDeviceCount; i++) {
         glBindVertexArray(bodyRenderer[i].vao);
         
         glDeleteBuffers(3, bodyRenderer[i].vbo);
@@ -771,7 +773,12 @@
         glEnableVertexAttribArray(bodyRenderer[i].quaternionAI);
     }
     
-	// Anchor
+    // Use .w element for anchor size, scale by pixel ratio for Retina displays
+    for (i = 0; i < anchorRenderer.count; i++) {
+        anchorRenderer.positions[4 * i + 3] *= devicePixelRatio;
+    }
+
+    // Anchor
 	glBindVertexArray(anchorRenderer.vao);
 	
     glDeleteBuffers(1, anchorRenderer.vbo);
@@ -970,10 +977,10 @@
 	glDrawArrays(GL_LINES, 0, anchorLineRenderer.count);
 
 	// Anchors
+    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBindVertexArray(anchorRenderer.vao);
     glUseProgram(anchorRenderer.program);
-	//glPointSize(MIN(MAX(10.0f * pixelsPerUnit, 5.0f), 64.0f) * devicePixelRatio);
     glUniform4f(anchorRenderer.sizeUI, pixelsPerUnit, pixelsPerUnit, pixelsPerUnit, pixelsPerUnit);
 	glUniform4f(anchorRenderer.colorUI, 0.4f, 1.0f, 1.0f, 0.8f);
     glUniformMatrix4fv(anchorRenderer.mvUI, 1, GL_FALSE, modelView.m);
@@ -981,7 +988,8 @@
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, anchorRenderer.textureID);
 	glDrawArrays(GL_POINTS, 0, anchorRenderer.count);
-
+    glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
+    
 	// The scatter bodies
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
