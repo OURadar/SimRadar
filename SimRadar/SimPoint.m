@@ -43,8 +43,8 @@
 
 		//L = LES_init();
         
-		//L = LES_init_with_config_path(LESConfigSuctionVortices, [resourcePath UTF8String]);
-        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, [resourcePath UTF8String]);
+		L = LES_init_with_config_path(LESConfigSuctionVortices, [resourcePath UTF8String]);
+        //L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, [resourcePath UTF8String]);
         
         A = ADM_init_with_config_path(ADMConfigSquarePlate, [resourcePath UTF8String]);
 
@@ -67,7 +67,7 @@
 		RS_set_antenna_params(S, 1.0f, 44.5f);                // 1.0-deg, 44.5 dBi gain
 		
         RS_set_tx_params(S, 30.0f * 2.0f / 3.0e8f, 10.0e3);   // Resolution in m, power in W
-        
+
 		RS_set_scan_box(S,
                         2.3e3, 2.8e3, 30.0f,                  // Range
                         -7.0f, 7.0f, 1.0f,                    // Azimuth

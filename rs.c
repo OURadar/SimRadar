@@ -3791,3 +3791,19 @@ void RS_show_pulse(RSHandle *H) {
 	}
 	printf(" ] (%d)\n", H->params.range_count);
 }
+
+#pragma mark -
+
+RSBox RS_suggest_scan_doamin(RSHandle *H) {
+    RSBox box;
+    
+    box.origin.x = 0.0f;
+    box.origin.y = 0.0f;
+    box.origin.z = 0.0f;
+    
+    box.size.x = 10.0f;
+    box.size.y = 10.0f;
+    box.size.z = 10.0f;
+    
+    return box;
+}

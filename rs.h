@@ -165,6 +165,13 @@ typedef struct _rs_table3d {
 } RSTable3D;
 
 
+// A box that describes the origin and size
+typedef struct _rs_box {
+    cl_float4 origin;
+    cl_float4 size;
+} RSBox;
+
+
 // A typical convention for table description, which is a set of parameters
 // along with a table
 enum {
@@ -520,5 +527,9 @@ void RS_table3d_free(RSTable3D T);
 void RS_show_scat_pos(RSHandle *H);
 void RS_show_scat_sig(RSHandle *H);
 void RS_show_pulse(RSHandle *H);
+
+#pragma mark -
+
+RSBox RS_suggest_scan_doamin(RSHandle *H);
 
 #endif
