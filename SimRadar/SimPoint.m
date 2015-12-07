@@ -40,8 +40,6 @@
         if (S->num_cus[0] == 24) {
             RS_set_density(S, 4.0f);
         }
-
-		//L = LES_init();
         
 //		L = LES_init_with_config_path(LESConfigSuctionVortices, [resourcePath UTF8String]);
         L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, [resourcePath UTF8String]);
@@ -72,7 +70,8 @@
 //        RS_set_debris_count(S, 2, 2000);
 //        RS_set_debris_count(S, 3, 500);
 
-        RS_set_debris_count(S, 1, (size_t)roundf(30000 / 64) * 64);
+        RS_set_debris_count(S, 1, (size_t)roundf(30000 / 384) * 384);
+        RS_set_debris_count(S, 3, (size_t)roundf(500 / 384) * 384);
         
 		//RS_set_physics_data_to_cube125(S);
 		//RS_set_physics_data_to_cube27(S);
@@ -92,10 +91,8 @@
         RCSTable *rcs = RCS_get_frame(R);
         RS_clear_rcs_data(S);
         RS_set_rcs_data_to_RCS_table(S, rcs);
-        
-        //RS_set_rcs_data_to_
-        
-        RSBox box = RS_suggest_scan_doamin(S, 14);
+                
+        RSBox box = RS_suggest_scan_doamin(S, 15);
         
 //        RS_set_scan_box(S,
 //                        3.42e3, 4.04e3, 30.0f,                // Range
@@ -327,6 +324,11 @@
 - (GLint)populationForSpecies:(const int)speciesId forDevice:(const int)deviceId
 {
     return (GLint)RS_get_worker_debris_count(S, speciesId, deviceId);
+}
+
+- (GLfloat)recommendedViewRange
+{
+    return 1.2f * S->domain.size.z;
 }
 
 @end

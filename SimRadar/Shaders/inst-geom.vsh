@@ -33,7 +33,7 @@ void main (void)
     gl_Position = modelViewProjectionMatrix * (pos + vec4(inTranslation, 1.0));
 
 	varColor = drawColor;
-    if (inTranslation.z < 11.0) {
-        varColor.a *= 0.2;
+    if (inTranslation.z < 25.0) {
+        varColor.a *= inTranslation.z * 0.04;
     }
 }

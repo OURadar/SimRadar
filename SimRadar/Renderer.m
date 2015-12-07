@@ -23,6 +23,7 @@
 @implementation Renderer
 
 @synthesize delegate;
+@synthesize resetRange;
 @synthesize width, height;
 @synthesize beamAzimuth, beamElevation;
 @synthesize showHUD;
@@ -608,7 +609,8 @@
 		height = 1;
         //spinModel = 1;
 		aspectRatio = 1.0f;
-        
+        resetRange = 1100.0f;
+
         //showHUD = TRUE;
         
         hudModelViewProjection = GLKMatrix4Identity;
@@ -1002,11 +1004,7 @@
         glBindVertexArray(bodyRenderer[i].vao);
         glPointSize(MIN(MAX(4.0f * pixelsPerUnit, 1.0f), 64.0f) * devicePixelRatio);
         glUseProgram(bodyRenderer[i].program);
-        if (range < 1000.0f) {
-            glUniform4f(bodyRenderer[i].colorUI, bodyRenderer[i].colormapIndexNormalized, 1.0f, 1.0f, MIN(1.0f, backgroundOpacity * 1000.0f / range));
-        } else {
-            glUniform4f(bodyRenderer[i].colorUI, bodyRenderer[i].colormapIndexNormalized, 1.0f, 1.0f, backgroundOpacity);
-        }
+        glUniform4f(bodyRenderer[i].colorUI, bodyRenderer[i].colormapIndexNormalized, 1.0f, 1.0f, backgroundOpacity);
         glUniformMatrix4fv(bodyRenderer[i].mvpUI, 1, GL_FALSE, modelViewProjection.m);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, bodyRenderer[i].textureID);
@@ -1232,7 +1230,7 @@
 
 	rotateX = -0.15f;
 	rotateY = 1.5f;
-	range = 1100.0f;
+	range = resetRange;
     modelRotate = GLKMatrix4MakeRotation(rotateX, 1.0f, 0.0f, 0.0f);
     modelRotate = GLKMatrix4RotateY(modelRotate, rotateY);
 

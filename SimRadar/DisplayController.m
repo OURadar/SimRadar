@@ -76,6 +76,11 @@ NSWindow *standardWindow;
 	[glView.renderer setCenterPoisitionX:domain.origin.x + 0.5f * domain.size.x
 									   y:domain.origin.y + 0.5f * domain.size.y
 									   z:domain.origin.z + 0.5f * domain.size.z];
+    
+    NSLog(@"Recommend viewing at %.2f m", sim.recommendedViewRange);
+    [glView.renderer setResetRange:sim.recommendedViewRange];
+    
+    [glView.renderer resetViewParameters];
 	
 #ifdef DEBUG
 	NSLog(@"Particles wired to view renderer (%d)", (int)sim.pointCount);

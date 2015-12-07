@@ -78,6 +78,7 @@ typedef struct _draw_primitive {
 	GLsizei width, height;
 	GLfloat aspectRatio;
 	GLfloat rotateX, rotateY, rotateZ, range;
+    GLfloat resetRange;
 	
 	GLKMatrix4 modelView, projection, modelViewProjection;
 	GLKMatrix4 modelRotate;
@@ -136,6 +137,7 @@ typedef struct _draw_primitive {
     char fpsString[16];
 }
 
+@property (nonatomic) GLfloat resetRange;
 @property (nonatomic, retain) id<RendererDelegate> delegate;
 @property (nonatomic, readonly) GLsizei width, height;
 @property (nonatomic) GLfloat beamAzimuth, beamElevation;

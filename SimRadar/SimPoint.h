@@ -72,4 +72,6 @@
 - (GLint)populationForSpecies:(const int)speciesId;
 - (GLint)populationForSpecies:(const int)speciesId forDevice:(const int)deviceId;
 
+- (GLfloat)recommendedViewRange;
+
 @end
