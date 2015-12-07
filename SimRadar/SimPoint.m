@@ -43,8 +43,8 @@
 
 		//L = LES_init();
         
-		L = LES_init_with_config_path(LESConfigSuctionVortices, [resourcePath UTF8String]);
-        //L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, [resourcePath UTF8String]);
+//		L = LES_init_with_config_path(LESConfigSuctionVortices, [resourcePath UTF8String]);
+        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, [resourcePath UTF8String]);
         
         A = ADM_init_with_config_path(ADMConfigSquarePlate, [resourcePath UTF8String]);
 
@@ -72,7 +72,7 @@
 //        RS_set_debris_count(S, 2, 2000);
 //        RS_set_debris_count(S, 3, 500);
 
-//        RS_set_debris_count(S, 1, (size_t)roundf(30000 / 64) * 64);
+        RS_set_debris_count(S, 1, (size_t)roundf(30000 / 64) * 64);
         
 		//RS_set_physics_data_to_cube125(S);
 		//RS_set_physics_data_to_cube27(S);
@@ -98,7 +98,7 @@
         RS_suggest_scan_doamin(S, 10);
         
         RS_set_scan_box(S,
-                        2.3e3, 2.8e3, 30.0f,                  // Range
+                        2.2e3, 2.8e3, 30.0f,                  // Range
                         -7.0f, 7.0f, 1.0f,                    // Azimuth
                         0.0f, 12.0f, 1.0f);                   // Elevation
         

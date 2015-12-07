@@ -206,36 +206,36 @@ LESTable *LES_table_create(const LESGrid *grid) {
 	table->nn = grid->nz * grid->ny * grid->nx;
 	table->nt = LES_file_nblock;
     table->tr = 0.0f;
-	table->x = grid->x;
-	table->y = grid->y;
-	table->z = grid->z;
-	table->u = (float *)malloc(table->nn * sizeof(float));
-	table->v = (float *)malloc(table->nn * sizeof(float));
-	table->w = (float *)malloc(table->nn * sizeof(float));
-	table->p = (float *)malloc(table->nn * sizeof(float));
-	table->t = (float *)malloc(table->nn * sizeof(float));
-	if (table->u == NULL || table->v == NULL || table->w == NULL || table->p == NULL || table->t == NULL) {
+	table->data.x = grid->x;
+	table->data.y = grid->y;
+	table->data.z = grid->z;
+	table->data.u = (float *)malloc(table->nn * sizeof(float));
+	table->data.v = (float *)malloc(table->nn * sizeof(float));
+	table->data.w = (float *)malloc(table->nn * sizeof(float));
+	table->data.p = (float *)malloc(table->nn * sizeof(float));
+	table->data.t = (float *)malloc(table->nn * sizeof(float));
+	if (table->data.u == NULL || table->data.v == NULL || table->data.w == NULL || table->data.p == NULL || table->data.t == NULL) {
         fprintf(stderr, "Error allocating memory for [LESTable] values.\n");
         free(table);
         return NULL;
 	}
-    memset(table->u, 0, table->nn * sizeof(float));
-    memset(table->v, 0, table->nn * sizeof(float));
-    memset(table->w, 0, table->nn * sizeof(float));
-    memset(table->p, 0, table->nn * sizeof(float));
-    memset(table->t, 0, table->nn * sizeof(float));
+    memset(table->data.u, 0, table->nn * sizeof(float));
+    memset(table->data.v, 0, table->nn * sizeof(float));
+    memset(table->data.w, 0, table->nn * sizeof(float));
+    memset(table->data.p, 0, table->nn * sizeof(float));
+    memset(table->data.t, 0, table->nn * sizeof(float));
 	return table;
 }
 
 
 void LES_table_free(LESTable *table) {
-	// NOTE: table->u, table->v & table->w are allocated but
-	//       table->x, table->y & table->z are assigned to grid->x, grid->y & grid->z
-	free(table->u);
-	free(table->v);
-	free(table->w);
-	free(table->p);
-	free(table->t);
+	// NOTE: table->data.u, table->data.v & table->data.w are allocated but
+	//       table->data.x, table->data.y & table->data.z are assigned to grid->data.x, grid->data.y & grid->data.z
+	free(table->data.u);
+	free(table->data.v);
+	free(table->data.w);
+	free(table->data.p);
+	free(table->data.t);
 	free(table);
 }
 
@@ -245,19 +245,19 @@ void LES_show_table_summary(const LESTable *table) {
     printf(" nx = %d   ny = %d   nz = %d   nt = %d\n\n", table->nx, table->ny, table->nz, table->nt);
     
 	printf(" u =\n");
-	LES_show_volume(table->u, table->nx, table->ny, table->nz);
+	LES_show_volume(table->data.u, table->nx, table->ny, table->nz);
 
 	printf(" v =\n");
-	LES_show_volume(table->v, table->nx, table->ny, table->nz);
+	LES_show_volume(table->data.v, table->nx, table->ny, table->nz);
 
 	printf(" w =\n");
-	LES_show_volume(table->w, table->nx, table->ny, table->nz);
+	LES_show_volume(table->data.w, table->nx, table->ny, table->nz);
 
 	printf(" p =\n");
-	LES_show_volume(table->p, table->nx, table->ny, table->nz);
+	LES_show_volume(table->data.p, table->nx, table->ny, table->nz);
 
 	printf(" t =\n");
-	LES_show_volume(table->t, table->nx, table->ny, table->nz);
+	LES_show_volume(table->data.t, table->nx, table->ny, table->nz);
 }
 
 
@@ -340,7 +340,7 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
         h->v0 = 100.0f;
         h->ax = 2.0f;
         h->ay = 2.0f;
-        h->ax = 2.0f;
+        h->az = 2.0f;
         h->rx = 1.0212f;
         h->ry = 1.0212f;
         h->rz = 1.05f;
@@ -360,7 +360,7 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
     #ifdef DEBUG
     printf("index @ %s\n", les_file_path);
     #endif
-    
+
 	h->enclosing_grid = LES_enclosing_grid_create_from_file(les_file_path);
     if (h->enclosing_grid == NULL) {
         fprintf(stderr, "Unable to get the enclosing grid for LES framework.\n");
@@ -370,10 +370,10 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
 
     // Extract only a sub-domain. This is not complete, will come back for it.
     h->data_grid = LES_data_grid_create_from_enclosing_grid(h->enclosing_grid, 0, 0);
-    
+
 #define LES_FRAME_TIME_STAMP_BYTES  4
 #define LES_FRAME_PADDING_BYTES     8
-    
+
     // Go through and check available tables
     int k = 0;
     while (1) {
@@ -487,27 +487,27 @@ LESTable *LES_get_frame(const LESHandle *i, const int n) {
 			//LES_show_grid_summary(h->data_grid);
 			
 
-			fread(table->u, sizeof(float), table->nn, fid);
+			fread(table->data.u, sizeof(float), table->nn, fid);
 			fseek(fid, 2 * sizeof(int32_t), SEEK_CUR);
 
-			fread(table->v, sizeof(float), table->nn, fid);
+			fread(table->data.v, sizeof(float), table->nn, fid);
 			fseek(fid, 2 * sizeof(int32_t), SEEK_CUR);
 
-			fread(table->w, sizeof(float), table->nn, fid);
+			fread(table->data.w, sizeof(float), table->nn, fid);
 			fseek(fid, 2 * sizeof(int32_t), SEEK_CUR);
 
-			fread(table->p, sizeof(float), table->nn, fid);
+			fread(table->data.p, sizeof(float), table->nn, fid);
 			fseek(fid, 2 * sizeof(int32_t), SEEK_CUR);
 
-			fread(table->t, sizeof(float), table->nn, fid);
+			fread(table->data.t, sizeof(float), table->nn, fid);
 			fseek(fid, 2 * sizeof(int32_t), SEEK_CUR);
 			
 			for (int k=0; k<table->nn; k++) {
-				table->u[k] *= v0;
-				table->v[k] *= v0;
-				table->w[k] *= v0;
-				table->p[k] *= v0 * v0;
-				table->t[k] *= v0 * v0;
+				table->data.u[k] *= v0;
+				table->data.v[k] *= v0;
+				table->data.w[k] *= v0;
+				table->data.p[k] *= v0 * v0;
+				table->data.t[k] *= v0 * v0;
 			}
 			
 			h->ibuf = h->ibuf == LES_num - 1 ? 0 : h->ibuf + 1;

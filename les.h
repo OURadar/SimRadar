@@ -58,14 +58,15 @@ typedef struct _les_table {
     float     rx;             // Ratio value "r" in the geometric series in x direction
     float     ry;             // Ratio value "r" in the geometric series in y direction
     float     rz;             // Ratio value "r" in the geometric series in z direction
-	float     *x;
-	float     *y;
-	float     *z;
-	float     *u;
-	float     *v;
-	float     *w;
-	float     *p;
-	float     *t;
+//	float     *x;
+//	float     *y;
+//	float     *z;
+//	float     *u;
+//	float     *v;
+//	float     *w;
+//	float     *p;
+//	float     *t;
+    LESValue  data;
 } LESTable;
 
 
