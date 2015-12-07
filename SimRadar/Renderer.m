@@ -1225,11 +1225,11 @@
 //	range = 20000.0f;
 //	modelRotate = GLKMatrix4MakeTranslation(-modelCenter.x, -modelCenter.y, -modelCenter.z);
 
-	rotateX = 0.0f;
+	rotateX = -0.15f;
 	rotateY = 1.5f;
-	range = 1000.0f;
-    modelRotate = GLKMatrix4MakeRotation(rotateY, 0.0f, 1.0f, 0.0f);
-    modelRotate = GLKMatrix4RotateX(modelRotate, rotateX);
+	range = 1100.0f;
+    modelRotate = GLKMatrix4MakeRotation(rotateX, 1.0f, 0.0f, 0.0f);
+    modelRotate = GLKMatrix4RotateY(modelRotate, rotateY);
 
 //    rotateX = 1.5f;
 //    rotateY = 0.0f;
