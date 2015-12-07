@@ -271,6 +271,7 @@ NSWindow *standardWindow;
 //                [glView.renderer setPopulationTo:ret forSpecies:speciesId];
                 for (int i = 0; i< sim.deviceCount; i++) {
                     [glView.renderer setPopulationTo:counts[i] forSpecies:speciesId forDevice:i];
+                    NSLog(@"bodyCount = %d (i = %d)", [sim populationForSpecies:0 forDevice:i], i);
                 }
                 [glView.renderer setDebrisCountsHaveChanged:TRUE];
             }

@@ -183,7 +183,11 @@
         NSLog(@"Invalid speciesId.");
         return;
     }
-    speciesRenderer[speciesId].count = count;
+    debrisRenderer[speciesId].count = count;
+    debrisRenderer[0].count = bodyRenderer[deviceId].count;
+    for (int i = 1; i < RENDERER_MAX_DEBRIS_TYPES; i++) {
+        debrisRenderer[0].count -= debrisRenderer[i].count;
+    }
     statusMessageNeedsUpdate = TRUE;
 }
 
@@ -575,9 +579,9 @@
     snprintf(statusMessage[1],
              sizeof(statusMessage[1]),
              "Debris Pop. %d, %d, %d    Color %d / %.3f",
-             speciesRenderer[1].count,
-             speciesRenderer[2].count,
-             speciesRenderer[3].count,
+             debrisRenderer[1].count,
+             debrisRenderer[2].count,
+             debrisRenderer[3].count,
              bodyRenderer[0].colormapIndex,
              backgroundOpacity);
 }
@@ -635,8 +639,8 @@
 	if (instancedGeometryRenderer.positions != NULL) {
 		free(instancedGeometryRenderer.positions);
 	}
-    for (int k=0; k<RENDERER_MAX_SPECIES_COUNT; k++) {
-        free(speciesRenderer[k].colors);
+    for (int k=0; k<RENDERER_MAX_DEBRIS_TYPES; k++) {
+        free(debrisRenderer[k].colors);
     }
 	[super dealloc];
 }
@@ -695,13 +699,13 @@
         1.00f, 0.65f, 0.25f
     };
     
-    for (int k = 0; k < RENDERER_MAX_SPECIES_COUNT; k++) {
-        speciesRenderer[k] = [self createRenderResourceFromProgram:instancedGeometryRenderer.program];
-        speciesRenderer[k].colors = malloc(4 * sizeof(GLfloat));
-        speciesRenderer[k].colors[0] = colors[(k % 4) * 3];
-        speciesRenderer[k].colors[1] = colors[(k % 4) * 3 + 1];
-        speciesRenderer[k].colors[2] = colors[(k % 4) * 3 + 2];
-        speciesRenderer[k].colors[3] = 1.0f;
+    for (int k = 0; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
+        debrisRenderer[k] = [self createRenderResourceFromProgram:instancedGeometryRenderer.program];
+        debrisRenderer[k].colors = malloc(4 * sizeof(GLfloat));
+        debrisRenderer[k].colors[0] = colors[(k % 4) * 3];
+        debrisRenderer[k].colors[1] = colors[(k % 4) * 3 + 1];
+        debrisRenderer[k].colors[2] = colors[(k % 4) * 3 + 2];
+        debrisRenderer[k].colors[3] = 1.0f;
     }
 	
 	textRenderer = [[GLText alloc] initWithDevicePixelRatio:devicePixelRatio];
@@ -871,53 +875,54 @@
 
 - (void)updateBodyToDebrisMappings
 {
+    int k;
     // Debris
-    int k = RENDERER_MAX_SPECIES_COUNT;
-    GLuint offset = bodyRenderer[0].count + bodyRenderer[1].count;
+    GLuint offset = bodyRenderer[0].count;
+    k = RENDERER_MAX_DEBRIS_TYPES;
     while (k > 1) {
         k--;
-        if (speciesRenderer[k].count > 0) {
-            offset -= speciesRenderer[k].count;
-            speciesRenderer[k].sourceOffset = offset;
+        if (debrisRenderer[k].count > 0) {
+            offset -= debrisRenderer[k].count;
+            debrisRenderer[k].sourceOffset = offset;
         }
     }
     
     // Various Species
-    for (int k = 1; k < RENDERER_MAX_SPECIES_COUNT; k++) {
-        if (speciesRenderer[k].count == 0) {
+    for (int k = 1; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
+        if (debrisRenderer[k].count == 0) {
             continue;
         }
-        glBindVertexArray(speciesRenderer[k].vao);
+        glBindVertexArray(debrisRenderer[k].vao);
         
-        if (speciesRenderer[k].vbo[0]) {
-            glDeleteBuffers(4, speciesRenderer[k].vbo);
+        if (debrisRenderer[k].vbo[0]) {
+            glDeleteBuffers(4, debrisRenderer[k].vbo);
         }
-        glGenBuffers(4, speciesRenderer[k].vbo);
+        glGenBuffers(4, debrisRenderer[k].vbo);
         
         RenderPrimitive *prim = &primitives[(k + 2) % 3];
 
-        speciesRenderer[k].instanceSize = prim->instanceSize;
-        speciesRenderer[k].drawMode = prim->drawMode;
+        debrisRenderer[k].instanceSize = prim->instanceSize;
+        debrisRenderer[k].drawMode = prim->drawMode;
         
-        glBindBuffer(GL_ARRAY_BUFFER, speciesRenderer[k].vbo[0]);           // 1-st VBO for geometry (primitive, we are instancing)
+        glBindBuffer(GL_ARRAY_BUFFER, debrisRenderer[k].vbo[0]);           // 1-st VBO for geometry (primitive, we are instancing)
         glBufferData(GL_ARRAY_BUFFER, prim->vertexSize, prim->vertices, GL_STATIC_DRAW);
-        glVertexAttribPointer(speciesRenderer[k].positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
-        glEnableVertexAttribArray(speciesRenderer[k].positionAI);
+        glVertexAttribPointer(debrisRenderer[k].positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+        glEnableVertexAttribArray(debrisRenderer[k].positionAI);
         
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, speciesRenderer[k].vbo[1]);   // 2-nd VBO for position index
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, debrisRenderer[k].vbo[1]);   // 2-nd VBO for position index
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, prim->instanceSize * sizeof(GLuint), prim->indices, GL_STATIC_DRAW);
         
-        glBindBuffer(GL_ARRAY_BUFFER, speciesRenderer[k].vbo[2]);           // 3-rd VBO for translation
-        glBufferData(GL_ARRAY_BUFFER, speciesRenderer[k].count * sizeof(cl_float4), NULL, GL_DYNAMIC_DRAW);
-        glVertexAttribPointer(speciesRenderer[k].translationAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
-        glVertexAttribDivisor(speciesRenderer[k].translationAI, 1);
-        glEnableVertexAttribArray(speciesRenderer[k].translationAI);
+        glBindBuffer(GL_ARRAY_BUFFER, debrisRenderer[k].vbo[2]);           // 3-rd VBO for translation
+        glBufferData(GL_ARRAY_BUFFER, debrisRenderer[k].count * sizeof(cl_float4), NULL, GL_DYNAMIC_DRAW);
+        glVertexAttribPointer(debrisRenderer[k].translationAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+        glVertexAttribDivisor(debrisRenderer[k].translationAI, 1);
+        glEnableVertexAttribArray(debrisRenderer[k].translationAI);
         
-        glBindBuffer(GL_ARRAY_BUFFER, speciesRenderer[k].vbo[3]);           // 4-th VBO for quaternion (rotation)
-        glBufferData(GL_ARRAY_BUFFER, speciesRenderer[k].count * sizeof(cl_float4), NULL, GL_DYNAMIC_DRAW);
-        glVertexAttribPointer(speciesRenderer[k].quaternionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
-        glVertexAttribDivisor(speciesRenderer[k].quaternionAI, 1);
-        glEnableVertexAttribArray(speciesRenderer[k].quaternionAI);
+        glBindBuffer(GL_ARRAY_BUFFER, debrisRenderer[k].vbo[3]);           // 4-th VBO for quaternion (rotation)
+        glBufferData(GL_ARRAY_BUFFER, debrisRenderer[k].count * sizeof(cl_float4), NULL, GL_DYNAMIC_DRAW);
+        glVertexAttribPointer(debrisRenderer[k].quaternionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+        glVertexAttribDivisor(debrisRenderer[k].quaternionAI, 1);
+        glEnableVertexAttribArray(debrisRenderer[k].quaternionAI);
     }
 }
 
@@ -1007,7 +1012,7 @@
         glBindTexture(GL_TEXTURE_2D, bodyRenderer[i].textureID);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, bodyRenderer[i].colormapID);
-        glDrawArrays(GL_POINTS, 0, bodyRenderer[i].count);
+        glDrawArrays(GL_POINTS, 0, debrisRenderer[0].count);
     }
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
@@ -1015,25 +1020,25 @@
     glUseProgram(instancedGeometryRenderer.program);
     glUniformMatrix4fv(instancedGeometryRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
 
-    for (int k = 1; k < RENDERER_MAX_SPECIES_COUNT; k++) {
+    for (int k = 1; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
         for (i = 0; i < clDeviceCount; i++) {
-            if (speciesRenderer[k].count == 0) {
+            if (debrisRenderer[k].count == 0) {
                 continue;
             }
             // Update the VBOs by copy
-            glBindVertexArray(speciesRenderer[k].vao);
+            glBindVertexArray(debrisRenderer[k].vao);
             
-            glUniform4f(instancedGeometryRenderer.colorUI, speciesRenderer[k].colors[0], speciesRenderer[k].colors[1], speciesRenderer[k].colors[2], speciesRenderer[k].colors[3]);
+            glUniform4f(instancedGeometryRenderer.colorUI, debrisRenderer[k].colors[0], debrisRenderer[k].colors[1], debrisRenderer[k].colors[2], debrisRenderer[k].colors[3]);
 
             glBindBuffer(GL_COPY_READ_BUFFER, bodyRenderer[i].vbo[0]);              // positions of simulation particles
-            glBindBuffer(GL_COPY_WRITE_BUFFER, speciesRenderer[k].vbo[2]);       // translations of species[k]
-            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, speciesRenderer[k].sourceOffset * sizeof(cl_float4), 0, speciesRenderer[k].count * sizeof(cl_float4));
+            glBindBuffer(GL_COPY_WRITE_BUFFER, debrisRenderer[k].vbo[2]);          // translations of species[k]
+            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, debrisRenderer[k].sourceOffset * sizeof(cl_float4), 0, debrisRenderer[k].count * sizeof(cl_float4));
             
             glBindBuffer(GL_COPY_READ_BUFFER, bodyRenderer[i].vbo[2]);              // quaternions of simulation particles
-            glBindBuffer(GL_COPY_WRITE_BUFFER, speciesRenderer[k].vbo[3]);       // quaternions of species[k]
-            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, speciesRenderer[k].sourceOffset * sizeof(cl_float4), 0, speciesRenderer[k].count * sizeof(cl_float4));
+            glBindBuffer(GL_COPY_WRITE_BUFFER, debrisRenderer[k].vbo[3]);          // quaternions of species[k]
+            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, debrisRenderer[k].sourceOffset * sizeof(cl_float4), 0, debrisRenderer[k].count * sizeof(cl_float4));
             
-            glDrawElementsInstanced(speciesRenderer[k].drawMode, speciesRenderer[k].instanceSize, GL_UNSIGNED_INT, NULL, speciesRenderer[k].count);
+            glDrawElementsInstanced(debrisRenderer[k].drawMode, debrisRenderer[k].instanceSize, GL_UNSIGNED_INT, NULL, debrisRenderer[k].count);
         }
     }
     
@@ -1053,13 +1058,13 @@
         // Draw the debris again
         glUseProgram(instancedGeometryRenderer.program);
         glUniformMatrix4fv(instancedGeometryRenderer.mvpUI, 1, GL_FALSE, beamModelViewProjection.m);
-        for (int k = 1; k < RENDERER_MAX_SPECIES_COUNT; k++) {
-            if (speciesRenderer[k].count == 0) {
+        for (int k = 1; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
+            if (debrisRenderer[k].count == 0) {
                 continue;
             }
-            glBindVertexArray(speciesRenderer[k].vao);
-            glUniform4f(instancedGeometryRenderer.colorUI, speciesRenderer[k].colors[0], speciesRenderer[k].colors[1], speciesRenderer[k].colors[2], speciesRenderer[k].colors[3]);
-            glDrawElementsInstanced(GL_LINE_STRIP, speciesRenderer[k].instanceSize, GL_UNSIGNED_INT, NULL, speciesRenderer[k].count);
+            glBindVertexArray(debrisRenderer[k].vao);
+            glUniform4f(instancedGeometryRenderer.colorUI, debrisRenderer[k].colors[0], debrisRenderer[k].colors[1], debrisRenderer[k].colors[2], debrisRenderer[k].colors[3]);
+            glDrawElementsInstanced(GL_LINE_STRIP, debrisRenderer[k].instanceSize, GL_UNSIGNED_INT, NULL, debrisRenderer[k].count);
         }
 
         glBindVertexArray(anchorLineRenderer.vao);

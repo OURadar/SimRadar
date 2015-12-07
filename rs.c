@@ -1554,7 +1554,7 @@ void RS_set_scan_box(RSHandle *H,
 	
 	if (H->verb) {
 		printf("%s : RS : nvol = %.4f\n", now(), nvol);
-		printf("%s : RS : Box @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]   ( %.2f x %.2f %.2f )\n",
+		printf("%s : RS : Box @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]   ( %.2f m x %.2f m x %.2f m )\n",
 			   now(),
 			   xmin, xmax,
 			   ymin, ymax,

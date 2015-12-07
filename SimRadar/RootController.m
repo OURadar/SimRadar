@@ -164,7 +164,7 @@
 
 	[sim populate];
 
-    for (int k=1; k<RENDERER_MAX_SPECIES_COUNT; k++) {
+    for (int k=1; k<RENDERER_MAX_DEBRIS_TYPES; k++) {
         GLuint pop = [sim populationForSpecies:k];
         [dc.glView.renderer setPopulationTo:pop forSpecies:k forDevice:0];
     }

@@ -14,7 +14,7 @@
 #define RENDERER_NEAR_RANGE         100.0f
 #define RENDERER_FAR_RANGE          100000.0f
 #define RENDERER_TIC_COUNT          10
-#define RENDERER_MAX_SPECIES_COUNT  4
+#define RENDERER_MAX_DEBRIS_TYPES   4
 #define RENDERER_MAX_VBO_GROUPS     8
 
 typedef struct _draw_resource {
@@ -118,7 +118,7 @@ typedef struct _draw_primitive {
     RenderResource gridRenderer;
     RenderResource anchorRenderer;
     RenderResource anchorLineRenderer;
-    RenderResource speciesRenderer[RENDERER_MAX_SPECIES_COUNT];
+    RenderResource debrisRenderer[RENDERER_MAX_DEBRIS_TYPES];
     RenderResource hudRenderer;
     RenderResource meshRenderer;
 
