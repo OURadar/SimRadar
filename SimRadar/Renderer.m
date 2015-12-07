@@ -1228,9 +1228,17 @@
 	rotateX = 0.0f;
 	rotateY = 1.5f;
 	range = 1000.0f;
-
     modelRotate = GLKMatrix4MakeRotation(rotateY, 0.0f, 1.0f, 0.0f);
     modelRotate = GLKMatrix4RotateX(modelRotate, rotateX);
+
+//    rotateX = 1.5f;
+//    rotateY = 0.0f;
+//    rotateZ = M_PI_2;
+//    range = 1500.0f;
+//
+//    modelRotate = GLKMatrix4MakeRotation(rotateY, 0.0f, 1.0f, 0.0f);
+//    modelRotate = GLKMatrix4RotateX(modelRotate, rotateX);
+//    modelRotate = GLKMatrix4RotateY(modelRotate, rotateZ);
     
     iframe = 0;
     

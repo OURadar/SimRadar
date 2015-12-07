@@ -35,6 +35,7 @@
 #include <OpenGL/OpenGL.h>
 #endif
 
+#define RS_C                 29979458.0
 #define RS_DOMAIN_PAD               2.0
 #define RS_MAX_STR               4096
 #define RS_MAX_GPU_PLATFORM        10
@@ -166,9 +167,18 @@ typedef struct _rs_table3d {
 
 
 // A box that describes the origin and size
+typedef union
+{
+    cl_float  CL_ALIGNED(16) s[4];
+#if defined( __GNUC__) && ! defined( __STRICT_ANSI__ )
+    __extension__ struct{ cl_float   r, a, e, w; };
+    __extension__ struct{ cl_float   s0, s1, s2, s3; };
+#endif
+} RSPolar;
+
 typedef struct _rs_box {
-    cl_float4 origin;
-    cl_float4 size;
+    RSPolar origin;
+    RSPolar size;
 } RSBox;
 
 

@@ -95,13 +95,18 @@
         
         //RS_set_rcs_data_to_
         
-        RS_suggest_scan_doamin(S, 10);
+        RSBox box = RS_suggest_scan_doamin(S, 14);
         
+//        RS_set_scan_box(S,
+//                        3.42e3, 4.04e3, 30.0f,                // Range
+//                        -7.0f, 7.0f, 1.0f,                    // Azimuth
+//                        0.0f, 12.0f, 1.0f);                   // Elevation
+
         RS_set_scan_box(S,
-                        2.2e3, 2.8e3, 30.0f,                  // Range
-                        -7.0f, 7.0f, 1.0f,                    // Azimuth
-                        0.0f, 12.0f, 1.0f);                   // Elevation
-        
+                        box.origin.r, box.origin.r + box.size.r, 30.0f,   // Range
+                        box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
+                        box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
+
 		//RS_set_prt(S, 1.0f);
         //RS_set_prt(S, 0.5f);
         RS_set_prt(S, 0.03f);

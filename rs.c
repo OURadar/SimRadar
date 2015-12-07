@@ -1554,11 +1554,12 @@ void RS_set_scan_box(RSHandle *H,
 	
 	if (H->verb) {
 		printf("%s : RS : nvol = %.4f\n", now(), nvol);
-		printf("%s : RS : Box @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
+		printf("%s : RS : Box @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]   ( %.2f x %.2f %.2f )\n",
 			   now(),
 			   xmin, xmax,
 			   ymin, ymax,
-			   zmin, zmax);
+			   zmin, zmax,
+               xmax - xmin, ymax - ymin, zmax - zmin);
 		printf("%s : RS : User domain @ R:[ %5.2f - %5.2f ]   E:[ %5.2f - %5.2f ]   A:[ %+.2f - %+.2f ]\n", now(),
 			   1e-3*H->params.range_start, 1e-3*H->params.range_end,
 			   H->params.elevation_start_deg, H->params.elevation_end_deg,
@@ -2360,7 +2361,7 @@ void RS_set_wind_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
     table.z_ = leslie->nz;    table.zm = 0.0f;                              table.zs = 1.0f / log(leslie->rz);    table.zo = (leslie->rz - 1.0f) / leslie->az;
 
     hmax = leslie->ax * (1.0f - powf(leslie->rx, table.xm)) / (1.0f - leslie->rx);
-    zmax = leslie->az * (1.0f - powf(leslie->rz, table.zm)) / (1.0f - leslie->rz);
+    zmax = leslie->az * (1.0f - powf(leslie->rz, (float)(leslie->nz - 1))) / (1.0f - leslie->rz);
     
     if (H->verb > 0 && H->vel_count == 0) {
         printf("%s : RS : LES stretched x-grid using %.6f * log1p( %.6f * x )    Mid = %.2f m\n",
@@ -3871,18 +3872,40 @@ void RS_show_pulse(RSHandle *H) {
 RSBox RS_suggest_scan_doamin(RSHandle *H, const int nbeams) {
     RSBox box;
 
-    float w = H->vel_desc.ax * (1.0f - powf(H->vel_desc.rx, 0.5f * (float)(H->vel_desc.nx - 1))) / (1.0f - H->vel_desc.rx);
+    // Extremas of the domain
+    float w = H->vel_desc.ax * (1.0f - powf(H->vel_desc.rx, 0.5f * (float)(H->vel_desc.nx - 3))) / (1.0f - H->vel_desc.rx);
     float h = H->vel_desc.az * (1.0f - powf(H->vel_desc.rz,        (float)(H->vel_desc.nz - 1))) / (1.0f - H->vel_desc.rz);
     
-    printf("%s : RS :    w = %.3f   h = %.3f <--------------------------\n", now(), w, h);
+    // Maximum number of beams plus the padding on one side in azimuth
+    float na = 0.5f * (float)nbeams + RS_DOMAIN_PAD + 0.5f;
     
-    box.origin.x = 0.0f;
-    box.origin.y = 0.0f;
-    box.origin.z = 0.0f;
+    // Maximum number of beams in elevation
+    float ne = 14.0f;
     
-    box.size.x = 10.0f;
-    box.size.y = 10.0f;
-    box.size.z = 10.0f;
+    // Maximum y of the emulation box: The range when the width is fully utilized; This is also rmax
+    float rmax = w / sinf(na * H->params.antenna_bw_rad);
+    
+    // Minimum y of the emulation box: The range when the height is fully utilized
+    float rmin = (rmax - 2.0f * w) / cosf(na * H->params.antenna_bw_rad) / cosf(ne * H->params.antenna_bw_rad);
+    
+    // Maximum number of range cells minus the padding on both sides minus one radar cell
+    float nr = (rmax - rmin) / H->params.dr - 2.0f * RS_DOMAIN_PAD - 1.0f;
+    
+    box.origin.a = ceilf(-0.5f * (float)nbeams) * H->params.antenna_bw_rad * 180.0f / M_PI;
+    box.size.a = nbeams * H->params.antenna_bw_deg;
+
+    box.origin.r = rmax - (nr + 2.0f * RS_DOMAIN_PAD - 1.0f) * H->params.dr;
+    box.size.r = floorf(nr - 2.0f * RS_DOMAIN_PAD - 1.0f) * H->params.dr;
+
+    box.origin.e = 0.0f;
+    box.size.e = ne * H->params.antenna_bw_deg;
+
+    if (H->verb) {
+        printf("%s : RS : Suggest scan box based on [ 2w = %.1f m, h = %.1f m ]  : nr = %.1f   na = %.1f\n"
+               "%s : RS : R: [ %.3f - %.3f ]    E: [ %.3f - %.3f ]   A: [ %.3f - %.3f ]\n",
+               now(), 2.0f * w, h, nr, na,
+               now(), box.origin.r, box.origin.r + box.size.r, box.origin.e, box.origin.e + box.size.e, box.origin.a, box.origin.a + box.size.a);
+    }
     
     return box;
 }
