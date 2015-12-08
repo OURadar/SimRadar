@@ -693,6 +693,19 @@
     meshRenderer       = [self createRenderResourceFromVertexShader:@"mesh.vsh" fragmentShader:@"mesh.fsh"];
     
     //NSLog(@"meshRenderer's drawColor @ %d / %d / %d", meshRenderer.colorUI, meshRenderer.positionAI, meshRenderer.textureCoordAI);
+
+    // Set some colors that do not change througout the rendering
+//    glBindVertexArray(anchorRenderer.vao);
+//    glUseProgram(anchorRenderer.program);
+//    glUniform4f(anchorRenderer.colorUI, 0.4f, 1.0f, 1.0f, 0.8f);
+
+//    glBindVertexArray(anchorLineRenderer.vao);
+//    glUseProgram(anchorLineRenderer.program);
+//    glUniform4f(anchorLineRenderer.colorUI, 1.0f, 1.0f, 0.0f, 1.0f);
+//
+//    glBindVertexArray(gridRenderer.vao);
+//    glUseProgram(gridRenderer.program);
+//    glUniform4f(gridRenderer.colorUI, 0.4f, 1.0f, 1.0f, 1.0f);
     
     const GLfloat colors[] = {
         0.00f, 0.00f, 0.00f,
@@ -933,6 +946,7 @@
 {
     int i;
     static float theta = 0.0f;
+    static float phase = 0.0f;
     
 	if (vbosNeedUpdate) {
 		vbosNeedUpdate = FALSE;
@@ -955,7 +969,10 @@
 		[self updateViewParameters];
 	}
 	
-
+    // Breathing phase
+    phase = 0.425459064119661f * (exp(-cos([NSDate timeIntervalSinceReferenceDate])) - 0.36787944117144f);
+    phase = 0.7f * phase + 0.3f;
+    
     iframe++;
     [self measureFPS];
     
@@ -972,14 +989,14 @@
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBindVertexArray(gridRenderer.vao);
 	glUseProgram(gridRenderer.program);
-	glUniform4f(gridRenderer.colorUI, 0.4f, 1.0f, 1.0f, 1.0f);
+    glUniform4f(gridRenderer.colorUI, 0.4f, 1.0f, 1.0f, phase);
 	glUniformMatrix4fv(gridRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
 	glDrawArrays(GL_LINES, 0, gridRenderer.count);
 
 	// Anchor Lines
 	glBindVertexArray(anchorLineRenderer.vao);
 	glUseProgram(anchorLineRenderer.program);
-	glUniform4f(anchorLineRenderer.colorUI, 1.0f, 1.0f, 0.0f, 1.0f);
+    glUniform4f(anchorLineRenderer.colorUI, 1.0f, 1.0f, 0.0f, phase);
 	glUniformMatrix4fv(anchorLineRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
 	glDrawArrays(GL_LINES, 0, anchorLineRenderer.count);
 
@@ -988,32 +1005,33 @@
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBindVertexArray(anchorRenderer.vao);
     glUseProgram(anchorRenderer.program);
-    glUniform4f(anchorRenderer.sizeUI, pixelsPerUnit, pixelsPerUnit, pixelsPerUnit, pixelsPerUnit);
-	glUniform4f(anchorRenderer.colorUI, 0.4f, 1.0f, 1.0f, 0.8f);
-    glUniformMatrix4fv(anchorRenderer.mvUI, 1, GL_FALSE, modelView.m);
+    glUniform4f(anchorRenderer.colorUI, 0.4f, 1.0f, 1.0f, phase);
+    //glUniform4f(anchorRenderer.sizeUI, pixelsPerUnit, pixelsPerUnit, pixelsPerUnit, pixelsPerUnit);
+    //glUniformMatrix4fv(anchorRenderer.mvUI, 1, GL_FALSE, modelView.m);
 	glUniformMatrix4fv(anchorRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, anchorRenderer.textureID);
 	glDrawArrays(GL_POINTS, 0, anchorRenderer.count);
-    glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
     
 	// The scatter bodies
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     for (i = 0; i < clDeviceCount; i++) {
         glBindVertexArray(bodyRenderer[i].vao);
-        glPointSize(MIN(MAX(4.0f * pixelsPerUnit, 1.0f), 64.0f) * devicePixelRatio);
+        //glPointSize(4.0f * pixelsPerUnit * devicePixelRatio);
         glUseProgram(bodyRenderer[i].program);
+        glUniform4f(bodyRenderer[i].sizeUI, pixelsPerUnit * devicePixelRatio, 1.0f, 1.0f, 1.0f);
         glUniform4f(bodyRenderer[i].colorUI, bodyRenderer[i].colormapIndexNormalized, 1.0f, 1.0f, backgroundOpacity);
         glUniformMatrix4fv(bodyRenderer[i].mvpUI, 1, GL_FALSE, modelViewProjection.m);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, bodyRenderer[i].textureID);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, bodyRenderer[i].colormapID);
-        glDrawArrays(GL_POINTS, 0, debrisRenderer[0].count);
+        glDrawArrays(GL_POINTS, 0, debrisRenderer[0].count); // Yes, debrisRenderer[0].count is used for the background.
     }
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    
+    glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
+
     // Various debris types
     glUseProgram(instancedGeometryRenderer.program);
     glUniformMatrix4fv(instancedGeometryRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
@@ -1204,7 +1222,7 @@
 
 - (void)magnify:(GLfloat)scale
 {
-	range = MIN(50000.0f, MAX(0.001f, range * (1.0f - scale)));
+	range = MIN(RENDERER_FAR_RANGE, MAX(RENDERER_NEAR_RANGE, range * (1.0f - scale)));
 	viewParametersNeedUpdate = TRUE;
 }
 

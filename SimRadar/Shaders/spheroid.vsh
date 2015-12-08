@@ -4,6 +4,7 @@ precision highp float;
 
 uniform mat4 modelViewProjectionMatrix;
 uniform vec4 drawColor;
+uniform vec4 drawSize;
 
 uniform sampler2D colormapTexture;
 
@@ -25,15 +26,13 @@ void main (void)
 	// the polygon shows up in the right place
 	gl_Position = modelViewProjectionMatrix * vec4(inPosition.xyz, 1.0);
 
-	//varTexcoord = inTexcoord;
-
-	//varColor = inColor;
-	//varColor = inColor * drawColor;
     //varColor = texture(colormapTexture, vec2(inPosition.w * 250.0f, drawColor.x));
     varColor = texture(colormapTexture, vec2(inColor.x, drawColor.x));
 
-    //varColor.w = drawColor.w * log(1.0 + 10.0 * inColor.x);
-    varColor.w = drawColor.w * (inColor.x - 0.15) * 1.5;
-    
-    //gl_PointSize *= clamp(inColor.x * 2.0, 1.0, 2.0);
+//    varColor.w = drawColor.w * (inColor.x - 0.15) * 1.5;
+    varColor.w = drawColor.w * inColor.x;
+//    varColor.w = drawColor.w;
+
+    gl_PointSize = 5000.0 * (inColor.x + 1.25) * drawSize.x / gl_Position.z;
+    //gl_PointSize = 10000.0 * drawSize.x / gl_Position.z;
 }
