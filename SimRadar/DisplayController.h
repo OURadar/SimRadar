@@ -23,6 +23,8 @@
 
     int speciesId;
     
+    GLfloat *sampleAnchorLines, *sampleAnchors;
+    
     Recorder *recorder;
 }
 

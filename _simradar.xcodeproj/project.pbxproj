@@ -238,7 +238,7 @@
 		B52B2BDD1BE8F77C00F1F91D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
 		B535159B1AD31E12004C0F50 /* versions.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = versions.html; path = delivery/versions.html; sourceTree = "<group>"; };
 		B535159C1AD32077004C0F50 /* MainMenu.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
-		B54DEB3618A5453800EBEC07 /* Minion-Icons */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "Minion-Icons"; sourceTree = "<group>"; };
+		B54DEB3618A5453800EBEC07 /* Minion-Icons */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "Minion-Icons"; path = "SimRadar/Minion-Icons"; sourceTree = "<group>"; };
 		B54DEB3E18A5742300EBEC07 /* SimRadar-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "SimRadar-Info.plist"; sourceTree = "<group>"; };
 		B54DEB3F18A5742300EBEC07 /* SimRadar-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SimRadar-Prefix.pch"; sourceTree = "<group>"; };
 		B54DEB4418A582F100EBEC07 /* dsa_pub.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = dsa_pub.pem; sourceTree = "<group>"; };
@@ -420,6 +420,7 @@
 				B50A281517D7BF0900E4DE66 /* Sources */,
 				B519295217D9153C00AB3687 /* Programs */,
 				B5EF317718204B5C002DDEFC /* SimRadar */,
+				B54DEB3618A5453800EBEC07 /* Minion-Icons */,
 				B572419F1C0CA05F00B76BCB /* SimRadarEx */,
 				B50A281317D7B27500E4DE66 /* Frameworks */,
 				B50A280C17D7B22B00E4DE66 /* Products */,
@@ -559,7 +560,6 @@
 				B535159C1AD32077004C0F50 /* MainMenu.xib */,
 				B5EF31C1182060E1002DDEFC /* LiveDisplay.xib */,
 				B51D2D6018A3D54E00C96966 /* Icons */,
-				B54DEB3618A5453800EBEC07 /* Minion-Icons */,
 				B5EF317818204B5C002DDEFC /* Supporting Files */,
 			);
 			path = SimRadar;

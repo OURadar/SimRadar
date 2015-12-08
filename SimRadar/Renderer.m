@@ -24,6 +24,7 @@
 
 @synthesize delegate;
 @synthesize resetRange;
+@synthesize resetModelRotate;
 @synthesize width, height;
 @synthesize beamAzimuth, beamElevation;
 @synthesize showHUD;
@@ -610,9 +611,11 @@
 		// View size in pixel counts
 		width = 1;
 		height = 1;
-        //spinModel = 1;
+        spinModel = 5;
 		aspectRatio = 1.0f;
-        resetRange = 1000.0f;
+
+        resetRange = 5000.0f;
+        resetModelRotate = GLKMatrix4Identity;
 
         //showHUD = TRUE;
         
@@ -1239,25 +1242,8 @@
 
 - (void)resetViewParameters
 {
-//	rotateX = 0.0f;
-//	rotateZ = 0.0f;
-//	range = 20000.0f;
-//	modelRotate = GLKMatrix4MakeTranslation(-modelCenter.x, -modelCenter.y, -modelCenter.z);
-
-	rotateX = -0.15f;
-	rotateY = 1.5f;
-	range = resetRange;
-    modelRotate = GLKMatrix4MakeRotation(rotateX, 1.0f, 0.0f, 0.0f);
-    modelRotate = GLKMatrix4RotateY(modelRotate, rotateY);
-
-//    rotateX = 1.5f;
-//    rotateY = 0.0f;
-//    rotateZ = M_PI_2;
-//    range = 1500.0f;
-//
-//    modelRotate = GLKMatrix4MakeRotation(rotateY, 0.0f, 1.0f, 0.0f);
-//    modelRotate = GLKMatrix4RotateX(modelRotate, rotateX);
-//    modelRotate = GLKMatrix4RotateY(modelRotate, rotateZ);
+    range = resetRange;
+    modelRotate = resetModelRotate;
     
     iframe = 0;
     

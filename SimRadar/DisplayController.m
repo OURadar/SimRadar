@@ -121,6 +121,14 @@ NSWindow *standardWindow;
 {
 	[glView release];
 	[sim release];
+    
+    if (sampleAnchorLines != NULL) {
+        free(sampleAnchorLines);
+    }
+    
+    if (sampleAnchors != NULL) {
+        free(sampleAnchors);
+    }
 	
 	[super dealloc];
 }
@@ -396,13 +404,18 @@ NSWindow *standardWindow;
 - (void)emptyDomain {
     int i;
     
-    GLfloat anchors[] = {
-        -1000.0f, 7000.0f, 0.0f, 1.0f,
-        +1000.0f, 7000.0f, 0.0f, 1.0f,
-            0.0f,    0.0f, 0.0f, 5.0f
+    GLfloat orig[] = {-1000.0f, 5000.0f, 0.0f};
+    GLfloat size[] = {2000.0f, 2000.0f, 2000.0f};
+    
+    GLfloat anchors[] =
+    {
+        orig[0] + 0.5f * size[0], orig[1]          , orig[2] + 0.5f * size[2], 10.0f,
+        orig[0] + 0.5f * size[0], orig[1] + size[1], orig[2] + 0.5f * size[2], 10.0f,
+        0.0f                    ,              0.0f,           0.5f * size[2], 20.0f
     };
     
-    GLfloat anchorLines[] = {
+    GLfloat anchorLines[] =
+    {
         -1.0f, -1.0f, -1.0f, 1.0f,  //
         +1.0f, -1.0f, -1.0f, 1.0f,
         -1.0f, +1.0f, -1.0f, 1.0f,
@@ -415,36 +428,38 @@ NSWindow *standardWindow;
         -1.0f, +1.0f, -1.0f, 1.0f,
         +1.0f, -1.0f, -1.0f, 1.0f,
         +1.0f, +1.0f, -1.0f, 1.0f,
-        -1.0f, -1.0f, -1.0f, 1.0f,
-        -1.0f, +1.0f, -1.0f, 1.0f,
-        +1.0f, -1.0f, -1.0f, 1.0f,
-        +1.0f, +1.0f, -1.0f, 1.0f,
+        -1.0f, -1.0f, +1.0f, 1.0f,
+        -1.0f, +1.0f, +1.0f, 1.0f,
+        +1.0f, -1.0f, +1.0f, 1.0f,
+        +1.0f, +1.0f, +1.0f, 1.0f,
         -1.0f, -1.0f, -1.0f, 1.0f,  //
         -1.0f, -1.0f, +1.0f, 1.0f,
         +1.0f, -1.0f, -1.0f, 1.0f,
         +1.0f, -1.0f, +1.0f, 1.0f,
-        -1.0f, -1.0f, -1.0f, 1.0f,
-        -1.0f, -1.0f, +1.0f, 1.0f,
+        -1.0f, +1.0f, -1.0f, 1.0f,
+        -1.0f, +1.0f, +1.0f, 1.0f,
         +1.0f, +1.0f, -1.0f, 1.0f,
         +1.0f, +1.0f, +1.0f, 1.0f
     };
-    for (i = 0; i < sizeof(anchorLines) / sizeof(GLfloat) / 4; i++) {
-        anchorLines[4 * i    ] = 1000.0f * anchorLines[4 * i    ];
-        anchorLines[4 * i + 1] = 1000.0f * anchorLines[4 * i + 1] + 6000.0f;
-        anchorLines[4 * i + 2] = 1000.0f * anchorLines[4 * i + 2] + 1000.0f;
+    for (i = 0; i < sizeof(anchorLines) / sizeof(cl_float4); i++) {
+        anchorLines[4 * i    ] = size[0] * (0.25f * anchorLines[4 * i    ] + 0.5f) + orig[0];
+        anchorLines[4 * i + 1] = size[1] * (0.25f * anchorLines[4 * i + 1] + 0.5f) + orig[1];
+        anchorLines[4 * i + 2] = size[2] * (0.25f * anchorLines[4 * i + 2] + 0.5f) + orig[2];
     }
 
-    GLfloat box[] = {-1000.0f, 5000.0f, 0.0f};
-    GLfloat size[] = {2000.0f, 2000.0f, 2000.0f};
-    
-    GLfloat *tmp = (GLfloat *)malloc(sizeof(anchorLines));
-    memcpy(tmp, anchorLines, sizeof(anchorLines));
+    // Allocate and copy over the sample data based on the local arrays
+    sampleAnchors = (GLfloat *)malloc(sizeof(anchors));
+    sampleAnchorLines = (GLfloat *)malloc(sizeof(anchorLines));
+    memcpy(sampleAnchors, anchors, sizeof(anchors));
+    memcpy(sampleAnchorLines, anchorLines, sizeof(anchorLines));
     
     [glView.renderer setBodyCount:384 forDevice:0];
-    [glView.renderer setGridAtOrigin:box size:size];
-    [glView.renderer setAnchorPoints:anchors number:sizeof(anchors) / sizeof(cl_float4)];
-    [glView.renderer setCenterPoisitionX:0.0f y:0.0f z:6000.0f];
-    [glView.renderer setAnchorLines:tmp number:sizeof(anchorLines) / sizeof(cl_float4)];
+    [glView.renderer setGridAtOrigin:orig size:size];
+    [glView.renderer setAnchorPoints:sampleAnchors number:sizeof(anchors) / sizeof(cl_float4)];
+    [glView.renderer setCenterPoisitionX:orig[0] + 0.5f * size[0]
+                                       y:orig[1] + 0.5f * size[1]
+                                       z:orig[2] + 0.5f * size[2]];
+    [glView.renderer setAnchorLines:sampleAnchorLines number:sizeof(anchorLines) / sizeof(cl_float4)];
 }
 
 @end
