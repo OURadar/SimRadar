@@ -207,9 +207,6 @@
 	anchorLineRenderer.positions = lines;
 	anchorLineRenderer.count = number;
 	vbosNeedUpdate = TRUE;
-    NSLog(@"setAnchorLines: %p w/ %d lines: %.1f %.1f %.1f  %.1f %.1f %.1f", lines, anchorLineRenderer.count,
-          anchorLineRenderer.positions[0], anchorLineRenderer.positions[1], anchorLineRenderer.positions[2],
-          anchorLineRenderer.positions[4], anchorLineRenderer.positions[5], anchorLineRenderer.positions[6]);
 }
 
 
@@ -406,11 +403,11 @@
     }
 	
 	// Get attributes
-	resource.colorAI = glGetAttribLocation(resource.program, "inColor");
-	resource.positionAI = glGetAttribLocation(resource.program, "inPosition");
-	resource.rotationAI = glGetAttribLocation(resource.program, "inRotation");
+    resource.colorAI = glGetAttribLocation(resource.program, "inColor");
+    resource.positionAI = glGetAttribLocation(resource.program, "inPosition");
+    resource.rotationAI = glGetAttribLocation(resource.program, "inRotation");
     resource.quaternionAI = glGetAttribLocation(resource.program, "inQuaternion");
-	resource.translationAI = glGetAttribLocation(resource.program, "inTranslation");
+    resource.translationAI = glGetAttribLocation(resource.program, "inTranslation");
     resource.textureCoordAI = glGetAttribLocation(resource.program, "inTextureCoord");
 
 	return resource;
@@ -606,17 +603,17 @@
 
 - (id)initWithDevicePixelRatio:(GLfloat)pixelRatio
 {
-	self = [super init];
-	if (self) {
-		// View size in pixel counts
-		width = 1;
-		height = 1;
+    self = [super init];
+    if (self) {
+        // View size in pixel counts
+        width = 1;
+        height = 1;
         spinModel = 5;
-		aspectRatio = 1.0f;
-
+        aspectRatio = 1.0f;
+        
         resetRange = 5000.0f;
         resetModelRotate = GLKMatrix4Identity;
-
+        
         //showHUD = TRUE;
         
         hudModelViewProjection = GLKMatrix4Identity;
@@ -627,9 +624,9 @@
         devicePixelRatio = pixelRatio;
         NSLog(@"Renderer initialized with pixel ratio = %.1f", devicePixelRatio);
         
-		// View parameters
-		[self resetViewParameters];
-	}
+        // View parameters
+        [self resetViewParameters];
+    }
 	return self;
 }
 
@@ -813,9 +810,6 @@
     glDeleteBuffers(1, anchorLineRenderer.vbo);
 	glGenBuffers(1, anchorLineRenderer.vbo);
 
-    NSLog(@"anchor lines @  %p w/ %d lines: %.1f %.1f %.1f  %.1f %.1f %.1f", anchorLineRenderer.positions, anchorLineRenderer.count,
-          anchorLineRenderer.positions[0], anchorLineRenderer.positions[1], anchorLineRenderer.positions[2],
-          anchorLineRenderer.positions[4], anchorLineRenderer.positions[5], anchorLineRenderer.positions[6]);
 	glBindBuffer(GL_ARRAY_BUFFER, anchorLineRenderer.vbo[0]);
 	glBufferData(GL_ARRAY_BUFFER, anchorLineRenderer.count * sizeof(cl_float4), anchorLineRenderer.positions, GL_STATIC_DRAW);
 	glVertexAttribPointer(anchorLineRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
@@ -961,7 +955,8 @@
     }
     
 	if (spinModel) {
-		modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeYRotation(0.001f * spinModel), modelRotate);
+		//modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeYRotation(0.001f * spinModel), modelRotate);
+        modelRotate = GLKMatrix4Multiply(modelRotate, GLKMatrix4MakeYRotation(0.001f * spinModel));
         theta = theta + 0.005f;
 		viewParametersNeedUpdate = TRUE;
 	}
@@ -1017,6 +1012,7 @@
 	// The scatter bodies
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//    glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA);
     for (i = 0; i < clDeviceCount; i++) {
         glBindVertexArray(bodyRenderer[i].vao);
         //glPointSize(4.0f * pixelsPerUnit * devicePixelRatio);

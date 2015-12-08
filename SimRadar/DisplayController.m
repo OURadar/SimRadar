@@ -77,12 +77,19 @@ NSWindow *standardWindow;
 									   y:domain.origin.y + 0.5f * domain.size.y
 									   z:domain.origin.z + 0.5f * domain.size.z];
     
-    NSLog(@"Recommend viewing at %.2f m", sim.recommendedViewRange);
     [glView.renderer setResetRange:sim.recommendedViewRange];
     
+    GLKMatrix4 modelRotate = GLKMatrix4MakeRotation(-0.15f, 1.0f, 0.0f, 0.0f);
+    modelRotate = GLKMatrix4RotateY(modelRotate, 1.5f);
+    
+    [glView.renderer setResetModelRotate:modelRotate];
+    
+    [glView.renderer stopSpinModel];
+    
     [glView.renderer resetViewParameters];
-	
+    
 #ifdef DEBUG
+    NSLog(@"Recommend viewing at %.2f m", sim.recommendedViewRange);
 	NSLog(@"Particles wired to view renderer (%d)", (int)sim.pointCount);
 	NSLog(@"Domain center @ [ X %.2f  Y %.2f  Z %.2f ]", domain.origin.x + 0.5f * domain.size.x,
 		  domain.origin.y + 0.5f * domain.size.y, domain.origin.z + 0.5f * domain.size.z);
@@ -453,7 +460,6 @@ NSWindow *standardWindow;
     memcpy(sampleAnchors, anchors, sizeof(anchors));
     memcpy(sampleAnchorLines, anchorLines, sizeof(anchorLines));
     
-    [glView.renderer setBodyCount:384 forDevice:0];
     [glView.renderer setGridAtOrigin:orig size:size];
     [glView.renderer setAnchorPoints:sampleAnchors number:sizeof(anchors) / sizeof(cl_float4)];
     [glView.renderer setCenterPoisitionX:orig[0] + 0.5f * size[0]

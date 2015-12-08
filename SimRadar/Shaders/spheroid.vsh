@@ -33,6 +33,6 @@ void main (void)
     varColor.w = drawColor.w * inColor.x;
 //    varColor.w = drawColor.w;
 
-    gl_PointSize = 5000.0 * (inColor.x + 1.25) * drawSize.x / gl_Position.z;
-    //gl_PointSize = 10000.0 * drawSize.x / gl_Position.z;
+//    gl_PointSize = 5000.0 * (inColor.x + 1.25) * drawSize.x / gl_Position.z;
+    gl_PointSize = 10000.0 * drawSize.x / gl_Position.z;
 }
