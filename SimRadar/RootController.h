@@ -36,4 +36,6 @@
 - (IBAction)startRecord:(id)sender;
 - (IBAction)stopRecord:(id)sender;
 
+- (void)alertMissingResources;
+
 @end

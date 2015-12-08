@@ -1869,6 +1869,11 @@ void RS_update_debris_count(RSHandle *H) {
     
     size_t count = H->num_scats;
     
+    if (H->num_workers == 0) {
+        printf("%s : RS : Expected. Number of workers = 0.\n", now());
+        return;
+    }
+    
     k = RS_MAX_SPECIES_TYPES;
     while (k > 1) {
         k--;
@@ -1882,7 +1887,7 @@ void RS_update_debris_count(RSHandle *H) {
             printf("                 o Global species_population[%d] = %s\n", k, commaint(H->species_population[k]));
         }
     }
-
+    
     k = RS_MAX_SPECIES_TYPES;
     while (k > 0) {
         k--;
@@ -1891,7 +1896,7 @@ void RS_update_debris_count(RSHandle *H) {
             continue;
         }
         // Groups of debris types
-        size_t round_up_down_toggle = k % H->num_workers;
+        size_t round_up_down_toggle = H->num_workers > 1 ? k % H->num_workers : k;
         size_t sub_species_population = (H->species_population[k] + round_up_down_toggle) / H->num_workers;
         for (i = 0; i < H->num_workers-1; i++) {
             H->worker[i].species_population[k] = sub_species_population;
@@ -1947,6 +1952,15 @@ void RS_set_dsd(RSHandle *H, const float *pdf, const float *diameters, const int
     H->dsd_r = (RSfloat *)malloc(count * sizeof(RSfloat));
     H->dsd_pdf = (RSfloat *)malloc(count * sizeof(RSfloat));
     H->dsd_cdf = (RSfloat *)malloc(count * sizeof(RSfloat));
+    
+    if (H->dsd_r == NULL || H->dsd_pdf == NULL || H->dsd_cdf == NULL) {
+        fprintf(stderr, "%s : RS : Error allocating resources for DSD parameterization.\n", now());
+        return;
+    }
+    
+    memset(H->dsd_r, 0, count * sizeof(RSfloat));
+    memset(H->dsd_pdf, 0, count * sizeof(RSfloat));
+    memset(H->dsd_cdf, 0, count * sizeof(RSfloat));
     
     RSfloat lo = 0.0f;
     

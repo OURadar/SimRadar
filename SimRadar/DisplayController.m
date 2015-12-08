@@ -204,7 +204,7 @@ NSWindow *standardWindow;
 		case 27:
 			// Handle [ESC] key
 			if (fullscreenWindow != nil) {
-				[self windowMode];
+                [self windowMode:nil];
 			}
 			break;
 			
@@ -248,7 +248,7 @@ NSWindow *standardWindow;
 			if (fullscreenWindow == nil) {
 				[self fullscreenMode:nil];
 			} else {
-				[self windowMode];
+                [self windowMode:nil];
 			}
 			break;
 			
@@ -329,7 +329,7 @@ NSWindow *standardWindow;
 	}
 }
 
-- (void)windowMode
+- (IBAction)windowMode:(id)sender
 {
 	if (fullscreenWindow == nil) {
 		// Application is still in window mode
@@ -391,6 +391,60 @@ NSWindow *standardWindow;
 													   userInfo:nil
 														repeats:YES];
 	
+}
+
+- (void)emptyDomain {
+    int i;
+    
+    GLfloat anchors[] = {
+        -1000.0f, 7000.0f, 0.0f, 1.0f,
+        +1000.0f, 7000.0f, 0.0f, 1.0f,
+            0.0f,    0.0f, 0.0f, 5.0f
+    };
+    
+    GLfloat anchorLines[] = {
+        -1.0f, -1.0f, -1.0f, 1.0f,  //
+        +1.0f, -1.0f, -1.0f, 1.0f,
+        -1.0f, +1.0f, -1.0f, 1.0f,
+        +1.0f, +1.0f, -1.0f, 1.0f,
+        -1.0f, -1.0f, +1.0f, 1.0f,
+        +1.0f, -1.0f, +1.0f, 1.0f,
+        -1.0f, +1.0f, +1.0f, 1.0f,
+        +1.0f, +1.0f, +1.0f, 1.0f,
+        -1.0f, -1.0f, -1.0f, 1.0f,  //
+        -1.0f, +1.0f, -1.0f, 1.0f,
+        +1.0f, -1.0f, -1.0f, 1.0f,
+        +1.0f, +1.0f, -1.0f, 1.0f,
+        -1.0f, -1.0f, -1.0f, 1.0f,
+        -1.0f, +1.0f, -1.0f, 1.0f,
+        +1.0f, -1.0f, -1.0f, 1.0f,
+        +1.0f, +1.0f, -1.0f, 1.0f,
+        -1.0f, -1.0f, -1.0f, 1.0f,  //
+        -1.0f, -1.0f, +1.0f, 1.0f,
+        +1.0f, -1.0f, -1.0f, 1.0f,
+        +1.0f, -1.0f, +1.0f, 1.0f,
+        -1.0f, -1.0f, -1.0f, 1.0f,
+        -1.0f, -1.0f, +1.0f, 1.0f,
+        +1.0f, +1.0f, -1.0f, 1.0f,
+        +1.0f, +1.0f, +1.0f, 1.0f
+    };
+    for (i = 0; i < sizeof(anchorLines) / sizeof(GLfloat) / 4; i++) {
+        anchorLines[4 * i    ] = 1000.0f * anchorLines[4 * i    ];
+        anchorLines[4 * i + 1] = 1000.0f * anchorLines[4 * i + 1] + 6000.0f;
+        anchorLines[4 * i + 2] = 1000.0f * anchorLines[4 * i + 2] + 1000.0f;
+    }
+
+    GLfloat box[] = {-1000.0f, 5000.0f, 0.0f};
+    GLfloat size[] = {2000.0f, 2000.0f, 2000.0f};
+    
+    GLfloat *tmp = (GLfloat *)malloc(sizeof(anchorLines));
+    memcpy(tmp, anchorLines, sizeof(anchorLines));
+    
+    [glView.renderer setBodyCount:384 forDevice:0];
+    [glView.renderer setGridAtOrigin:box size:size];
+    [glView.renderer setAnchorPoints:anchors number:sizeof(anchors) / sizeof(cl_float4)];
+    [glView.renderer setCenterPoisitionX:0.0f y:0.0f z:6000.0f];
+    [glView.renderer setAnchorLines:tmp number:sizeof(anchorLines) / sizeof(cl_float4)];
 }
 
 @end

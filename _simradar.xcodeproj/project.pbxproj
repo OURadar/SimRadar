@@ -18,6 +18,7 @@
 		B52B2BDC1BE8F76E00F1F91D /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B52B2BDB1BE8F76E00F1F91D /* CoreVideo.framework */; };
 		B52B2BDE1BE8F77C00F1F91D /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B52B2BDD1BE8F77C00F1F91D /* CoreMedia.framework */; };
 		B535159D1AD32077004C0F50 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = B535159C1AD32077004C0F50 /* MainMenu.xib */; };
+		B53A764A1C16816100405F2A /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5EF317418204B5C002DDEFC /* AppKit.framework */; };
 		B54DEB3718A5453800EBEC07 /* Minion-Icons in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB3618A5453800EBEC07 /* Minion-Icons */; };
 		B54DEB4518A582F100EBEC07 /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB4418A582F100EBEC07 /* dsa_pub.pem */; };
 		B55716861AB7519D001984E0 /* rcs.c in Sources */ = {isa = PBXBuildFile; fileRef = B55716851AB7519D001984E0 /* rcs.c */; };
@@ -384,6 +385,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B53A764A1C16816100405F2A /* AppKit.framework in Frameworks */,
 				B5EF317218204B5C002DDEFC /* Cocoa.framework in Frameworks */,
 				B56C7FAA1ADC250500552B1E /* Sparkle.framework in Frameworks */,
 				B5EF31B5182055D5002DDEFC /* GLKit.framework in Frameworks */,
@@ -773,7 +775,7 @@
 					};
 				};
 			};
-			buildConfigurationList = B50A280317D7B1DC00E4DE66 /* Build configuration list for PBXProject "_radarsim" */;
+			buildConfigurationList = B50A280317D7B1DC00E4DE66 /* Build configuration list for PBXProject "_simradar" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -1206,7 +1208,7 @@
 					"$(SRCROOT)",
 					/usr/local/lib,
 				);
-				MACOSX_DEPLOYMENT_TARGET = "";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = (
 					"-D_SHARE_OBJ_",
 					"-DDEBUG_GL",
@@ -2007,7 +2009,7 @@
 					"$(SRCROOT)",
 					/usr/local/lib,
 				);
-				MACOSX_DEPLOYMENT_TARGET = "";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = (
 					"-D_SHARE_OBJ_",
 					"-DGEN_IMG",
@@ -2473,7 +2475,7 @@
 					"$(SRCROOT)",
 					/usr/local/lib,
 				);
-				MACOSX_DEPLOYMENT_TARGET = "";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "-D_SHARE_OBJ_";
 				OTHER_LDFLAGS = (
 					"-L",
@@ -2535,7 +2537,7 @@
 					"$(SRCROOT)",
 					/usr/local/lib,
 				);
-				MACOSX_DEPLOYMENT_TARGET = "";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = "-D_SHARE_OBJ_";
 				OTHER_LDFLAGS = (
@@ -2623,7 +2625,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		B50A280317D7B1DC00E4DE66 /* Build configuration list for PBXProject "_radarsim" */ = {
+		B50A280317D7B1DC00E4DE66 /* Build configuration list for PBXProject "_simradar" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B50A280517D7B1DC00E4DE66 /* Release */,

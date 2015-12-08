@@ -171,6 +171,11 @@ ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path) {
     h->data_value->nn = h->data_grid->nb * h->data_grid->na;
     h->data_value->b = h->data_grid->b;
     h->data_value->a = h->data_grid->a;
+    if (h->data_value->nn == 0) {
+        fprintf(stderr, "Empty table (ADMTable)?\n");
+        fclose(fid);
+        return NULL;
+    }
     h->data_value->cdx = (float *)malloc(h->data_value->nn * sizeof(float));
     h->data_value->cdy = (float *)malloc(h->data_value->nn * sizeof(float));
     h->data_value->cdz = (float *)malloc(h->data_value->nn * sizeof(float));

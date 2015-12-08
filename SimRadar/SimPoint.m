@@ -37,7 +37,7 @@
 
         S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, 2);
         
-        if (S->num_cus[0] == 24) {
+        if (S->num_cus[0] == 24 || S->num_cus[0] == 16) {
             RS_set_density(S, 4.0f);
         }
         
@@ -56,7 +56,6 @@
             NSLog(@"Some error(s) in RS_init(), LES_init(), ADM_init() or RCS_init() occurred.");
             return nil;
         }
-		
         
 		#ifdef DEBUG
 		RS_set_verbosity(S, 2);

@@ -200,6 +200,11 @@ RCSHandle *RCS_init_with_config_path(const RCSConfig config, const char *path) {
     h->data_value->nn = h->data_grid->na * h->data_grid->nb;
     h->data_value->a = h->data_grid->a;
     h->data_value->b = h->data_grid->b;
+    if (h->data_value->nn == 0) {
+        fprintf(stderr, "Empty table (RCSTable)?\n");
+        fclose(fid);
+        return NULL;
+    }
     h->data_value->hh_real = (float *)malloc(h->data_value->nn * sizeof(float));
     h->data_value->vv_real = (float *)malloc(h->data_value->nn * sizeof(float));
     h->data_value->hv_real = (float *)malloc(h->data_value->nn * sizeof(float));

@@ -206,6 +206,9 @@
 	anchorLineRenderer.positions = lines;
 	anchorLineRenderer.count = number;
 	vbosNeedUpdate = TRUE;
+    NSLog(@"setAnchorLines: %p w/ %d lines: %.1f %.1f %.1f  %.1f %.1f %.1f", lines, anchorLineRenderer.count,
+          anchorLineRenderer.positions[0], anchorLineRenderer.positions[1], anchorLineRenderer.positions[2],
+          anchorLineRenderer.positions[4], anchorLineRenderer.positions[5], anchorLineRenderer.positions[6]);
 }
 
 
@@ -609,7 +612,7 @@
 		height = 1;
         //spinModel = 1;
 		aspectRatio = 1.0f;
-        resetRange = 1100.0f;
+        resetRange = 1000.0f;
 
         //showHUD = TRUE;
         
@@ -694,19 +697,6 @@
     
     //NSLog(@"meshRenderer's drawColor @ %d / %d / %d", meshRenderer.colorUI, meshRenderer.positionAI, meshRenderer.textureCoordAI);
 
-    // Set some colors that do not change througout the rendering
-//    glBindVertexArray(anchorRenderer.vao);
-//    glUseProgram(anchorRenderer.program);
-//    glUniform4f(anchorRenderer.colorUI, 0.4f, 1.0f, 1.0f, 0.8f);
-
-//    glBindVertexArray(anchorLineRenderer.vao);
-//    glUseProgram(anchorLineRenderer.program);
-//    glUniform4f(anchorLineRenderer.colorUI, 1.0f, 1.0f, 0.0f, 1.0f);
-//
-//    glBindVertexArray(gridRenderer.vao);
-//    glUseProgram(gridRenderer.program);
-//    glUniform4f(gridRenderer.colorUI, 0.4f, 1.0f, 1.0f, 1.0f);
-    
     const GLfloat colors[] = {
         0.00f, 0.00f, 0.00f,
         0.00f, 1.00f, 0.00f,
@@ -771,6 +761,9 @@
 	
 	// Scatter body
     for (i = 0; i < clDeviceCount; i++) {
+        if (bodyRenderer[i].count == 0) {
+            continue;
+        }
         glBindVertexArray(bodyRenderer[i].vao);
         
         glDeleteBuffers(3, bodyRenderer[i].vbo);
@@ -793,8 +786,10 @@
     }
     
     // Use .w element for anchor size, scale by pixel ratio for Retina displays
-    for (i = 0; i < anchorRenderer.count; i++) {
-        anchorRenderer.positions[4 * i + 3] *= devicePixelRatio;
+    if (anchorRenderer.positions[3] == 1.0f && devicePixelRatio > 1.0f) {
+        for (i = 0; i < anchorRenderer.count; i++) {
+            anchorRenderer.positions[4 * i + 3] *= devicePixelRatio;
+        }
     }
 
     // Anchor
@@ -814,7 +809,10 @@
 
     glDeleteBuffers(1, anchorLineRenderer.vbo);
 	glGenBuffers(1, anchorLineRenderer.vbo);
-	
+
+    NSLog(@"anchor lines @  %p w/ %d lines: %.1f %.1f %.1f  %.1f %.1f %.1f", anchorLineRenderer.positions, anchorLineRenderer.count,
+          anchorLineRenderer.positions[0], anchorLineRenderer.positions[1], anchorLineRenderer.positions[2],
+          anchorLineRenderer.positions[4], anchorLineRenderer.positions[5], anchorLineRenderer.positions[6]);
 	glBindBuffer(GL_ARRAY_BUFFER, anchorLineRenderer.vbo[0]);
 	glBufferData(GL_ARRAY_BUFFER, anchorLineRenderer.count * sizeof(cl_float4), anchorLineRenderer.positions, GL_STATIC_DRAW);
 	glVertexAttribPointer(anchorLineRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
@@ -1046,11 +1044,11 @@
             
             glUniform4f(instancedGeometryRenderer.colorUI, debrisRenderer[k].colors[0], debrisRenderer[k].colors[1], debrisRenderer[k].colors[2], debrisRenderer[k].colors[3]);
 
-            glBindBuffer(GL_COPY_READ_BUFFER, bodyRenderer[i].vbo[0]);              // positions of simulation particles
+            glBindBuffer(GL_COPY_READ_BUFFER, bodyRenderer[i].vbo[0]);             // positions of simulation particles
             glBindBuffer(GL_COPY_WRITE_BUFFER, debrisRenderer[k].vbo[2]);          // translations of species[k]
             glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, debrisRenderer[k].sourceOffset * sizeof(cl_float4), 0, debrisRenderer[k].count * sizeof(cl_float4));
             
-            glBindBuffer(GL_COPY_READ_BUFFER, bodyRenderer[i].vbo[2]);              // quaternions of simulation particles
+            glBindBuffer(GL_COPY_READ_BUFFER, bodyRenderer[i].vbo[2]);             // quaternions of simulation particles
             glBindBuffer(GL_COPY_WRITE_BUFFER, debrisRenderer[k].vbo[3]);          // quaternions of species[k]
             glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, debrisRenderer[k].sourceOffset * sizeof(cl_float4), 0, debrisRenderer[k].count * sizeof(cl_float4));
             

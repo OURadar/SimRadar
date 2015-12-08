@@ -86,7 +86,6 @@
     [dc.glView detachRecorder];
 }
 
-
 #pragma mark -
 
 - (void)awakeFromNib
@@ -101,6 +100,16 @@
 //    [startRecordMenuItem setEnabled:TRUE];
 //    [stopRecordMenuItem setEnabled:FALSE];
     
+//    NSAlert *alert = [NSAlert new];
+//    [alert addButtonWithTitle:@"OK"];
+//    [alert setMessageText:@"Test"];
+//    [alert setInformativeText:@"Information Text."];
+//    [alert setAlertStyle:NSWarningAlertStyle];
+//    if ([alert runModal] == NSAlertFirstButtonReturn) {
+//        NSLog(@"Returned");
+//    }
+//    [alert release];
+
 	[self newLiveDisplay:self];
 }
 
@@ -113,6 +122,21 @@
 	[sim release];
 	
 	[super dealloc];
+}
+
+#pragma mark -
+
+- (void)alertMissingResources {
+    NSAlert *alert = [NSAlert new];
+    [alert addButtonWithTitle:@"OK"];
+    [alert addButtonWithTitle:@"Cancel"];
+    [alert setMessageText:@"Error"];
+    [alert setInformativeText:@"Required resource(s) cannot be found in any of the search paths. Check Console log for more details."];
+    [alert setAlertStyle:NSCriticalAlertStyle];
+    if ([alert runModal] == NSAlertFirstButtonReturn) {
+        return;
+    }
+    [alert release];
 }
 
 #pragma mark -
@@ -134,39 +158,37 @@
 		sim = [SimPoint new];
         if (sim) {
             NSLog(@"New simulation domain initiated.");
+            // Wire the simulator to the controller.
+            // The displayController will tell the renderer how many scatter body
+            // the simulator is using and pass the anchor points from RS API to
+            // the renderer
+            
+            [dc setSim:sim];
         } else {
             NSLog(@"Error initializing simulation domain.");
-            NSAlert *alert = [NSAlert new];
-            [alert addButtonWithTitle:@"OK"];
-            [alert setMessageText:@"Unable to locate LES data."];
-            [alert setInformativeText:@"Unable to find LES data in any of the search paths. Please download the LES data and put it in one of the search paths."];
-            [alert setAlertStyle:NSWarningAlertStyle];
-            [alert runModal];
-            [alert release];
-            [[NSApplication sharedApplication] terminate:self];
+            //[self performSelectorOnMainThread:@selector(alertMissingResources) withObject:nil waitUntilDone:TRUE];
+            //[[NSApplication sharedApplication] terminate:self];
+            [dc emptyDomain];
         }
 	}
-	
-	// Wire the simulator to the controller.
-	// The displayController will tell the renderer how many scatter body
-	// the simulator is using and pass the anchor points from RS API to
-	// the renderer
-	
-	[dc setSim:sim];
 }
 
 
 - (void)vbosAllocated:(GLuint [][8])vbos
 {
 	DNSLog(@"vbosAllocated:");
-	
-	[sim shareVBOsWithGL:vbos];
 
-	[sim populate];
-
-    for (int k=1; k<RENDERER_MAX_DEBRIS_TYPES; k++) {
-        GLuint pop = [sim populationForSpecies:k];
-        [dc.glView.renderer setPopulationTo:pop forSpecies:k forDevice:0];
+    if (sim) {
+        [sim shareVBOsWithGL:vbos];
+        
+        [sim populate];
+        
+        for (int k=1; k<RENDERER_MAX_DEBRIS_TYPES; k++) {
+            GLuint pop = [sim populationForSpecies:k];
+            [dc.glView.renderer setPopulationTo:pop forSpecies:k forDevice:0];
+        }
+    } else {
+        NSLog(@"No simulation");
     }
     [dc.glView.renderer setDebrisCountsHaveChanged:TRUE];
 }
@@ -174,6 +196,9 @@
 
 - (void)willDrawScatterBody
 {
+    if (sim == nil) {
+        return;
+    }
 	switch (state) {
 		default:
 			[sim advanceTimeAndBeamPosition];
