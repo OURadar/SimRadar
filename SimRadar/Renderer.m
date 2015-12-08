@@ -618,7 +618,7 @@
         
         hudModelViewProjection = GLKMatrix4Identity;
         beamModelViewProjection = GLKMatrix4Identity;
-        backgroundOpacity = 0.3f;
+        backgroundOpacity = RENDERER_DEFAULT_BODY_OPACITY;
         
         // Add device pixel ratio here
         devicePixelRatio = pixelRatio;
@@ -679,7 +679,7 @@
     glUniform4f(bodyRenderer[i].colorUI, 1.0f, 1.0f, 1.0f, 0.75f);
     
     // Set default colormap index
-    bodyRenderer[i].colormapIndex = 3;
+    bodyRenderer[i].colormapIndex = RENDERER_DEFAULT_BODY_COLOR_INDEX;
     bodyRenderer[i].colormapIndexNormalized = ((GLfloat)bodyRenderer[i].colormapIndex + 0.5f) / bodyRenderer[i].colormapCount;
 
     // Make copies of render resource but use the same program
@@ -1026,10 +1026,10 @@
         glBindTexture(GL_TEXTURE_2D, bodyRenderer[i].colormapID);
         glDrawArrays(GL_POINTS, 0, debrisRenderer[0].count); // Yes, debrisRenderer[0].count is used for the background.
     }
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
     // Various debris types
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glUseProgram(instancedGeometryRenderer.program);
     glUniformMatrix4fv(instancedGeometryRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
 

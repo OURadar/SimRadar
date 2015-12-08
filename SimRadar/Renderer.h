@@ -11,11 +11,13 @@
 #import "glUtil.h"
 #import "GLText.h"
 
-#define RENDERER_NEAR_RANGE         100.0f
-#define RENDERER_FAR_RANGE          100000.0f
-#define RENDERER_TIC_COUNT          10
-#define RENDERER_MAX_DEBRIS_TYPES   4
-#define RENDERER_MAX_VBO_GROUPS     8
+#define RENDERER_NEAR_RANGE                 100.0f
+#define RENDERER_FAR_RANGE                  100000.0f
+#define RENDERER_TIC_COUNT                  10
+#define RENDERER_MAX_DEBRIS_TYPES           4
+#define RENDERER_MAX_VBO_GROUPS             8
+#define RENDERER_DEFAULT_BODY_COLOR_INDEX   29
+#define RENDERER_DEFAULT_BODY_OPACITY       0.72
 
 typedef struct _draw_resource {
 	GLuint program;
