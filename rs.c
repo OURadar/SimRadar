@@ -557,7 +557,7 @@ void pfn_notify(const char *errinfo, const void *private_info, size_t cb, void *
 
 
 // CL_DEVICE_TYPE_GPU
-void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device_id *devices, cl_uint *num_cus, cl_int detail_level) {
+void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device_id *devices, cl_uint *num_cus, cl_uint *vendors, cl_int detail_level) {
 	
 	int i = 0, j = 0;
 	cl_uint num_platforms = 0;
@@ -632,6 +632,13 @@ void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device
 				printf("        - " FMT " = %s\n", "CL_DEVICE_NAME", buf_char);
 				CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_VENDOR, RS_MAX_STR, buf_char, NULL));
 				printf("        - " FMT " = %s\n", "CL_DEVICE_VENDOR", buf_char);
+                if (!strcasecmp(buf_char, "intel")) {
+                    vendors[j] = RS_GPU_VENDOR_INTEL;
+                } else if (!strcasecmp(buf_char, "nvidia")) {
+                    vendors[j] = RS_GPU_VENDOR_NVIDIA;
+                } else if (!strcasecmp(buf_char, "amd")) {
+                    vendors[j] = RS_GPU_VENDOR_AMD;
+                }
 				CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(buf_uint), &num_cus[j], NULL));
 				printf("        - " FMT " = %u\n", "CL_DEVICE_MAX_COMPUTE_UNITS", (unsigned int)num_cus[j]);
 				if (detail_level > 1) {
@@ -830,7 +837,8 @@ cl_uint RS_gpu_count(void) {
     cl_uint          num_devs;
     cl_device_id     devs[RS_MAX_GPU_DEVICE];
     cl_uint          num_cus[RS_MAX_GPU_DEVICE];
-    get_device_info(CL_DEVICE_TYPE_GPU, &num_devs, devs, num_cus, 0);
+    cl_uint          vendors[RS_MAX_GPU_DEVICE];
+    get_device_info(CL_DEVICE_TYPE_GPU, &num_devs, devs, num_cus, vendors, 0);
     return num_devs;
 }
 
@@ -885,10 +893,10 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
 			rsprint("Getting CL devices ...");
 		}
 		// Get and show some device info
-		get_device_info(CL_DEVICE_TYPE_GPU, &H->num_devs, H->devs, H->num_cus, H->verb);
+		get_device_info(CL_DEVICE_TYPE_GPU, &H->num_devs, H->devs, H->num_cus, H->vendors, H->verb);
 	} else if (H->method == RS_METHOD_CPU) {
 		// Run this to get the num_cus to the same values.
-		get_device_info(CL_DEVICE_TYPE_CPU, &H->num_devs, H->devs, H->num_cus, 0);
+		get_device_info(CL_DEVICE_TYPE_CPU, &H->num_devs, H->devs, H->num_cus, H->vendors, 0);
 	}
     if (H->num_devs == 0 || H->num_cus[0] == 0) {
         fprintf(stderr, "%s : RS : Error. No OpenCL devices found.\n", now());
@@ -3831,58 +3839,6 @@ void RS_show_pulse(RSHandle *H) {
 
 #pragma mark -
 
-//enum {
-//    RSStaggeredTableDescriptionBaseChangeX     =  0,
-//    RSStaggeredTableDescriptionBaseChangeY     =  1,
-//    RSStaggeredTableDescriptionBaseChangeZ     =  2,
-//    RSStaggeredTableDescriptionRefreshTime     =  3,
-//    RSStaggeredTableDescriptionPositionScaleX  =  4,
-//    RSStaggeredTableDescriptionPositionScaleY  =  5,
-//    RSStaggeredTableDescriptionPositionScaleZ  =  6,
-//    RSStaggeredTableDescription7               =  7,
-//    RSStaggeredTableDescriptionOffsetX         =  8,
-//    RSStaggeredTableDescriptionOffsetY         =  9,
-//    RSStaggeredTableDescriptionOffsetZ         = 10,
-//    RSStaggeredTableDescription11              = 11,
-//    RSStaggeredTableDescriptionRecipInLnX      = 12,
-//    RSStaggeredTableDescriptionRecipInLnY      = 13,
-//    RSStaggeredTableDescriptionRecipInLnZ      = 14,
-//    RSStaggeredTableDescriptionTachikawa       = 15,
-//};
-
-
-// Copy over to CL worker
-//    H->worker[i].vel_desc.s[RSStaggeredTableDescriptionBaseChangeX] = table.xs;
-//    H->worker[i].vel_desc.s[RSStaggeredTableDescriptionBaseChangeY] = table.ys;
-//    H->worker[i].vel_desc.s[RSStaggeredTableDescriptionBaseChangeZ] = table.zs;
-//    H->worker[i].vel_desc.s[RSStaggeredTableDescriptionPositionScaleX] = table.xo;
-//    H->worker[i].vel_desc.s[RSStaggeredTableDescriptionPositionScaleY] = table.yo;
-//    H->worker[i].vel_desc.s[RSStaggeredTableDescriptionPositionScaleZ] = table.zo;
-//    H->worker[i].vel_desc.s[RSStaggeredTableDescriptionOffsetX] = table.xm;
-//    H->worker[i].vel_desc.s[RSStaggeredTableDescriptionOffsetY] = table.ym;
-//    H->worker[i].vel_desc.s[RSStaggeredTableDescriptionOffsetZ] = table.zm;
-
-//    a = 2.0f;
-//    r = 1.0212f;
-//    table.x_ = leslie->nx;    table.xm = 0.5f * (float)(leslie->nx - 1);    table.xs = 1.0f / log(r);    table.xo = (r - 1.0f) / a;
-//    table.y_ = leslie->ny;    table.ym = 0.5f * (float)(leslie->ny - 1);    table.ys = 1.0f / log(r);    table.yo = (r - 1.0f) / a;
-//
-//    if (H->verb > 0 && H->vel_count == 0) {
-//        printf("%s : RS : LES stretched x-grid using %.6f * log1p( %.6f * x )    Mid = %.2f m\n",
-//               now(), table.xs, table.xo,
-//               a * (1.0f - powf(r, table.xm)) / (1.0f - r));
-//    }
-//
-//    a = 2.0f;
-//    r = 1.05f;
-//    table.z_ = leslie->nz;    table.zm = 0.0f;  table.zs = 1.0f / log(r);    table.zo = (r - 1.0f) / a;
-//
-//    if (H->verb > 0 && H->vel_count == 0) {
-//        printf("%s : RS : LES stretched z-grid using %.6f * log1p( %.6f * z )    Mid = %.2f m\n",
-//               now(), table.zs, table.zo,
-//               a * (1.0f - powf(r, (float)table.z_)) / (1.0f - r));
-//    }
-
 RSBox RS_suggest_scan_doamin(RSHandle *H, const int nbeams) {
     RSBox box;
 
@@ -3915,9 +3871,9 @@ RSBox RS_suggest_scan_doamin(RSHandle *H, const int nbeams) {
     box.size.e = ne * H->params.antenna_bw_deg;
 
     if (H->verb) {
-        printf("%s : RS : Suggest scan box based on [ 2w = %.1f m, h = %.1f m ]  : nr = %.1f   na = %.1f\n"
-               "%s : RS : R: [ %.3f - %.3f ]    E: [ %.3f - %.3f ]   A: [ %.3f - %.3f ]\n",
-               now(), 2.0f * w, h, nr, na,
+        printf("%s : RS : Suggest scan box based on [ 2w = %.1f m, h = %.1f m ] : nr = %.1f   na = %.1f   ne = %.1f\n"
+               "%s : RS : Best fit with R: [ %.3f - %.3f ]    E: [ %.3f - %.3f ]   A: [ %.3f - %.3f ]\n",
+               now(), 2.0f * w, h, nr, na, ne,
                now(), box.origin.r, box.origin.r + box.size.r, box.origin.e, box.origin.e + box.size.e, box.origin.a, box.origin.a + box.size.a);
     }
     

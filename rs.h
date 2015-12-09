@@ -255,6 +255,14 @@ enum {
     RSTableSpacingStretchedZ       = 1 << 2
 };
 
+enum {
+    RS_GPU_VENDOR_UNKNOWN,
+    RS_GPU_VENDOR_NVIDIA,
+    RS_GPU_VENDOR_INTEL,
+    RS_GPU_VENDOR_AMD
+};
+
+
 //
 //
 //  Worker (per GPU) handle
@@ -404,6 +412,7 @@ typedef struct _rs_handle {
 	cl_uint                num_devs;
 	cl_uint                num_workers;
 	cl_uint                num_cus[RS_MAX_GPU_DEVICE];
+    cl_uint                vendors[RS_MAX_GPU_DEVICE];
 	cl_device_id           devs[RS_MAX_GPU_DEVICE];
 
     // OpenGL sharing
