@@ -20,7 +20,6 @@
 		B535159D1AD32077004C0F50 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = B535159C1AD32077004C0F50 /* MainMenu.xib */; };
 		B53A764A1C16816100405F2A /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5EF317418204B5C002DDEFC /* AppKit.framework */; };
 		B54DEB3718A5453800EBEC07 /* Minion-Icons in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB3618A5453800EBEC07 /* Minion-Icons */; };
-		B54DEB4518A582F100EBEC07 /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB4418A582F100EBEC07 /* dsa_pub.pem */; };
 		B55716861AB7519D001984E0 /* rcs.c in Sources */ = {isa = PBXBuildFile; fileRef = B55716851AB7519D001984E0 /* rcs.c */; };
 		B5576B8B18315B3B0012E6F5 /* SimPoint.m in Sources */ = {isa = PBXBuildFile; fileRef = B5576B8A18315B3B0012E6F5 /* SimPoint.m */; };
 		B5576B8E1831612A0012E6F5 /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
@@ -67,12 +66,13 @@
 		B57241CB1C0CA28400B76BCB /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B52B2BDD1BE8F77C00F1F91D /* CoreMedia.framework */; };
 		B57241E01C0CA2F400B76BCB /* Minion-Icons in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB3618A5453800EBEC07 /* Minion-Icons */; };
 		B57241E21C0CA3B600B76BCB /* Sparkle.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = B56C7FA41ADC22E300552B1E /* Sparkle.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		B57241E41C0CA7C000B76BCB /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB4418A582F100EBEC07 /* dsa_pub.pem */; };
 		B57241E61C0CB0D900B76BCB /* rs.cl in Resources */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
 		B5760EA818A938F2008DAF83 /* test_clreduce.c in Sources */ = {isa = PBXBuildFile; fileRef = B5760EA718A938F2008DAF83 /* test_clreduce.c */; };
 		B5760EAA18A93AA4008DAF83 /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
 		B5760EAC18A93ABC008DAF83 /* rs.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281917D7C4D500E4DE66 /* rs.c */; };
 		B582522718BF2F1300ADFCD5 /* rs.cl in CopyFiles */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
+		B58F632B1C177EE40010AEE6 /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = B58F632A1C177EE40010AEE6 /* dsa_pub.pem */; };
+		B58F632C1C177EE40010AEE6 /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = B58F632A1C177EE40010AEE6 /* dsa_pub.pem */; };
 		B5916CC61ABC7069007EA0B9 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = B5916CC51ABC7069007EA0B9 /* README.md */; };
 		B59A64271B8CEB0200747CD5 /* arps.c in Sources */ = {isa = PBXBuildFile; fileRef = B59A64251B8CEB0200747CD5 /* arps.c */; };
 		B59A64281B8CF23E00747CD5 /* arps.c in Sources */ = {isa = PBXBuildFile; fileRef = B59A64251B8CEB0200747CD5 /* arps.c */; };
@@ -241,7 +241,6 @@
 		B54DEB3618A5453800EBEC07 /* Minion-Icons */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "Minion-Icons"; path = "SimRadar/Minion-Icons"; sourceTree = "<group>"; };
 		B54DEB3E18A5742300EBEC07 /* SimRadar-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "SimRadar-Info.plist"; sourceTree = "<group>"; };
 		B54DEB3F18A5742300EBEC07 /* SimRadar-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SimRadar-Prefix.pch"; sourceTree = "<group>"; };
-		B54DEB4418A582F100EBEC07 /* dsa_pub.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = dsa_pub.pem; sourceTree = "<group>"; };
 		B55716841AB75186001984E0 /* rcs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rcs.h; sourceTree = "<group>"; };
 		B55716851AB7519D001984E0 /* rcs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rcs.c; sourceTree = "<group>"; };
 		B5576B8918315B3B0012E6F5 /* SimPoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SimPoint.h; sourceTree = "<group>"; };
@@ -262,6 +261,7 @@
 		B5760EAD18A94328008DAF83 /* reduce.cl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.opencl; path = reduce.cl; sourceTree = "<group>"; };
 		B57ADA6017E21A8900B03074 /* rs_types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = rs_types.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		B57ADA6117E225EE00B03074 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		B58F632A1C177EE40010AEE6 /* dsa_pub.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = dsa_pub.pem; path = delivery/dsa_pub.pem; sourceTree = SOURCE_ROOT; };
 		B5916CC51ABC7069007EA0B9 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		B59A64251B8CEB0200747CD5 /* arps.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = arps.c; sourceTree = "<group>"; };
 		B59A64261B8CEB0200747CD5 /* arps.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = arps.h; sourceTree = "<group>"; };
@@ -573,7 +573,7 @@
 				B5EF318018204B5C002DDEFC /* Credits.rtf */,
 				B54DEB3E18A5742300EBEC07 /* SimRadar-Info.plist */,
 				B54DEB3F18A5742300EBEC07 /* SimRadar-Prefix.pch */,
-				B54DEB4418A582F100EBEC07 /* dsa_pub.pem */,
+				B58F632A1C177EE40010AEE6 /* dsa_pub.pem */,
 			);
 			name = "Supporting Files";
 			sourceTree = "<group>";
@@ -808,12 +808,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				B57241A71C0CA06000B76BCB /* Assets.xcassets in Resources */,
+				B58F632C1C177EE40010AEE6 /* dsa_pub.pem in Resources */,
 				B57241B71C0CA1BF00B76BCB /* MainMenu.xib in Resources */,
 				B57241B81C0CA1C100B76BCB /* LiveDisplay.xib in Resources */,
 				B57241E01C0CA2F400B76BCB /* Minion-Icons in Resources */,
 				B5D22A191C10D62C00CE15EB /* Images in Resources */,
 				B56A7CE91C0F5AF700133ACF /* Shaders in Resources */,
-				B57241E41C0CA7C000B76BCB /* dsa_pub.pem in Resources */,
 				B57241E61C0CB0D900B76BCB /* rs.cl in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -822,15 +822,15 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B54DEB3718A5453800EBEC07 /* Minion-Icons in Resources */,
 				B5D22A181C10D62C00CE15EB /* Images in Resources */,
+				B56A7CE81C0F5AF700133ACF /* Shaders in Resources */,
 				B5916CC61ABC7069007EA0B9 /* README.md in Resources */,
 				B535159D1AD32077004C0F50 /* MainMenu.xib in Resources */,
 				B5EF31C2182060E1002DDEFC /* LiveDisplay.xib in Resources */,
-				B56A7CE81C0F5AF700133ACF /* Shaders in Resources */,
-				B54DEB4518A582F100EBEC07 /* dsa_pub.pem in Resources */,
+				B58F632B1C177EE40010AEE6 /* dsa_pub.pem in Resources */,
 				B5EF317C18204B5C002DDEFC /* InfoPlist.strings in Resources */,
 				B5EF318218204B5C002DDEFC /* Credits.rtf in Resources */,
-				B54DEB3718A5453800EBEC07 /* Minion-Icons in Resources */,
 				B51767C118A2DFB700D47C27 /* Curious-Minion-Icon.icns in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
