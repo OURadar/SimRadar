@@ -28,10 +28,6 @@ On Mac:
 [Xcode 6]: https://developer.apple.com/xcode
 [Sparkle framework]: http://sparkle-project.org
 
-### Sparkle Framework ####
-
-The Sparkle framework is not included as part of the git package simply because it is developed and maintained by a third party (http://sparkle-project.org). The latest release can be downloaded from the official website but the version that is used with this software can be obtained from http://arrc.ou.edu/~boonleng/Sparkle.framework.zip. The extracted folder Sparkle.framework should go into the **SimRadar** project folder.
-
 
 Installing HDF5 on a Mac
 ------------------------
@@ -168,9 +164,10 @@ The SimRadar App for Mac OS X
 A dedicated project SimRadar, which is a Mac OS X implemtation of visualization and graphical user interface, is included. It demonstrates how to wrap the framework in Objective-C. There is currently no plan to make this a full-fledge application that allows users to access all simulation parameters through the GUI.
 
 
-### Quick download for Sparkle.framework ###
+### Sparkle Framework ####
 
-The latest Sparkle framework may be downloaded at the URL https://github.com/sparkle-project/Sparkle/releases/latest
+The Sparkle framework is not included as part of the git package simply because it is developed and maintained by a third party (http://sparkle-project.org). The latest release can be downloaded from the official website but the version that is used with this software can be obtained from http://arrc.ou.edu/~boonleng/Sparkle.framework.zip. The extracted folder Sparkle.framework should go into the **SimRadar** project folder.
+
 
 
 Implmentation
