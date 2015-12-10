@@ -44,9 +44,10 @@
                 RS_set_density(S, 4.0f);
             }
         }
+        RS_set_density(S, 20.0f);
 
-		L = LES_init_with_config_path(LESConfigSuctionVortices, [resourcePath UTF8String]);
-//        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, [resourcePath UTF8String]);
+//		L = LES_init_with_config_path(LESConfigSuctionVortices, [resourcePath UTF8String]);
+        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, [resourcePath UTF8String]);
         
         A = ADM_init_with_config_path(ADMConfigSquarePlate, [resourcePath UTF8String]);
 
@@ -73,8 +74,11 @@
 //        RS_set_debris_count(S, 2, 2000);
 //        RS_set_debris_count(S, 3, 500);
 
-        RS_set_debris_count(S, 1, (size_t)roundf(30000 / 384) * 384);
-        RS_set_debris_count(S, 3, (size_t)roundf(500 / 384) * 384);
+//        RS_set_debris_count(S, 1, (size_t)roundf(30000 / 384) * 384);
+//        RS_set_debris_count(S, 3, (size_t)roundf(500 / 384) * 384);
+        
+        RS_set_debris_count(S, 1, 20);
+        RS_set_debris_count(S, 3, 10);
         
 		//RS_set_physics_data_to_cube125(S);
 		//RS_set_physics_data_to_cube27(S);
@@ -114,6 +118,19 @@
 
 		az_deg = 0.0f;
         el_deg = 4.9f;
+        
+        
+        char ori_file[4096];
+        memset(ori_file, 0, 4096);
+        snprintf(ori_file, 256, "%s/Downloads/sim-%s-orientation.dat", getenv("HOME"), nowlong());
+        printf("%s : Orientation output file : %s\n", now(), ori_file);
+        
+        ori_fid = fopen(ori_file, "wb");
+        
+        if (ori_fid == NULL) {
+            fprintf(stderr, "%s : Error creating file for writing data.\n", now());
+        }
+        
 	}
 	return self;
 }
@@ -122,6 +139,9 @@
 {
 	RS_free(S);
 	LES_free(L);
+    
+    fclose(ori_fid);
+    
 	[super dealloc];
 }
 
@@ -154,12 +174,22 @@
     el_deg = 5.0f;
 
     RS_set_beam_pos(S, az_deg, el_deg);
+    
 }
 
 - (void)advanceTime
 {
 	RS_advance_time(S);
 	//RS_make_pulse(S);
+//    RS_download_orientation_only(S);
+    
+    unsigned long debris_ind;
+    
+    for (int i = 0; i < 1; i++) {
+        debris_ind = S->worker[0].species_global_offset + S->worker[0].species_origin[1] + i;
+        fwrite(&S->scat_ori[debris_ind], sizeof(cl_float4), 1, ori_fid);
+    }
+    
 }
 
 - (void)advanceBeamPosition

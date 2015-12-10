@@ -36,6 +36,8 @@
 	int table_id;
 
     size_t returnCounts[RS_MAX_GPU_DEVICE];
+    
+    FILE *ori_fid;
 }
 
 @property (nonatomic, readonly) BOOL busy;
