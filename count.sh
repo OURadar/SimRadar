@@ -1,4 +1,4 @@
 #!/bin/bash
 
-cat *.[chm]* SimRadar/*.[chm] | wc -l
+cat *.[chm]* *.cl SimRadar/*.[chm] SimRadar/Shaders/*.* | wc -l
 

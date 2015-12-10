@@ -966,7 +966,11 @@
 	}
 	
     // Breathing phase
+#ifdef GEN_IMG
+    phase = 0.425459064119661f * (exp(-cos(iframe * 0.01666666666667f)) - 0.36787944117144f);
+#else
     phase = 0.425459064119661f * (exp(-cos([NSDate timeIntervalSinceReferenceDate])) - 0.36787944117144f);
+#endif
     phase = 0.7f * phase + 0.3f;
     
     iframe++;
