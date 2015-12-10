@@ -3288,6 +3288,30 @@ void RS_download_position_only(RSHandle *H) {
 	
 }
 
+void RS_download_orientation_only(RSHandle *H) {
+    
+    int i;
+    
+#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+    
+    for (i = 0; i < H->num_workers; i++) {
+        dispatch_async(H->worker[i].que, ^{
+            gcl_memcpy(H->scat_ori + H->offset[i], H->worker[i].scat_ori, H->worker[i].num_scats * sizeof(cl_float4));
+            dispatch_semaphore_signal(H->worker[i].sem);
+        });
+        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+    }
+    
+#else
+    
+    for (i = 0; i < H->num_workers; i++) {
+        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL,NULL);
+    }
+    
+#endif
+    
+}
+
 void RS_merge_pulse_tmp(RSHandle *H) {
 	memcpy(H->pulse, H->pulse_tmp[0], H->params.range_count * sizeof(cl_float4));
 	for (int i = 1; i < H->num_workers; i++) {

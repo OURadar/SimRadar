@@ -527,6 +527,7 @@ void RS_populate(RSHandle *H);
 void RS_upload(RSHandle *H);
 void RS_download(RSHandle *H);
 void RS_download_position_only(RSHandle *H);
+void RS_download_orientation_only(RSHandle *H);
 void RS_download_pulse_only(RSHandle *H);
 
 void RS_sig_from_dsd(RSHandle *H);
