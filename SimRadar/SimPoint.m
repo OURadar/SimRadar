@@ -74,7 +74,7 @@
 //        RS_set_debris_count(S, 3, 500);
 
         RS_set_debris_count(S, 1, (size_t)roundf(30000 / 384) * 384);
-        RS_set_debris_count(S, 3, (size_t)roundf(500 / 384) * 384);
+//        RS_set_debris_count(S, 3, (size_t)roundf(500 / 384) * 384);
         
 		//RS_set_physics_data_to_cube125(S);
 		//RS_set_physics_data_to_cube27(S);
@@ -159,6 +159,8 @@
 - (void)advanceTime
 {
 	RS_advance_time(S);
+    //RS_download_position_only(S);
+//    RS_download(S);
 	//RS_make_pulse(S);
 }
 

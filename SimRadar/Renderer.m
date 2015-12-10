@@ -242,7 +242,7 @@
     pos[20] =  0.0f;   pos[21] =  0.0f;   pos[22] =  0.0f;   pos[23] = 0.0f;
     prim->vertexSize = 24 * sizeof(GLfloat);
     for (int i=0; i<24; i++) {
-        pos[i] *= 2.5f;
+        pos[i] *= 2.0f;
     }
     prim->instanceSize = 7;
     GLuint ind0[] = {5, 1, 2, 0, 5, 3, 4};
@@ -973,6 +973,9 @@
 #endif
     phase = 0.7f * phase + 0.3f;
     
+    if (iframe == 0) {
+        NSLog(@"First frame <==============================");
+    }
     iframe++;
     [self measureFPS];
     

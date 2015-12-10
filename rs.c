@@ -3230,7 +3230,9 @@ void RS_download(RSHandle *H) {
 			gcl_memcpy(H->scat_ori + H->offset[i], H->worker[i].scat_ori, H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->scat_att + H->offset[i], H->worker[i].scat_att, H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->scat_sig + H->offset[i], H->worker[i].scat_sig, H->worker[i].num_scats * sizeof(cl_float4));
+            dispatch_semaphore_signal(H->worker[i].sem);
 		});
+        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
 	}
 
 #else
@@ -3239,6 +3241,7 @@ void RS_download(RSHandle *H) {
     
     cl_event events[H->num_workers][6];
     
+    // Non-blocking read, wait for events later when they are queue up.
 	for (i = 0; i < H->num_workers; i++) {
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, &events[i][0]);
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_vel, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, &events[i][1]);
@@ -3314,7 +3317,7 @@ void RS_download_pulse_only(RSHandle *H) {
 	
 #else
 	
-    // Blocking read
+    // Blocking read since there is only one read
 	for (i = 0; i < H->num_workers; i++) {
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].pulse, CL_TRUE, 0, H->params.range_count * sizeof(cl_float4), H->pulse_tmp[i], 0, NULL, NULL);
 	}
