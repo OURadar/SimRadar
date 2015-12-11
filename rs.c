@@ -3104,7 +3104,11 @@ void RS_populate(RSHandle *H) {
 		printf("%s : RS : Exceed the maximum allowed. (%ld > %d).\n", now(), (unsigned long)H->num_scats, RS_MAX_NUM_SCATS);
 	}
 	
-	//
+    if (H->verb) {
+        printf("%s : RS : RS_populate()\n", now());
+    }
+
+    //
 	// CPU memory allocation
 	//
 	if (H->scat_pos != NULL) {
@@ -3381,6 +3385,7 @@ void RS_upload(RSHandle *H) {
 			gcl_memcpy(H->worker[i].scat_sig, H->scat_sig + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->worker[i].scat_rnd, H->scat_rnd + H->offset[i], H->worker[i].num_scats * sizeof(cl_uint4));
             
+            // Set color based on drop size
             scat_clr_dsd_kernel(&H->worker[i].ndrange_scat[0],
                                 (cl_float4 *)H->worker[i].scat_clr,
                                 (cl_float4 *)H->worker[i].scat_pos,

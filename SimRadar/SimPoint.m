@@ -180,16 +180,16 @@
 {
 	RS_advance_time(S);
     //RS_download_position_only(S);
-//    RS_download(S);
+    RS_download(S);
 	//RS_make_pulse(S);
 //    RS_download_orientation_only(S);
     
-    unsigned long debris_ind;
-    
-    for (int i = 0; i < 1; i++) {
-        debris_ind = S->worker[0].species_global_offset + S->worker[0].species_origin[1] + i;
-        fwrite(&S->scat_ori[debris_ind], sizeof(cl_float4), 1, ori_fid);
-    }
+//    unsigned long debris_ind;
+//    
+//    for (int i = 0; i < 1; i++) {
+//        debris_ind = S->worker[0].species_global_offset + S->worker[0].species_origin[1] + i;
+//        fwrite(&S->scat_ori[debris_ind], sizeof(cl_float4), 1, ori_fid);
+//    }
     
 }
 
