@@ -44,7 +44,6 @@
                 RS_set_density(S, 4.0f);
             }
         }
-        RS_set_density(S, 20.0f);
 
 //		L = LES_init_with_config_path(LESConfigSuctionVortices, [resourcePath UTF8String]);
         L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, [resourcePath UTF8String]);
