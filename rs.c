@@ -3125,6 +3125,8 @@ void RS_populate(RSHandle *H) {
 
 	posix_memalign((void **)&H->pulse, RS_ALIGN_SIZE, H->params.range_count * sizeof(cl_float4));
 	
+    printf("%p <-----------------------\n", H->scat_ori);
+    
 	if (H->scat_pos == NULL ||
 		H->scat_vel == NULL ||
 		H->scat_ori == NULL ||
@@ -3227,17 +3229,27 @@ void RS_download(RSHandle *H) {
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 
-	for (i = 0; i < H->num_workers; i++) {
+//    printf("%p <-----------------------\n", H->scat_ori);
+    
+    for (i = 0; i < H->num_workers; i++) {
 		dispatch_async(H->worker[i].que, ^{
-			gcl_memcpy(H->scat_pos + H->offset[i], H->worker[i].scat_pos, H->worker[i].num_scats * sizeof(cl_float4));
-			gcl_memcpy(H->scat_vel + H->offset[i], H->worker[i].scat_vel, H->worker[i].num_scats * sizeof(cl_float4));
-			gcl_memcpy(H->scat_ori + H->offset[i], H->worker[i].scat_ori, H->worker[i].num_scats * sizeof(cl_float4));
-			gcl_memcpy(H->scat_att + H->offset[i], H->worker[i].scat_att, H->worker[i].num_scats * sizeof(cl_float4));
-			gcl_memcpy(H->scat_sig + H->offset[i], H->worker[i].scat_sig, H->worker[i].num_scats * sizeof(cl_float4));
+			gcl_memcpy((void *)(H->scat_pos + H->offset[i]), H->worker[i].scat_pos, H->worker[i].num_scats * sizeof(cl_float4));
+            gcl_memcpy((void *)(H->scat_vel + H->offset[i]), H->worker[i].scat_vel, H->worker[i].num_scats * sizeof(cl_float4));
+            //gcl_memcpy((void *)(H->scat_ori + H->offset[i]), H->worker[i].scat_ori, H->worker[i].num_scats * sizeof(cl_float4));
+			gcl_memcpy((void *)(H->scat_att + H->offset[i]), H->worker[i].scat_att, H->worker[i].num_scats * sizeof(cl_float4));
+			gcl_memcpy((void *)(H->scat_sig + H->offset[i]), H->worker[i].scat_sig, H->worker[i].num_scats * sizeof(cl_float4));
             dispatch_semaphore_signal(H->worker[i].sem);
 		});
         dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
 	}
+
+//    for (i = 0; i < H->num_workers; i++) {
+//        dispatch_async(H->worker[i].que, ^{
+//            gcl_memcpy((void *)(H->scat_ori + H->offset[i]), H->worker[i].scat_ori, H->worker[i].num_scats * sizeof(cl_float4));
+//            dispatch_semaphore_signal(H->worker[i].sem);
+//        });
+//        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+//    }
 
 #else
 
@@ -3508,7 +3520,6 @@ void RS_advance_time(RSHandle *H) {
             printf("%s : RS : Wind table advanced. vel_idx = %d\n", now(), H->vel_idx);
         }
     }
-    
 
     for (i = 0; i < H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
@@ -3538,6 +3549,22 @@ void RS_advance_time(RSHandle *H) {
                            H->worker[i].angular_weight_desc,
                            H->sim_desc);
 
+
+//            scat_clr_kernel(&H->worker[i].ndrange_scat[0],
+//							(cl_float4 *)H->worker[i].scat_clr,
+//							(cl_float4 *)H->worker[i].scat_att,
+//							(unsigned int)H->worker[i].num_scats);
+//
+            dispatch_semaphore_signal(H->worker[i].sem);
+		});
+	}
+	
+	for (i = 0; i < H->num_workers; i++) {
+		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+	}
+
+    for (i = 0; i < H->num_workers; i++) {
+        dispatch_async(H->worker[i].que, ^{
             for (int k = 1; k < RS_MAX_SPECIES_TYPES; k++) {
                 if (H->worker[i].species_population[k] == 0) {
                     continue;
@@ -3562,19 +3589,13 @@ void RS_advance_time(RSHandle *H) {
                                  H->worker[i].angular_weight_desc,
                                  H->sim_desc);
             }
-
-//            scat_clr_kernel(&H->worker[i].ndrange_scat[0],
-//							(cl_float4 *)H->worker[i].scat_clr,
-//							(cl_float4 *)H->worker[i].scat_att,
-//							(unsigned int)H->worker[i].num_scats);
-//
             dispatch_semaphore_signal(H->worker[i].sem);
-		});
-	}
-	
-	for (i = 0; i < H->num_workers; i++) {
-		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
-	}
+        });
+
+        for (i = 0; i < H->num_workers; i++) {
+            dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+        }
+    }
 
 #else
     

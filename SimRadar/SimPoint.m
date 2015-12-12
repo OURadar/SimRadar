@@ -45,8 +45,8 @@
             }
         }
 
-//		L = LES_init_with_config_path(LESConfigSuctionVortices, [resourcePath UTF8String]);
-        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, [resourcePath UTF8String]);
+		L = LES_init_with_config_path(LESConfigSuctionVortices, [resourcePath UTF8String]);
+//        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, [resourcePath UTF8String]);
         
         A = ADM_init_with_config_path(ADMConfigSquarePlate, [resourcePath UTF8String]);
 

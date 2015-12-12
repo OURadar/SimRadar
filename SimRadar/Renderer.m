@@ -1040,8 +1040,8 @@
     glUseProgram(instancedGeometryRenderer.program);
     glUniformMatrix4fv(instancedGeometryRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
 
-    for (int k = 1; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
-        for (i = 0; i < clDeviceCount; i++) {
+    for (i = 0; i < clDeviceCount; i++) {
+        for (int k = 1; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
             if (debrisRenderer[k].count == 0) {
                 continue;
             }
