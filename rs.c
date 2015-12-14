@@ -3106,7 +3106,11 @@ void RS_populate(RSHandle *H) {
 		printf("%s : RS : Exceed the maximum allowed. (%ld > %d).\n", now(), (unsigned long)H->num_scats, RS_MAX_NUM_SCATS);
 	}
 	
-	//
+    if (H->verb) {
+        printf("%s : RS : RS_populate()\n", now());
+    }
+
+    //
 	// CPU memory allocation
 	//
 	if (H->scat_pos != NULL) {
@@ -3123,6 +3127,8 @@ void RS_populate(RSHandle *H) {
 
 	posix_memalign((void **)&H->pulse, RS_ALIGN_SIZE, H->params.range_count * sizeof(cl_float4));
 	
+    printf("%p <-----------------------\n", H->scat_ori);
+    
 	if (H->scat_pos == NULL ||
 		H->scat_vel == NULL ||
 		H->scat_ori == NULL ||
@@ -3225,15 +3231,27 @@ void RS_download(RSHandle *H) {
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 
-	for (i = 0; i < H->num_workers; i++) {
+//    printf("%p <-----------------------\n", H->scat_ori);
+    
+    for (i = 0; i < H->num_workers; i++) {
 		dispatch_async(H->worker[i].que, ^{
-			gcl_memcpy(H->scat_pos + H->offset[i], H->worker[i].scat_pos, H->worker[i].num_scats * sizeof(cl_float4));
-			gcl_memcpy(H->scat_vel + H->offset[i], H->worker[i].scat_vel, H->worker[i].num_scats * sizeof(cl_float4));
-			gcl_memcpy(H->scat_ori + H->offset[i], H->worker[i].scat_ori, H->worker[i].num_scats * sizeof(cl_float4));
-			gcl_memcpy(H->scat_att + H->offset[i], H->worker[i].scat_att, H->worker[i].num_scats * sizeof(cl_float4));
-			gcl_memcpy(H->scat_sig + H->offset[i], H->worker[i].scat_sig, H->worker[i].num_scats * sizeof(cl_float4));
+			gcl_memcpy((void *)(H->scat_pos + H->offset[i]), H->worker[i].scat_pos, H->worker[i].num_scats * sizeof(cl_float4));
+            gcl_memcpy((void *)(H->scat_vel + H->offset[i]), H->worker[i].scat_vel, H->worker[i].num_scats * sizeof(cl_float4));
+            //gcl_memcpy((void *)(H->scat_ori + H->offset[i]), H->worker[i].scat_ori, H->worker[i].num_scats * sizeof(cl_float4));
+			gcl_memcpy((void *)(H->scat_att + H->offset[i]), H->worker[i].scat_att, H->worker[i].num_scats * sizeof(cl_float4));
+			gcl_memcpy((void *)(H->scat_sig + H->offset[i]), H->worker[i].scat_sig, H->worker[i].num_scats * sizeof(cl_float4));
+            dispatch_semaphore_signal(H->worker[i].sem);
 		});
+        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
 	}
+
+//    for (i = 0; i < H->num_workers; i++) {
+//        dispatch_async(H->worker[i].que, ^{
+//            gcl_memcpy((void *)(H->scat_ori + H->offset[i]), H->worker[i].scat_ori, H->worker[i].num_scats * sizeof(cl_float4));
+//            dispatch_semaphore_signal(H->worker[i].sem);
+//        });
+//        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+//    }
 
 #else
 
@@ -3241,6 +3259,7 @@ void RS_download(RSHandle *H) {
     
     cl_event events[H->num_workers][6];
     
+    // Non-blocking read, wait for events later when they are queue up.
 	for (i = 0; i < H->num_workers; i++) {
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, &events[i][0]);
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_vel, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, &events[i][1]);
@@ -3340,7 +3359,7 @@ void RS_download_pulse_only(RSHandle *H) {
 	
 #else
 	
-    // Blocking read
+    // Blocking read since there is only one read
 	for (i = 0; i < H->num_workers; i++) {
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].pulse, CL_TRUE, 0, H->params.range_count * sizeof(cl_float4), H->pulse_tmp[i], 0, NULL, NULL);
 	}
@@ -3380,6 +3399,7 @@ void RS_upload(RSHandle *H) {
 			gcl_memcpy(H->worker[i].scat_sig, H->scat_sig + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->worker[i].scat_rnd, H->scat_rnd + H->offset[i], H->worker[i].num_scats * sizeof(cl_uint4));
             
+            // Set color based on drop size
             scat_clr_dsd_kernel(&H->worker[i].ndrange_scat[0],
                                 (cl_float4 *)H->worker[i].scat_clr,
                                 (cl_float4 *)H->worker[i].scat_pos,
@@ -3502,7 +3522,6 @@ void RS_advance_time(RSHandle *H) {
             printf("%s : RS : Wind table advanced. vel_idx = %d\n", now(), H->vel_idx);
         }
     }
-    
 
     for (i = 0; i < H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
@@ -3530,6 +3549,22 @@ void RS_advance_time(RSHandle *H) {
                            H->worker[i].angular_weight_desc,
                            H->sim_desc);
 
+
+//            scat_clr_kernel(&H->worker[i].ndrange_scat[0],
+//							(cl_float4 *)H->worker[i].scat_clr,
+//							(cl_float4 *)H->worker[i].scat_att,
+//							(unsigned int)H->worker[i].num_scats);
+//
+            dispatch_semaphore_signal(H->worker[i].sem);
+		});
+	}
+	
+	for (i = 0; i < H->num_workers; i++) {
+		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+	}
+
+    for (i = 0; i < H->num_workers; i++) {
+        dispatch_async(H->worker[i].que, ^{
             for (int k = 1; k < RS_MAX_SPECIES_TYPES; k++) {
                 if (H->worker[i].species_population[k] == 0) {
                     continue;
@@ -3554,19 +3589,13 @@ void RS_advance_time(RSHandle *H) {
                                H->worker[i].angular_weight_desc,
                                H->sim_desc);
             }
-
-//            scat_clr_kernel(&H->worker[i].ndrange_scat[0],
-//							(cl_float4 *)H->worker[i].scat_clr,
-//							(cl_float4 *)H->worker[i].scat_att,
-//							(unsigned int)H->worker[i].num_scats);
-//
             dispatch_semaphore_signal(H->worker[i].sem);
-		});
-	}
-	
-	for (i = 0; i < H->num_workers; i++) {
-		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
-	}
+        });
+
+        for (i = 0; i < H->num_workers; i++) {
+            dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+        }
+    }
 
 #else
     

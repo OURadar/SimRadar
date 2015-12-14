@@ -48,7 +48,7 @@ A set of C functions are collected in Radar Simulation (RS) framework, which abs
 
 ### LES, ADM & RCS Data ###
 
-A zip archive with sample LES (Large Eddy Simulation), ADM (Air Drag Model) and RCS (Radar Cross Section) data can be downloaded from
+A zip archive with data of LES (Large Eddy Simulation), ADM (Air Drag Model) and RCS (Radar Cross Section) can be downloaded from
 
 http://arrc.ou.edu/~boonleng/simradar/tables.zip
 
@@ -100,9 +100,10 @@ The simulation framework is written is plain C for performance and portability. 
         }
 
         // Set up the parameters: use the setter functions to change the state.
-        RS_set_antenna_params(S, 1.0f, 44.5f);
 
-        RS_set_tx_params(S, 1.0e-6, 50.0e3f);
+        RS_set_antenna_params(S, 1.0f, 44.5f);                // 1.0-deg, 44.5 dBi gain
+
+        RS_set_tx_params(S, 30.0f * 2.0f / 3.0e8f, 10.0e3);   // Resolution in m, power in W
 
         RS_set_scan_box(S,
             10.0e3, 15.0e3, 250.0f,  // Range in between 10,000 and 15,000 m, 250-m spacing
