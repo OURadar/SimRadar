@@ -406,9 +406,7 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
     const unsigned int i = get_global_id(0);
     
     float4 pos = p[i];  // position
-//    float4 ori = o[i];  // orientation
     float4 vel = v[i];  // velocity
-//    float4 tum = t[i];  // tumbling (orientation change)
     float4 aux = a[i];  // auxiliary
     float4 sig = x[i];  // signal
 

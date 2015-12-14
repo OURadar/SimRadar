@@ -180,7 +180,7 @@
 {
 	RS_advance_time(S);
     //RS_download_position_only(S);
-    RS_download(S);
+//    RS_download(S);
 	//RS_make_pulse(S);
 //    RS_download_orientation_only(S);
     

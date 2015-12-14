@@ -3186,13 +3186,6 @@ void RS_populate(RSHandle *H) {
         printf("%s : RS : VEL / ADM / RCS count = %d / %d / %d\n", now(), H->vel_count, H->adm_count, H->rcs_count);
         printf("%s : RS : CL domain synchronized.\n", now());
     }
-	
-    if (H->dsd_name != RSDropSizeDistributionUndefined) {
-        RS_sig_from_dsd(H);
-        if (H->verb) {
-            printf("%s : RS : Drop-size derived RCS computed.\n", now());
-        }
-    }
 
 #if !(defined (__APPLE__) && defined (_SHARE_OBJ_))
 
@@ -3211,6 +3204,9 @@ void RS_populate(RSHandle *H) {
         ret |= clSetKernelArg(H->worker[i].kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDescription,           sizeof(cl_float16), &H->worker[i].adm_desc[a]);
         ret |= clSetKernelArg(H->worker[i].kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,      sizeof(cl_float16), &H->worker[i].rcs_desc[r]);
         ret |= clSetKernelArg(H->worker[i].kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription,             sizeof(cl_float16), &H->sim_desc);
+        
+        // Need to add DSD kernel? No, not really
+//        ret |= clSetKernelArg(H->worker[i].kern_scat_sig, ...)
     }
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to update kernel arguments in RS_populate().\n", now());
@@ -3218,6 +3214,13 @@ void RS_populate(RSHandle *H) {
     }
 
 #endif
+    
+//    if (H->dsd_name != RSDropSizeDistributionUndefined) {
+//        RS_sig_from_dsd(H);
+//        if (H->verb) {
+//            printf("%s : RS : Drop-size derived RCS computed.\n", now());
+//        }
+//    }
     
 	H->status = RS_STATUS_DOMAIN_POPULATED;
 	
@@ -3399,7 +3402,7 @@ void RS_upload(RSHandle *H) {
 			gcl_memcpy(H->worker[i].scat_sig, H->scat_sig + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->worker[i].scat_rnd, H->scat_rnd + H->offset[i], H->worker[i].num_scats * sizeof(cl_uint4));
             
-            // Set color based on drop size
+            // Set individual color based on drop size
             scat_clr_dsd_kernel(&H->worker[i].ndrange_scat[0],
                                 (cl_float4 *)H->worker[i].scat_clr,
                                 (cl_float4 *)H->worker[i].scat_pos,
@@ -3409,23 +3412,10 @@ void RS_upload(RSHandle *H) {
 		});
 		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
 	}
-	
-    // Set individual colors based on individual attributes: age, drop size, etc.
-    
-//    for (i = 0; i < H->num_workers; i++) {
-//        dispatch_async(H->worker[i].que, ^{
-//            scat_clr_dsd_kernel(&H->worker[i].ndrange_scat[0],
-//                                (cl_float4 *)H->worker[i].scat_clr,
-//                                (cl_float4 *)H->worker[i].scat_pos,
-//                                (cl_float4 *)H->worker[i].scat_att);
-//    
-//            dispatch_semaphore_signal(H->worker[i].sem);
-//        });
-//        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
-//    }
 
 #else
 
+    // Blocking write since there is no need to optimize this too much
     for (i = 0; i < H->num_workers; i++) {
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, NULL);
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_vel, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, NULL);
