@@ -39,15 +39,14 @@
         
         if (S->vendors[0] == RS_GPU_VENDOR_INTEL) {
             if (S->num_cus[0] <= 24) {
-                RS_set_density(S, 8.0f);
+                RS_set_density(S, 6.0f);
             } else if (S->num_cus[0] <= 16) {
                 RS_set_density(S, 4.0f);
             }
         }
-        RS_set_density(S, 20.0f);
 
-//		L = LES_init_with_config_path(LESConfigSuctionVortices, [resourcePath UTF8String]);
-        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, [resourcePath UTF8String]);
+		L = LES_init_with_config_path(LESConfigSuctionVortices, [resourcePath UTF8String]);
+//        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, [resourcePath UTF8String]);
         
         A = ADM_init_with_config_path(ADMConfigSquarePlate, [resourcePath UTF8String]);
 

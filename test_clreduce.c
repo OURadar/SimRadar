@@ -17,9 +17,12 @@ int main(int argc, char **argv)
 	
 	cl_uint num_devices;
 	cl_device_id devices[4];
+    cl_uint vendors[4];
 	cl_uint num_cus[4];
 	
-	get_device_info(CL_DEVICE_TYPE_GPU, &num_devices, devices, num_cus, 3);
+    const cl_int detail_level = 3;
+    
+	get_device_info(CL_DEVICE_TYPE_GPU, &num_devices, devices, num_cus, vendors, detail_level);
 	
 	cl_int ret;
 	cl_context context;

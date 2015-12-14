@@ -117,8 +117,8 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     C->kern_io = clCreateKernel(C->prog, "io", &ret);                                             CHECK_CL_CREATE_KERNEL
     C->kern_dummy = clCreateKernel(C->prog, "dummy", &ret);                                       CHECK_CL_CREATE_KERNEL
     C->kern_bg_atts = clCreateKernel(C->prog, "bg_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
-    C->kern_ds_atts = clCreateKernel(C->prog, "ds_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
-    C->kern_scat_atts = clCreateKernel(C->prog, "scat_atts", &ret);                               CHECK_CL_CREATE_KERNEL
+    C->kern_el_atts = clCreateKernel(C->prog, "el_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
+    C->kern_db_atts = clCreateKernel(C->prog, "db_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
     C->kern_scat_sig_dsd = clCreateKernel(C->prog, "scat_sig_dsd", &ret);                         CHECK_CL_CREATE_KERNEL
     C->kern_scat_clr_dsd = clCreateKernel(C->prog, "scat_clr_dsd", &ret);                         CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_1 = clCreateKernel(C->prog, "make_pulse_pass_1", &ret);               CHECK_CL_CREATE_KERNEL
@@ -131,8 +131,8 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
         printf("%s : RS : Kernels for program[%d] created.\n", now(), (int)C->name);
         if (C->verb > 3) {
             size_t pref_size;
-            CL_CHECK(clGetKernelWorkGroupInfo(C->kern_scat_atts, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
-            printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   scat_atts()\n", now(), pref_size);
+            CL_CHECK(clGetKernelWorkGroupInfo(C->kern_db_atts, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
+            printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   db_atts()\n", now(), pref_size);
             
             CL_CHECK(clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_1, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
             printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_1()\n", now(), pref_size);
@@ -173,8 +173,8 @@ void RS_worker_free(RSWorker *C) {
     clReleaseKernel(C->kern_io);
     clReleaseKernel(C->kern_dummy);
     clReleaseKernel(C->kern_bg_atts);
-    clReleaseKernel(C->kern_ds_atts);
-    clReleaseKernel(C->kern_scat_atts);
+    clReleaseKernel(C->kern_el_atts);
+    clReleaseKernel(C->kern_db_atts);
     clReleaseKernel(C->kern_scat_sig_dsd);
     clReleaseKernel(C->kern_scat_clr_dsd);
     clReleaseKernel(C->kern_make_pulse_pass_1);
@@ -344,45 +344,45 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
         exit(EXIT_FAILURE);
     }
 
+    //    ret |= clSetKernelArg(C->kern_el_atts, RSDraggedSpheroidAttributeKernelArgumentOrientation,                   sizeof(cl_mem),     &C->scat_ori);
+    //    ret |= clSetKernelArg(C->kern_el_atts, RSDraggedSpheroidAttributeKernelArgumentTumble,                        sizeof(cl_mem),     &C->scat_tum);
     ret = CL_SUCCESS;
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentOrientation,                   sizeof(cl_mem),     &C->scat_ori);
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentTumble,                        sizeof(cl_mem),     &C->scat_tum);
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentExtras,                        sizeof(cl_mem),     &C->scat_att);
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentSignal,                        sizeof(cl_mem),     &C->scat_sig);
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentAngularWeight,                 sizeof(cl_mem),     &C->angular_weight);
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentAngularWeightDescription,      sizeof(cl_float4),  &C->angular_weight_desc);
-    ret |= clSetKernelArg(C->kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
+    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
+    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentExtras,                        sizeof(cl_mem),     &C->scat_att);
+    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSignal,                        sizeof(cl_mem),     &C->scat_sig);
+    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
+    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
+    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
+    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentAngularWeight,                 sizeof(cl_mem),     &C->angular_weight);
+    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentAngularWeightDescription,      sizeof(cl_float4),  &C->angular_weight_desc);
+    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
     if (ret != CL_SUCCESS) {
-        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_ds_atts().\n", now());
+        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_el_atts().\n", now());
         exit(EXIT_FAILURE);
     }
     
     ret = CL_SUCCESS;
-    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
-    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentOrientation,                   sizeof(cl_mem),     &C->scat_ori);
-    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
-    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentTumble,                        sizeof(cl_mem),     &C->scat_tum);
-    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentExtras,                        sizeof(cl_mem),     &C->scat_att);
-    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentSignal,                        sizeof(cl_mem),     &C->scat_sig);
-    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
-    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
-    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
-    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &C->adm_cd[0]);
-    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentAirDragModelMomentum,          sizeof(cl_mem),     &C->adm_cm[0]);
-    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &C->adm_desc);
-    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &C->rcs_real[0]);
-    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[0]);
-    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc);
-	ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentAngularWeight,                 sizeof(cl_mem),     &C->angular_weight);
-	ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentAngularWeightDescription,      sizeof(cl_float4),  &C->angular_weight_desc);
-    ret |= clSetKernelArg(C->kern_scat_atts, RSScattererAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentOrientation,                   sizeof(cl_mem),     &C->scat_ori);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentTumble,                        sizeof(cl_mem),     &C->scat_tum);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentExtras,                        sizeof(cl_mem),     &C->scat_att);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSignal,                        sizeof(cl_mem),     &C->scat_sig);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &C->adm_cd[0]);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelMomentum,          sizeof(cl_mem),     &C->adm_cm[0]);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &C->adm_desc);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &C->rcs_real[0]);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[0]);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc);
+	ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAngularWeight,                 sizeof(cl_mem),     &C->angular_weight);
+	ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAngularWeightDescription,      sizeof(cl_float4),  &C->angular_weight_desc);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
     if (ret != CL_SUCCESS) {
-        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_atts().\n", now());
+        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_db_atts().\n", now());
         exit(EXIT_FAILURE);
     }
 
@@ -631,14 +631,16 @@ void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device
 				CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_NAME, RS_MAX_STR, buf_char, NULL));
 				printf("        - " FMT " = %s\n", "CL_DEVICE_NAME", buf_char);
 				CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_VENDOR, RS_MAX_STR, buf_char, NULL));
-				printf("        - " FMT " = %s\n", "CL_DEVICE_VENDOR", buf_char);
-                if (!strcasecmp(buf_char, "intel")) {
+                if (strcasestr(buf_char, "intel")) {
                     vendors[j] = RS_GPU_VENDOR_INTEL;
-                } else if (!strcasecmp(buf_char, "nvidia")) {
+                } else if (strcasestr(buf_char, "nvidia")) {
                     vendors[j] = RS_GPU_VENDOR_NVIDIA;
-                } else if (!strcasecmp(buf_char, "amd")) {
+                } else if (strcasestr(buf_char, "amd")) {
                     vendors[j] = RS_GPU_VENDOR_AMD;
+                } else {
+                    vendors[j] = RS_GPU_VENDOR_UNKNOWN;
                 }
+				printf("        - " FMT " = %s (%d)\n", "CL_DEVICE_VENDOR", buf_char, vendors[j]);
 				CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(buf_uint), &num_cus[j], NULL));
 				printf("        - " FMT " = %u\n", "CL_DEVICE_MAX_COMPUTE_UNITS", (unsigned int)num_cus[j]);
 				if (detail_level > 1) {
@@ -3196,13 +3198,13 @@ void RS_populate(RSHandle *H) {
         ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription,      sizeof(cl_float16), &H->worker[i].vel_desc);
         ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,              sizeof(cl_float16), &H->sim_desc);
         
-        ret |= clSetKernelArg(H->worker[i].kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &H->worker[i].vel_desc);
-        ret |= clSetKernelArg(H->worker[i].kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
+        ret |= clSetKernelArg(H->worker[i].kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocityDescription,       sizeof(cl_float16), &H->worker[i].vel_desc);
+        ret |= clSetKernelArg(H->worker[i].kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription,               sizeof(cl_float16), &H->sim_desc);
         
-        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentBackgroundVelocityDescription,     sizeof(cl_float16), &H->worker[i].vel_desc);
-        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentAirDragModelDescription,           sizeof(cl_float16), &H->worker[i].adm_desc[a]);
-        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentRadarCrossSectionDescription,      sizeof(cl_float16), &H->worker[i].rcs_desc[r]);
-        ret |= clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentSimulationDescription,             sizeof(cl_float16), &H->sim_desc);
+        ret |= clSetKernelArg(H->worker[i].kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocityDescription,     sizeof(cl_float16), &H->worker[i].vel_desc);
+        ret |= clSetKernelArg(H->worker[i].kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDescription,           sizeof(cl_float16), &H->worker[i].adm_desc[a]);
+        ret |= clSetKernelArg(H->worker[i].kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,      sizeof(cl_float16), &H->worker[i].rcs_desc[r]);
+        ret |= clSetKernelArg(H->worker[i].kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription,             sizeof(cl_float16), &H->sim_desc);
     }
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to update kernel arguments in RS_populate().\n", now());
@@ -3516,11 +3518,9 @@ void RS_advance_time(RSHandle *H) {
 //                           H->worker[i].angular_weight_desc,
 //                           H->sim_desc);
 
-            ds_atts_kernel(&H->worker[i].ndrange_scat[0],
+            el_atts_kernel(&H->worker[i].ndrange_scat[0],
                            (cl_float4 *)H->worker[i].scat_pos,
-                           (cl_float4 *)H->worker[i].scat_ori,
                            (cl_float4 *)H->worker[i].scat_vel,
-                           (cl_float4 *)H->worker[i].scat_tum,
                            (cl_float4 *)H->worker[i].scat_att,
                            (cl_float4 *)H->worker[i].scat_sig,
                            (cl_uint4 *)H->worker[i].scat_rnd,
@@ -3534,25 +3534,25 @@ void RS_advance_time(RSHandle *H) {
                 if (H->worker[i].species_population[k] == 0) {
                     continue;
                 }
-                scat_atts_kernel(&H->worker[i].ndrange_scat[k],
-                                 (cl_float4 *)H->worker[i].scat_pos,
-                                 (cl_float4 *)H->worker[i].scat_ori,
-                                 (cl_float4 *)H->worker[i].scat_vel,
-                                 (cl_float4 *)H->worker[i].scat_tum,
-                                 (cl_float4 *)H->worker[i].scat_att,
-                                 (cl_float4 *)H->worker[i].scat_sig,
-                                 (cl_uint4 *)H->worker[i].scat_rnd,
-                                 (cl_image)H->worker[i].vel[v],
-                                 H->worker[i].vel_desc,
-                                 (cl_image)H->worker[i].adm_cd[t],
-                                 (cl_image)H->worker[i].adm_cm[t],
-                                 H->worker[i].adm_desc[t],
-                                 (cl_image)H->worker[i].rcs_real[t],
-                                 (cl_image)H->worker[i].rcs_imag[t],
-                                 H->worker[i].rcs_desc[t],
-                                 (cl_float *)H->worker[i].angular_weight,
-                                 H->worker[i].angular_weight_desc,
-                                 H->sim_desc);
+                db_atts_kernel(&H->worker[i].ndrange_scat[k],
+                               (cl_float4 *)H->worker[i].scat_pos,
+                               (cl_float4 *)H->worker[i].scat_ori,
+                               (cl_float4 *)H->worker[i].scat_vel,
+                               (cl_float4 *)H->worker[i].scat_tum,
+                               (cl_float4 *)H->worker[i].scat_att,
+                               (cl_float4 *)H->worker[i].scat_sig,
+                               (cl_uint4 *)H->worker[i].scat_rnd,
+                               (cl_image)H->worker[i].vel[v],
+                               H->worker[i].vel_desc,
+                               (cl_image)H->worker[i].adm_cd[t],
+                               (cl_image)H->worker[i].adm_cm[t],
+                               H->worker[i].adm_desc[t],
+                               (cl_image)H->worker[i].rcs_real[t],
+                               (cl_image)H->worker[i].rcs_imag[t],
+                               H->worker[i].rcs_desc[t],
+                               (cl_float *)H->worker[i].angular_weight,
+                               H->worker[i].angular_weight_desc,
+                               H->sim_desc);
             }
 
 //            scat_clr_kernel(&H->worker[i].ndrange_scat[0],
@@ -3586,22 +3586,22 @@ void RS_advance_time(RSHandle *H) {
         //clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
         //clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
         
-        clSetKernelArg(H->worker[i].kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
-        clSetKernelArg(H->worker[i].kern_ds_atts, RSDraggedSpheroidAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
+        clSetKernelArg(H->worker[i].kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
+        clSetKernelArg(H->worker[i].kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
 
-        clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
-        clSetKernelArg(H->worker[i].kern_scat_atts, RSScattererAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
+        clSetKernelArg(H->worker[i].kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
+        clSetKernelArg(H->worker[i].kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
         
         // Background
         //printf("H->worker[%d].species_population[0] = %d from %d --> background\n", i, (int)H->worker[i].species_population[0], (int)H->worker[i].species_origin[0]);
         //clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_bg_atts, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i][0]);
-        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_ds_atts, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i][0]);
+        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_el_atts, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i][0]);
         
         // Debris type
         for (k = 1; k < RS_MAX_SPECIES_TYPES; k++) {
             if (H->worker[i].species_population[k]) {
                 //printf("H->worker[%d].species_population[%d] = %d from %d --> debris\n", i, k, (int)H->worker[i].species_population[k], (int)H->worker[i].species_origin[k]);
-                clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_atts, 1, &H->worker[i].species_origin[k], &H->worker[i].species_population[k], &local_item_size, 0, NULL, &events[i][k]);
+                clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_db_atts, 1, &H->worker[i].species_origin[k], &H->worker[i].species_population[k], &local_item_size, 0, NULL, &events[i][k]);
             }
         }
     }

@@ -8,25 +8,45 @@
 #ifndef rs_priv_h
 #define rs_priv_h
 
-enum RSScattererAttributeKernelArgument {
-    RSScattererAttributeKernelArgumentPosition                      = 0,
-    RSScattererAttributeKernelArgumentOrientation                   = 1,
-    RSScattererAttributeKernelArgumentVelocity                      = 2,
-    RSScattererAttributeKernelArgumentTumble                        = 3,
-    RSScattererAttributeKernelArgumentExtras                        = 4,
-    RSScattererAttributeKernelArgumentSignal                        = 5,
-    RSScattererAttributeKernelArgumentRandomSeed                    = 6,
-    RSScattererAttributeKernelArgumentBackgroundVelocity            = 7,
-    RSScattererAttributeKernelArgumentBackgroundVelocityDescription = 8,
-    RSScattererAttributeKernelArgumentAirDragModelDrag              = 9,
-    RSScattererAttributeKernelArgumentAirDragModelMomentum          = 10,
-    RSScattererAttributeKernelArgumentAirDragModelDescription       = 11,
-    RSScattererAttributeKernelArgumentRadarCrossSectionReal         = 12,
-    RSScattererAttributeKernelArgumentRadarCrossSectionImag         = 13,
-    RSScattererAttributeKernelArgumentRadarCrossSectionDescription  = 14,
-    RSScattererAttributeKernelArgumentAngularWeight                 = 15,
-    RSScattererAttributeKernelArgumentAngularWeightDescription      = 16,
-    RSScattererAttributeKernelArgumentSimulationDescription         = 17
+//enum RSScattererAttributeKernelArgument {
+//    RSScattererAttributeKernelArgumentPosition                      = 0,
+//    RSScattererAttributeKernelArgumentOrientation                   = 1,
+//    RSScattererAttributeKernelArgumentVelocity                      = 2,
+//    RSScattererAttributeKernelArgumentTumble                        = 3,
+//    RSScattererAttributeKernelArgumentExtras                        = 4,
+//    RSScattererAttributeKernelArgumentSignal                        = 5,
+//    RSScattererAttributeKernelArgumentRandomSeed                    = 6,
+//    RSScattererAttributeKernelArgumentBackgroundVelocity            = 7,
+//    RSScattererAttributeKernelArgumentBackgroundVelocityDescription = 8,
+//    RSScattererAttributeKernelArgumentAirDragModelDrag              = 9,
+//    RSScattererAttributeKernelArgumentAirDragModelMomentum          = 10,
+//    RSScattererAttributeKernelArgumentAirDragModelDescription       = 11,
+//    RSScattererAttributeKernelArgumentRadarCrossSectionReal         = 12,
+//    RSScattererAttributeKernelArgumentRadarCrossSectionImag         = 13,
+//    RSScattererAttributeKernelArgumentRadarCrossSectionDescription  = 14,
+//    RSScattererAttributeKernelArgumentAngularWeight                 = 15,
+//    RSScattererAttributeKernelArgumentAngularWeightDescription      = 16,
+//    RSScattererAttributeKernelArgumentSimulationDescription         = 17
+//};
+enum RSDebrisAttributeKernelArgument {
+    RSDebrisAttributeKernelArgumentPosition                      = 0,
+    RSDebrisAttributeKernelArgumentOrientation                   = 1,
+    RSDebrisAttributeKernelArgumentVelocity                      = 2,
+    RSDebrisAttributeKernelArgumentTumble                        = 3,
+    RSDebrisAttributeKernelArgumentExtras                        = 4,
+    RSDebrisAttributeKernelArgumentSignal                        = 5,
+    RSDebrisAttributeKernelArgumentRandomSeed                    = 6,
+    RSDebrisAttributeKernelArgumentBackgroundVelocity            = 7,
+    RSDebrisAttributeKernelArgumentBackgroundVelocityDescription = 8,
+    RSDebrisAttributeKernelArgumentAirDragModelDrag              = 9,
+    RSDebrisAttributeKernelArgumentAirDragModelMomentum          = 10,
+    RSDebrisAttributeKernelArgumentAirDragModelDescription       = 11,
+    RSDebrisAttributeKernelArgumentRadarCrossSectionReal         = 12,
+    RSDebrisAttributeKernelArgumentRadarCrossSectionImag         = 13,
+    RSDebrisAttributeKernelArgumentRadarCrossSectionDescription  = 14,
+    RSDebrisAttributeKernelArgumentAngularWeight                 = 15,
+    RSDebrisAttributeKernelArgumentAngularWeightDescription      = 16,
+    RSDebrisAttributeKernelArgumentSimulationDescription         = 17
 };
 
 enum RSBackgroundAttributeKernelArgument {
@@ -41,19 +61,32 @@ enum RSBackgroundAttributeKernelArgument {
     RSBackgroundAttributeKernelArgumentSimulationDescription         = 8
 };
 
-enum RSDraggedSpheroidAttributeKernelArgument {
-    RSDraggedSpheroidAttributeKernelArgumentPosition                      = 0,
-    RSDraggedSpheroidAttributeKernelArgumentOrientation                   = 1,
-    RSDraggedSpheroidAttributeKernelArgumentVelocity                      = 2,
-    RSDraggedSpheroidAttributeKernelArgumentTumble                        = 3,
-    RSDraggedSpheroidAttributeKernelArgumentExtras                        = 4,
-    RSDraggedSpheroidAttributeKernelArgumentSignal                        = 5,
-    RSDraggedSpheroidAttributeKernelArgumentRandomSeed                    = 6,
-    RSDraggedSpheroidAttributeKernelArgumentBackgroundVelocity            = 7,
-    RSDraggedSpheroidAttributeKernelArgumentBackgroundVelocityDescription = 8,
-    RSDraggedSpheroidAttributeKernelArgumentAngularWeight                 = 9,
-    RSDraggedSpheroidAttributeKernelArgumentAngularWeightDescription      = 10,
-    RSDraggedSpheroidAttributeKernelArgumentSimulationDescription         = 11
+//enum RSDraggedSpheroidAttributeKernelArgument {
+//    RSDraggedSpheroidAttributeKernelArgumentPosition                      = 0,
+//    RSDraggedSpheroidAttributeKernelArgumentOrientation                   = 1,
+//    RSDraggedSpheroidAttributeKernelArgumentVelocity                      = 2,
+//    RSDraggedSpheroidAttributeKernelArgumentTumble                        = 3,
+//    RSDraggedSpheroidAttributeKernelArgumentExtras                        = 4,
+//    RSDraggedSpheroidAttributeKernelArgumentSignal                        = 5,
+//    RSDraggedSpheroidAttributeKernelArgumentRandomSeed                    = 6,
+//    RSDraggedSpheroidAttributeKernelArgumentBackgroundVelocity            = 7,
+//    RSDraggedSpheroidAttributeKernelArgumentBackgroundVelocityDescription = 8,
+//    RSDraggedSpheroidAttributeKernelArgumentAngularWeight                 = 9,
+//    RSDraggedSpheroidAttributeKernelArgumentAngularWeightDescription      = 10,
+//    RSDraggedSpheroidAttributeKernelArgumentSimulationDescription         = 11
+//};
+
+enum RSEllipsoidAttributeKernelArgument {
+    RSEllipsoidAttributeKernelArgumentPosition                      = 0,
+    RSEllipsoidAttributeKernelArgumentVelocity                      = 1,
+    RSEllipsoidAttributeKernelArgumentExtras                        = 2,
+    RSEllipsoidAttributeKernelArgumentSignal                        = 3,
+    RSEllipsoidAttributeKernelArgumentRandomSeed                    = 4,
+    RSEllipsoidAttributeKernelArgumentBackgroundVelocity            = 5,
+    RSEllipsoidAttributeKernelArgumentBackgroundVelocityDescription = 6,
+    RSEllipsoidAttributeKernelArgumentAngularWeight                 = 7,
+    RSEllipsoidAttributeKernelArgumentAngularWeightDescription      = 8,
+    RSEllipsoidAttributeKernelArgumentSimulationDescription         = 9
 };
 
 enum RSScattererSignalDropSizeDistributionKernalArgument {

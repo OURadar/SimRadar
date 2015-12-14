@@ -41,10 +41,11 @@ int main(int argc, char **argv)
 	cl_float4 *host_att;
 	cl_float4 *cpu_pulse;
 	
-	cl_uint num_devices;
-	cl_device_id device[4];
-	cl_uint num_cus[4];
-	
+    cl_uint num_devices;
+    cl_device_id devices[4];
+    cl_uint vendors[4];
+    cl_uint num_cus[4];
+    
 	int err;
 	cl_int ret;
 	cl_context context;
@@ -115,17 +116,17 @@ int main(int argc, char **argv)
 	}
 	
 	// Check for some info
-	get_device_info(CL_DEVICE_TYPE_GPU, &num_devices, device, num_cus, verb);
-		
+    get_device_info(CL_DEVICE_TYPE_GPU, &num_devices, devices, num_cus, vendors, verb);
+    
 	// Get the OpenCL devices
-	ret = clGetDeviceInfo(device[0], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &max_workgroup_size, &size);
+	ret = clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &max_workgroup_size, &size);
 	if (ret != CL_SUCCESS) {
 		fprintf(stderr, "%s : Unable to obtain CL_DEVICE_MAX_WORK_GROUP_SIZE.\n", now());
 		exit(EXIT_FAILURE);
 	}
 	
 	// OpenCL context. Use the 1st device
-	context = clCreateContext(NULL, 1, device, &pfn_notify, NULL, &ret);
+	context = clCreateContext(NULL, 1, devices, &pfn_notify, NULL, &ret);
 	if (ret != CL_SUCCESS) {
 		fprintf(stderr, "%s : Error creating OpenCL context.  ret = %d\n", now(), ret);
 		exit(EXIT_FAILURE);
@@ -136,15 +137,15 @@ int main(int argc, char **argv)
 	
 	// Program
 	program = clCreateProgramWithSource(context, len, (const char **)src_ptr, NULL, &ret);
-	if (clBuildProgram(program, 1, device, "", NULL, NULL) != CL_SUCCESS) {
+	if (clBuildProgram(program, 1, devices, "", NULL, NULL) != CL_SUCCESS) {
 		char char_buf[RS_MAX_STR];
-		clGetProgramBuildInfo(program, device[0], CL_PROGRAM_BUILD_LOG, RS_MAX_STR, char_buf, NULL);
+		clGetProgramBuildInfo(program, devices[0], CL_PROGRAM_BUILD_LOG, RS_MAX_STR, char_buf, NULL);
 		fprintf(stderr, "CL Compilation failed:\n%s", char_buf);
 		exit(EXIT_FAILURE);
 	}
 	
 	cl_ulong buf_ulong;
-	clGetDeviceInfo(device[0], CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE, sizeof(cl_ulong), &buf_ulong, NULL);
+	clGetDeviceInfo(devices[0], CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE, sizeof(cl_ulong), &buf_ulong, NULL);
 	if (RANGE_GATES * GROUP_ITEMS * sizeof(cl_float4) > buf_ulong) {
 		fprintf(stderr, "Local memory size exceeded.  %d > %d\n",
 				(int)(RANGE_GATES * GROUP_ITEMS * sizeof(cl_float4)),
@@ -153,7 +154,7 @@ int main(int argc, char **argv)
 	}
 
 	// Command queue
-    queue = clCreateCommandQueue(context, device[0], 0, &ret);
+    queue = clCreateCommandQueue(context, devices[0], 0, &ret);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "Error creating queue.\n");
         exit(EXIT_FAILURE);

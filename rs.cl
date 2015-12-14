@@ -390,11 +390,9 @@ __kernel void bg_atts(__global float4 *p,
 }
 
 
-// Dragged-spheroid
-__kernel void ds_atts(__global float4 *p,                  // position (x, y, z) and size (radius)
-                      __global float4 *o,                  // orientation (quaternion)
+// ellipsoid
+__kernel void el_atts(__global float4 *p,                  // position (x, y, z) and size (radius)
                       __global float4 *v,                  // velocity (u, v, w) and a vacant float
-                      __global float4 *t,                  // tumbling (orientation change, quaternion)
                       __global float4 *a,                  // auxiliary info: range, ange, ____, angular weight
                       __global float4 *x,                  // signal (hh, hv, vh, vv)
                       __global uint4 *y,                   // 128-bit random seed (4 x 32-bit)
@@ -408,9 +406,9 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
     const unsigned int i = get_global_id(0);
     
     float4 pos = p[i];  // position
-    float4 ori = o[i];  // orientation
+//    float4 ori = o[i];  // orientation
     float4 vel = v[i];  // velocity
-    float4 tum = t[i];  // tumbling (orientation change)
+//    float4 tum = t[i];  // tumbling (orientation change)
     float4 aux = a[i];  // auxiliary
     float4 sig = x[i];  // signal
 
@@ -439,10 +437,10 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
     //
     // Update orientation & position ---------------------------------
     //
-    float4 ori_next = quat_mult(ori, tum);
-    if (all(isfinite(ori_next))) {
-        ori = normalize(ori_next);
-    }
+//    float4 ori_next = quat_mult(ori, tum);
+//    if (all(isfinite(ori_next))) {
+//        ori = normalize(ori_next);
+//    }
 
     pos += vel * dt;
     
@@ -455,7 +453,7 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
     //    RSSimulationParameterBoundSizeY    =  13, // hi.s5
     //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
     //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
-    int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456) | !all(isfinite(pos.xyz)) | !all(isfinite(ori)));
+    int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456) | !all(isfinite(pos.xyz)));
     
     if (is_outside) {
 
@@ -464,8 +462,8 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
         y[i] = seed;
         pos.xyz = (fma(r, sim_desc.hi.s4567, sim_desc.hi.s0123)).xyz;
         vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
-        ori = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
-        tum = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
+        //ori = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
+        //tum = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
 
     } else {
     
@@ -545,25 +543,25 @@ __kernel void ds_atts(__global float4 *p,                  // position (x, y, z)
 }
 
 
-// generic scatterer
-__kernel void scat_atts(__global float4 *p,
-                        __global float4 *o,
-                        __global float4 *v,
-                        __global float4 *t,
-                        __global float4 *a,
-                        __global float4 *x,
-                        __global uint4 *y,
-                        __read_only image3d_t wind_uvw,
-                        const float16 wind_desc,
-                        __read_only image2d_t adm_cd,
-                        __read_only image2d_t adm_cm,
-                        const float16 adm_desc,
-                        __read_only image2d_t rcs_real,
-                        __read_only image2d_t rcs_imag,
-                        const float16 rcs_desc,
-                        __constant float *angular_weight,
-                        const float4 angular_weight_desc,
-                        const float16 sim_desc)
+// debris
+__kernel void db_atts(__global float4 *p,
+                      __global float4 *o,
+                      __global float4 *v,
+                      __global float4 *t,
+                      __global float4 *a,
+                      __global float4 *x,
+                      __global uint4 *y,
+                      __read_only image3d_t wind_uvw,
+                      const float16 wind_desc,
+                      __read_only image2d_t adm_cd,
+                      __read_only image2d_t adm_cm,
+                      const float16 adm_desc,
+                      __read_only image2d_t rcs_real,
+                      __read_only image2d_t rcs_imag,
+                      const float16 rcs_desc,
+                      __constant float *angular_weight,
+                      const float4 angular_weight_desc,
+                      const float16 sim_desc)
 {
     const unsigned int i = get_global_id(0);
     
@@ -849,7 +847,7 @@ __kernel void scat_atts(__global float4 *p,
     x[i] = sig;
 }
 
-
+// generic scatter
 __kernel void scat_clr(__global float4 *c,
                        __global float4 *a,
                        const unsigned int n)
