@@ -119,16 +119,16 @@
         el_deg = 4.9f;
         
         
-        char ori_file[4096];
-        memset(ori_file, 0, 4096);
-        snprintf(ori_file, 256, "%s/Downloads/sim-%s-orientation.dat", getenv("HOME"), nowlong());
-        printf("%s : Orientation output file : %s\n", now(), ori_file);
-        
-        ori_fid = fopen(ori_file, "wb");
-        
-        if (ori_fid == NULL) {
-            fprintf(stderr, "%s : Error creating file for writing data.\n", now());
-        }
+//        char ori_file[4096];
+//        memset(ori_file, 0, 4096);
+//        snprintf(ori_file, 256, "%s/Downloads/sim-%s-orientation.dat", getenv("HOME"), nowlong());
+//        printf("%s : Orientation output file : %s\n", now(), ori_file);
+//        
+//        ori_fid = fopen(ori_file, "wb");
+//        
+//        if (ori_fid == NULL) {
+//            fprintf(stderr, "%s : Error creating file for writing data.\n", now());
+//        }
         
 	}
 	return self;
@@ -139,7 +139,7 @@
 	RS_free(S);
 	LES_free(L);
     
-    fclose(ori_fid);
+//    fclose(ori_fid);
     
 	[super dealloc];
 }
