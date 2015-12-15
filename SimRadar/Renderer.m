@@ -242,7 +242,7 @@
     pos[20] =  0.0f;   pos[21] =  0.0f;   pos[22] =  0.0f;   pos[23] = 0.0f;
     prim->vertexSize = 24 * sizeof(GLfloat);
     for (int i=0; i<24; i++) {
-        pos[i] *= 2.0f;
+        pos[i] *= 2.0f * devicePixelRatio;
     }
     prim->instanceSize = 7;
     GLuint ind0[] = {5, 1, 2, 0, 5, 3, 4};
@@ -713,7 +713,7 @@
         debrisRenderer[k].colors[3] = 1.0f;
     }
 	
-	textRenderer = [[GLText alloc] initWithDevicePixelRatio:devicePixelRatio];
+    textRenderer = [GLText new];
     
 	NSLog(@"VAOs = bodyRenderer:%d  leafRendrer = %d  gridRenderer %d  anchorRenderer %d  anchorLineRendrer %d",
 		  bodyRenderer[0].vao, instancedGeometryRenderer.vao, gridRenderer.vao, anchorRenderer.vao, anchorLineRenderer.vao);
@@ -979,11 +979,15 @@
 #else
     phase = 0.425459064119661f * (exp(-cos([NSDate timeIntervalSinceReferenceDate])) - 0.36787944117144f);
 #endif
+    
     phase = 0.7f * phase + 0.3f;
     
+#ifdef DEBUG_GL
     if (iframe == 0) {
         NSLog(@"First frame <==============================");
     }
+#endif
+    
     iframe++;
     [self measureFPS];
     
@@ -994,8 +998,6 @@
     
     glViewport(0, 0, width * devicePixelRatio, height * devicePixelRatio);
 	
-//	NSLog(@"%d %d", anchorRenderer.colorUI, gridRenderer.colorUI);
-    
     // Grid
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBindVertexArray(gridRenderer.vao);
@@ -1049,7 +1051,7 @@
     glUniformMatrix4fv(instancedGeometryRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
 
     for (i = 0; i < clDeviceCount; i++) {
-        for (int k = 1; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
+        for (int k = 1; k < RENDERER_MAX_DEBRIS_TYPES > 0; k++) {
             if (debrisRenderer[k].count == 0) {
                 continue;
             }
@@ -1057,7 +1059,7 @@
             glBindVertexArray(debrisRenderer[k].vao);
             
             glUniform4f(instancedGeometryRenderer.colorUI, debrisRenderer[k].colors[0], debrisRenderer[k].colors[1], debrisRenderer[k].colors[2], debrisRenderer[k].colors[3]);
-
+            
             glBindBuffer(GL_COPY_READ_BUFFER, bodyRenderer[i].vbo[0]);             // positions of simulation particles
             glBindBuffer(GL_COPY_WRITE_BUFFER, debrisRenderer[k].vbo[2]);          // translations of species[k]
             glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, debrisRenderer[k].sourceOffset * sizeof(cl_float4), 0, debrisRenderer[k].count * sizeof(cl_float4));

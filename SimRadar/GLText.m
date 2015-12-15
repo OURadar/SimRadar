@@ -40,7 +40,7 @@
 
 - (id)init
 {
-    return [self initWithDevicePixelRatio:1.0f];
+    return [self initWithDevicePixelRatio:[[NSScreen mainScreen] backingScaleFactor]];
 }
 
 

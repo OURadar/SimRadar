@@ -310,12 +310,10 @@
         return -1;
     }
     size_t pop = RS_get_debris_count(S, speciesId);
-    if (pop > 2000) {
-        pop -= 1000;
-    } else if (pop >= 100) {
-        pop -= 100;
-    } else if (pop == 0) {
-        return -1;
+    if (pop >= 2304) {
+        pop -= 1152;
+    } else if (pop >= 384) {
+        pop -= 384;
     }
     RS_set_debris_count(S, speciesId, pop);
     
@@ -334,10 +332,10 @@
         return -1;
     }
     size_t pop = RS_get_debris_count(S, speciesId);
-    if (pop >= 1000 && pop < S->num_scats - 1000) {
-        pop += 1000;
-    } else if (pop < S->num_scats - 100) {
-        pop += 100;
+    if (pop >= 1152) {
+        pop += 1152;
+    } else {
+        pop += 384;
     }
     RS_set_debris_count(S, speciesId, pop);
 

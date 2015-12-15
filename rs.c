@@ -1903,6 +1903,7 @@ void RS_update_debris_count(RSHandle *H) {
         k--;
         size_t species_count_left = H->species_population[k];
         if (species_count_left == 0) {
+            H->worker[i].species_population[k] = 0;
             continue;
         }
         // Groups of debris types
@@ -1921,10 +1922,11 @@ void RS_update_debris_count(RSHandle *H) {
         size_t origin = H->worker[i].num_scats;
         while (k > 1) {
             k--;
-            if (H->worker[i].species_population[k] > 0) {
-                origin -= H->worker[i].species_population[k];
-                H->worker[i].species_origin[k] = origin;
+            if (H->worker[i].species_population[k] == 0) {
+                continue;
             }
+            origin -= H->worker[i].species_population[k];
+            H->worker[i].species_origin[k] = origin;
         }
     }
     
@@ -3558,29 +3560,29 @@ void RS_advance_time(RSHandle *H) {
     for (i = 0; i < H->num_workers; i++) {
         for (k = 1; k < RS_MAX_SPECIES_TYPES; k++) {
             if (H->worker[i].species_population[k]) {
-                    dispatch_async(H->worker[i].que, ^{
-                        db_atts_kernel(&H->worker[i].ndrange_scat[k],
-                                       (cl_float4 *)H->worker[i].scat_pos,
-                                       (cl_float4 *)H->worker[i].scat_ori,
-                                       (cl_float4 *)H->worker[i].scat_vel,
-                                       (cl_float4 *)H->worker[i].scat_tum,
-                                       (cl_float4 *)H->worker[i].scat_att,
-                                       (cl_float4 *)H->worker[i].scat_sig,
-                                       (cl_uint4 *)H->worker[i].scat_rnd,
-                                       (cl_image)H->worker[i].vel[v],
-                                       H->worker[i].vel_desc,
-                                       (cl_image)H->worker[i].adm_cd[t],
-                                       (cl_image)H->worker[i].adm_cm[t],
-                                       H->worker[i].adm_desc[t],
-                                       (cl_image)H->worker[i].rcs_real[t],
-                                       (cl_image)H->worker[i].rcs_imag[t],
-                                       H->worker[i].rcs_desc[t],
-                                       (cl_float *)H->worker[i].angular_weight,
-                                       H->worker[i].angular_weight_desc,
-                                       H->sim_desc);
-                        
-                        dispatch_semaphore_signal(H->worker[i].sem);
-                    });
+                dispatch_async(H->worker[i].que, ^{
+                    db_atts_kernel(&H->worker[i].ndrange_scat[k],
+                                   (cl_float4 *)H->worker[i].scat_pos,
+                                   (cl_float4 *)H->worker[i].scat_ori,
+                                   (cl_float4 *)H->worker[i].scat_vel,
+                                   (cl_float4 *)H->worker[i].scat_tum,
+                                   (cl_float4 *)H->worker[i].scat_att,
+                                   (cl_float4 *)H->worker[i].scat_sig,
+                                   (cl_uint4 *)H->worker[i].scat_rnd,
+                                   (cl_image)H->worker[i].vel[v],
+                                   H->worker[i].vel_desc,
+                                   (cl_image)H->worker[i].adm_cd[t],
+                                   (cl_image)H->worker[i].adm_cm[t],
+                                   H->worker[i].adm_desc[t],
+                                   (cl_image)H->worker[i].rcs_real[t],
+                                   (cl_image)H->worker[i].rcs_imag[t],
+                                   H->worker[i].rcs_desc[t],
+                                   (cl_float *)H->worker[i].angular_weight,
+                                   H->worker[i].angular_weight_desc,
+                                   H->sim_desc);
+                    
+                    dispatch_semaphore_signal(H->worker[i].sem);
+                });
             }
         }
     }
