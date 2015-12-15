@@ -766,8 +766,8 @@
         }
         glBindVertexArray(bodyRenderer[i].vao);
         
-        glDeleteBuffers(3, bodyRenderer[i].vbo);
-        glGenBuffers(3, bodyRenderer[i].vbo);
+        glDeleteBuffers(4, bodyRenderer[i].vbo);
+        glGenBuffers(4, bodyRenderer[i].vbo);
         
         glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer[i].vbo[0]);  // position
         glBufferData(GL_ARRAY_BUFFER, bodyRenderer[i].count * sizeof(cl_float4), NULL, GL_DYNAMIC_DRAW);

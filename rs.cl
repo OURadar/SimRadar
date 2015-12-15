@@ -579,7 +579,7 @@ __kernel void db_atts(__global float4 *p,
     //    RSSimulationParameter4             =  4,
     //    RSSimulationParameter5             =  5,
     //    RSSimulationParameter6             =  6,
-    //    RSSimulationParameter7             =  7,
+    //    RSSimulationParameterSimTic        =  7,
     //    RSSimulationParameterBoundOriginX  =  8,  // hi.s0
     //    RSSimulationParameterBoundOriginY  =  9,  // hi.s1
     //    RSSimulationParameterBoundOriginZ  =  10, // hi.s2
@@ -635,13 +635,14 @@ __kernel void db_atts(__global float4 *p,
     
     float4 vel_bg = read_imagef(wind_uvw, sampler, wind_coord);
     
+//    if (sim_desc.s7 < 10 && i == (int)sim_desc.s3) {
+//        printf("i=%.1f  ori = %5.2v4f  tum =  = %5.2v4f\n", sim_desc.s3, ori, tum);
+//    }
     //
     // Update orientation & position ---------------------------------
     //
     float4 ori_next = quat_mult(ori, tum);
-    if (all(isfinite(ori_next))) {
-        ori = normalize(ori_next);
-    }
+    ori = normalize(ori_next);
     
     pos += vel * dt;
     

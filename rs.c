@@ -326,7 +326,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     sim_desc.s[RSSimulationParameterBoundOriginY] = H->domain.origin.y;
     sim_desc.s[RSSimulationParameterBoundOriginZ] = H->domain.origin.z;
     sim_desc.s[RSSimulationParameterPRT]          = H->params.prt;
-    sim_desc.s[RSSimulationParameterDebrisCount]  = 10001.0f;
+    sim_desc.s[RSSimulationParameterDebrisCount]  = 0.0f;
     sim_desc.s[RSSimulationParameterAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTableDescriptionRefreshTime];
 
     ret = CL_SUCCESS;
@@ -1328,7 +1328,7 @@ void RS_init_scat_pos(RSHandle *H) {
     H->sim_desc.s[RSSimulationParameterBoundOriginY] = H->domain.origin.y;
     H->sim_desc.s[RSSimulationParameterBoundOriginZ] = H->domain.origin.z;
     H->sim_desc.s[RSSimulationParameterPRT] = H->params.prt;
-    H->sim_desc.s[RSSimulationParameterDebrisCount] = 0.0f;
+    H->sim_desc.s[RSSimulationParameterDebrisCount] = H->species_population[0];
     H->sim_desc.s[RSSimulationParameterAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTableDescriptionRefreshTime];
 
     // Plate dimension in meters
@@ -3398,6 +3398,7 @@ void RS_upload(RSHandle *H) {
 			gcl_memcpy(H->worker[i].scat_pos, H->scat_pos + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->worker[i].scat_vel, H->scat_vel + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->worker[i].scat_ori, H->scat_ori + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
+            gcl_memcpy(H->worker[i].scat_tum, H->scat_tum + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->worker[i].scat_att, H->scat_att + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->worker[i].scat_sig, H->scat_sig + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->worker[i].scat_rnd, H->scat_rnd + H->offset[i], H->worker[i].num_scats * sizeof(cl_uint4));
@@ -3420,6 +3421,7 @@ void RS_upload(RSHandle *H) {
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, NULL);
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_vel, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, NULL);
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, NULL);
+        clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_tum, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_tum + H->offset[i], 0, NULL, NULL);
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_att, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_att + H->offset[i], 0, NULL, NULL);
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_sig, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, NULL);
         clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_rnd, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_uint4),  H->scat_rnd + H->offset[i], 0, NULL, NULL);
@@ -3492,7 +3494,7 @@ void RS_sig_from_dsd(RSHandle *H) {
 
 void RS_advance_time(RSHandle *H) {
 	
-	int i;
+	int i, k;
 
 	if (!(H->status & RS_STATUS_DOMAIN_POPULATED)) {
 		fprintf(stderr, "%s : RS : Simulation domain not populated.\n", now());
@@ -3554,42 +3556,44 @@ void RS_advance_time(RSHandle *H) {
 	}
 
     for (i = 0; i < H->num_workers; i++) {
-        dispatch_async(H->worker[i].que, ^{
-            for (int k = 1; k < RS_MAX_SPECIES_TYPES; k++) {
-                if (H->worker[i].species_population[k] == 0) {
-                    continue;
-                }
-                db_atts_kernel(&H->worker[i].ndrange_scat[k],
-                               (cl_float4 *)H->worker[i].scat_pos,
-                               (cl_float4 *)H->worker[i].scat_ori,
-                               (cl_float4 *)H->worker[i].scat_vel,
-                               (cl_float4 *)H->worker[i].scat_tum,
-                               (cl_float4 *)H->worker[i].scat_att,
-                               (cl_float4 *)H->worker[i].scat_sig,
-                               (cl_uint4 *)H->worker[i].scat_rnd,
-                               (cl_image)H->worker[i].vel[v],
-                               H->worker[i].vel_desc,
-                               (cl_image)H->worker[i].adm_cd[t],
-                               (cl_image)H->worker[i].adm_cm[t],
-                               H->worker[i].adm_desc[t],
-                               (cl_image)H->worker[i].rcs_real[t],
-                               (cl_image)H->worker[i].rcs_imag[t],
-                               H->worker[i].rcs_desc[t],
-                               (cl_float *)H->worker[i].angular_weight,
-                               H->worker[i].angular_weight_desc,
-                               H->sim_desc);
+        for (k = 1; k < RS_MAX_SPECIES_TYPES; k++) {
+            if (H->worker[i].species_population[k]) {
+                    dispatch_async(H->worker[i].que, ^{
+                        db_atts_kernel(&H->worker[i].ndrange_scat[k],
+                                       (cl_float4 *)H->worker[i].scat_pos,
+                                       (cl_float4 *)H->worker[i].scat_ori,
+                                       (cl_float4 *)H->worker[i].scat_vel,
+                                       (cl_float4 *)H->worker[i].scat_tum,
+                                       (cl_float4 *)H->worker[i].scat_att,
+                                       (cl_float4 *)H->worker[i].scat_sig,
+                                       (cl_uint4 *)H->worker[i].scat_rnd,
+                                       (cl_image)H->worker[i].vel[v],
+                                       H->worker[i].vel_desc,
+                                       (cl_image)H->worker[i].adm_cd[t],
+                                       (cl_image)H->worker[i].adm_cm[t],
+                                       H->worker[i].adm_desc[t],
+                                       (cl_image)H->worker[i].rcs_real[t],
+                                       (cl_image)H->worker[i].rcs_imag[t],
+                                       H->worker[i].rcs_desc[t],
+                                       (cl_float *)H->worker[i].angular_weight,
+                                       H->worker[i].angular_weight_desc,
+                                       H->sim_desc);
+                        
+                        dispatch_semaphore_signal(H->worker[i].sem);
+                    });
             }
-            dispatch_semaphore_signal(H->worker[i].sem);
-        });
+        }
+    }
 
-        for (i = 0; i < H->num_workers; i++) {
-            dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+    for (i = 0; i < H->num_workers; i++) {
+        for (k = 1; k < RS_MAX_SPECIES_TYPES; k++) {
+            if (H->worker[i].species_population[k]) {
+                dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+            }
         }
     }
 
 #else
-    
-    int k;
 
     cl_event events[RS_MAX_GPU_DEVICE][RS_MAX_SPECIES_TYPES];
     memset(events, 0, sizeof(events));
