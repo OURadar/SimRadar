@@ -770,17 +770,17 @@
         glGenBuffers(3, bodyRenderer[i].vbo);
         
         glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer[i].vbo[0]);  // position
-        glBufferData(GL_ARRAY_BUFFER, bodyRenderer[i].count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, bodyRenderer[i].count * sizeof(cl_float4), NULL, GL_DYNAMIC_DRAW);
         glVertexAttribPointer(bodyRenderer[i].positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
         glEnableVertexAttribArray(bodyRenderer[i].positionAI);
         
         glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer[i].vbo[1]);  // color
-        glBufferData(GL_ARRAY_BUFFER, bodyRenderer[i].count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, bodyRenderer[i].count * sizeof(cl_float4), NULL, GL_DYNAMIC_DRAW);
         glVertexAttribPointer(bodyRenderer[i].colorAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
         glEnableVertexAttribArray(bodyRenderer[i].colorAI);
         
         glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer[i].vbo[2]);  // orientation
-        glBufferData(GL_ARRAY_BUFFER, bodyRenderer[i].count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, bodyRenderer[i].count * sizeof(cl_float4), NULL, GL_DYNAMIC_DRAW);
         glVertexAttribPointer(bodyRenderer[i].quaternionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
         glEnableVertexAttribArray(bodyRenderer[i].quaternionAI);
     }
