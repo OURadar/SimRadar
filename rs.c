@@ -3129,8 +3129,6 @@ void RS_populate(RSHandle *H) {
 
 	posix_memalign((void **)&H->pulse, RS_ALIGN_SIZE, H->params.range_count * sizeof(cl_float4));
 	
-    printf("%p <-----------------------\n", H->scat_ori);
-    
 	if (H->scat_pos == NULL ||
 		H->scat_vel == NULL ||
 		H->scat_ori == NULL ||
@@ -3899,7 +3897,7 @@ RSBox RS_suggest_scan_doamin(RSHandle *H, const int nbeams) {
     float na = 0.5f * (float)nbeams + RS_DOMAIN_PAD + 0.5f;
     
     // Maximum number of beams in elevation
-    float ne = 14.0f;
+    float ne = 20.0f;
     
     // Maximum y of the emulation box: The range when the width is fully utilized; This is also rmax
     float rmax = w / sinf(na * H->params.antenna_bw_rad);

@@ -38,10 +38,10 @@
         S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, 2);
         
         if (S->vendors[0] == RS_GPU_VENDOR_INTEL) {
-            if (S->num_cus[0] <= 24) {
-                RS_set_density(S, 6.0f);
-            } else if (S->num_cus[0] <= 16) {
-                RS_set_density(S, 4.0f);
+            if (S->num_cus[0] <= 16) {
+                RS_set_density(S, 2.5f);
+            } else if (S->num_cus[0] <= 24) {
+                RS_set_density(S, 5.0f);
             }
         }
 

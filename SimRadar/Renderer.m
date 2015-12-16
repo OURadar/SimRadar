@@ -242,7 +242,7 @@
     pos[20] =  0.0f;   pos[21] =  0.0f;   pos[22] =  0.0f;   pos[23] = 0.0f;
     prim->vertexSize = 24 * sizeof(GLfloat);
     for (int i=0; i<24; i++) {
-        pos[i] *= 2.0f * devicePixelRatio;
+        pos[i] *= 2.5f;
     }
     prim->instanceSize = 7;
     GLuint ind0[] = {5, 1, 2, 0, 5, 3, 4};
