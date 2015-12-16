@@ -98,7 +98,7 @@
         RS_clear_rcs_data(S);
         RS_set_rcs_data_to_RCS_table(S, rcs);
                 
-        RSBox box = RS_suggest_scan_doamin(S, 15);
+        RSBox box = RS_suggest_scan_doamin(S, 16);
         
 //        RS_set_scan_box(S,
 //                        3.42e3, 4.04e3, 30.0f,                // Range
