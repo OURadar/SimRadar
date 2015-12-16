@@ -241,7 +241,7 @@
     pos[16] = -0.5f;   pos[17] =  1.0f;   pos[18] =  0.0f;   pos[19] = 0.0f;
     pos[20] =  0.0f;   pos[21] =  0.0f;   pos[22] =  0.0f;   pos[23] = 0.0f;
     prim->vertexSize = 24 * sizeof(GLfloat);
-    for (int i=0; i<24; i++) {
+    for (int i = 0; i < 24; i++) {
         pos[i] *= 2.5f;
     }
     prim->instanceSize = 7;
@@ -262,10 +262,10 @@
     pos[20] =  1.0f;   pos[21] = -1.0f;   pos[22] =  1.0f;   pos[23] = 0.0f;
     pos[24] = -1.0f;   pos[25] =  1.0f;   pos[26] =  1.0f;   pos[27] = 0.0f;
     pos[28] =  1.0f;   pos[29] =  1.0f;   pos[30] =  1.0f;   pos[31] = 0.0f;
-    for (int i=0; i<8; i++) {
-        pos[4 * i]     *= 2.0f;
-        pos[4 * i + 1] *= 2.0f;
-        pos[4 * i + 2] *= 2.0f;
+    for (int i = 0; i < 8; i++) {
+        pos[4 * i]     *= 2.5f;
+        pos[4 * i + 1] *= 2.5f;
+        pos[4 * i + 2] *= 2.5f;
     }
     prim->vertexSize = 32 * sizeof(GLfloat);
     GLuint ind1[] = {
@@ -292,7 +292,7 @@
     pos[28] =  1.0f;   pos[29] =  1.0f;   pos[30] =  1.0f;   pos[31] = 0.0f;
     pos[32] =  0.0f;   pos[33] = -1.3f;   pos[34] =  0.0f;   pos[35] = 0.0f;
     pos[36] =  0.0f;   pos[37] =  1.1f;   pos[38] =  0.0f;   pos[39] = 0.0f;
-    for (int i=0; i<10; i++) {
+    for (int i = 0; i < 10; i++) {
         pos[4 * i]     *= 0.4f;
         pos[4 * i + 1] *= 8.0f;
         pos[4 * i + 2] *= 1.0f;
@@ -698,10 +698,10 @@
     //NSLog(@"meshRenderer's drawColor @ %d / %d / %d", meshRenderer.colorUI, meshRenderer.positionAI, meshRenderer.textureCoordAI);
 
     const GLfloat colors[] = {
-        0.00f, 0.00f, 0.00f,
+        1.00f, 1.00f, 1.00f,
         0.00f, 1.00f, 0.00f,
-        0.30f, 1.00f, 1.00f,
-        1.00f, 0.65f, 0.25f
+        1.00f, 0.40f, 1.00f,
+        1.00f, 0.65f, 0.00f
     };
     
     for (int k = 0; k < RENDERER_MAX_DEBRIS_TYPES; k++) {

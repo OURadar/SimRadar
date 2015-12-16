@@ -35,7 +35,7 @@
 	if (self) {
         NSString *resourcePath = [[NSBundle mainBundle] resourcePath];
 
-        S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, 2);
+        S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, 3);
         
         if (S->vendors[0] == RS_GPU_VENDOR_INTEL) {
             if (S->num_cus[0] <= 16) {
@@ -73,7 +73,7 @@
 //        RS_set_debris_count(S, 2, 2000);
 //        RS_set_debris_count(S, 3, 500);
 
-        RS_set_debris_count(S, 1, (size_t)roundf(30000 / 384) * 384);
+        RS_set_debris_count(S, 1, (size_t)roundf(30000 / 6144) * 6144);
 //        RS_set_debris_count(S, 3, (size_t)roundf(500 / 384) * 384);
         
 //        RS_set_debris_count(S, 1, 20);
@@ -309,11 +309,13 @@
     if (speciesId == 0) {
         return -1;
     }
+    size_t nearest_thousand = (size_t)ceilf(1000.0f / S->preferred_multiple) * S->preferred_multiple;
+    size_t nearest_hundred = (size_t)ceilf(100.0f / S->preferred_multiple) * S->preferred_multiple;
     size_t pop = RS_get_debris_count(S, speciesId);
-    if (pop >= 2304) {
-        pop -= 1152;
-    } else if (pop >= 384) {
-        pop -= 384;
+    if (pop > nearest_thousand) {
+        pop -= nearest_thousand;
+    } else if (pop >= nearest_hundred) {
+        pop -= nearest_hundred;
     }
     RS_set_debris_count(S, speciesId, pop);
     
@@ -332,10 +334,12 @@
         return -1;
     }
     size_t pop = RS_get_debris_count(S, speciesId);
-    if (pop >= 1152) {
-        pop += 1152;
+    size_t nearest_thousand = (size_t)ceilf(1000.0f / S->preferred_multiple) * S->preferred_multiple;
+    size_t nearest_hundred = (size_t)ceilf(100.0f / S->preferred_multiple) * S->preferred_multiple;
+    if (pop >= nearest_thousand && pop <= S->num_scats - nearest_thousand) {
+        pop += nearest_thousand;
     } else {
-        pop += 384;
+        pop += nearest_hundred;
     }
     RS_set_debris_count(S, speciesId, pop);
 

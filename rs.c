@@ -16,7 +16,7 @@
 #pragma mark -
 #pragma mark Private Functions
 
-void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char **src_ptr, char verb) {
+void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char **src_ptr, const char verb) {
 	
     C->dev = dev;
     C->verb = verb;
@@ -129,10 +129,13 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     
     if (verb) {
         printf("%s : RS : Kernels for program[%d] created.\n", now(), (int)C->name);
-        if (C->verb > 3) {
+        if (verb > 2) {
             size_t pref_size;
             CL_CHECK(clGetKernelWorkGroupInfo(C->kern_db_atts, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
             printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   db_atts()\n", now(), pref_size);
+            
+            CL_CHECK(clGetKernelWorkGroupInfo(C->kern_el_atts, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
+            printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   el_atts()\n", now(), pref_size);
             
             CL_CHECK(clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_1, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
             printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_1()\n", now(), pref_size);
@@ -906,6 +909,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
     }
 
     H->num_workers = H->num_devs;
+    H->preferred_multiple = H->num_cus[0] * 16;
 
 #if defined (GUI) || defined (_SHARE_OBJ_)
     

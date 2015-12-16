@@ -411,6 +411,7 @@ typedef struct _rs_handle {
 	// OpenCL device
 	cl_uint                num_devs;
 	cl_uint                num_workers;
+    cl_uint                preferred_multiple;
 	cl_uint                num_cus[RS_MAX_GPU_DEVICE];
     cl_uint                vendors[RS_MAX_GPU_DEVICE];
 	cl_device_id           devs[RS_MAX_GPU_DEVICE];
