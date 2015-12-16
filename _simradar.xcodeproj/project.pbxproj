@@ -16,6 +16,7 @@
 		B52B2BDA1BE8F75C00F1F91D /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B52B2BD91BE8F75C00F1F91D /* AVFoundation.framework */; };
 		B52B2BDC1BE8F76E00F1F91D /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B52B2BDB1BE8F76E00F1F91D /* CoreVideo.framework */; };
 		B52B2BDE1BE8F77C00F1F91D /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B52B2BDD1BE8F77C00F1F91D /* CoreMedia.framework */; };
+		B5342BD41C21401A004592BF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B57241A61C0CA06000B76BCB /* Assets.xcassets */; };
 		B535159D1AD32077004C0F50 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = B535159C1AD32077004C0F50 /* MainMenu.xib */; };
 		B53A764A1C16816100405F2A /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5EF317418204B5C002DDEFC /* AppKit.framework */; };
 		B54DEB3718A5453800EBEC07 /* Minion-Icons in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB3618A5453800EBEC07 /* Minion-Icons */; };
@@ -252,7 +253,7 @@
 		B56C7FA41ADC22E300552B1E /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Sparkle.framework; path = SimRadar/Sparkle.framework; sourceTree = "<group>"; };
 		B570B0AF18BC5B5500391717 /* rs.cl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.opencl; path = rs.cl; sourceTree = "<group>"; };
 		B572419E1C0CA05F00B76BCB /* SimRadarEx.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimRadarEx.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		B57241A61C0CA06000B76BCB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B57241A61C0CA06000B76BCB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = SimRadarEx/Assets.xcassets; sourceTree = "<group>"; };
 		B57241AB1C0CA06000B76BCB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B5760E9E18A938D3008DAF83 /* test_clreduce */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_clreduce; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5760EA718A938F2008DAF83 /* test_clreduce.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = test_clreduce.c; sourceTree = "<group>"; };
@@ -412,6 +413,7 @@
 				B57ADA6117E225EE00B03074 /* Makefile */,
 				B5916CC51ABC7069007EA0B9 /* README.md */,
 				B535159B1AD31E12004C0F50 /* versions.html */,
+				B57241A61C0CA06000B76BCB /* Assets.xcassets */,
 				B5D22A171C10D62C00CE15EB /* Images */,
 				B56A7CE71C0F5AF700133ACF /* Shaders */,
 				B57ADA5F17E2068F00B03074 /* Kernels */,
@@ -498,7 +500,6 @@
 		B572419F1C0CA05F00B76BCB /* SimRadarEx */ = {
 			isa = PBXGroup;
 			children = (
-				B57241A61C0CA06000B76BCB /* Assets.xcassets */,
 				B57241AB1C0CA06000B76BCB /* Info.plist */,
 			);
 			path = SimRadarEx;
@@ -810,15 +811,16 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B5342BD41C21401A004592BF /* Assets.xcassets in Resources */,
 				B54DEB3718A5453800EBEC07 /* Minion-Icons in Resources */,
 				B5D22A181C10D62C00CE15EB /* Images in Resources */,
 				B56A7CE81C0F5AF700133ACF /* Shaders in Resources */,
 				B5916CC61ABC7069007EA0B9 /* README.md in Resources */,
 				B535159D1AD32077004C0F50 /* MainMenu.xib in Resources */,
 				B5EF31C2182060E1002DDEFC /* LiveDisplay.xib in Resources */,
-				B58F632B1C177EE40010AEE6 /* dsa_pub.pem in Resources */,
 				B5EF317C18204B5C002DDEFC /* InfoPlist.strings in Resources */,
 				B5EF318218204B5C002DDEFC /* Credits.rtf in Resources */,
+				B58F632B1C177EE40010AEE6 /* dsa_pub.pem in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
