@@ -39,7 +39,10 @@
 		dc = [[DisplayController alloc] initWithWindowNibName:@"LiveDisplay" viewDelegate:self];
 	}
 
+//    [dc.window setLevel:kCGDesktopWindowLevel];
+//    [dc.window setIsVisible:FALSE];
 	[dc showWindow:self];
+    [dc.window orderOut:nil];
 }
 
 - (IBAction)playPause:(id)sender
@@ -92,7 +95,7 @@
 {
     sc = [[SplashController alloc] initWithWindowNibName:@"Splash"];
     [sc setDelegate:self];
-    [sc showWindow:self];
+    [sc.window makeKeyAndOrderFront:self];
     
 	iconFolder = [[[NSBundle mainBundle] pathForResource:@"Minion-Icons" ofType:nil] retain];
 	icons = [[[NSFileManager defaultManager] contentsOfDirectoryAtPath:iconFolder error:nil] retain];
@@ -168,22 +171,22 @@
 	if (sim) {
 		NSLog(@"There is simulation session running.");
 	} else {
-//        [self performSelectorInBackground:@selector(createSimulation) withObject:nil];
-		sim = [[SimPoint alloc] initWithDelegate:self];
-        if (sim) {
-            NSLog(@"New simulation domain initiated.");
-            // Wire the simulator to the controller.
-            // The displayController will tell the renderer how many scatter body
-            // the simulator is using and pass the anchor points from RS API to
-            // the renderer
-            
-            [dc setSim:sim];
-        } else {
-            NSLog(@"Error initializing simulation domain.");
-            //[self performSelectorOnMainThread:@selector(alertMissingResources) withObject:nil waitUntilDone:TRUE];
-            //[[NSApplication sharedApplication] terminate:self];
-            [dc emptyDomain];
-        }
+        [self performSelectorInBackground:@selector(createSimulation) withObject:nil];
+//		sim = [[SimPoint alloc] initWithDelegate:self];
+//        if (sim) {
+//            NSLog(@"New simulation domain initiated.");
+//            // Wire the simulator to the controller.
+//            // The displayController will tell the renderer how many scatter body
+//            // the simulator is using and pass the anchor points from RS API to
+//            // the renderer
+//            
+//            [dc setSim:sim];
+//        } else {
+//            NSLog(@"Error initializing simulation domain.");
+//            //[self performSelectorOnMainThread:@selector(alertMissingResources) withObject:nil waitUntilDone:TRUE];
+//            //[[NSApplication sharedApplication] terminate:self];
+//            [dc emptyDomain];
+//        }
 	}
 }
 
@@ -204,6 +207,7 @@
     } else {
         NSLog(@"No simulation");
     }
+    [dc.window setLevel:NSNormalWindowLevel];
     [dc.glView.renderer setDebrisCountsHaveChanged:TRUE];
 }
 
@@ -239,8 +243,6 @@
 
 - (void)splashWindowDidLoad:(id)sender
 {
-    [sc.label setStringValue:@"Preparing simulator ..."];
-
     [self newLiveDisplay:self];
 }
 
@@ -256,9 +258,11 @@
 {
     if (completionPercentage >= 99.99) {
         [sc release];
+        [dc.window orderFront:nil];
     } else {
         [sc.progress setDoubleValue:completionPercentage];
         [sc.label setStringValue:message];
+        [sc.progress setNeedsDisplay:YES];
     }
 }
 

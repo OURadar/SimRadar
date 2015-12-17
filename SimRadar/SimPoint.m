@@ -39,9 +39,15 @@
 	self = [super init];
 	if (self) {
         delegate = newDelegate;
-        
+
+        BOOL reportProgress = [delegate respondsToSelector:@selector(progressUpdated:message:)];
+
         NSString *resourcePath = [[NSBundle mainBundle] resourcePath];
 
+        if (reportProgress) {
+            [delegate progressUpdated:2.0 message:@"Initializing ..."];
+        }
+        
         S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, 2);
         if (S == NULL) {
             return nil;
@@ -55,20 +61,32 @@
             }
         }
 
+        if (reportProgress) {
+            [delegate progressUpdated:2.5 message:@"GPU"];
+        }
+
 		L = LES_init_with_config_path(LESConfigSuctionVortices, [resourcePath UTF8String]);
 //        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, [resourcePath UTF8String]);
         
+        if (reportProgress) {
+            [delegate progressUpdated:3.0 message:[NSString stringWithFormat:@"LES @ %s", LES_data_path(L)]];
+        }
+
         A = ADM_init_with_config_path(ADMConfigSquarePlate, [resourcePath UTF8String]);
+
+        if (reportProgress) {
+            [delegate progressUpdated:3.5 message:[NSString stringWithFormat:@"ADM @ %s", ADM_data_path(A)]];
+        }
 
         R = RCS_init_with_config_path(RCSConfigLeaf, [resourcePath UTF8String]);
         
+        if (reportProgress) {
+            [delegate progressUpdated:4.0 message:[NSString stringWithFormat:@"RCS @ %s", RCS_data_path(L)]];
+        }
+
         NSLog(@"LES @ %s", LES_data_path(L));
         NSLog(@"ADM @ %s", ADM_data_path(A));
         NSLog(@"RCS @ %s", RCS_data_path(R));
-        
-        if ([delegate respondsToSelector:@selector(progressUpdated:message:)]) {
-            [delegate progressUpdated:20.0 message:@"Table insitialized"];
-        }
         
         if (A == NULL || L == NULL || S == NULL || S == NULL) {
             NSLog(@"Some error(s) in RS_init(), LES_init(), ADM_init() or RCS_init() occurred.");
@@ -93,13 +111,7 @@
 //        RS_set_debris_count(S, 1, 20);
 //        RS_set_debris_count(S, 3, 10);
         
-		//RS_set_physics_data_to_cube125(S);
-		//RS_set_physics_data_to_cube27(S);
-		
-		//RS_set_prt(S, 1.0f);
-        //RS_set_prt(S, 0.5f);
         RS_set_prt(S, 0.03f);
-		//RS_set_prt(S, 0.01f);
 
 //        char ori_file[4096];
 //        memset(ori_file, 0, 4096);
@@ -117,8 +129,8 @@
             LESTable *les = LES_get_frame(L, table_id);
             //LES_show_table_summary(les);
             RS_set_wind_data_to_LES_table(S, les);
-            if ([delegate respondsToSelector:@selector(progressUpdated:message:)]) {
-                [delegate progressUpdated:20.0 + table_id * 8.0 message:[NSString stringWithFormat:@"LES table %d", table_id]];
+            if (reportProgress) {
+                [delegate progressUpdated:5.0 + table_id * 8.0 message:[NSString stringWithFormat:@"LES table %d", table_id]];
             }
         }
         
@@ -126,17 +138,18 @@
         //ADM_show_table_summary(adm);
         RS_clear_adm_data(S);
         RS_set_adm_data_to_ADM_table(S, adm);
+        if (reportProgress) {
+            [delegate progressUpdated:90.0 message:@"ADM table"];
+        }
         
         RCSTable *rcs = RCS_get_frame(R);
         RS_clear_rcs_data(S);
         RS_set_rcs_data_to_RCS_table(S, rcs);
+        if (reportProgress) {
+            [delegate progressUpdated:95.0 message:@"RCS table"];
+        }
         
         RSBox box = RS_suggest_scan_doamin(S, 16);
-        
-        //        RS_set_scan_box(S,
-        //                        3.42e3, 4.04e3, 30.0f,                // Range
-        //                        -7.0f, 7.0f, 1.0f,                    // Azimuth
-        //                        0.0f, 12.0f, 1.0f);                   // Elevation
         
         RS_set_scan_box(S,
                         box.origin.r, box.origin.r + box.size.r, 30.0f,   // Range

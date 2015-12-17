@@ -923,18 +923,6 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
     // Force to one GPU at the moment. Seems like OpenGL context can be shared with only one OpenCL context
     H->num_workers = 1;
     
-    CGLContextObj cobj = CGLGetCurrentContext();
-    if (cobj == NULL) {
-        fprintf(stderr, "No GL context yet.\n");
-        return NULL;
-    }
-    
-#endif
-
-#if defined (__APPLE__) && defined (_SHARE_OBJ_)
-
-    gcl_gl_set_sharegroup(CGLGetShareGroup(cobj));
-    
     for (i = 0; i < H->num_workers; i++) {
         if (H->verb > 2) {
             printf("%s : RS : Initializing worker %d using %p\n", now(), i, H->devs[i]);
@@ -3184,6 +3172,14 @@ void RS_populate(RSHandle *H) {
     RS_update_debris_count(H);
     
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
+    
+    CGLContextObj cobj = CGLGetCurrentContext();
+    if (cobj == NULL) {
+        fprintf(stderr, "No GL context yet.\n");
+        return;
+    }
+    
+    gcl_gl_set_sharegroup(CGLGetShareGroup(cobj));
     
     RS_derive_ndranges(H);
 
