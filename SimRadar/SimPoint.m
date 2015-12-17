@@ -31,11 +31,18 @@
 
 - (id)init
 {
+    return [self initWithDelegate:nil];
+}
+
+- (id)initWithDelegate:(id<SimPointDelegate>)newDelegate
+{
 	self = [super init];
 	if (self) {
+        delegate = newDelegate;
+        
         NSString *resourcePath = [[NSBundle mainBundle] resourcePath];
 
-        S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, 3);
+        S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, 2);
         
         if (S->vendors[0] == RS_GPU_VENDOR_INTEL) {
             if (S->num_cus[0] <= 16) {
@@ -56,13 +63,17 @@
         NSLog(@"ADM @ %s", ADM_data_path(A));
         NSLog(@"RCS @ %s", RCS_data_path(R));
         
+        if ([delegate respondsToSelector:@selector(progressUpdated:message:)]) {
+            [delegate progressUpdated:20.0 message:@"Table insitialized"];
+        }
+        
         if (A == NULL || L == NULL || S == NULL || S == NULL) {
             NSLog(@"Some error(s) in RS_init(), LES_init(), ADM_init() or RCS_init() occurred.");
             return nil;
         }
         
 		#ifdef DEBUG
-		RS_set_verbosity(S, 2);
+		RS_set_verbosity(S, 3);
 		#endif
 
 		RS_set_antenna_params(S, 1.0f, 44.5f);                // 1.0-deg, 44.5 dBi gain
@@ -73,7 +84,7 @@
 //        RS_set_debris_count(S, 2, 2000);
 //        RS_set_debris_count(S, 3, 500);
 
-        RS_set_debris_count(S, 1, (size_t)roundf(30000 / 6144) * 6144);
+        RS_set_debris_count(S, 1, (size_t)roundf(25000 / 384) * 384);
 //        RS_set_debris_count(S, 3, (size_t)roundf(500 / 384) * 384);
         
 //        RS_set_debris_count(S, 1, 20);
@@ -82,34 +93,6 @@
 		//RS_set_physics_data_to_cube125(S);
 		//RS_set_physics_data_to_cube27(S);
 		
-        RS_clear_wind_data(S);
-        for (table_id = 0; table_id < RS_MAX_VEL_TABLES; table_id++) {
-            LESTable *les = LES_get_frame(L, table_id);
-            //LES_show_table_summary(les);
-            RS_set_wind_data_to_LES_table(S, les);
-        }
-		
-        ADMTable *adm = ADM_get_frame(A);
-        //ADM_show_table_summary(adm);
-        RS_clear_adm_data(S);
-        RS_set_adm_data_to_ADM_table(S, adm);
-        
-        RCSTable *rcs = RCS_get_frame(R);
-        RS_clear_rcs_data(S);
-        RS_set_rcs_data_to_RCS_table(S, rcs);
-                
-        RSBox box = RS_suggest_scan_doamin(S, 16);
-        
-//        RS_set_scan_box(S,
-//                        3.42e3, 4.04e3, 30.0f,                // Range
-//                        -7.0f, 7.0f, 1.0f,                    // Azimuth
-//                        0.0f, 12.0f, 1.0f);                   // Elevation
-
-        RS_set_scan_box(S,
-                        box.origin.r, box.origin.r + box.size.r, 30.0f,   // Range
-                        box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
-                        box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
-
 		//RS_set_prt(S, 1.0f);
         //RS_set_prt(S, 0.5f);
         RS_set_prt(S, 0.03f);
@@ -117,7 +100,6 @@
 
 		az_deg = 0.0f;
         el_deg = 4.9f;
-        
         
 //        char ori_file[4096];
 //        memset(ori_file, 0, 4096);
@@ -129,6 +111,37 @@
 //        if (ori_fid == NULL) {
 //            fprintf(stderr, "%s : Error creating file for writing data.\n", now());
 //        }
+        
+        RS_clear_wind_data(S);
+        for (table_id = 0; table_id < RS_MAX_VEL_TABLES; table_id++) {
+            LESTable *les = LES_get_frame(L, table_id);
+            //LES_show_table_summary(les);
+            RS_set_wind_data_to_LES_table(S, les);
+            if ([delegate respondsToSelector:@selector(progressUpdated:message:)]) {
+                [delegate progressUpdated:20.0 + table_id * 8.0 message:[NSString stringWithFormat:@"LES table %d", table_id]];
+            }
+        }
+        
+        ADMTable *adm = ADM_get_frame(A);
+        //ADM_show_table_summary(adm);
+        RS_clear_adm_data(S);
+        RS_set_adm_data_to_ADM_table(S, adm);
+        
+        RCSTable *rcs = RCS_get_frame(R);
+        RS_clear_rcs_data(S);
+        RS_set_rcs_data_to_RCS_table(S, rcs);
+        
+        RSBox box = RS_suggest_scan_doamin(S, 16);
+        
+        //        RS_set_scan_box(S,
+        //                        3.42e3, 4.04e3, 30.0f,                // Range
+        //                        -7.0f, 7.0f, 1.0f,                    // Azimuth
+        //                        0.0f, 12.0f, 1.0f);                   // Elevation
+        
+        RS_set_scan_box(S,
+                        box.origin.r, box.origin.r + box.size.r, 30.0f,   // Range
+                        box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
+                        box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
         
 	}
 	return self;
@@ -149,7 +162,7 @@
 
 - (void)shareVBOsWithGL:(GLuint [][8])vbos
 {
-	RS_share_mem_with_vbo(S, 8, vbos);
+    RS_share_mem_with_vbo(S, 8, vbos);
 }
 
 - (void)upload
@@ -174,14 +187,17 @@
 
     RS_set_beam_pos(S, az_deg, el_deg);
     
+    if ([delegate respondsToSelector:@selector(progressUpdated:message:)]) {
+        [delegate progressUpdated:100.0 message:nil];
+    }
 }
 
 - (void)advanceTime
 {
 	RS_advance_time(S);
-    //RS_download_position_only(S);
+//    RS_download_position_only(S);
 //    RS_download(S);
-	//RS_make_pulse(S);
+//    RS_make_pulse(S);
 //    RS_download_orientation_only(S);
     
 //    unsigned long debris_ind;

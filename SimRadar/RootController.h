@@ -11,7 +11,7 @@
 #import "SplashController.h"
 #import "SimPoint.h"
 
-@interface RootController : NSController {
+@interface RootController : NSController <SplashControllerDelegate, SimPointDelegate> {
 	
 	char state;
 	

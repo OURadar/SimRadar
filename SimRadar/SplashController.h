@@ -7,12 +7,27 @@
 
 #import <Cocoa/Cocoa.h>
 
+@protocol SplashControllerDelegate <NSObject>
+
+- (void)splashWindowDidLoad:(id)sender;
+
+@end
+
 @interface SplashController : NSWindowController {
 
     NSImageCell *imageCell;
+    
+    NSTextField *label;
+    
+    NSProgressIndicator *progress;
+    
+    id<SplashControllerDelegate> delegate;
 
 }
 
 @property (nonatomic, retain) IBOutlet NSImageCell *imageCell;
+@property (nonatomic, retain) IBOutlet NSTextField *label;
+@property (nonatomic, retain) IBOutlet NSProgressIndicator *progress;
+@property (nonatomic, retain) id<SplashControllerDelegate> delegate;
 
 @end

@@ -90,9 +90,9 @@
 
 - (void)awakeFromNib
 {
-//    sc = [[SplashController alloc] initWithWindowNibName:@"Splash"];
-//    [sc.window makeKeyAndOrderFront:self];
-//    [sc showWindow:self];
+    sc = [[SplashController alloc] initWithWindowNibName:@"Splash"];
+    [sc setDelegate:self];
+    [sc showWindow:self];
     
 	iconFolder = [[[NSBundle mainBundle] pathForResource:@"Minion-Icons" ofType:nil] retain];
 	icons = [[[NSFileManager defaultManager] contentsOfDirectoryAtPath:iconFolder error:nil] retain];
@@ -104,7 +104,6 @@
 //    [startRecordMenuItem setEnabled:TRUE];
 //    [stopRecordMenuItem setEnabled:FALSE];
     
-	[self newLiveDisplay:self];
 }
 
 - (void)dealloc
@@ -149,7 +148,7 @@
 	if (sim) {
 		NSLog(@"There is simulation session running.");
 	} else {
-		sim = [SimPoint new];
+		sim = [[SimPoint alloc] initWithDelegate:self];
         if (sim) {
             NSLog(@"New simulation domain initiated.");
             // Wire the simulator to the controller.
@@ -213,4 +212,33 @@
 			break;
 	}
 }
+
+#pragma mark -
+#pragma mark SplashControllerDelegate
+
+- (void)splashWindowDidLoad:(id)sender
+{
+    [sc.label setStringValue:@"Preparing simulator ..."];
+
+    [self newLiveDisplay:self];
+}
+
+#pragma mark -
+#pragma mark SimPointDelegate
+
+- (void)timeAdvanced:(id)sender
+{
+    
+}
+
+- (void)progressUpdated:(float)completionPercentage message:(NSString *)message
+{
+    if (completionPercentage >= 99.99) {
+        [sc release];
+    } else {
+        [sc.progress setDoubleValue:completionPercentage];
+        [sc.label setStringValue:message];
+    }
+}
+
 @end

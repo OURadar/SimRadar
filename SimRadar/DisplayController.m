@@ -56,7 +56,6 @@ NSWindow *standardWindow;
 #pragma mark -
 #pragma mark Properties
 
-// @synthesize sim;
 @synthesize glView;
 
 - (void)setSim:(SimPoint *)newSim

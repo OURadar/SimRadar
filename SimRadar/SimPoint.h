@@ -14,6 +14,10 @@
 
 - (void)timeAdvanced:(id)sender;
 
+@optional
+
+- (void)progressUpdated:(float)completionPercentage message:(NSString *)message;
+
 @end
 
 
@@ -45,6 +49,8 @@
 @property (nonatomic, readonly) NSInteger numberOfPoints;
 @property (nonatomic, readonly, getter=azimuthInDegrees) float az_deg;
 @property (nonatomic, readonly, getter=elevationInDegrees) float el_deg;
+
+- (id)initWithDelegate:(id<SimPointDelegate>)newDelegate;
 
 - (void)shareVBOsWithGL:(GLuint [][8])vbos;
 - (void)upload;
