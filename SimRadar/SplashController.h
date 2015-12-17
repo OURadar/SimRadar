@@ -7,6 +7,12 @@
 
 #import <Cocoa/Cocoa.h>
 
-@interface SplashController : NSWindowController
+@interface SplashController : NSWindowController {
+
+    NSImageCell *imageCell;
+
+}
+
+@property (nonatomic, retain) IBOutlet NSImageCell *imageCell;
 
 @end

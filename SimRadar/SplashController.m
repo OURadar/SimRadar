@@ -9,4 +9,12 @@
 
 @implementation SplashController
 
+@synthesize imageCell;
+
+- (void)awakeFromNib {
+    NSString *file = [[NSBundle mainBundle] pathForResource:@"images/tornado.jpg" ofType:nil];
+    NSImage *image = [[NSImage alloc] initWithContentsOfFile:file];
+    [imageCell setImage:image];
+}
+
 @end

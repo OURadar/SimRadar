@@ -90,20 +90,21 @@
 
 - (void)awakeFromNib
 {
+//    sc = [[SplashController alloc] initWithWindowNibName:@"Splash"];
+//    [sc.window makeKeyAndOrderFront:self];
+//    [sc showWindow:self];
+    
 	iconFolder = [[[NSBundle mainBundle] pathForResource:@"Minion-Icons" ofType:nil] retain];
 	icons = [[[NSFileManager defaultManager] contentsOfDirectoryAtPath:iconFolder error:nil] retain];
 
     state = 2;
-    
+
     NSLog(@"%@ %@", startRecordMenuItem, stopRecordMenuItem);
     
 //    [startRecordMenuItem setEnabled:TRUE];
 //    [stopRecordMenuItem setEnabled:FALSE];
     
-    sc = [[SplashController alloc] initWithWindowNibName:@"Splash"];
-    [sc showWindow:nil];
-    
-//	[self newLiveDisplay:self];
+	[self newLiveDisplay:self];
 }
 
 - (void)dealloc
