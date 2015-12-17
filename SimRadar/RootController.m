@@ -100,17 +100,10 @@
 //    [startRecordMenuItem setEnabled:TRUE];
 //    [stopRecordMenuItem setEnabled:FALSE];
     
-//    NSAlert *alert = [NSAlert new];
-//    [alert addButtonWithTitle:@"OK"];
-//    [alert setMessageText:@"Test"];
-//    [alert setInformativeText:@"Information Text."];
-//    [alert setAlertStyle:NSWarningAlertStyle];
-//    if ([alert runModal] == NSAlertFirstButtonReturn) {
-//        NSLog(@"Returned");
-//    }
-//    [alert release];
-
-	[self newLiveDisplay:self];
+    sc = [[SplashController alloc] initWithWindowNibName:@"Splash"];
+    [sc showWindow:nil];
+    
+//	[self newLiveDisplay:self];
 }
 
 - (void)dealloc

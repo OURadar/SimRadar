@@ -909,7 +909,14 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
     }
 
     H->num_workers = H->num_devs;
-    H->preferred_multiple = H->num_cus[0] * 16;
+    switch (H->vendors[0]) {
+        case RS_GPU_VENDOR_INTEL:
+            H->preferred_multiple = H->num_cus[0] * 16;
+            break;
+        default:
+            H->preferred_multiple = H->num_cus[0] * 16;
+            break;
+    }
 
 #if defined (GUI) || defined (_SHARE_OBJ_)
     
@@ -1568,18 +1575,18 @@ void RS_set_scan_box(RSHandle *H,
 	
 	if (H->verb) {
 		printf("%s : RS : nvol = %.4f\n", now(), nvol);
-		printf("%s : RS : Box @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]   ( %.2f m x %.2f m x %.2f m )\n",
-			   now(),
+		printf("%s : RS : Box @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n", now(),
 			   xmin, xmax,
 			   ymin, ymax,
-			   zmin, zmax,
+               zmin, zmax);
+        printf("%s : RS : Box size: [ %.2f m x %.2f m x %.2f m ]\n", now(),
                xmax - xmin, ymax - ymin, zmax - zmin);
-		printf("%s : RS : User domain @ R:[ %5.2f - %5.2f ]   E:[ %5.2f - %5.2f ]   A:[ %+.2f - %+.2f ]\n", now(),
+		printf("%s : RS : User domain @ R:[ %5.2f - %5.2f ] km    E:[ %5.2f - %5.2f ] deg   A:[ %+.2f - %+.2f ] deg\n", now(),
 			   1e-3*H->params.range_start, 1e-3*H->params.range_end,
 			   H->params.elevation_start_deg, H->params.elevation_end_deg,
 			   H->params.azimuth_start_deg, H->params.azimuth_end_deg);
 		
-		printf("%s : RS : Work domain @ R:[ %5.2f - %5.2f ]   E:[ %5.2f - %5.2f ]   A:[ %+.2f - %+.2f ]\n", now(),
+		printf("%s : RS : Work domain @ R:[ %5.2f - %5.2f ] km   E:[ %5.2f - %5.2f ] deg   A:[ %+.2f - %+.2f ] deg\n", now(),
 			   1e-3*r_lo, 1e-3*r_hi,
 			   el_lo, el_hi,
 			   az_lo, az_hi);
@@ -3923,7 +3930,7 @@ RSBox RS_suggest_scan_doamin(RSHandle *H, const int nbeams) {
 
     if (H->verb) {
         printf("%s : RS : Suggest scan box based on [ 2w = %.1f m, h = %.1f m ] : nr = %.1f   na = %.1f   ne = %.1f\n"
-               "%s : RS : Best fit with R: [ %.3f - %.3f ]    E: [ %.3f - %.3f ]   A: [ %.3f - %.3f ]\n",
+               "%s : RS : Best fit with R: [ %.3f - %.3f ] km   E: [ %.3f - %.3f ]   A: [ %.3f - %.3f ]\n",
                now(), 2.0f * w, h, nr, na, ne,
                now(), box.origin.r, box.origin.r + box.size.r, box.origin.e, box.origin.e + box.size.e, box.origin.a, box.origin.a + box.size.a);
     }

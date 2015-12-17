@@ -1,6 +1,5 @@
 //
 //  Renderer.h
-//  _radarsim
 //
 //  Created by Boon Leng Cheong on 10/29/13.
 //  Copyright (c) 2013 Boon Leng Cheong. All rights reserved.
@@ -55,7 +54,6 @@ typedef struct _draw_resource {
     GLKMatrix4 modelViewProjectionOffOne;
     GLKMatrix4 modelViewProjectionOffTwo;
 } RenderResource;
-
 
 typedef struct _draw_primitive {
     GLfloat vertices[64];
@@ -128,11 +126,11 @@ typedef struct _draw_primitive {
     RenderResource meshRenderer;
 
     RenderPrimitive primitives[4];
-    
+
     GLfloat backgroundOpacity;
-    
+
     GLText *textRenderer;
-    
+
     char statusMessage[16][256];
 
     int itic, iframe;

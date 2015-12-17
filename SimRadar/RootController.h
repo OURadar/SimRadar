@@ -8,16 +8,18 @@
 
 #import <Foundation/Foundation.h>
 #import "DisplayController.h"
+#import "SplashController.h"
 #import "SimPoint.h"
 
 @interface RootController : NSController {
 	
 	char state;
 	
-	SimPoint *sim;
-
 	DisplayController *dc;
+    SplashController *sc;
 	
+    SimPoint *sim;
+    
     IBOutlet NSMenuItem *startRecordMenuItem;
     IBOutlet NSMenuItem *stopRecordMenuItem;
 

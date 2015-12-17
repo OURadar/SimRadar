@@ -1,6 +1,5 @@
 //
 //  SimGLView.m
-//  _radarsim
 //
 //  Created by Boon Leng Cheong on 10/29/13.
 //  Copyright (c) 2013 Boon Leng Cheong. All rights reserved.
@@ -142,15 +141,6 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 }
 
 #pragma mark -
-
-//- (void)renewGState
-//{
-//	// Called whenever graphics state updated (such as window resize)
-//	[[self window] disableScreenUpdatesUntilFlush];
-//	
-//	[super renewGState];
-//}
-
 
 - (void)setFrame:(NSRect)frameRect {
 	CGLLockContext([[self openGLContext] CGLContextObj]);
@@ -296,39 +286,39 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 #pragma mark -
 #pragma mark Image Export
 
-- (NSBitmapImageRep *)bitmapImageRepFromView {
-	return [self bitmapImageRepFromViewWithClearBackground:NO];
-}
-
 - (NSBitmapImageRep *)bitmapImageRepFromViewWithClearBackground:(BOOL)clearBackground {
-	
-	int bytesPerRow;
-	unsigned char *bitmapData;
-	
+    
+    int bytesPerRow;
+    unsigned char *bitmapData;
+    
     int width = renderer.width * [self.window backingScaleFactor];
     int height = renderer.height * [self.window backingScaleFactor];
-	
-	NSBitmapImageRep *imageRep = [[[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
-																		  pixelsWide:width
-																		  pixelsHigh:height
-																	   bitsPerSample:8
-																	 samplesPerPixel:clearBackground ? 4 : 3
-																			hasAlpha:NO
-																			isPlanar:NO
-																	  colorSpaceName:NSDeviceRGBColorSpace
-																		 bytesPerRow:0
-																		bitsPerPixel:0] autorelease];
+    
+    NSBitmapImageRep *imageRep = [[[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
+                                                                          pixelsWide:width
+                                                                          pixelsHigh:height
+                                                                       bitsPerSample:8
+                                                                     samplesPerPixel:clearBackground ? 4 : 3
+                                                                            hasAlpha:NO
+                                                                            isPlanar:NO
+                                                                      colorSpaceName:NSDeviceRGBColorSpace
+                                                                         bytesPerRow:0
+                                                                        bitsPerPixel:0] autorelease];
+    
+    bitmapData = [imageRep bitmapData];
+    bytesPerRow = (int)[imageRep bytesPerRow];
+    
+    glPixelStorei(GL_PACK_ROW_LENGTH, 8 * bytesPerRow / [imageRep bitsPerPixel]);
+    glReadPixels(0, 0, width, height, clearBackground ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, scratchBuffer);
+    
+    for (int j=0; j<height; j++)
+        bcopy(scratchBuffer + j * bytesPerRow, bitmapData + (height - 1 - j) * bytesPerRow, bytesPerRow);
+    
+    return imageRep;
+}
 
-	bitmapData = [imageRep bitmapData];
-	bytesPerRow = (int)[imageRep bytesPerRow];
-    
-	glPixelStorei(GL_PACK_ROW_LENGTH, 8 * bytesPerRow / [imageRep bitsPerPixel]);
-	glReadPixels(0, 0, width, height, clearBackground ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, scratchBuffer);
-    
-	for (int j=0; j<height; j++)
-		bcopy(scratchBuffer + j * bytesPerRow, bitmapData + (height - 1 - j) * bytesPerRow, bytesPerRow);
-    
-	return imageRep;
+- (NSBitmapImageRep *)bitmapImageRepFromView {
+	return [self bitmapImageRepFromViewWithClearBackground:NO];
 }
 
 - (NSImage *)imageFromView {

@@ -9,6 +9,10 @@
 /* Begin PBXBuildFile section */
 		322C68351C11FF1C00F0DBA4 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5EF317418204B5C002DDEFC /* AppKit.framework */; };
 		B50CD9EE1BE8117E0034B5BB /* Recorder.m in Sources */ = {isa = PBXBuildFile; fileRef = B50CD9ED1BE8117E0034B5BB /* Recorder.m */; };
+		B5201C6F1C22396A00EACF53 /* SplashController.m in Sources */ = {isa = PBXBuildFile; fileRef = B5201C6E1C22396A00EACF53 /* SplashController.m */; };
+		B5201C701C22396A00EACF53 /* SplashController.m in Sources */ = {isa = PBXBuildFile; fileRef = B5201C6E1C22396A00EACF53 /* SplashController.m */; };
+		B5201C721C2239D100EACF53 /* Splash.xib in Resources */ = {isa = PBXBuildFile; fileRef = B5201C711C2239D100EACF53 /* Splash.xib */; };
+		B5201C731C2239D100EACF53 /* Splash.xib in Resources */ = {isa = PBXBuildFile; fileRef = B5201C711C2239D100EACF53 /* Splash.xib */; };
 		B527893118A13C4400650679 /* radarsim.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281717D7C2F400E4DE66 /* radarsim.c */; };
 		B527893318A13C5F00650679 /* rs.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281917D7C4D500E4DE66 /* rs.c */; };
 		B527893418A13C6D00650679 /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
@@ -230,6 +234,9 @@
 		B50A281917D7C4D500E4DE66 /* rs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = rs.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		B50CD9EC1BE8117E0034B5BB /* Recorder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Recorder.h; sourceTree = "<group>"; };
 		B50CD9ED1BE8117E0034B5BB /* Recorder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Recorder.m; sourceTree = "<group>"; };
+		B5201C6D1C22396A00EACF53 /* SplashController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SplashController.h; sourceTree = "<group>"; };
+		B5201C6E1C22396A00EACF53 /* SplashController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SplashController.m; sourceTree = "<group>"; };
+		B5201C711C2239D100EACF53 /* Splash.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = Splash.xib; sourceTree = "<group>"; };
 		B52609D019D665E800709AFD /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		B527892C18A13C0100650679 /* radarsim */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = radarsim; sourceTree = BUILT_PRODUCTS_DIR; };
 		B52B2BD91BE8F75C00F1F91D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
@@ -535,6 +542,8 @@
 				B5EF31C41820619E002DDEFC /* RootController.m */,
 				B5EF31A918205244002DDEFC /* DisplayController.h */,
 				B5EF31AA18205244002DDEFC /* DisplayController.m */,
+				B5201C6D1C22396A00EACF53 /* SplashController.h */,
+				B5201C6E1C22396A00EACF53 /* SplashController.m */,
 				B5EF31AF182052B8002DDEFC /* Renderer.h */,
 				B5EF31B0182052B8002DDEFC /* Renderer.m */,
 				B50CD9EC1BE8117E0034B5BB /* Recorder.h */,
@@ -549,6 +558,7 @@
 				B5FDCAE419D453B10016C2F7 /* GLText.m */,
 				B535159C1AD32077004C0F50 /* MainMenu.xib */,
 				B5EF31C1182060E1002DDEFC /* LiveDisplay.xib */,
+				B5201C711C2239D100EACF53 /* Splash.xib */,
 				B5EF317818204B5C002DDEFC /* Supporting Files */,
 			);
 			path = SimRadar;
@@ -804,6 +814,7 @@
 				B5D22A191C10D62C00CE15EB /* Images in Resources */,
 				B56A7CE91C0F5AF700133ACF /* Shaders in Resources */,
 				B57241E61C0CB0D900B76BCB /* rs.cl in Resources */,
+				B5201C731C2239D100EACF53 /* Splash.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -817,6 +828,7 @@
 				B56A7CE81C0F5AF700133ACF /* Shaders in Resources */,
 				B5916CC61ABC7069007EA0B9 /* README.md in Resources */,
 				B535159D1AD32077004C0F50 /* MainMenu.xib in Resources */,
+				B5201C721C2239D100EACF53 /* Splash.xib in Resources */,
 				B5EF31C2182060E1002DDEFC /* LiveDisplay.xib in Resources */,
 				B5EF317C18204B5C002DDEFC /* InfoPlist.strings in Resources */,
 				B5EF318218204B5C002DDEFC /* Credits.rtf in Resources */,
@@ -891,6 +903,7 @@
 				B57241BD1C0CA21300B76BCB /* Renderer.m in Sources */,
 				B57241BE1C0CA21700B76BCB /* Recorder.m in Sources */,
 				B57241BF1C0CA21900B76BCB /* SimGLView.m in Sources */,
+				B5201C701C22396A00EACF53 /* SplashController.m in Sources */,
 				B57241C01C0CA21C00B76BCB /* SimPoint.m in Sources */,
 				B57241C11C0CA21F00B76BCB /* FullscreenWindow.m in Sources */,
 				B57241C21C0CA22200B76BCB /* GLText.m in Sources */,
@@ -949,6 +962,7 @@
 				B5576B8B18315B3B0012E6F5 /* SimPoint.m in Sources */,
 				B5EF31AB18205244002DDEFC /* DisplayController.m in Sources */,
 				B5EF31B1182052B8002DDEFC /* Renderer.m in Sources */,
+				B5201C6F1C22396A00EACF53 /* SplashController.m in Sources */,
 				B5EF31AE1820526F002DDEFC /* SimGLView.m in Sources */,
 				B5FDCAE519D453B10016C2F7 /* GLText.m in Sources */,
 				B5A5142718328A2F00921ACE /* FullscreenWindow.m in Sources */,
