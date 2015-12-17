@@ -141,6 +141,26 @@
 #define DNSLog(_expr) {}
 #endif
 
+- (void)createSimulation {
+    @autoreleasepool {
+        sim = [[SimPoint alloc] initWithDelegate:self];
+        if (sim) {
+            NSLog(@"New simulation domain initiated.");
+            // Wire the simulator to the controller.
+            // The displayController will tell the renderer how many scatter body
+            // the simulator is using and pass the anchor points from RS API to
+            // the renderer
+            
+            [dc setSim:sim];
+        } else {
+            NSLog(@"Error initializing simulation domain.");
+            //[self performSelectorOnMainThread:@selector(alertMissingResources) withObject:nil waitUntilDone:TRUE];
+            //[[NSApplication sharedApplication] terminate:self];
+            [dc emptyDomain];
+        }
+    }
+}
+
 - (void)glContextVAOPrepared
 {
 	DNSLog(@"glContextVAOPrepared");
@@ -148,6 +168,7 @@
 	if (sim) {
 		NSLog(@"There is simulation session running.");
 	} else {
+//        [self performSelectorInBackground:@selector(createSimulation) withObject:nil];
 		sim = [[SimPoint alloc] initWithDelegate:self];
         if (sim) {
             NSLog(@"New simulation domain initiated.");

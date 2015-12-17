@@ -43,6 +43,9 @@
         NSString *resourcePath = [[NSBundle mainBundle] resourcePath];
 
         S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, 2);
+        if (S == NULL) {
+            return nil;
+        }
         
         if (S->vendors[0] == RS_GPU_VENDOR_INTEL) {
             if (S->num_cus[0] <= 16) {
@@ -98,9 +101,6 @@
         RS_set_prt(S, 0.03f);
 		//RS_set_prt(S, 0.01f);
 
-		az_deg = 0.0f;
-        el_deg = 4.9f;
-        
 //        char ori_file[4096];
 //        memset(ori_file, 0, 4096);
 //        snprintf(ori_file, 256, "%s/Downloads/sim-%s-orientation.dat", getenv("HOME"), nowlong());
@@ -183,6 +183,7 @@
 //    float y = S->domain.origin.y + 0.5f * S->domain.size.y;
 //    float r = sqrtf(x * x + y * y);
 //    el_deg = atan2f(S->domain.origin.z + 0.5f * S->domain.size.z, r) * 180.0f / M_PI;
+
     el_deg = 5.0f;
 
     RS_set_beam_pos(S, az_deg, el_deg);
