@@ -155,8 +155,7 @@
                         box.origin.r, box.origin.r + box.size.r, 30.0f,   // Range
                         box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
                         box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
-        
-	}
+    }
 	return self;
 }
 
@@ -202,7 +201,7 @@
     RS_set_beam_pos(S, az_deg, el_deg);
     
     if ([delegate respondsToSelector:@selector(progressUpdated:message:)]) {
-        [delegate progressUpdated:100.0 message:nil];
+        [delegate progressUpdated:100.0f message:@"Ready"];
     }
 }
 

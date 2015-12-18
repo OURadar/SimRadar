@@ -58,7 +58,7 @@
 		//NSLog(@"Allocating grid lines");
 		gridRenderer.positions = (GLfloat *)malloc(128 * sizeof(GLfloat));  // More than enough
 	}
-	NSLog(@"grid @ (%.1f, %.1f, %.1f)  (%.1f, %.1f, %.1f)", origin[0], origin[1], origin[2], size[0], size[1], size[2]);
+	//NSLog(@"grid @ (%.1f, %.1f, %.1f)  (%.1f, %.1f, %.1f)", origin[0], origin[1], origin[2], size[0], size[1], size[2]);
 	gridRenderer.positions[0]  = origin[0];
 	gridRenderer.positions[1]  = origin[1];
 	gridRenderer.positions[2]  = origin[2];

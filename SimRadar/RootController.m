@@ -11,6 +11,7 @@
 
 @interface RootController()
 - (void)setIcon:(NSInteger)index;
+//- (void)dismissSplash:(id)sender;
 @end
 
 @implementation RootController
@@ -30,6 +31,13 @@
 	[image release];
 }
 
+- (void)dismissSplash:(id)sender
+{
+    [sc close];
+    [sc release];
+    sc = nil;
+}
+
 #pragma mark -
 #pragma mark Methods
 
@@ -42,7 +50,7 @@
 //    [dc.window setLevel:kCGDesktopWindowLevel];
 //    [dc.window setIsVisible:FALSE];
 	[dc showWindow:self];
-    [dc.window orderOut:nil];
+//    [dc.window orderOut:self];
 }
 
 - (IBAction)playPause:(id)sender
@@ -153,7 +161,7 @@
             // The displayController will tell the renderer how many scatter body
             // the simulator is using and pass the anchor points from RS API to
             // the renderer
-            
+            [dc.glView startAnimation];
             [dc setSim:sim];
         } else {
             NSLog(@"Error initializing simulation domain.");
@@ -251,19 +259,22 @@
 
 - (void)timeAdvanced:(id)sender
 {
-    
+    [sc release];
+    sc = nil;
 }
 
-- (void)progressUpdated:(float)completionPercentage message:(NSString *)message
+- (void)progressUpdated:(double)completionPercentage message:(NSString *)message
 {
-    if (completionPercentage >= 99.99) {
+    [sc.progress setDoubleValue:completionPercentage];
+    [sc.progress setNeedsDisplay:TRUE];
+    [sc.label setStringValue:message];
+    if (completionPercentage >= 99.0) {
+        NSLog(@"completion: %.2f", completionPercentage);
+        [sc close];
         [sc release];
-        [dc.window orderFront:nil];
-    } else {
-        [sc.progress setDoubleValue:completionPercentage];
-        [sc.label setStringValue:message];
-        [sc.progress setNeedsDisplay:YES];
+        sc = nil;
     }
+//    [sc.window display];
 }
 
 @end

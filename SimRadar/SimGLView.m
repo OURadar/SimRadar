@@ -130,8 +130,9 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	CVDisplayLinkSetCurrentCGDisplayFromOpenGLContext(displayLink, cglContext, cglPixelFormat);
 	
     // Activate the display link
-    CVDisplayLinkStart(displayLink);
-    animating = TRUE;
+//    CVDisplayLinkStart(displayLink);
+//    animating = TRUE;
+//    [self startAnimation];
 
     // Register to be notified when the window closes so we can stop the displaylink
 	[[NSNotificationCenter defaultCenter] addObserver:self
@@ -195,11 +196,9 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 
 
 - (void)startAnimation {
-    //[self renewGState];
 	if (!animating) {
-		// Activate the display link
-		CVDisplayLinkStart(displayLink);
-		animating = TRUE;
+        animating = TRUE;
+        CVDisplayLinkStart(displayLink);
 	}
 }
 
@@ -207,8 +206,8 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 - (void)stopAnimation
 {
 	if (animating) {
+        animating = FALSE;
 		CVDisplayLinkStop(displayLink);
-		animating = FALSE;
 	}
 }
 

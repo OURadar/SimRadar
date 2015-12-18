@@ -9,12 +9,12 @@
                 <outlet property="imageCell" destination="evt-n7-EiY" id="tYz-q2-V1w"/>
                 <outlet property="label" destination="Tp2-Bb-cQg" id="ose-HX-OGv"/>
                 <outlet property="progress" destination="64v-la-8cP" id="MKy-jA-aFg"/>
+                <outlet property="window" destination="QvC-M9-y7g" id="gH2-8c-hle"/>
             </connections>
         </customObject>
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
         <window title="Window" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" restorable="NO" oneShot="NO" animationBehavior="default" id="QvC-M9-y7g">
-            <windowStyleMask key="styleMask" fullSizeContentView="YES"/>
             <rect key="contentRect" x="518" y="391" width="800" height="400"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="877"/>
             <view key="contentView" id="EiT-Mj-1SZ">
@@ -25,9 +25,6 @@
                         <rect key="frame" x="0.0" y="0.0" width="800" height="400"/>
                         <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="axesIndependently" id="evt-n7-EiY"/>
                     </imageView>
-                    <progressIndicator wantsLayer="YES" focusRingType="none" fixedFrame="YES" maxValue="100" style="bar" translatesAutoresizingMaskIntoConstraints="NO" id="64v-la-8cP">
-                        <rect key="frame" x="186" y="66" width="428" height="20"/>
-                    </progressIndicator>
                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Tp2-Bb-cQg">
                         <rect key="frame" x="176" y="25" width="449" height="17"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="center" title="Label" id="ebP-Xf-e7D">
@@ -36,6 +33,9 @@
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
+                    <progressIndicator wantsLayer="YES" focusRingType="none" fixedFrame="YES" maxValue="100" doubleValue="5" style="bar" translatesAutoresizingMaskIntoConstraints="NO" id="64v-la-8cP">
+                        <rect key="frame" x="186" y="65" width="428" height="22"/>
+                    </progressIndicator>
                 </subviews>
             </view>
             <point key="canvasLocation" x="480" y="403"/>

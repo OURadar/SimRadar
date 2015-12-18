@@ -16,7 +16,7 @@
 
 @optional
 
-- (void)progressUpdated:(float)completionPercentage message:(NSString *)message;
+- (void)progressUpdated:(double)completionPercentage message:(NSString *)message;
 
 @end
 
