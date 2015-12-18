@@ -611,6 +611,8 @@
         spinModel = 5;
         aspectRatio = 1.0f;
         
+        iframe = -1;
+        
         resetRange = 5000.0f;
         resetModelRotate = GLKMatrix4Identity;
         
@@ -988,7 +990,6 @@
     }
 #endif
     
-    iframe++;
     [self measureFPS];
     
 	// Tell the delgate I'm about to draw
@@ -1166,6 +1167,7 @@
 
     glBindVertexArray(0);
     glUseProgram(0);
+    iframe++;
 }
 
 #pragma mark -
@@ -1258,7 +1260,7 @@
     range = resetRange;
     modelRotate = resetModelRotate;
     
-    iframe = 0;
+//    iframe = 0;
     
 	viewParametersNeedUpdate = TRUE;
 }

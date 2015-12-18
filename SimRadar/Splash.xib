@@ -34,7 +34,7 @@
                         </textFieldCell>
                     </textField>
                     <progressIndicator wantsLayer="YES" focusRingType="none" fixedFrame="YES" maxValue="100" doubleValue="5" style="bar" translatesAutoresizingMaskIntoConstraints="NO" id="64v-la-8cP">
-                        <rect key="frame" x="186" y="65" width="428" height="22"/>
+                        <rect key="frame" x="186" y="65" width="428" height="20"/>
                     </progressIndicator>
                 </subviews>
             </view>
