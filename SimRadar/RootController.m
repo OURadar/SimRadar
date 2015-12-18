@@ -11,7 +11,7 @@
 
 @interface RootController()
 - (void)setIcon:(NSInteger)index;
-//- (void)dismissSplash:(id)sender;
+- (void)showLiveDisplay:(id)sender;
 @end
 
 @implementation RootController
@@ -31,11 +31,16 @@
 	[image release];
 }
 
-- (void)dismissSplash:(id)sender
+- (void)showLiveDisplay:(id)sender
 {
-    [sc close];
-    [sc release];
-    sc = nil;
+    [dc.window setLevel:NSNormalWindowLevel];
+    [dc showWindow:nil];
+}
+
+- (void)updateProgressIndicator:(id)sender
+{
+    [sc.progress setDoubleValue:initProgress];
+    [sc.progress setNeedsDisplay:TRUE];
 }
 
 #pragma mark -
@@ -47,7 +52,8 @@
 		dc = [[DisplayController alloc] initWithWindowNibName:@"LiveDisplay" viewDelegate:self];
 	}
 
-//    [dc.window setLevel:kCGDesktopWindowLevel];
+    NSLog(@"Setting window level to %d", -1);
+    [dc.window setLevel:-1];
 //    [dc.window setIsVisible:FALSE];
 	[dc showWindow:self];
 //    [dc.window orderOut:self];
@@ -161,8 +167,8 @@
             // The displayController will tell the renderer how many scatter body
             // the simulator is using and pass the anchor points from RS API to
             // the renderer
-            [dc.glView startAnimation];
             [dc setSim:sim];
+            [dc.glView startAnimation];
         } else {
             NSLog(@"Error initializing simulation domain.");
             //[self performSelectorOnMainThread:@selector(alertMissingResources) withObject:nil waitUntilDone:TRUE];
@@ -177,24 +183,9 @@
 	DNSLog(@"glContextVAOPrepared");
 
 	if (sim) {
-		NSLog(@"There is simulation session running.");
+		NSLog(@"There is a simulation session running. It will be re-activated. The muti-session version has not been implemented.");
 	} else {
         [self performSelectorInBackground:@selector(createSimulation) withObject:nil];
-//		sim = [[SimPoint alloc] initWithDelegate:self];
-//        if (sim) {
-//            NSLog(@"New simulation domain initiated.");
-//            // Wire the simulator to the controller.
-//            // The displayController will tell the renderer how many scatter body
-//            // the simulator is using and pass the anchor points from RS API to
-//            // the renderer
-//            
-//            [dc setSim:sim];
-//        } else {
-//            NSLog(@"Error initializing simulation domain.");
-//            //[self performSelectorOnMainThread:@selector(alertMissingResources) withObject:nil waitUntilDone:TRUE];
-//            //[[NSApplication sharedApplication] terminate:self];
-//            [dc emptyDomain];
-//        }
 	}
 }
 
@@ -215,7 +206,6 @@
     } else {
         NSLog(@"No simulation");
     }
-    [dc.window setLevel:NSNormalWindowLevel];
     [dc.glView.renderer setDebrisCountsHaveChanged:TRUE];
 }
 
@@ -265,16 +255,17 @@
 
 - (void)progressUpdated:(double)completionPercentage message:(NSString *)message
 {
-    [sc.progress setDoubleValue:completionPercentage];
-    [sc.progress setNeedsDisplay:TRUE];
+    initProgress = completionPercentage;
+    [self performSelectorOnMainThread:@selector(updateProgressIndicator:) withObject:nil waitUntilDone:NO];
+
     [sc.label setStringValue:message];
+    
     if (completionPercentage >= 99.0) {
-        NSLog(@"completion: %.2f", completionPercentage);
         [sc close];
         [sc release];
         sc = nil;
+        [self performSelectorOnMainThread:@selector(showLiveDisplay:) withObject:nil waitUntilDone:NO];
     }
-//    [sc.window display];
 }
 
 @end

@@ -28,6 +28,7 @@
 	NSString *iconFolder;
 	NSArray *icons;
 
+    double initProgress;
 }
 
 @property (nonatomic, retain) NSMenuItem *startRecordMenuItem, *stopRecordMenuItem;

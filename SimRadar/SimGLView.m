@@ -129,11 +129,6 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	CGLPixelFormatObj cglPixelFormat = [[self pixelFormat] CGLPixelFormatObj];
 	CVDisplayLinkSetCurrentCGDisplayFromOpenGLContext(displayLink, cglContext, cglPixelFormat);
 	
-    // Activate the display link
-//    CVDisplayLinkStart(displayLink);
-//    animating = TRUE;
-//    [self startAnimation];
-
     // Register to be notified when the window closes so we can stop the displaylink
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(windowWillClose:)

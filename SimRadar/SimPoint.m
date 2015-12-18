@@ -61,28 +61,22 @@
             }
         }
 
-        if (reportProgress) {
-            [delegate progressUpdated:2.5 message:@"GPU"];
-        }
-
-		L = LES_init_with_config_path(LESConfigSuctionVortices, [resourcePath UTF8String]);
+		L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
 //        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, [resourcePath UTF8String]);
-        
-        if (reportProgress) {
-            [delegate progressUpdated:3.0 message:[NSString stringWithFormat:@"LES @ %s", LES_data_path(L)]];
-        }
 
         A = ADM_init_with_config_path(ADMConfigSquarePlate, [resourcePath UTF8String]);
-
-        if (reportProgress) {
-            [delegate progressUpdated:3.5 message:[NSString stringWithFormat:@"ADM @ %s", ADM_data_path(A)]];
-        }
 
         R = RCS_init_with_config_path(RCSConfigLeaf, [resourcePath UTF8String]);
         
         if (reportProgress) {
-            [delegate progressUpdated:4.0 message:[NSString stringWithFormat:@"RCS @ %s", RCS_data_path(L)]];
+            [delegate progressUpdated:3.0 message:[NSString stringWithFormat:@"LES @ %s", LES_data_path(L)]];
         }
+//        if (reportProgress) {
+//            [delegate progressUpdated:3.5 message:[NSString stringWithFormat:@"ADM @ %s", ADM_data_path(A)]];
+//        }
+//        if (reportProgress) {
+//            [delegate progressUpdated:4.0 message:[NSString stringWithFormat:@"RCS @ %s", RCS_data_path(L)]];
+//        }
 
         NSLog(@"LES @ %s", LES_data_path(L));
         NSLog(@"ADM @ %s", ADM_data_path(A));
@@ -130,7 +124,7 @@
             //LES_show_table_summary(les);
             RS_set_wind_data_to_LES_table(S, les);
             if (reportProgress) {
-                [delegate progressUpdated:5.0 + table_id * 8.0 message:[NSString stringWithFormat:@"LES table %d", table_id]];
+                [delegate progressUpdated:(5.0 + table_id * 8.0) message:[NSString stringWithFormat:@"LES table %d", table_id]];
             }
         }
         
@@ -138,6 +132,9 @@
         //ADM_show_table_summary(adm);
         RS_clear_adm_data(S);
         RS_set_adm_data_to_ADM_table(S, adm);
+        RS_set_adm_data_to_ADM_table(S, adm);
+        RS_set_adm_data_to_ADM_table(S, adm);
+
         if (reportProgress) {
             [delegate progressUpdated:90.0 message:@"ADM table"];
         }
@@ -145,6 +142,9 @@
         RCSTable *rcs = RCS_get_frame(R);
         RS_clear_rcs_data(S);
         RS_set_rcs_data_to_RCS_table(S, rcs);
+        RS_set_rcs_data_to_RCS_table(S, rcs);
+        RS_set_rcs_data_to_RCS_table(S, rcs);
+
         if (reportProgress) {
             [delegate progressUpdated:95.0 message:@"RCS table"];
         }

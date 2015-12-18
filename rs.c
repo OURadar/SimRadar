@@ -879,7 +879,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
 		H->worker[i].name = i;
 	}
     
-    for (i = 0; i < RS_MAX_SPECIES_TYPES; i++) {
+    for (i = 0; i < RS_MAX_DEBRIS_TYPES; i++) {
         H->species_population[i] = 0;
     }
 	
@@ -1828,7 +1828,7 @@ void RS_set_debris_count(RSHandle *H, const int species_id, const size_t count) 
     H->species_population[species_id] = count;
 
     H->num_species = 0;
-    for (i = 0; i < RS_MAX_SPECIES_TYPES; i++) {
+    for (i = 0; i < RS_MAX_DEBRIS_TYPES; i++) {
         if (H->species_population[i] > 0) {
             H->num_species++;
         }
@@ -1883,7 +1883,7 @@ void RS_update_debris_count(RSHandle *H) {
         return;
     }
     
-    k = RS_MAX_SPECIES_TYPES;
+    k = RS_MAX_DEBRIS_TYPES;
     while (k > 1) {
         k--;
         count -= H->species_population[k];
@@ -1892,12 +1892,12 @@ void RS_update_debris_count(RSHandle *H) {
 
     if (H->verb > 1) {
         printf("%s : RS : Population details:\n", now());
-        for (k = 0; k < RS_MAX_SPECIES_TYPES; k++) {
+        for (k = 0; k < RS_MAX_DEBRIS_TYPES; k++) {
             printf("                 o Global species_population[%d] = %s\n", k, commaint(H->species_population[k]));
         }
     }
     
-    k = RS_MAX_SPECIES_TYPES;
+    k = RS_MAX_DEBRIS_TYPES;
     while (k > 0) {
         k--;
         size_t species_count_left = H->species_population[k];
@@ -1917,7 +1917,7 @@ void RS_update_debris_count(RSHandle *H) {
     }
     
     for (i = 0; i < H->num_workers; i++) {
-        k = RS_MAX_SPECIES_TYPES;
+        k = RS_MAX_DEBRIS_TYPES;
         size_t origin = H->worker[i].num_scats;
         while (k > 1) {
             k--;
@@ -1932,7 +1932,7 @@ void RS_update_debris_count(RSHandle *H) {
     if (H->verb > 2) {
         for (i = 0; i < H->num_workers; i++) {
             printf("%s : RS : worker[%d] with total population %s  offset %s\n", now(), i, commaint(H->worker[i].num_scats), commaint(H->worker[i].species_global_offset));
-            for (k = 0; k < RS_MAX_SPECIES_TYPES; k++) {
+            for (k = 0; k < RS_MAX_DEBRIS_TYPES; k++) {
                 printf("                 o species_population[%d] - [ %9s, %9s, %9s ]\n", k,
                        commaint(H->worker[i].species_origin[k]),
                        commaint(H->worker[i].species_population[k]),
@@ -2361,6 +2361,7 @@ void RS_set_wind_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
 	
 	RSTable3D table = RS_table3d_init(leslie->nn);
     if (table.data == NULL) {
+        printf("%s : RS : LES input data cannot be NULL.", now());
         return;
     }
 
@@ -2546,6 +2547,10 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
         return;
     }
     
+    if (H->verb > 1) {
+        printf("%s : RS : ADM[%d] @ X:[ -M_PI - +M_PI ]  Y:[ 0 - M_PI ]\n", now(), H->adm_count);
+    }
+    
     // This is the part that we need to create two texture maps for each RSTable2D table
     cl_image_format format = {CL_RGBA, CL_FLOAT};
     
@@ -2661,9 +2666,8 @@ void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *adam) {
     RSTable2D cm = RS_table2d_init(adam->nn);
     
     if (cd.data == NULL || cm.data == NULL) {
+        printf("%s : RS : ADM input data cannot be NULL.", now());
         return;
-    } else if (H->verb > 1) {
-        printf("%s : RS : ADM @ X:[ -M_PI - M_PI ]  Y:[ 0 - M_PI ]\n", now());
     }
 
     // Set up the mapping coefficients
@@ -2742,6 +2746,10 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
         return;
     }
 
+    if (H->verb > 1) {
+        printf("%s : RS : RCS[%d] @ X:[ -M_PI - +M_PI ]  Y:[ 0 - M_PI ]\n", now(), H->rcs_count);
+    }
+    
     // This is the part that we need to create two texture maps for each RSTable2D table
     cl_image_format format = {CL_RGBA, CL_FLOAT};
     
@@ -2857,11 +2865,9 @@ void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *rosie) {
     RSTable2D imag = RS_table2d_init(rosie->nn);
     
     if (real.data == NULL || imag.data == NULL) {
+        printf("%s : RS : RCS input data cannot be NULL.", now());
         return;
-    } else if (H->verb > 1) {
-        printf("%s : RS : ADM @ X:[ -M_PI - M_PI ]  Y:[ 0 - M_PI ]\n", now());
     }
-    
     // Set up the mapping coefficients
     // Assumptions: maps are always in alpha in [-180deg, +180deg] and beta in [0, +180deg]
     real.x_ = rosie->na;    real.xm = (float)(real.x_ - 1);    real.xs = (float)rosie->na / (2.0f * M_PI);    real.xo = -(-M_PI) * real.xs;
@@ -2993,7 +2999,7 @@ void RS_derive_ndranges(RSHandle *H) {
 
         RSWorker *C = &H->worker[i];
         
-        for (int k = 0; k < RS_MAX_SPECIES_TYPES; k++) {
+        for (int k = 0; k < RS_MAX_DEBRIS_TYPES; k++) {
             if (H->species_population[k] == 0) {
                 continue;
             }
@@ -3563,7 +3569,7 @@ void RS_advance_time(RSHandle *H) {
 	}
 
     for (i = 0; i < H->num_workers; i++) {
-        for (k = 1; k < RS_MAX_SPECIES_TYPES; k++) {
+        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
             if (H->worker[i].species_population[k]) {
                 dispatch_async(H->worker[i].que, ^{
                     db_atts_kernel(&H->worker[i].ndrange_scat[k],
@@ -3593,7 +3599,7 @@ void RS_advance_time(RSHandle *H) {
     }
 
     for (i = 0; i < H->num_workers; i++) {
-        for (k = 1; k < RS_MAX_SPECIES_TYPES; k++) {
+        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
             if (H->worker[i].species_population[k]) {
                 dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
             }
@@ -3602,7 +3608,7 @@ void RS_advance_time(RSHandle *H) {
 
 #else
 
-    cl_event events[RS_MAX_GPU_DEVICE][RS_MAX_SPECIES_TYPES];
+    cl_event events[RS_MAX_GPU_DEVICE][RS_MAX_DEBRIS_TYPES];
     memset(events, 0, sizeof(events));
 	
 	if (H->sim_tic >= H->sim_toc) {
@@ -3628,7 +3634,7 @@ void RS_advance_time(RSHandle *H) {
         clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_el_atts, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i][0]);
         
         // Debris type
-        for (k = 1; k < RS_MAX_SPECIES_TYPES; k++) {
+        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
             if (H->worker[i].species_population[k]) {
                 //printf("H->worker[%d].species_population[%d] = %d from %d --> debris\n", i, k, (int)H->worker[i].species_population[k], (int)H->worker[i].species_origin[k]);
                 clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_db_atts, 1, &H->worker[i].species_origin[k], &H->worker[i].species_population[k], &local_item_size, 0, NULL, &events[i][k]);
@@ -3642,7 +3648,7 @@ void RS_advance_time(RSHandle *H) {
     
     for (i = 0; i < H->num_workers; i++) {
         clWaitForEvents(1, events[i]);
-        for (k = 1; k < RS_MAX_SPECIES_TYPES; k++) {
+        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
             if (H->worker[i].species_population[k]) {
                 clWaitForEvents(1, &events[i][k]);
             }
@@ -3650,7 +3656,7 @@ void RS_advance_time(RSHandle *H) {
     }
 	
     for (i = 0; i < H->num_workers; i++) {
-        for (k=0; k < RS_MAX_SPECIES_TYPES; k++) {
+        for (k=0; k < RS_MAX_DEBRIS_TYPES; k++) {
             if (H->worker[i].species_population[k]) {
                 clReleaseEvent(events[i][k]);
             }
