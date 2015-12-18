@@ -26,7 +26,7 @@
     [progress setMaxValue:100.0];
     [progress setDoubleValue:10.0];
     [progress setUsesThreadedAnimation:TRUE];
-//    [progress setControlTint:NSBlueControlTint];
+    //[progress setControlTint:NSBlueControlTint];
     if (delegate) {
         [delegate splashWindowDidLoad:self];
     }
