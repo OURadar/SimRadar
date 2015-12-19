@@ -125,6 +125,7 @@ NSWindow *standardWindow;
 
 - (void)dealloc
 {
+    NSLog(@"%@ deallocating ...", self);
 	[glView release];
 	[sim release];
     
@@ -152,8 +153,6 @@ NSWindow *standardWindow;
         [recorder stopRecording];
         recorder = nil;
     }
-	
-    [glView stopAnimation];
 }
 
 #pragma mark -

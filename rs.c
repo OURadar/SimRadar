@@ -1370,8 +1370,8 @@ void RS_init_scat_pos(RSHandle *H) {
         H->Ta *= g / (v0 * v0);
         
         if (H->verb) {
-            printf("%s : RS : Ta = %.4f;  inv_inln = [%.4f %.4f %.4f];   mass = %.4f kg\n",
-                   now(), H->Ta, H->inv_inln.x, H->inv_inln.y, H->inv_inln.z, mass);
+            printf("%s : RS : ADM[%d]   Ta = %.4f  inv_inln = [%.4f %.4f %.4f]   mass = %.4f kg\n",
+                   now(), k, H->Ta, H->inv_inln.x, H->inv_inln.y, H->inv_inln.z, mass);
         }
         
         for (i = 0; i < H->num_workers; i++) {
