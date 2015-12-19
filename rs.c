@@ -377,10 +377,10 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &C->adm_cd[0]);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelMomentum,          sizeof(cl_mem),     &C->adm_cm[0]);
-    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &C->adm_desc);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &C->adm_desc[0]);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &C->rcs_real[0]);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[0]);
-    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[0]);
 	ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAngularWeight,                 sizeof(cl_mem),     &C->angular_weight);
 	ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAngularWeightDescription,      sizeof(cl_float4),  &C->angular_weight_desc);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
@@ -1330,60 +1330,56 @@ void RS_init_scat_pos(RSHandle *H) {
     H->sim_desc.s[RSSimulationParameterDebrisCount] = H->species_population[0];
     H->sim_desc.s[RSSimulationParameterAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTableDescriptionRefreshTime];
 
-    // Plate dimension in meters
-    float v0 = 150.0f;
-    const float rho = 1.21f;
-    const float g = 9.8f;
-    
-    float len = 0.04f;
-    float thi = 0.002f;
-    float rhod = 1120.0f;
-    float mass = len * len * thi * rhod;
-
-    cl_float4 ii = {{
-        (len * len + len * len) * mass / 12.0f,
-        (len * len + thi * thi) * mass / 12.0f,
-        (thi * thi + len * len) * mass / 12.0f,
-        0.0f
-    }};
-    cl_float4 inln = {{
-        ii.x * g * len / (mass * len * len * v0 * v0),
-        ii.y * g * len / (mass * len * len * v0 * v0),
-        ii.z * g * len / (mass * len * len * v0 * v0)
-    }};
-    H->inv_inln = (cl_float4) {{
-        1.0f / inln.x,
-        1.0f / inln.y,
-        1.0f / inln.z,
-        0.0f
-    }};
-    H->Ta = rho * (len * len * v0 * v0) / (2.0f * mass * g);
-
-    // De-dimensionalize
-    // Velocity should have v0 * v0 / g whenever velocity is retrieved but pre-done here
-    // Angular momentum's len needs to be dimensionalized by v0 * v0 / g
-    //H->inv_inln.x *= 1.0f / (v0 * v0) / g;
-    //H->inv_inln.y *= 1.0f / (v0 * v0) / g;
-    //H->inv_inln.z *= 1.0f / (v0 * v0) / g;
-    //    H->inv_inln.x *= g / (v0 * v0);
-    //    H->inv_inln.y *= g / (v0 * v0);
-    //    H->inv_inln.z *= g / (v0 * v0);
-    H->inv_inln.x = (mass * len) / (ii.x * g * g);
-    H->inv_inln.y = (mass * len) / (ii.y * g * g);
-    H->inv_inln.z = (mass * len) / (ii.z * g * g);
-    H->Ta *= g / (v0 * v0);
-
-    if (H->verb) {
-        printf("%s : RS : Ta = %.4f;  inv_inln = [%.4f %.4f %.4f];   mass = %.4f kg\n",
-               now(), H->Ta, H->inv_inln.x, H->inv_inln.y, H->inv_inln.z, mass);
-    }
-    
-    int t = 0;
-    for (i = 0; i < H->num_workers; i++) {
-        H->worker[i].adm_desc[t].s[RSTableDescriptionRecipInLnX] = H->inv_inln.x;
-        H->worker[i].adm_desc[t].s[RSTableDescriptionRecipInLnY] = H->inv_inln.y;
-        H->worker[i].adm_desc[t].s[RSTableDescriptionRecipInLnZ] = H->inv_inln.z;
-        H->worker[i].adm_desc[t].s[RSTableDescriptionTachikawa] = H->Ta;
+    // This part should be moved to setting ADM
+    for (k = 0; k < H->adm_count; k++) {
+        // Plate dimension in meters
+        float v0 = 100.0f;
+        const float rho = 1.21f;
+        const float g = 9.8f;
+        
+        float len = 0.04f;
+        float thi = 0.002f;
+        float rhod = 1120.0f;
+        float mass = len * len * thi * rhod;
+        
+        cl_float4 ii = {{
+            (len * len + len * len) * mass / 12.0f,
+            (len * len + thi * thi) * mass / 12.0f,
+            (thi * thi + len * len) * mass / 12.0f,
+            0.0f
+        }};
+        cl_float4 inln = {{
+            ii.x * g * len / (mass * len * len * v0 * v0),
+            ii.y * g * len / (mass * len * len * v0 * v0),
+            ii.z * g * len / (mass * len * len * v0 * v0)
+        }};
+        H->inv_inln = (cl_float4) {{
+            1.0f / inln.x,
+            1.0f / inln.y,
+            1.0f / inln.z,
+            0.0f
+        }};
+        H->Ta = rho * (len * len * v0 * v0) / (2.0f * mass * g);
+        
+        // De-dimensionalize
+        // Velocity should have v0 * v0 / g whenever velocity is retrieved but pre-done here
+        // Angular momentum's len needs to be dimensionalized by v0 * v0 / g
+        H->inv_inln.x = (mass * len) / (ii.x * g * g);
+        H->inv_inln.y = (mass * len) / (ii.y * g * g);
+        H->inv_inln.z = (mass * len) / (ii.z * g * g);
+        H->Ta *= g / (v0 * v0);
+        
+        if (H->verb) {
+            printf("%s : RS : Ta = %.4f;  inv_inln = [%.4f %.4f %.4f];   mass = %.4f kg\n",
+                   now(), H->Ta, H->inv_inln.x, H->inv_inln.y, H->inv_inln.z, mass);
+        }
+        
+        for (i = 0; i < H->num_workers; i++) {
+            H->worker[i].adm_desc[k].s[RSTableDescriptionRecipInLnX] = H->inv_inln.x;
+            H->worker[i].adm_desc[k].s[RSTableDescriptionRecipInLnY] = H->inv_inln.y;
+            H->worker[i].adm_desc[k].s[RSTableDescriptionRecipInLnZ] = H->inv_inln.z;
+            H->worker[i].adm_desc[k].s[RSTableDescriptionTachikawa] = H->Ta;
+        }
     }
 }
 
@@ -3116,6 +3112,10 @@ void RS_populate(RSHandle *H) {
     if (H->verb) {
         printf("%s : RS : RS_populate()\n", now());
     }
+    
+    if (H->adm_count != H->rcs_count) {
+        printf("%s : RS : ADM & RCS are not consistent. Unexpected behavior may happen.\n", now());
+    }
 
     //
 	// CPU memory allocation
@@ -3508,6 +3508,7 @@ void RS_sig_from_dsd(RSHandle *H) {
 void RS_advance_time(RSHandle *H) {
 	
 	int i, k;
+    int r, a;
 
 	if (!(H->status & RS_STATUS_DOMAIN_POPULATED)) {
 		fprintf(stderr, "%s : RS : Simulation domain not populated.\n", now());
@@ -3517,8 +3518,6 @@ void RS_advance_time(RSHandle *H) {
     const int v = H->vel_idx;
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
-
-    const int t = 0;
 
     if (H->sim_tic >= H->sim_toc) {
 		H->sim_toc = H->sim_tic + (size_t)(5.0f / H->params.prt);
@@ -3569,6 +3568,8 @@ void RS_advance_time(RSHandle *H) {
 	}
 
     for (i = 0; i < H->num_workers; i++) {
+        r = 0;
+        a = 0;
         for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
             if (H->worker[i].species_population[k]) {
                 dispatch_async(H->worker[i].que, ^{
@@ -3582,12 +3583,12 @@ void RS_advance_time(RSHandle *H) {
                                    (cl_uint4 *)H->worker[i].scat_rnd,
                                    (cl_image)H->worker[i].vel[v],
                                    H->worker[i].vel_desc,
-                                   (cl_image)H->worker[i].adm_cd[t],
-                                   (cl_image)H->worker[i].adm_cm[t],
-                                   H->worker[i].adm_desc[t],
-                                   (cl_image)H->worker[i].rcs_real[t],
-                                   (cl_image)H->worker[i].rcs_imag[t],
-                                   H->worker[i].rcs_desc[t],
+                                   (cl_image)H->worker[i].adm_cd[a],
+                                   (cl_image)H->worker[i].adm_cm[a],
+                                   H->worker[i].adm_desc[a],
+                                   (cl_image)H->worker[i].rcs_real[r],
+                                   (cl_image)H->worker[i].rcs_imag[r],
+                                   H->worker[i].rcs_desc[r],
                                    (cl_float *)H->worker[i].angular_weight,
                                    H->worker[i].angular_weight_desc,
                                    H->sim_desc);
@@ -3595,6 +3596,8 @@ void RS_advance_time(RSHandle *H) {
                     dispatch_semaphore_signal(H->worker[i].sem);
                 });
             }
+            r = r == H->rcs_count - 1 ? 0 : r + 1;
+            a = a == H->adm_count - 1 ? 0 : a + 1;
         }
     }
 
@@ -3618,27 +3621,42 @@ void RS_advance_time(RSHandle *H) {
     size_t local_item_size = 1;
     
 	for (i = 0; i < H->num_workers; i++) {
-		// Need to refresh some parameters at each time update
+        r = 0;
+        a = 0;
+
+        RSWorker *C = &H->worker[i];
+
+        // Need to refresh some parameters at each time update
         //clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
         //clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
         
-        clSetKernelArg(H->worker[i].kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
-        clSetKernelArg(H->worker[i].kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
+        clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
+        clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
 
-        clSetKernelArg(H->worker[i].kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
-        clSetKernelArg(H->worker[i].kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
+        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
+        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
         
         // Background
         //printf("H->worker[%d].species_population[0] = %d from %d --> background\n", i, (int)H->worker[i].species_population[0], (int)H->worker[i].species_origin[0]);
         //clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_bg_atts, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i][0]);
-        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_el_atts, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i][0]);
+        clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->species_origin[0], &C->species_population[0], &local_item_size, 0, NULL, &events[i][0]);
         
         // Debris type
         for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
-            if (H->worker[i].species_population[k]) {
+            if (C->species_population[k]) {
+                printf("r = %d  a = %d\n", r, a);
                 //printf("H->worker[%d].species_population[%d] = %d from %d --> debris\n", i, k, (int)H->worker[i].species_population[k], (int)H->worker[i].species_origin[k]);
-                clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_db_atts, 1, &H->worker[i].species_origin[k], &H->worker[i].species_population[k], &local_item_size, 0, NULL, &events[i][k]);
+                clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &C->adm_cd[a]);
+                clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelMomentum,          sizeof(cl_mem),     &C->adm_cm[a]);
+                clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &C->adm_desc);
+                clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &C->rcs_real[r]);
+                clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[r]);
+                clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[r]);
+
+                clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->species_origin[k], &C->species_population[k], &local_item_size, 0, NULL, &events[i][k]);
             }
+            r = r == H->rcs_count - 1 ? 0 : r + 1;
+            a = a == H->adm_count - 1 ? 0 : a + 1;
         }
     }
 
