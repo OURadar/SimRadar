@@ -10,14 +10,22 @@
 @implementation SplashController
 
 @synthesize imageCell;
-@synthesize label;
+@synthesize label, version, copyright;
 @synthesize progress;
 @synthesize delegate;
 
 - (void)awakeFromNib {
-    NSString *file = [[NSBundle mainBundle] pathForResource:@"images/tornado.jpg" ofType:nil];
+    NSBundle *bundle = [NSBundle mainBundle];
+    
+    NSString *file = [bundle pathForResource:@"images/simradar.jpg" ofType:nil];
     NSImage *image = [[NSImage alloc] initWithContentsOfFile:file];
     [imageCell setImage:image];
+    
+    [version setStringValue:[NSString stringWithFormat:@"Version %@ (%@)",
+                             [bundle.infoDictionary objectForKey:@"CFBundleShortVersionString"],
+                             [bundle.infoDictionary objectForKey:@"CFBundleVersion"]]];
+    
+    [copyright setStringValue:[bundle.infoDictionary objectForKey:@"NSHumanReadableCopyright"]];
 }
 
 - (void)windowDidLoad {

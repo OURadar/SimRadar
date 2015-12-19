@@ -197,7 +197,7 @@
     
     pad = 4.0f;
     
-    const CGFloat blurRadius = 3.5f;
+    const CGFloat blurRadius = 3.5f * devicePixelRatio;
     const CGFloat doublePad = ceilf(pad + 2.0f * blurRadius);
     NSPoint point = NSMakePoint(0.5f + doublePad, 0.5f + doublePad);
     NSSize drawSize;
@@ -205,7 +205,7 @@
     
     const float joffset = 8.0f;
     
-    for (int i=0; i<256; i++) {
+    for (int i = 0; i < 256; i++) {
         NSString *label = [NSString stringWithFormat:@"%c", i];
         
         drawSize = [label sizeWithAttributes:labelAtts];
@@ -357,7 +357,7 @@
         {0.0f, 1.0f, 0.0f, 1.0f},
         {1.0f, 1.0f, 1.0f, 1.0f}
     };
-    for (int k=0; k<6; k++) {
+    for (int k = 0; k < 6; k++) {
         pos[k].x = (pos[k].x * w + 10.0f) / devicePixelRatio;
         pos[k].y = (pos[k].y * h + 10.0f) / devicePixelRatio;
         pos[k].t = (1.0f - pos[k].t);

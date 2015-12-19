@@ -17,7 +17,7 @@
 
     NSImageCell *imageCell;
     
-    NSTextField *label;
+    NSTextField *label, *version, *copyright;
     
     NSProgressIndicator *progress;
     
@@ -26,7 +26,7 @@
 }
 
 @property (nonatomic, retain) IBOutlet NSImageCell *imageCell;
-@property (nonatomic, retain) IBOutlet NSTextField *label;
+@property (nonatomic, retain) IBOutlet NSTextField *label, *version, *copyright;
 @property (nonatomic, retain) IBOutlet NSProgressIndicator *progress;
 @property (nonatomic, retain) id<SplashControllerDelegate> delegate;
 

@@ -34,7 +34,7 @@
 - (void)showLiveDisplay:(id)sender
 {
     [dc.window setLevel:NSNormalWindowLevel];
-    [dc showWindow:nil];
+    [dc.window makeKeyAndOrderFront:nil];
 }
 
 - (void)updateProgressIndicator:(id)sender
@@ -50,13 +50,13 @@
 {
 	if (dc == nil) {
 		dc = [[DisplayController alloc] initWithWindowNibName:@"LiveDisplay" viewDelegate:self];
-	}
-
-    NSLog(@"Setting window level to %d", -1);
-    [dc.window setLevel:-1];
-//    [dc.window setIsVisible:FALSE];
-	[dc showWindow:self];
-//    [dc.window orderOut:self];
+        NSLog(@"Setting window level to %d", -1);
+        [dc.window setLevel:-1];
+        [dc showWindow:self];
+    } else {
+        [self showLiveDisplay:self];
+        [dc.glView startAnimation];
+    }
 }
 
 - (IBAction)playPause:(id)sender
@@ -109,7 +109,9 @@
 {
     sc = [[SplashController alloc] initWithWindowNibName:@"Splash"];
     [sc setDelegate:self];
-    [sc.window makeKeyAndOrderFront:self];
+    //[sc.window makeKeyAndOrderFront:self];
+    [sc showWindow:self];
+    
     
 	iconFolder = [[[NSBundle mainBundle] pathForResource:@"Minion-Icons" ofType:nil] retain];
 	icons = [[[NSFileManager defaultManager] contentsOfDirectoryAtPath:iconFolder error:nil] retain];

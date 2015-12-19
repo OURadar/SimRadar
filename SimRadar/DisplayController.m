@@ -156,18 +156,6 @@ NSWindow *standardWindow;
     [glView stopAnimation];
 }
 
-//- (void)showWindow:(id)sender
-//{
-//	[super showWindow:sender];
-//
-//    #ifdef DEBUG
-//	NSLog(@"Starting animation ...");
-//	#endif
-//	
-////	[glView startAnimation];
-//}
-
-
 #pragma mark -
 #pragma mark IBAction
 

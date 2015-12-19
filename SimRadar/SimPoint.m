@@ -64,9 +64,9 @@
 		L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
 //        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, [resourcePath UTF8String]);
 
-        A = ADM_init_with_config_path(ADMConfigSquarePlate, [resourcePath UTF8String]);
+        A = ADM_init_with_config_path(ADMConfigSquarePlate, NULL);
 
-        R = RCS_init_with_config_path(RCSConfigLeaf, [resourcePath UTF8String]);
+        R = RCS_init_with_config_path(RCSConfigLeaf, NULL);
         
         if (reportProgress) {
             [delegate progressUpdated:3.0 message:[NSString stringWithFormat:@"LES @ %s", LES_data_path(L)]];
@@ -86,10 +86,14 @@
             NSLog(@"Some error(s) in RS_init(), LES_init(), ADM_init() or RCS_init() occurred.");
             return nil;
         }
-        
+
 		#ifdef DEBUG
 		RS_set_verbosity(S, 3);
 		#endif
+
+        if (reportProgress) {
+            [delegate progressUpdated:10.0 message:[NSString stringWithFormat:@"Configuring radar parameters ..."]];
+        }
 
 		RS_set_antenna_params(S, 1.0f, 44.5f);                // 1.0-deg, 44.5 dBi gain
 		
@@ -104,7 +108,7 @@
         
 //        RS_set_debris_count(S, 1, 20);
 //        RS_set_debris_count(S, 3, 10);
-        
+
         RS_set_prt(S, 0.03f);
 
 //        char ori_file[4096];
@@ -120,12 +124,13 @@
         
         RS_clear_wind_data(S);
         for (table_id = 0; table_id < RS_MAX_VEL_TABLES; table_id++) {
+            if (reportProgress) {
+                [delegate progressUpdated:(10.0 + (double)table_id / RS_MAX_VEL_TABLES * 70.0)
+                                  message:[NSString stringWithFormat:@"Loading LES table %d to GPU ...", table_id]];
+            }
             LESTable *les = LES_get_frame(L, table_id);
             //LES_show_table_summary(les);
             RS_set_wind_data_to_LES_table(S, les);
-            if (reportProgress) {
-                [delegate progressUpdated:(5.0 + table_id * 8.0) message:[NSString stringWithFormat:@"LES table %d", table_id]];
-            }
         }
         
         ADMTable *adm = ADM_get_frame(A);

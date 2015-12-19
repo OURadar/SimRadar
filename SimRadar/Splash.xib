@@ -6,9 +6,11 @@
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="SplashController">
             <connections>
+                <outlet property="copyright" destination="ina-zc-Zhw" id="uPw-Ek-E60"/>
                 <outlet property="imageCell" destination="evt-n7-EiY" id="tYz-q2-V1w"/>
                 <outlet property="label" destination="Tp2-Bb-cQg" id="ose-HX-OGv"/>
                 <outlet property="progress" destination="64v-la-8cP" id="MKy-jA-aFg"/>
+                <outlet property="version" destination="C0j-r1-hGc" id="7uw-gg-vUg"/>
                 <outlet property="window" destination="QvC-M9-y7g" id="gH2-8c-hle"/>
             </connections>
         </customObject>
@@ -40,6 +42,24 @@
                         <rect key="frame" x="186" y="65" width="428" height="20"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     </progressIndicator>
+                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="ina-zc-Zhw">
+                        <rect key="frame" x="150" y="131" width="489" height="17"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="left" title="Copyright" id="aqO-5p-GoY">
+                            <font key="font" metaFont="system"/>
+                            <color key="textColor" name="highlightColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                    </textField>
+                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="C0j-r1-hGc">
+                        <rect key="frame" x="150" y="156" width="226" height="17"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="left" title="Version 0.0" id="aRb-hU-lLK">
+                            <font key="font" metaFont="system"/>
+                            <color key="textColor" name="highlightColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                    </textField>
                 </subviews>
             </view>
             <point key="canvasLocation" x="480" y="403"/>
