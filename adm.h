@@ -47,6 +47,15 @@ typedef struct _adm_table {
     uint32_t  nb;             // Number of cells in beta direction
     uint32_t  na;             // Number of cells in alpha direction
     uint32_t  nn;             // Number of cells in all directions combined
+    float     x;              // length in x (m) (local coordinate)
+    float     y;              // length in y (m) (local coordinate)
+    float     z;              // length in z (m) (local coordinate)
+    float     rho;            // Density (kg / m^3)
+    float     mass;           // Mass (kg)
+    float     Ta;             // Tachikawa parameter
+    float     inv_inln_x;
+    float     inv_inln_y;
+    float     inv_inln_z;
     float     *b;
     float     *a;
     float     *cdx;
