@@ -181,78 +181,16 @@ ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path) {
 
     fclose(fid);
     
-//    float v0 = 100.0f;
-//    const float rho = 1.21f;
-//    const float g = 9.8f;
-//    
-//    float len = 0.04f;
-//    float thi = 0.002f;
-//    float rhod = 1120.0f;
-//    float mass = len * len * thi * rhod;
-//    
-//    cl_float4 ii = {{
-//        (len * len + len * len) * mass / 12.0f,
-//        (len * len + thi * thi) * mass / 12.0f,
-//        (thi * thi + len * len) * mass / 12.0f,
-//        0.0f
-//    }};
-//    cl_float4 inln = {{
-//        ii.x * g * len / (mass * len * len * v0 * v0),
-//        ii.y * g * len / (mass * len * len * v0 * v0),
-//        ii.z * g * len / (mass * len * len * v0 * v0)
-//    }};
-//    H->inv_inln = (cl_float4) {{
-//        1.0f / inln.x,
-//        1.0f / inln.y,
-//        1.0f / inln.z,
-//        0.0f
-//    }};
-//    H->Ta = rho * (len * len * v0 * v0) / (2.0f * mass * g);
-//    
-//    // De-dimensionalize
-//    // Velocity should have v0 * v0 / g whenever velocity is retrieved but pre-done here
-//    // Angular momentum's len needs to be dimensionalized by v0 * v0 / g
-//    H->inv_inln.x = (mass * len) / (ii.x * g * g);
-//    H->inv_inln.y = (mass * len) / (ii.y * g * g);
-//    H->inv_inln.z = (mass * len) / (ii.z * g * g);
-//    H->Ta *= g / (v0 * v0);
     // Physica description
     h->table.phys.x = 0.002f;
     h->table.phys.y = 0.040f;
     h->table.phys.z = 0.040f;
     h->table.phys.rho = 1120.0f;
-    h->table.phys.mass = h->table.phys.x * h->table.phys.y * h->table.phys.z * h->table.phys.rho;
 
-
-//    h->table.phys.inv_inln_x = 1.0f /
-
+    // Derive other physical parameters
+    ADM_compute_properties(&h->table.phys);
     
     return (ADMHandle *)h;
-}
-
-void ADM_compute_Ta(ADMBase *phys) {
-    const float g = 9.8f;
-    const float v0 = 100.0f;
-    const float rho_air = 1.21f;
-    
-    float ix = (phys->y * phys->y + phys->z * phys->z) * phys->mass / 12.0f;
-    float iy = (phys->x * phys->x + phys->z * phys->z) * phys->mass / 12.0f;
-    float iz = (phys->x * phys->x + phys->y * phys->y) * phys->mass / 12.0f;
-    
-//    float inln_x = ix * g * phys->x / (phys->mass * phys->y * phys->z * v0 * v0);
-//    float inln_y = iy * g * phys->y / (phys->mass * phys->x * phys->z * v0 * v0);
-//    float inln_z = iz * g * phys->z / (phys->mass * phys->x * phys->z * v0 * v0);
-    
-    phys->Ta = rho_air * (phys->y * phys->z * v0 * v0) / (2.0f * phys->mass * g);
-
-    // De-dimensionalize
-    // Velocity should have v0 * v0 / g whenever velocity is retrieved but pre-done here
-    // Angular momentum's len needs to be dimensionalized by v0 * v0 / g
-    phys->inv_inln_x = (phys->mass * phys->x) / (ix * g * g);
-    phys->inv_inln_y = (phys->mass * phys->y) / (iy * g * g);
-    phys->inv_inln_z = (phys->mass * phys->z) / (iz * g * g);
-
-    phys->Ta *= g / (v0 * v0);
 }
 
 
@@ -313,6 +251,48 @@ void ADM_show_table_summary(const ADMTable *T) {
     ADM_show_slice(T->data.cmz, T->nb, T->na);
 }
 
-void ADM_transform_scale(ADMTable *T, const float x, const float y, const float z) {
+
+void ADM_transform_scale(ADMTable *T, const float x, const float y, const float z, const float r) {
+    T->phys.x *= x;
+    T->phys.y *= y;
+    T->phys.z *= z;
+    T->phys.rho *= r;
+    ADM_compute_properties(&T->phys);
+}
+
+
+void ADM_dimension_set(ADMTable *T, const float x, const float y, const float z, const float r) {
+    T->phys.x = x;
+    T->phys.y = y;
+    T->phys.z = z;
+    T->phys.rho = r;
+    ADM_compute_properties(&T->phys);
+}
+
+
+void ADM_compute_properties(ADMBase *phys) {
+    const float g = 9.8f;
+    const float v0 = 100.0f;
+    const float rho_air = 1.21f;
     
+    phys->mass = phys->x * phys->y * phys->z * phys->rho;
+    
+    float ix = (phys->y * phys->y + phys->z * phys->z) * phys->mass / 12.0f;
+    float iy = (phys->x * phys->x + phys->z * phys->z) * phys->mass / 12.0f;
+    float iz = (phys->x * phys->x + phys->y * phys->y) * phys->mass / 12.0f;
+    
+    //    float inln_x = ix * g * phys->x / (phys->mass * phys->y * phys->z * v0 * v0);
+    //    float inln_y = iy * g * phys->y / (phys->mass * phys->x * phys->z * v0 * v0);
+    //    float inln_z = iz * g * phys->z / (phys->mass * phys->x * phys->z * v0 * v0);
+    
+    phys->Ta = rho_air * (phys->y * phys->z * v0 * v0) / (2.0f * phys->mass * g);
+    
+    // De-dimensionalize
+    // Velocity should have v0 * v0 / g whenever velocity is retrieved but pre-done here
+    // Angular momentum's len needs to be dimensionalized by v0 * v0 / g
+    phys->inv_inln_x = (phys->mass * phys->x) / (ix * g * g);
+    phys->inv_inln_y = (phys->mass * phys->y) / (iy * g * g);
+    phys->inv_inln_z = (phys->mass * phys->z) / (iz * g * g);
+    
+    phys->Ta *= g / (v0 * v0);
 }

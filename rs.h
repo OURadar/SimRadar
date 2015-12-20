@@ -379,8 +379,6 @@ typedef struct _rs_handle {
     // Table related variables
     uint32_t               vel_idx;
     uint32_t               vel_count;
-    cl_float4              inv_inln;  // to be deperated ...
-    cl_float               Ta;        // to be deperated ...
     uint32_t               adm_idx;
     uint32_t               adm_count;
     uint32_t               rcs_idx;
@@ -491,18 +489,15 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
 void RS_set_angular_weight_to_standard(RSHandle *H, float beamwidth_deg);
 void RS_set_angular_weight_to_double_cone(RSHandle *H, float beamwidth_deg);
 
-void RS_set_wind_data(RSHandle *H, const RSTable3D table);
 void RS_set_wind_data_to_LES_table(RSHandle *H, const LESTable *table);
 void RS_set_wind_data_to_cube27(RSHandle *H);
 void RS_set_wind_data_to_cube125(RSHandle *H);
 void RS_clear_wind_data(RSHandle *H);
 
-void RS_set_adm_data(RSHandle *H, const RSTable2D table_cd, const RSTable2D table_cm);
 void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *table);
 void RS_set_adm_data_to_unity(RSHandle *H);
 void RS_clear_adm_data(RSHandle *H);
 
-void RS_set_rcs_data(RSHandle *H, const RSTable2D table_real, const RSTable2D table_imag);
 void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *table);
 void RS_set_rcs_data_to_unity(RSHandle *H);
 void RS_clear_rcs_data(RSHandle *H);

@@ -263,9 +263,9 @@
     pos[24] = -1.0f;   pos[25] =  1.0f;   pos[26] =  1.0f;   pos[27] = 0.0f;
     pos[28] =  1.0f;   pos[29] =  1.0f;   pos[30] =  1.0f;   pos[31] = 0.0f;
     for (int i = 0; i < 8; i++) {
-        pos[4 * i]     *= 2.5f;
-        pos[4 * i + 1] *= 2.5f;
-        pos[4 * i + 2] *= 2.5f;
+        pos[4 * i]     *= 0.5f;
+        pos[4 * i + 1] *= 8.0f;
+        pos[4 * i + 2] *= 8.0f;
     }
     prim->vertexSize = 32 * sizeof(GLfloat);
     GLuint ind1[] = {

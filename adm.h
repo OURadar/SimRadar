@@ -71,6 +71,8 @@ ADMTable *ADM_get_frame(const ADMHandle *);
 char *ADM_data_path(const ADMHandle *);
 
 void ADM_show_table_summary(const ADMTable *);
-void ADM_transform_scale(ADMTable *T, const float x, const float y, const float z);
+void ADM_transform_scale(ADMTable *T, const float x, const float y, const float z, const float r);
+void ADM_dimension_set(ADMTable *T, const float x, const float y, const float z, const float r);
+void ADM_compute_properties(ADMBase *);
 
 #endif

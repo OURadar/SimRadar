@@ -104,7 +104,7 @@
 //        RS_set_debris_count(S, 3, 500);
 
         RS_set_debris_count(S, 1, (size_t)roundf(25000 / 384) * 384);
-//        RS_set_debris_count(S, 3, (size_t)roundf(500 / 384) * 384);
+        RS_set_debris_count(S, 2, (size_t)roundf(500 / 384) * 384);
         
 //        RS_set_debris_count(S, 1, 20);
 //        RS_set_debris_count(S, 3, 10);
@@ -135,9 +135,14 @@
         
         ADMTable *adm = ADM_get_frame(A);
         //ADM_show_table_summary(adm);
+        
         RS_clear_adm_data(S);
+        
         RS_set_adm_data_to_ADM_table(S, adm);
+        
+        ADM_transform_scale(adm, 1.0f, 3.0f, 3.0f, 10.0f);
         RS_set_adm_data_to_ADM_table(S, adm);
+        
         RS_set_adm_data_to_ADM_table(S, adm);
 
         if (reportProgress) {

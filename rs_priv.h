@@ -28,6 +28,7 @@
 //    RSScattererAttributeKernelArgumentAngularWeightDescription      = 16,
 //    RSScattererAttributeKernelArgumentSimulationDescription         = 17
 //};
+
 enum RSDebrisAttributeKernelArgument {
     RSDebrisAttributeKernelArgumentPosition                      = 0,
     RSDebrisAttributeKernelArgumentOrientation                   = 1,
@@ -116,5 +117,9 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 void RS_init_scat_pos(RSHandle *H);
 void RS_merge_pulse_tmp(RSHandle *H);
 void RS_update_debris_count(RSHandle *H);
+
+void RS_set_wind_data(RSHandle *H, const RSTable3D table);
+void RS_set_adm_data(RSHandle *H, const RSTable2D table_cd, const RSTable2D table_cm);
+void RS_set_rcs_data(RSHandle *H, const RSTable2D table_real, const RSTable2D table_imag);
 
 #endif

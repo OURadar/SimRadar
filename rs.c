@@ -1332,56 +1332,56 @@ void RS_init_scat_pos(RSHandle *H) {
     H->sim_desc.s[RSSimulationParameterAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTableDescriptionRefreshTime];
 
     // This part should be moved to setting ADM
-    for (k = 0; k < H->adm_count; k++) {
-        // Plate dimension in meters
-        float v0 = 100.0f;
-        const float rho = 1.21f;
-        const float g = 9.8f;
-        
-        float len = 0.04f;
-        float thi = 0.002f;
-        float rhod = 1120.0f;
-        float mass = len * len * thi * rhod;
-        
-        cl_float4 ii = {{
-            (len * len + len * len) * mass / 12.0f,
-            (len * len + thi * thi) * mass / 12.0f,
-            (thi * thi + len * len) * mass / 12.0f,
-            0.0f
-        }};
-        cl_float4 inln = {{
-            ii.x * g * len / (mass * len * len * v0 * v0),
-            ii.y * g * len / (mass * len * len * v0 * v0),
-            ii.z * g * len / (mass * len * len * v0 * v0)
-        }};
-        H->inv_inln = (cl_float4) {{
-            1.0f / inln.x,
-            1.0f / inln.y,
-            1.0f / inln.z,
-            0.0f
-        }};
-        H->Ta = rho * (len * len * v0 * v0) / (2.0f * mass * g);
-        
-        // De-dimensionalize
-        // Velocity should have v0 * v0 / g whenever velocity is retrieved but pre-done here
-        // Angular momentum's len needs to be dimensionalized by v0 * v0 / g
-        H->inv_inln.x = (mass * len) / (ii.x * g * g);
-        H->inv_inln.y = (mass * len) / (ii.y * g * g);
-        H->inv_inln.z = (mass * len) / (ii.z * g * g);
-        H->Ta *= g / (v0 * v0);
-        
-        if (H->verb) {
-            printf("%s : RS : ADM[%d]   Ta = %.4f  inv_inln = [%.4f %.4f %.4f]   mass = %.4f kg\n",
-                   now(), k, H->Ta, H->inv_inln.x, H->inv_inln.y, H->inv_inln.z, mass);
-        }
-        
-        for (i = 0; i < H->num_workers; i++) {
-            H->worker[i].adm_desc[k].s[RSTableDescriptionRecipInLnX] = H->inv_inln.x;
-            H->worker[i].adm_desc[k].s[RSTableDescriptionRecipInLnY] = H->inv_inln.y;
-            H->worker[i].adm_desc[k].s[RSTableDescriptionRecipInLnZ] = H->inv_inln.z;
-            H->worker[i].adm_desc[k].s[RSTableDescriptionTachikawa] = H->Ta;
-        }
-    }
+//    for (k = 0; k < H->adm_count; k++) {
+//        // Plate dimension in meters
+//        float v0 = 100.0f;
+//        const float rho = 1.21f;
+//        const float g = 9.8f;
+//        
+//        float len = 0.04f;
+//        float thi = 0.002f;
+//        float rhod = 1120.0f;
+//        float mass = len * len * thi * rhod;
+//        
+//        cl_float4 ii = {{
+//            (len * len + len * len) * mass / 12.0f,
+//            (len * len + thi * thi) * mass / 12.0f,
+//            (thi * thi + len * len) * mass / 12.0f,
+//            0.0f
+//        }};
+//        cl_float4 inln = {{
+//            ii.x * g * len / (mass * len * len * v0 * v0),
+//            ii.y * g * len / (mass * len * len * v0 * v0),
+//            ii.z * g * len / (mass * len * len * v0 * v0)
+//        }};
+//        H->inv_inln = (cl_float4) {{
+//            1.0f / inln.x,
+//            1.0f / inln.y,
+//            1.0f / inln.z,
+//            0.0f
+//        }};
+//        H->Ta = rho * (len * len * v0 * v0) / (2.0f * mass * g);
+//        
+//        // De-dimensionalize
+//        // Velocity should have v0 * v0 / g whenever velocity is retrieved but pre-done here
+//        // Angular momentum's len needs to be dimensionalized by v0 * v0 / g
+//        H->inv_inln.x = (mass * len) / (ii.x * g * g);
+//        H->inv_inln.y = (mass * len) / (ii.y * g * g);
+//        H->inv_inln.z = (mass * len) / (ii.z * g * g);
+//        H->Ta *= g / (v0 * v0);
+//        
+//        if (H->verb) {
+//            printf("%s : RS : ADM[%d]   Ta = %.4f  inv_inln = [%.4f %.4f %.4f]   mass = %.4f kg\n",
+//                   now(), k, H->Ta, H->inv_inln.x, H->inv_inln.y, H->inv_inln.z, mass);
+//        }
+//        
+//        for (i = 0; i < H->num_workers; i++) {
+//            H->worker[i].adm_desc[k].s[RSTableDescriptionRecipInLnX] = H->inv_inln.x;
+//            H->worker[i].adm_desc[k].s[RSTableDescriptionRecipInLnY] = H->inv_inln.y;
+//            H->worker[i].adm_desc[k].s[RSTableDescriptionRecipInLnZ] = H->inv_inln.z;
+//            H->worker[i].adm_desc[k].s[RSTableDescriptionTachikawa] = H->Ta;
+//        }
+//    }
 }
 
 #pragma mark -
@@ -2401,7 +2401,7 @@ void RS_set_wind_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
 //               H->domain.origin.y, H->domain.origin.y + H->domain.size.y,
 //               H->domain.origin.z, H->domain.origin.z + H->domain.size.z);
 
-        printf("%s : RS : LES[%2d] @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
+        printf("%s : RS : GPU LES[%2d] @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
                now(),
                H->vel_count,
                -hmax, hmax,
@@ -2544,7 +2544,7 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
         return;
     }
     
-    if (H->verb > 1) {
+    if (H->verb > 2) {
         printf("%s : RS : ADM[%d] @ X:[ -M_PI - +M_PI ]  Y:[ 0 - M_PI ]\n", now(), H->adm_count);
     }
     
@@ -2649,6 +2649,10 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
         H->worker[i].adm_desc[t].s[RSTableDescriptionMaximumX] = cd.xm;
         H->worker[i].adm_desc[t].s[RSTableDescriptionMaximumY] = cd.ym;
         H->worker[i].adm_desc[t].s[RSTableDescriptionMaximumZ] = 0.0f;
+        H->worker[i].adm_desc[t].s[RSTableDescriptionRecipInLnX] = H->adm_desc[t].phys.inv_inln_x;
+        H->worker[i].adm_desc[t].s[RSTableDescriptionRecipInLnY] = H->adm_desc[t].phys.inv_inln_y;
+        H->worker[i].adm_desc[t].s[RSTableDescriptionRecipInLnZ] = H->adm_desc[t].phys.inv_inln_z;
+        H->worker[i].adm_desc[t].s[RSTableDescriptionTachikawa] = H->adm_desc[t].phys.Ta;
         H->worker[i].mem_size += ((cl_uint)(cd.xm + 1.0f) * (cd.ym + 1.0f)) * 2 * sizeof(cl_float4);
     }
     H->adm_count++;
@@ -2690,6 +2694,12 @@ void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *adam) {
     // Cache a copy of the parameters but not the data, the data could be deallocated immediately after this function call.
     H->adm_desc[H->adm_count] = *adam;
     memset(&H->adm_desc[H->adm_count].data, 0, sizeof(ADMData));
+
+    if (H->verb > 1) {
+        const int t = H->adm_count;
+        printf("%s : RS : GPU ADM[%d]   Ta = %.4f  inv_inln = [%.4f %.4f %.4f]   mass = %.4f kg\n",
+               now(), t, H->adm_desc[t].phys.Ta, H->adm_desc[t].phys.inv_inln_x, H->adm_desc[t].phys.inv_inln_y, H->adm_desc[t].phys.inv_inln_z, H->adm_desc[t].phys.mass);
+    }
 
     RS_set_adm_data(H, cd, cm);
     
@@ -2748,7 +2758,7 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
     }
 
     if (H->verb > 1) {
-        printf("%s : RS : RCS[%d] @ X:[ -M_PI - +M_PI ]  Y:[ 0 - M_PI ]\n", now(), H->rcs_count);
+        printf("%s : RS : GPU RCS[%d] @ X:[ -M_PI - +M_PI ]  Y:[ 0 - M_PI ]\n", now(), H->rcs_count);
     }
     
     // This is the part that we need to create two texture maps for each RSTable2D table
@@ -3262,21 +3272,13 @@ void RS_download(RSHandle *H) {
 		dispatch_async(H->worker[i].que, ^{
 			gcl_memcpy((void *)(H->scat_pos + H->offset[i]), H->worker[i].scat_pos, H->worker[i].num_scats * sizeof(cl_float4));
             gcl_memcpy((void *)(H->scat_vel + H->offset[i]), H->worker[i].scat_vel, H->worker[i].num_scats * sizeof(cl_float4));
-            //gcl_memcpy((void *)(H->scat_ori + H->offset[i]), H->worker[i].scat_ori, H->worker[i].num_scats * sizeof(cl_float4));
+            gcl_memcpy((void *)(H->scat_ori + H->offset[i]), H->worker[i].scat_ori, H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy((void *)(H->scat_att + H->offset[i]), H->worker[i].scat_att, H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy((void *)(H->scat_sig + H->offset[i]), H->worker[i].scat_sig, H->worker[i].num_scats * sizeof(cl_float4));
             dispatch_semaphore_signal(H->worker[i].sem);
 		});
         dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
 	}
-
-//    for (i = 0; i < H->num_workers; i++) {
-//        dispatch_async(H->worker[i].que, ^{
-//            gcl_memcpy((void *)(H->scat_ori + H->offset[i]), H->worker[i].scat_ori, H->worker[i].num_scats * sizeof(cl_float4));
-//            dispatch_semaphore_signal(H->worker[i].sem);
-//        });
-//        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
-//    }
 
 #else
 
@@ -3963,6 +3965,6 @@ RSBox RS_suggest_scan_doamin(RSHandle *H, const int nbeams) {
                now(), 2.0f * w, h, nr, na, ne,
                now(), box.origin.r, box.origin.r + box.size.r, box.origin.e, box.origin.e + box.size.e, box.origin.a, box.origin.a + box.size.a);
     }
-    
+
     return box;
 }
