@@ -169,27 +169,27 @@ ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path) {
     h->data_value->nb = h->data_grid->nb;
     h->data_value->na = h->data_grid->na;
     h->data_value->nn = h->data_grid->nb * h->data_grid->na;
-    h->data_value->b = h->data_grid->b;
-    h->data_value->a = h->data_grid->a;
+    h->data_value->data.b = h->data_grid->b;
+    h->data_value->data.a = h->data_grid->a;
     if (h->data_value->nn == 0) {
         fprintf(stderr, "Empty table (ADMTable)?\n");
         fclose(fid);
         return NULL;
     }
-    h->data_value->cdx = (float *)malloc(h->data_value->nn * sizeof(float));
-    h->data_value->cdy = (float *)malloc(h->data_value->nn * sizeof(float));
-    h->data_value->cdz = (float *)malloc(h->data_value->nn * sizeof(float));
-    h->data_value->cmx = (float *)malloc(h->data_value->nn * sizeof(float));
-    h->data_value->cmy = (float *)malloc(h->data_value->nn * sizeof(float));
-    h->data_value->cmz = (float *)malloc(h->data_value->nn * sizeof(float));
+    h->data_value->data.cdx = (float *)malloc(h->data_value->nn * sizeof(float));
+    h->data_value->data.cdy = (float *)malloc(h->data_value->nn * sizeof(float));
+    h->data_value->data.cdz = (float *)malloc(h->data_value->nn * sizeof(float));
+    h->data_value->data.cmx = (float *)malloc(h->data_value->nn * sizeof(float));
+    h->data_value->data.cmy = (float *)malloc(h->data_value->nn * sizeof(float));
+    h->data_value->data.cmz = (float *)malloc(h->data_value->nn * sizeof(float));
     
     // Fill in the table
-    fread(h->data_value->cdx, sizeof(float), h->data_value->nn, fid);
-    fread(h->data_value->cdy, sizeof(float), h->data_value->nn, fid);
-    fread(h->data_value->cdz, sizeof(float), h->data_value->nn, fid);
-    fread(h->data_value->cmx, sizeof(float), h->data_value->nn, fid);
-    fread(h->data_value->cmy, sizeof(float), h->data_value->nn, fid);
-    fread(h->data_value->cmz, sizeof(float), h->data_value->nn, fid);
+    fread(h->data_value->data.cdx, sizeof(float), h->data_value->nn, fid);
+    fread(h->data_value->data.cdy, sizeof(float), h->data_value->nn, fid);
+    fread(h->data_value->data.cdz, sizeof(float), h->data_value->nn, fid);
+    fread(h->data_value->data.cmx, sizeof(float), h->data_value->nn, fid);
+    fread(h->data_value->data.cmy, sizeof(float), h->data_value->nn, fid);
+    fread(h->data_value->data.cmz, sizeof(float), h->data_value->nn, fid);
 
     fclose(fid);
     
@@ -204,12 +204,12 @@ ADMHandle *ADM_init(void) {
 
 void ADM_free(ADMHandle *i) {
     ADMMem *h = (ADMMem *)i;
-    free(h->data_value->cdx);
-    free(h->data_value->cdy);
-    free(h->data_value->cdz);
-    free(h->data_value->cmx);
-    free(h->data_value->cmy);
-    free(h->data_value->cmz);
+    free(h->data_value->data.cdx);
+    free(h->data_value->data.cdy);
+    free(h->data_value->data.cdz);
+    free(h->data_value->data.cmx);
+    free(h->data_value->data.cmy);
+    free(h->data_value->data.cmz);
     free(h->data_value);
     free(h->data_grid->b);
     free(h->data_grid->a);
@@ -232,26 +232,26 @@ char *ADM_data_path(const ADMHandle *i) {
 
 void ADM_show_table_summary(const ADMTable *T) {
     printf(" beta =\n");
-    ADM_show_row("  [ ", " ]\n\n", T->b, T->nb);
+    ADM_show_row("  [ ", " ]\n\n", T->data.b, T->nb);
 
     printf(" alpha =\n");
-    ADM_show_row("  [ ", " ]\n\n", T->a, T->na);
+    ADM_show_row("  [ ", " ]\n\n", T->data.a, T->na);
 
     printf(" cdx =\n");
-    ADM_show_slice(T->cdx, T->nb, T->na);
+    ADM_show_slice(T->data.cdx, T->nb, T->na);
 
     printf(" cdy =\n");
-    ADM_show_slice(T->cdy, T->nb, T->na);
+    ADM_show_slice(T->data.cdy, T->nb, T->na);
 
     printf(" cdz =\n");
-    ADM_show_slice(T->cdz, T->nb, T->na);
+    ADM_show_slice(T->data.cdz, T->nb, T->na);
     
     printf(" cmx =\n");
-    ADM_show_slice(T->cmx, T->nb, T->na);
+    ADM_show_slice(T->data.cmx, T->nb, T->na);
 
     printf(" cmy =\n");
-    ADM_show_slice(T->cmy, T->nb, T->na);
+    ADM_show_slice(T->data.cmy, T->nb, T->na);
 
     printf(" cmz =\n");
-    ADM_show_slice(T->cmz, T->nb, T->na);
+    ADM_show_slice(T->data.cmz, T->nb, T->na);
 }

@@ -198,27 +198,27 @@ RCSHandle *RCS_init_with_config_path(const RCSConfig config, const char *path) {
     h->data_value->na = h->data_grid->na;
     h->data_value->nb = h->data_grid->nb;
     h->data_value->nn = h->data_grid->na * h->data_grid->nb;
-    h->data_value->a = h->data_grid->a;
-    h->data_value->b = h->data_grid->b;
+    h->data_value->data.a = h->data_grid->a;
+    h->data_value->data.b = h->data_grid->b;
     if (h->data_value->nn == 0) {
         fprintf(stderr, "Empty table (RCSTable)?\n");
         fclose(fid);
         return NULL;
     }
-    h->data_value->hh_real = (float *)malloc(h->data_value->nn * sizeof(float));
-    h->data_value->vv_real = (float *)malloc(h->data_value->nn * sizeof(float));
-    h->data_value->hv_real = (float *)malloc(h->data_value->nn * sizeof(float));
-    h->data_value->hh_imag = (float *)malloc(h->data_value->nn * sizeof(float));
-    h->data_value->vv_imag = (float *)malloc(h->data_value->nn * sizeof(float));
-    h->data_value->hv_imag = (float *)malloc(h->data_value->nn * sizeof(float));
+    h->data_value->data.hh_real = (float *)malloc(h->data_value->nn * sizeof(float));
+    h->data_value->data.vv_real = (float *)malloc(h->data_value->nn * sizeof(float));
+    h->data_value->data.hv_real = (float *)malloc(h->data_value->nn * sizeof(float));
+    h->data_value->data.hh_imag = (float *)malloc(h->data_value->nn * sizeof(float));
+    h->data_value->data.vv_imag = (float *)malloc(h->data_value->nn * sizeof(float));
+    h->data_value->data.hv_imag = (float *)malloc(h->data_value->nn * sizeof(float));
     
     // Fill in the table
-    fread(h->data_value->hh_real, sizeof(float), h->data_value->nn, fid);
-    fread(h->data_value->vv_real, sizeof(float), h->data_value->nn, fid);
-    fread(h->data_value->hv_real, sizeof(float), h->data_value->nn, fid);
-    fread(h->data_value->hh_imag, sizeof(float), h->data_value->nn, fid);
-    fread(h->data_value->vv_imag, sizeof(float), h->data_value->nn, fid);
-    fread(h->data_value->hv_imag, sizeof(float), h->data_value->nn, fid);
+    fread(h->data_value->data.hh_real, sizeof(float), h->data_value->nn, fid);
+    fread(h->data_value->data.vv_real, sizeof(float), h->data_value->nn, fid);
+    fread(h->data_value->data.hv_real, sizeof(float), h->data_value->nn, fid);
+    fread(h->data_value->data.hh_imag, sizeof(float), h->data_value->nn, fid);
+    fread(h->data_value->data.vv_imag, sizeof(float), h->data_value->nn, fid);
+    fread(h->data_value->data.hv_imag, sizeof(float), h->data_value->nn, fid);
     
     fclose(fid);
     
@@ -233,12 +233,12 @@ RCSHandle *RCS_init(void) {
 
 void RCS_free(RCSHandle *i) {
     RCSMem *h = (RCSMem *)i;
-    free(h->data_value->hh_real);
-    free(h->data_value->vv_real);
-    free(h->data_value->hv_real);
-    free(h->data_value->hh_imag);
-    free(h->data_value->vv_imag);
-    free(h->data_value->hv_imag);
+    free(h->data_value->data.hh_real);
+    free(h->data_value->data.vv_real);
+    free(h->data_value->data.hv_real);
+    free(h->data_value->data.hh_imag);
+    free(h->data_value->data.vv_imag);
+    free(h->data_value->data.hv_imag);
     free(h->data_value);
     free(h->data_grid->a);
     free(h->data_grid->b);
@@ -261,17 +261,17 @@ char *RCS_data_path(const RCSHandle *i) {
 
 void RCS_show_table_summary(const RCSTable *T) {
     printf(" alpha =\n");
-    RCS_show_row("  [ ", " ]\n\n", T->a, T->na);
+    RCS_show_row("  [ ", " ]\n\n", T->data.a, T->na);
     
     printf(" beta =\n");
-    RCS_show_row("  [ ", " ]\n\n", T->b, T->nb);
+    RCS_show_row("  [ ", " ]\n\n", T->data.b, T->nb);
     
     printf(" hh =\n");
-    RCS_show_slice_complex(T->hh_real, T->hh_imag, T->na, T->nb);
+    RCS_show_slice_complex(T->data.hh_real, T->data.hh_imag, T->na, T->nb);
     
     printf(" vv =\n");
-    RCS_show_slice_complex(T->vv_real, T->vv_imag, T->na, T->nb);
+    RCS_show_slice_complex(T->data.vv_real, T->data.vv_imag, T->na, T->nb);
     
     printf(" hv =\n");
-    RCS_show_slice_complex(T->hv_real, T->hv_imag, T->na, T->nb);
+    RCS_show_slice_complex(T->data.hv_real, T->data.hv_imag, T->na, T->nb);
 }

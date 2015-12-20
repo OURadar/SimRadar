@@ -378,8 +378,8 @@ typedef struct _rs_handle {
     // Table related variables
     uint32_t               vel_idx;
     uint32_t               vel_count;
-    cl_float4              inv_inln;
-    cl_float               Ta;
+    cl_float4              inv_inln;  // to be deperated ...
+    cl_float               Ta;        // to be deperated ...
     uint32_t               adm_idx;
     uint32_t               adm_count;
     uint32_t               rcs_idx;

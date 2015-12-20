@@ -2676,13 +2676,13 @@ void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *adam) {
 
     // Arrange ADM values into float4, getting ready for GPU's global memory
     for (i = 0; i < adam->nn; i++) {
-        cd.data[i].x = adam->cdx[i];
-        cd.data[i].y = adam->cdy[i];
-        cd.data[i].z = adam->cdz[i];
+        cd.data[i].x = adam->data.cdx[i];
+        cd.data[i].y = adam->data.cdy[i];
+        cd.data[i].z = adam->data.cdz[i];
         cd.data[i].w = 0.0f;
-        cm.data[i].x = adam->cmx[i];
-        cm.data[i].y = adam->cmy[i];
-        cm.data[i].z = adam->cmz[i];
+        cm.data[i].x = adam->data.cmx[i];
+        cm.data[i].y = adam->data.cmy[i];
+        cm.data[i].z = adam->data.cmz[i];
         cm.data[i].w = 0.0f;
     }
     
@@ -2874,13 +2874,13 @@ void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *rosie) {
     
     // Arrange RCS values into float4, getting ready for GPU's global memory
     for (i = 0; i < rosie->nn; i++) {
-        real.data[i].x = rosie->hh_real[i];
-        real.data[i].y = rosie->vv_real[i];
-        real.data[i].z = rosie->hv_real[i];
+        real.data[i].x = rosie->data.hh_real[i];
+        real.data[i].y = rosie->data.vv_real[i];
+        real.data[i].z = rosie->data.hv_real[i];
         real.data[i].w = 0.0f;
-        imag.data[i].x = rosie->hh_imag[i];
-        imag.data[i].y = rosie->vv_imag[i];
-        imag.data[i].z = rosie->hv_imag[i];
+        imag.data[i].x = rosie->data.hh_imag[i];
+        imag.data[i].y = rosie->data.vv_imag[i];
+        imag.data[i].z = rosie->data.hv_imag[i];
         imag.data[i].w = 0.0f;
     }
     
