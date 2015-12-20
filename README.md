@@ -187,3 +187,21 @@ Multiple arrays of type `cl_float` are used to keep track of a set of attributes
     cl_mem                 scat_att;   // scatterer type, dot products, range, etc.
     cl_mem                 scat_sig;   // signal: Ih Qh Iv Qv
     cl_mem                 scat_rnd;   // random seed
+
+
+### Functions to interact directly with GPU ###
+
+These functions take input format that are readily suitable for GPU array buffers.
+
+    RS_set_wind_data()
+    RS_set_adm_data()
+    RS_set_rcs_data()
+
+### Functions to interact with mater handler ###
+
+These functions take input format that are in native format from the data supplier. They create a copy of the data but layout the data in structure that can be used by the functions that interact directly with the GPUs.
+
+    RS_set_wind_data_to_LES_table()
+    RS_set_adm_data_to_ADM_table()
+    RS_set_rcs_data_to_RCS_table()
+

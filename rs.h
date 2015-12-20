@@ -387,8 +387,8 @@ typedef struct _rs_handle {
     
     // Table parameter shadow copy: only the constants, not the pointers
     LESTable               vel_desc;
-    ADMTable               adm_desc;
-    RCSTable               rcs_desc;
+    ADMTable               adm_desc[RS_MAX_DEBRIS_TYPES];
+    RCSTable               rcs_desc[RS_MAX_DEBRIS_TYPES];
 
 	// Scatter bodies
 	size_t                 num_scats;
