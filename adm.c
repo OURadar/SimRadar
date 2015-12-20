@@ -12,8 +12,8 @@
 typedef struct _adm_mem {
     char data_path[1024];
     char file[1024];
-    ADMGrid *grid;
-    ADMTable *table;
+    ADMGrid grid;
+    ADMTable table;
 } ADMMem;
 
 // Private functions
@@ -125,19 +125,13 @@ ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path) {
         return NULL;
     }
     
-    // Allocate the data grid
-    h->grid = (ADMGrid *)malloc(sizeof(ADMGrid));
-    if (h->grid == NULL) {
-        fprintf(stderr, "Error allocating table (ADMGrid).\n");
-        fclose(fid);
-        return NULL;
-    }
-    h->grid->rev = 1;
+    // Data grid
+    h->grid.rev = 1;
     uint16_t nbna[2];
     fread(nbna, sizeof(uint16_t), 2, fid);
-    h->grid->nb = nbna[0];  // x-axis = beta
-    h->grid->na = nbna[1];  // y-axis = alpha
-    if (h->grid->nb == 0 || h->grid->na == 0) {
+    h->grid.nb = nbna[0];  // x-axis = beta
+    h->grid.na = nbna[1];  // y-axis = alpha
+    if (h->grid.nb == 0 || h->grid.na == 0) {
         fprintf(stderr, "None of the grid elements can be zero.\n");
         fclose(fid);
         return NULL;
@@ -147,53 +141,118 @@ ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path) {
     printf("%s    nb = %d    na = %d\n", h->data_path, h->data_grid->nb, h->data_grid->na);
     #endif
     
-    h->grid->b = (float *)malloc(h->grid->nb * sizeof(float));
-    h->grid->a = (float *)malloc(h->grid->na * sizeof(float));
+    h->grid.b = (float *)malloc(h->grid.nb * sizeof(float));
+    h->grid.a = (float *)malloc(h->grid.na * sizeof(float));
     
     uint16_t i;
     
-    for (i=0; i<h->grid->nb; i++) {
-        h->grid->b[i] = (float)i / (float)(h->grid->nb - 1) * 360.0f - 180.0f;
+    for (i = 0; i < h->grid.nb; i++) {
+        h->grid.b[i] = (float)i / (float)(h->grid.nb - 1) * 360.0f - 180.0f;
     }
-    for (i=0; i<h->grid->na; i++) {
-        h->grid->a[i] = (float)i / (float)(h->grid->na - 1) * 180.0f;
+    for (i=0; i<h->grid.na; i++) {
+        h->grid.a[i] = (float)i / (float)(h->grid.na - 1) * 180.0f;
     }
 
-    // Allocate data table
-    h->table = (ADMTable *)malloc(sizeof(ADMTable));
-    if (h->table == NULL) {
-        fprintf(stderr, "Error allocating table (ADMTable).\n");
-        fclose(fid);
-        return NULL;
-    }
-    h->table->nb = h->grid->nb;
-    h->table->na = h->grid->na;
-    h->table->nn = h->grid->nb * h->grid->na;
-    h->table->data.b = h->grid->b;
-    h->table->data.a = h->grid->a;
-    if (h->table->nn == 0) {
+    // Populate a to-be returned table
+    h->table.nb = h->grid.nb;
+    h->table.na = h->grid.na;
+    h->table.nn = h->grid.nb * h->grid.na;
+    h->table.data.b = h->grid.b;
+    h->table.data.a = h->grid.a;
+    if (h->table.nn == 0) {
         fprintf(stderr, "Empty table (ADMTable)?\n");
         fclose(fid);
         return NULL;
     }
-    h->table->data.cdx = (float *)malloc(h->table->nn * sizeof(float));
-    h->table->data.cdy = (float *)malloc(h->table->nn * sizeof(float));
-    h->table->data.cdz = (float *)malloc(h->table->nn * sizeof(float));
-    h->table->data.cmx = (float *)malloc(h->table->nn * sizeof(float));
-    h->table->data.cmy = (float *)malloc(h->table->nn * sizeof(float));
-    h->table->data.cmz = (float *)malloc(h->table->nn * sizeof(float));
+    h->table.data.cdx = (float *)malloc(h->table.nn * sizeof(float));
+    h->table.data.cdy = (float *)malloc(h->table.nn * sizeof(float));
+    h->table.data.cdz = (float *)malloc(h->table.nn * sizeof(float));
+    h->table.data.cmx = (float *)malloc(h->table.nn * sizeof(float));
+    h->table.data.cmy = (float *)malloc(h->table.nn * sizeof(float));
+    h->table.data.cmz = (float *)malloc(h->table.nn * sizeof(float));
     
     // Fill in the table
-    fread(h->table->data.cdx, sizeof(float), h->table->nn, fid);
-    fread(h->table->data.cdy, sizeof(float), h->table->nn, fid);
-    fread(h->table->data.cdz, sizeof(float), h->table->nn, fid);
-    fread(h->table->data.cmx, sizeof(float), h->table->nn, fid);
-    fread(h->table->data.cmy, sizeof(float), h->table->nn, fid);
-    fread(h->table->data.cmz, sizeof(float), h->table->nn, fid);
+    fread(h->table.data.cdx, sizeof(float), h->table.nn, fid);
+    fread(h->table.data.cdy, sizeof(float), h->table.nn, fid);
+    fread(h->table.data.cdz, sizeof(float), h->table.nn, fid);
+    fread(h->table.data.cmx, sizeof(float), h->table.nn, fid);
+    fread(h->table.data.cmy, sizeof(float), h->table.nn, fid);
+    fread(h->table.data.cmz, sizeof(float), h->table.nn, fid);
 
     fclose(fid);
     
+//    float v0 = 100.0f;
+//    const float rho = 1.21f;
+//    const float g = 9.8f;
+//    
+//    float len = 0.04f;
+//    float thi = 0.002f;
+//    float rhod = 1120.0f;
+//    float mass = len * len * thi * rhod;
+//    
+//    cl_float4 ii = {{
+//        (len * len + len * len) * mass / 12.0f,
+//        (len * len + thi * thi) * mass / 12.0f,
+//        (thi * thi + len * len) * mass / 12.0f,
+//        0.0f
+//    }};
+//    cl_float4 inln = {{
+//        ii.x * g * len / (mass * len * len * v0 * v0),
+//        ii.y * g * len / (mass * len * len * v0 * v0),
+//        ii.z * g * len / (mass * len * len * v0 * v0)
+//    }};
+//    H->inv_inln = (cl_float4) {{
+//        1.0f / inln.x,
+//        1.0f / inln.y,
+//        1.0f / inln.z,
+//        0.0f
+//    }};
+//    H->Ta = rho * (len * len * v0 * v0) / (2.0f * mass * g);
+//    
+//    // De-dimensionalize
+//    // Velocity should have v0 * v0 / g whenever velocity is retrieved but pre-done here
+//    // Angular momentum's len needs to be dimensionalized by v0 * v0 / g
+//    H->inv_inln.x = (mass * len) / (ii.x * g * g);
+//    H->inv_inln.y = (mass * len) / (ii.y * g * g);
+//    H->inv_inln.z = (mass * len) / (ii.z * g * g);
+//    H->Ta *= g / (v0 * v0);
+    // Physica description
+    h->table.phys.x = 0.002f;
+    h->table.phys.y = 0.040f;
+    h->table.phys.z = 0.040f;
+    h->table.phys.rho = 1120.0f;
+    h->table.phys.mass = h->table.phys.x * h->table.phys.y * h->table.phys.z * h->table.phys.rho;
+
+
+//    h->table.phys.inv_inln_x = 1.0f /
+
+    
     return (ADMHandle *)h;
+}
+
+void ADM_compute_Ta(ADMBase *phys) {
+    const float g = 9.8f;
+    const float v0 = 100.0f;
+    const float rho_air = 1.21f;
+    
+    float ix = (phys->y * phys->y + phys->z * phys->z) * phys->mass / 12.0f;
+    float iy = (phys->x * phys->x + phys->z * phys->z) * phys->mass / 12.0f;
+    float iz = (phys->x * phys->x + phys->y * phys->y) * phys->mass / 12.0f;
+    
+//    float inln_x = ix * g * phys->x / (phys->mass * phys->y * phys->z * v0 * v0);
+//    float inln_y = iy * g * phys->y / (phys->mass * phys->x * phys->z * v0 * v0);
+//    float inln_z = iz * g * phys->z / (phys->mass * phys->x * phys->z * v0 * v0);
+    
+    phys->Ta = rho_air * (phys->y * phys->z * v0 * v0) / (2.0f * phys->mass * g);
+
+    // De-dimensionalize
+    // Velocity should have v0 * v0 / g whenever velocity is retrieved but pre-done here
+    // Angular momentum's len needs to be dimensionalized by v0 * v0 / g
+    phys->inv_inln_x = (phys->mass * phys->x) / (ix * g * g);
+    phys->inv_inln_y = (phys->mass * phys->y) / (iy * g * g);
+    phys->inv_inln_z = (phys->mass * phys->z) / (iz * g * g);
+
+    phys->Ta *= g / (v0 * v0);
 }
 
 
@@ -204,23 +263,21 @@ ADMHandle *ADM_init(void) {
 
 void ADM_free(ADMHandle *i) {
     ADMMem *h = (ADMMem *)i;
-    free(h->table->data.cdx);
-    free(h->table->data.cdy);
-    free(h->table->data.cdz);
-    free(h->table->data.cmx);
-    free(h->table->data.cmy);
-    free(h->table->data.cmz);
-    free(h->table);
-    free(h->grid->b);
-    free(h->grid->a);
-    free(h->grid);
+    free(h->table.data.cdx);
+    free(h->table.data.cdy);
+    free(h->table.data.cdz);
+    free(h->table.data.cmx);
+    free(h->table.data.cmy);
+    free(h->table.data.cmz);
+    free(h->grid.b);
+    free(h->grid.a);
     free(h);
 }
 
 
 ADMTable *ADM_get_frame(const ADMHandle *i) {
     ADMMem *h = (ADMMem *)i;
-    return h->table;
+    return &h->table;
 }
 
 

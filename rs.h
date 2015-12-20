@@ -3,6 +3,7 @@
 //  Radar Simulation Framework
 //
 //  Created by Boon Leng Cheong.
+//  Copyright (c) 2015-2016 Boon Leng Cheong. All rights reserved.
 //
 
 #ifndef _rs_h

@@ -3,7 +3,7 @@
 //  Radar Simulation Framework
 //
 //  Created by Boon Leng Cheong on 1/19/15.
-//  Copyright (c) 2015 Boon Leng Cheong. All rights reserved.
+//  Copyright (c) 2015-2016 Boon Leng Cheong. All rights reserved.
 //
 
 #ifndef _radarsim_adm_h

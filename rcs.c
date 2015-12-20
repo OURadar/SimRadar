@@ -12,8 +12,8 @@
 typedef struct _rcs_mem {
     char data_path[1024];
     char file[1024];
-    RCSGrid *data_grid;
-    RCSTable *data_value;
+    RCSGrid *grid;
+    RCSTable *table;
 } RCSMem;
 
 // Private functions
@@ -155,18 +155,18 @@ RCSHandle *RCS_init_with_config_path(const RCSConfig config, const char *path) {
     }
     
     // Allocate the data grid
-    h->data_grid = (RCSGrid *)malloc(sizeof(RCSGrid));
-    if (h->data_grid == NULL) {
+    h->grid = (RCSGrid *)malloc(sizeof(RCSGrid));
+    if (h->grid == NULL) {
         fprintf(stderr, "Error allocating table (RCSGrid).\n");
         fclose(fid);
         return NULL;
     }
-    h->data_grid->rev = 1;
+    h->grid->rev = 1;
     uint16_t nbna[2];
     fread(nbna, sizeof(uint16_t), 2, fid);
-    h->data_grid->na = nbna[0];  // x-axis = alpha
-    h->data_grid->nb = nbna[1];  // y-axis = beta
-    if (h->data_grid->na == 0 || h->data_grid->nb == 0) {
+    h->grid->na = nbna[0];  // x-axis = alpha
+    h->grid->nb = nbna[1];  // y-axis = beta
+    if (h->grid->na == 0 || h->grid->nb == 0) {
         fprintf(stderr, "None of the grid elements can be zero.\n");
         fclose(fid);
         return NULL;
@@ -176,49 +176,49 @@ RCSHandle *RCS_init_with_config_path(const RCSConfig config, const char *path) {
     printf("%s    na = %d    nb = %d\n", h->data_path, h->data_grid->na, h->data_grid->nb);
     #endif
     
-    h->data_grid->a = (float *)malloc(h->data_grid->na * sizeof(float));
-    h->data_grid->b = (float *)malloc(h->data_grid->nb * sizeof(float));
+    h->grid->a = (float *)malloc(h->grid->na * sizeof(float));
+    h->grid->b = (float *)malloc(h->grid->nb * sizeof(float));
     
     uint16_t i;
     
-    for (i=0; i<h->data_grid->na; i++) {
-        h->data_grid->a[i] = (float)i / (float)(h->data_grid->na - 1) * 360.0f - 180.0f;
+    for (i=0; i<h->grid->na; i++) {
+        h->grid->a[i] = (float)i / (float)(h->grid->na - 1) * 360.0f - 180.0f;
     }
-    for (i=0; i<h->data_grid->nb; i++) {
-        h->data_grid->b[i] = (float)i / (float)(h->data_grid->nb - 1) * 180.0f;
+    for (i=0; i<h->grid->nb; i++) {
+        h->grid->b[i] = (float)i / (float)(h->grid->nb - 1) * 180.0f;
     }
     
     // Allocate data table
-    h->data_value = (RCSTable *)malloc(sizeof(RCSTable));
-    if (h->data_value == NULL) {
+    h->table = (RCSTable *)malloc(sizeof(RCSTable));
+    if (h->table == NULL) {
         fprintf(stderr, "Error allocating table (RCSTable).\n");
         fclose(fid);
         return NULL;
     }
-    h->data_value->na = h->data_grid->na;
-    h->data_value->nb = h->data_grid->nb;
-    h->data_value->nn = h->data_grid->na * h->data_grid->nb;
-    h->data_value->data.a = h->data_grid->a;
-    h->data_value->data.b = h->data_grid->b;
-    if (h->data_value->nn == 0) {
+    h->table->na = h->grid->na;
+    h->table->nb = h->grid->nb;
+    h->table->nn = h->grid->na * h->grid->nb;
+    h->table->data.a = h->grid->a;
+    h->table->data.b = h->grid->b;
+    if (h->table->nn == 0) {
         fprintf(stderr, "Empty table (RCSTable)?\n");
         fclose(fid);
         return NULL;
     }
-    h->data_value->data.hh_real = (float *)malloc(h->data_value->nn * sizeof(float));
-    h->data_value->data.vv_real = (float *)malloc(h->data_value->nn * sizeof(float));
-    h->data_value->data.hv_real = (float *)malloc(h->data_value->nn * sizeof(float));
-    h->data_value->data.hh_imag = (float *)malloc(h->data_value->nn * sizeof(float));
-    h->data_value->data.vv_imag = (float *)malloc(h->data_value->nn * sizeof(float));
-    h->data_value->data.hv_imag = (float *)malloc(h->data_value->nn * sizeof(float));
+    h->table->data.hh_real = (float *)malloc(h->table->nn * sizeof(float));
+    h->table->data.vv_real = (float *)malloc(h->table->nn * sizeof(float));
+    h->table->data.hv_real = (float *)malloc(h->table->nn * sizeof(float));
+    h->table->data.hh_imag = (float *)malloc(h->table->nn * sizeof(float));
+    h->table->data.vv_imag = (float *)malloc(h->table->nn * sizeof(float));
+    h->table->data.hv_imag = (float *)malloc(h->table->nn * sizeof(float));
     
     // Fill in the table
-    fread(h->data_value->data.hh_real, sizeof(float), h->data_value->nn, fid);
-    fread(h->data_value->data.vv_real, sizeof(float), h->data_value->nn, fid);
-    fread(h->data_value->data.hv_real, sizeof(float), h->data_value->nn, fid);
-    fread(h->data_value->data.hh_imag, sizeof(float), h->data_value->nn, fid);
-    fread(h->data_value->data.vv_imag, sizeof(float), h->data_value->nn, fid);
-    fread(h->data_value->data.hv_imag, sizeof(float), h->data_value->nn, fid);
+    fread(h->table->data.hh_real, sizeof(float), h->table->nn, fid);
+    fread(h->table->data.vv_real, sizeof(float), h->table->nn, fid);
+    fread(h->table->data.hv_real, sizeof(float), h->table->nn, fid);
+    fread(h->table->data.hh_imag, sizeof(float), h->table->nn, fid);
+    fread(h->table->data.vv_imag, sizeof(float), h->table->nn, fid);
+    fread(h->table->data.hv_imag, sizeof(float), h->table->nn, fid);
     
     fclose(fid);
     
@@ -233,23 +233,23 @@ RCSHandle *RCS_init(void) {
 
 void RCS_free(RCSHandle *i) {
     RCSMem *h = (RCSMem *)i;
-    free(h->data_value->data.hh_real);
-    free(h->data_value->data.vv_real);
-    free(h->data_value->data.hv_real);
-    free(h->data_value->data.hh_imag);
-    free(h->data_value->data.vv_imag);
-    free(h->data_value->data.hv_imag);
-    free(h->data_value);
-    free(h->data_grid->a);
-    free(h->data_grid->b);
-    free(h->data_grid);
+    free(h->table->data.hh_real);
+    free(h->table->data.vv_real);
+    free(h->table->data.hv_real);
+    free(h->table->data.hh_imag);
+    free(h->table->data.vv_imag);
+    free(h->table->data.hv_imag);
+    free(h->table);
+    free(h->grid->a);
+    free(h->grid->b);
+    free(h->grid);
     free(h);
 }
 
 
 RCSTable *RCS_get_frame(const RCSHandle *i) {
     RCSMem *h = (RCSMem *)i;
-    return h->data_value;
+    return h->table;
 }
 
 
