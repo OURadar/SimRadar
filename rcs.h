@@ -42,18 +42,9 @@ typedef struct _rcs_data {
 } RCSData;
 
 typedef struct _rcs_table {
-//    uint32_t  nt;             // Number of debris types
     uint32_t  na;             // Number of cells in alpha direction
     uint32_t  nb;             // Number of cells in beta direction
     uint32_t  nn;             // Number of cells in all directions combined
-//    float     *a;
-//    float     *b;
-//    float     *hh_real;
-//    float     *vv_real;
-//    float     *hv_real;
-//    float     *hh_imag;
-//    float     *vv_imag;
-//    float     *hv_imag;
     RCSData   data;
     char      **name;
 } RCSTable;

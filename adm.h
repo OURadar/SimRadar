@@ -55,11 +55,10 @@ typedef struct _adm_data {
 } ADMData;
 
 typedef struct _adm_table {
-    //uint32_t  nt;             // Number of debris types
-    uint32_t  nb;             // Number of cells in beta direction
-    uint32_t  na;             // Number of cells in alpha direction
-    uint32_t  nn;             // Number of cells in all directions combined
-    ADMBase   phys;           // Physical description of the debris
+    uint32_t  nb;              // Number of cells in beta direction
+    uint32_t  na;              // Number of cells in alpha direction
+    uint32_t  nn;              // Number of cells in all directions combined
+    ADMBase   phys;            // Physical description of the debris
     ADMData   data;
     char      **name;
 } ADMTable;
@@ -72,5 +71,6 @@ ADMTable *ADM_get_frame(const ADMHandle *);
 char *ADM_data_path(const ADMHandle *);
 
 void ADM_show_table_summary(const ADMTable *);
+void ADM_transform_scale(ADMTable *T, const float x, const float y, const float z);
 
 #endif

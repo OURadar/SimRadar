@@ -2313,9 +2313,9 @@ void RS_set_wind_data(RSHandle *H, const RSTable3D table) {
 
         // Copy over to CL worker
         if (table.spacing & RSTableSpacingStretchedX) {
-            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionBaseChangeX] = table.xs;
-            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionPositionScaleX] = table.xo;
-            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionOffsetX] = table.xm;
+            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionBaseChangeX] = table.xs;      // "m" for stretched grid: m * log1p(n * pos.x) + o;
+            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionPositionScaleX] = table.xo;   // "n" for stretched grid: m * log1p(n * pos.y) + o;
+            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionOffsetX] = table.xm;          // "o" for stretched grid: m * log1p(n * pos.z) + o;
         } else {
             H->worker[i].vel_desc.s[RSTableDescriptionScaleX] = table.xs;
             H->worker[i].vel_desc.s[RSTableDescriptionOriginX] = table.xo;
@@ -2686,6 +2686,10 @@ void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *adam) {
         cm.data[i].w = 0.0f;
     }
     
+    // Cache a copy of the parameters but not the data, the data could be deallocated immediately after this function call.
+    H->adm_desc[H->adm_count] = *adam;
+    memset(&H->adm_desc[H->adm_count].data, 0, sizeof(ADMData));
+
     RS_set_adm_data(H, cd, cm);
     
     RS_table2d_free(cd);
@@ -2884,6 +2888,10 @@ void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *rosie) {
         imag.data[i].w = 0.0f;
     }
     
+    // Cache a copy of the parameters but not the data, the data could be deallocated immediately after this function call.
+    H->rcs_desc[H->rcs_count] = *rosie;
+    memset(&H->rcs_desc[H->rcs_count].data, 0, sizeof(RCSData));
+
     RS_set_rcs_data(H, real, imag);
     
     RS_table2d_free(real);

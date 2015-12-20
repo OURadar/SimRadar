@@ -191,7 +191,7 @@ Multiple arrays of type `cl_float` are used to keep track of a set of attributes
 
 ### Functions to interact directly with GPU ###
 
-These functions take input format that are readily suitable for GPU array buffers.
+These functions take input format that are readily suitable for GPU array buffers. These functions are appropriate when the data layout is readily suitable for GPU uploads. It is important that the corresponding table parameters are cached at the master handler, i.e., `vel_desc`, `adm_desc` and `rcs_desc`. These are not the same as the CL worker correspondence.
 
     RS_set_wind_data()
     RS_set_adm_data()

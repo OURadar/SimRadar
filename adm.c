@@ -12,8 +12,8 @@
 typedef struct _adm_mem {
     char data_path[1024];
     char file[1024];
-    ADMGrid *data_grid;
-    ADMTable *data_value;
+    ADMGrid *grid;
+    ADMTable *table;
 } ADMMem;
 
 // Private functions
@@ -126,18 +126,18 @@ ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path) {
     }
     
     // Allocate the data grid
-    h->data_grid = (ADMGrid *)malloc(sizeof(ADMGrid));
-    if (h->data_grid == NULL) {
+    h->grid = (ADMGrid *)malloc(sizeof(ADMGrid));
+    if (h->grid == NULL) {
         fprintf(stderr, "Error allocating table (ADMGrid).\n");
         fclose(fid);
         return NULL;
     }
-    h->data_grid->rev = 1;
+    h->grid->rev = 1;
     uint16_t nbna[2];
     fread(nbna, sizeof(uint16_t), 2, fid);
-    h->data_grid->nb = nbna[0];  // x-axis = beta
-    h->data_grid->na = nbna[1];  // y-axis = alpha
-    if (h->data_grid->nb == 0 || h->data_grid->na == 0) {
+    h->grid->nb = nbna[0];  // x-axis = beta
+    h->grid->na = nbna[1];  // y-axis = alpha
+    if (h->grid->nb == 0 || h->grid->na == 0) {
         fprintf(stderr, "None of the grid elements can be zero.\n");
         fclose(fid);
         return NULL;
@@ -147,49 +147,49 @@ ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path) {
     printf("%s    nb = %d    na = %d\n", h->data_path, h->data_grid->nb, h->data_grid->na);
     #endif
     
-    h->data_grid->b = (float *)malloc(h->data_grid->nb * sizeof(float));
-    h->data_grid->a = (float *)malloc(h->data_grid->na * sizeof(float));
+    h->grid->b = (float *)malloc(h->grid->nb * sizeof(float));
+    h->grid->a = (float *)malloc(h->grid->na * sizeof(float));
     
     uint16_t i;
     
-    for (i=0; i<h->data_grid->nb; i++) {
-        h->data_grid->b[i] = (float)i / (float)(h->data_grid->nb - 1) * 360.0f - 180.0f;
+    for (i=0; i<h->grid->nb; i++) {
+        h->grid->b[i] = (float)i / (float)(h->grid->nb - 1) * 360.0f - 180.0f;
     }
-    for (i=0; i<h->data_grid->na; i++) {
-        h->data_grid->a[i] = (float)i / (float)(h->data_grid->na - 1) * 180.0f;
+    for (i=0; i<h->grid->na; i++) {
+        h->grid->a[i] = (float)i / (float)(h->grid->na - 1) * 180.0f;
     }
 
     // Allocate data table
-    h->data_value = (ADMTable *)malloc(sizeof(ADMTable));
-    if (h->data_value == NULL) {
+    h->table = (ADMTable *)malloc(sizeof(ADMTable));
+    if (h->table == NULL) {
         fprintf(stderr, "Error allocating table (ADMTable).\n");
         fclose(fid);
         return NULL;
     }
-    h->data_value->nb = h->data_grid->nb;
-    h->data_value->na = h->data_grid->na;
-    h->data_value->nn = h->data_grid->nb * h->data_grid->na;
-    h->data_value->data.b = h->data_grid->b;
-    h->data_value->data.a = h->data_grid->a;
-    if (h->data_value->nn == 0) {
+    h->table->nb = h->grid->nb;
+    h->table->na = h->grid->na;
+    h->table->nn = h->grid->nb * h->grid->na;
+    h->table->data.b = h->grid->b;
+    h->table->data.a = h->grid->a;
+    if (h->table->nn == 0) {
         fprintf(stderr, "Empty table (ADMTable)?\n");
         fclose(fid);
         return NULL;
     }
-    h->data_value->data.cdx = (float *)malloc(h->data_value->nn * sizeof(float));
-    h->data_value->data.cdy = (float *)malloc(h->data_value->nn * sizeof(float));
-    h->data_value->data.cdz = (float *)malloc(h->data_value->nn * sizeof(float));
-    h->data_value->data.cmx = (float *)malloc(h->data_value->nn * sizeof(float));
-    h->data_value->data.cmy = (float *)malloc(h->data_value->nn * sizeof(float));
-    h->data_value->data.cmz = (float *)malloc(h->data_value->nn * sizeof(float));
+    h->table->data.cdx = (float *)malloc(h->table->nn * sizeof(float));
+    h->table->data.cdy = (float *)malloc(h->table->nn * sizeof(float));
+    h->table->data.cdz = (float *)malloc(h->table->nn * sizeof(float));
+    h->table->data.cmx = (float *)malloc(h->table->nn * sizeof(float));
+    h->table->data.cmy = (float *)malloc(h->table->nn * sizeof(float));
+    h->table->data.cmz = (float *)malloc(h->table->nn * sizeof(float));
     
     // Fill in the table
-    fread(h->data_value->data.cdx, sizeof(float), h->data_value->nn, fid);
-    fread(h->data_value->data.cdy, sizeof(float), h->data_value->nn, fid);
-    fread(h->data_value->data.cdz, sizeof(float), h->data_value->nn, fid);
-    fread(h->data_value->data.cmx, sizeof(float), h->data_value->nn, fid);
-    fread(h->data_value->data.cmy, sizeof(float), h->data_value->nn, fid);
-    fread(h->data_value->data.cmz, sizeof(float), h->data_value->nn, fid);
+    fread(h->table->data.cdx, sizeof(float), h->table->nn, fid);
+    fread(h->table->data.cdy, sizeof(float), h->table->nn, fid);
+    fread(h->table->data.cdz, sizeof(float), h->table->nn, fid);
+    fread(h->table->data.cmx, sizeof(float), h->table->nn, fid);
+    fread(h->table->data.cmy, sizeof(float), h->table->nn, fid);
+    fread(h->table->data.cmz, sizeof(float), h->table->nn, fid);
 
     fclose(fid);
     
@@ -204,23 +204,23 @@ ADMHandle *ADM_init(void) {
 
 void ADM_free(ADMHandle *i) {
     ADMMem *h = (ADMMem *)i;
-    free(h->data_value->data.cdx);
-    free(h->data_value->data.cdy);
-    free(h->data_value->data.cdz);
-    free(h->data_value->data.cmx);
-    free(h->data_value->data.cmy);
-    free(h->data_value->data.cmz);
-    free(h->data_value);
-    free(h->data_grid->b);
-    free(h->data_grid->a);
-    free(h->data_grid);
+    free(h->table->data.cdx);
+    free(h->table->data.cdy);
+    free(h->table->data.cdz);
+    free(h->table->data.cmx);
+    free(h->table->data.cmy);
+    free(h->table->data.cmz);
+    free(h->table);
+    free(h->grid->b);
+    free(h->grid->a);
+    free(h->grid);
     free(h);
 }
 
 
 ADMTable *ADM_get_frame(const ADMHandle *i) {
     ADMMem *h = (ADMMem *)i;
-    return h->data_value;
+    return h->table;
 }
 
 
@@ -254,4 +254,8 @@ void ADM_show_table_summary(const ADMTable *T) {
 
     printf(" cmz =\n");
     ADM_show_slice(T->data.cmz, T->nb, T->na);
+}
+
+void ADM_transform_scale(ADMTable *T, const float x, const float y, const float z) {
+    
 }
