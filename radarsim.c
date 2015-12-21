@@ -147,15 +147,12 @@ int main(int argc, char *argv[]) {
     
     RS_set_debris_count(S, 1, 10);
     
-    RS_clear_wind_data(S);
     for (int k=0; k<RS_MAX_VEL_TABLES; k++) {
-        RS_set_wind_data_to_LES_table(S, LES_get_frame(L, k));
+        RS_set_vel_data_to_LES_table(S, LES_get_frame(L, k));
     }
     
-    RS_clear_adm_data(S);
     RS_set_adm_data_to_ADM_table(S, ADM_get_frame(A));
     
-    RS_clear_rcs_data(S);
     RS_set_rcs_data_to_RCS_table(S, RCS_get_frame(R));
     
     RS_set_dsd_to_mp(S);

@@ -122,7 +122,6 @@
 //            fprintf(stderr, "%s : Error creating file for writing data.\n", now());
 //        }
         
-        RS_clear_wind_data(S);
         for (table_id = 0; table_id < RS_MAX_VEL_TABLES; table_id++) {
             if (reportProgress) {
                 [delegate progressUpdated:(10.0 + (double)table_id / RS_MAX_VEL_TABLES * 70.0)
@@ -130,13 +129,11 @@
             }
             LESTable *les = LES_get_frame(L, table_id);
             //LES_show_table_summary(les);
-            RS_set_wind_data_to_LES_table(S, les);
+            RS_set_vel_data_to_LES_table(S, les);
         }
         
         ADMTable *adm = ADM_get_frame(A);
         //ADM_show_table_summary(adm);
-        
-        RS_clear_adm_data(S);
         
         RS_set_adm_data_to_ADM_table(S, adm);
         
@@ -150,7 +147,7 @@
         }
         
         RCSTable *rcs = RCS_get_frame(R);
-        RS_clear_rcs_data(S);
+
         RS_set_rcs_data_to_RCS_table(S, rcs);
         RS_set_rcs_data_to_RCS_table(S, rcs);
         RS_set_rcs_data_to_RCS_table(S, rcs);

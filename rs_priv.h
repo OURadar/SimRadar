@@ -118,7 +118,7 @@ void RS_init_scat_pos(RSHandle *H);
 void RS_merge_pulse_tmp(RSHandle *H);
 void RS_update_debris_count(RSHandle *H);
 
-void RS_set_wind_data(RSHandle *H, const RSTable3D table);
+void RS_set_vel_data(RSHandle *H, const RSTable3D table);
 void RS_set_adm_data(RSHandle *H, const RSTable2D table_cd, const RSTable2D table_cm);
 void RS_set_rcs_data(RSHandle *H, const RSTable2D table_real, const RSTable2D table_imag);
 
