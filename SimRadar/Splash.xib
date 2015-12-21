@@ -38,7 +38,7 @@
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <progressIndicator wantsLayer="YES" canDrawConcurrently="YES" maxValue="100" doubleValue="5" style="bar" id="64v-la-8cP">
+                    <progressIndicator wantsLayer="YES" canDrawConcurrently="YES" maxValue="100" style="bar" id="64v-la-8cP">
                         <rect key="frame" x="186" y="65" width="428" height="20"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     </progressIndicator>

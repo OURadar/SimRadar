@@ -263,7 +263,7 @@
     pos[24] = -1.0f;   pos[25] =  1.0f;   pos[26] =  1.0f;   pos[27] = 0.0f;
     pos[28] =  1.0f;   pos[29] =  1.0f;   pos[30] =  1.0f;   pos[31] = 0.0f;
     for (int i = 0; i < 8; i++) {
-        pos[4 * i]     *= 0.5f;
+        pos[4 * i    ] *= 1.0f;
         pos[4 * i + 1] *= 8.0f;
         pos[4 * i + 2] *= 8.0f;
     }
@@ -293,7 +293,7 @@
     pos[32] =  0.0f;   pos[33] = -1.3f;   pos[34] =  0.0f;   pos[35] = 0.0f;
     pos[36] =  0.0f;   pos[37] =  1.1f;   pos[38] =  0.0f;   pos[39] = 0.0f;
     for (int i = 0; i < 10; i++) {
-        pos[4 * i]     *= 0.4f;
+        pos[4 * i    ] *= 0.4f;
         pos[4 * i + 1] *= 8.0f;
         pos[4 * i + 2] *= 1.0f;
     }
@@ -717,8 +717,11 @@
 	
     textRenderer = [GLText new];
     
-	NSLog(@"VAOs = bodyRenderer:%d  leafRendrer = %d  gridRenderer %d  anchorRenderer %d  anchorLineRendrer %d",
+#ifdef DEBUG_GL
+	NSLog(@"VAOs = bodyRenderer:%d  instancedGeometryRenderer = %d  gridRenderer %d  anchorRenderer %d  anchorLineRendrer %d",
 		  bodyRenderer[0].vao, instancedGeometryRenderer.vao, gridRenderer.vao, anchorRenderer.vao, anchorLineRenderer.vao);
+#endif
+    
 	// Depth test will always be enabled
 	//glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);

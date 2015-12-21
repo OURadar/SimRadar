@@ -107,7 +107,6 @@ NSWindow *standardWindow;
 - (void)awakeFromNib
 {
 	// Initialization code here.
-	NSLog(@"Assigning %@ as %@'s delegate", rootSender, glView.renderer);
 	[glView.renderer setDelegate:rootSender];
 }
 

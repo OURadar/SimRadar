@@ -210,9 +210,14 @@
         
         drawSize = [label sizeWithAttributes:labelAtts];
         
+#ifdef DEBUG_GL_SPECIFIC_CHAR
+
         if (i == '2') {
             NSLog(@"drawSize = %.1f %.1f", drawSize.width, drawSize.height);
         }
+        
+#endif
+        
         if (drawSize.width < devicePixelRatio) {
             symbolSize[i] = NSMakeSize(0.0f, 0.0f);
             continue;

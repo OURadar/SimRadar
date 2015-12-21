@@ -1559,25 +1559,22 @@ void RS_set_scan_box(RSHandle *H,
 	}
 	
 	if (H->verb) {
-		printf("%s : RS : nvol = %.4f\n", now(), nvol);
-		printf("%s : RS : Box @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n", now(),
+        printf("%s : RS : User domain @ R:[ %5.2f ~ %5.2f ] km   E:[ %5.2f ~ %5.2f ] deg   A:[ %+6.2f ~ %+6.2f ] deg\n", now(),
+               1e-3*H->params.range_start, 1e-3*H->params.range_end,
+               H->params.elevation_start_deg, H->params.elevation_end_deg,
+               H->params.azimuth_start_deg, H->params.azimuth_end_deg);
+        printf("%s : RS : Work domain @ R:[ %5.2f ~ %5.2f ] km   E:[ %5.2f ~ %5.2f ] deg   A:[ %+6.2f ~ %+6.2f ] deg\n", now(),
+               1e-3*r_lo, 1e-3*r_hi,
+               el_lo, el_hi,
+               az_lo, az_hi);
+		printf("%s : RS :             @ X:[ %.2f ~ %.2f ] m   Y:[ %.2f ~ %.2f ] m   Z:[ %.2f ~ %.2f ] m   ( %.2f m x %.2f m x %.2f m )\n", now(),
 			   xmin, xmax,
 			   ymin, ymax,
-               zmin, zmax);
-        printf("%s : RS : Box size: [ %.2f m x %.2f m x %.2f m ]\n", now(),
+               zmin, zmax,
                xmax - xmin, ymax - ymin, zmax - zmin);
-		printf("%s : RS : User domain @ R:[ %5.2f - %5.2f ] km    E:[ %5.2f - %5.2f ] deg   A:[ %+.2f - %+.2f ] deg\n", now(),
-			   1e-3*H->params.range_start, 1e-3*H->params.range_end,
-			   H->params.elevation_start_deg, H->params.elevation_end_deg,
-			   H->params.azimuth_start_deg, H->params.azimuth_end_deg);
-		
-		printf("%s : RS : Work domain @ R:[ %5.2f - %5.2f ] km   E:[ %5.2f - %5.2f ] deg   A:[ %+.2f - %+.2f ] deg\n", now(),
-			   1e-3*r_lo, 1e-3*r_hi,
-			   el_lo, el_hi,
-			   az_lo, az_hi);
-		
-		printf("%s : RS : Using suggested %s bodies\n", now(), commaint(H->num_scats));
-		printf("%s : RS : Using GPU preferred %s (%.2f bodies / resolution cell)\n", now(), commaint(preferred_n), (float)preferred_n / nvol);
+        printf("%s : RS : nvol = %s.%02d\n", now(), commaint(floor(nvol)), (int)(100 * (nvol - floor(nvol))));
+		printf("%s : RS : Suggested %s bodies\n", now(), commaint(H->num_scats));
+		printf("%s : RS : Set to GPU preferred %s (%.2f bodies / resolution cell)\n", now(), commaint(preferred_n), (float)preferred_n / nvol);
 	}
 	
 	H->num_scats = preferred_n;
@@ -3961,9 +3958,9 @@ RSBox RS_suggest_scan_doamin(RSHandle *H, const int nbeams) {
 
     if (H->verb) {
         printf("%s : RS : Suggest scan box based on [ 2w = %.1f m, h = %.1f m ] : nr = %.1f   na = %.1f   ne = %.1f\n"
-               "%s : RS : Best fit with R: [ %.3f - %.3f ] km   E: [ %.3f - %.3f ]   A: [ %.3f - %.3f ]\n",
+               "%s : RS : Best fit with R:[ %5.2f ~ %5.2f ] km   E:[ %5.2f ~ %5.2f ] deg   A:[ %6.2f ~ %6.2f ] deg\n",
                now(), 2.0f * w, h, nr, na, ne,
-               now(), box.origin.r, box.origin.r + box.size.r, box.origin.e, box.origin.e + box.size.e, box.origin.a, box.origin.a + box.size.a);
+               now(), 1.0e-3f * box.origin.r, 1.0e-3f * (box.origin.r + box.size.r), box.origin.e, box.origin.e + box.size.e, box.origin.a, box.origin.a + box.size.a);
     }
 
     return box;
