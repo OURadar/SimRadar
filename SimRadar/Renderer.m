@@ -1003,11 +1003,11 @@
 	glDrawArrays(GL_LINES, 0, gridRenderer.count);
 
 	// Anchor Lines
-	glBindVertexArray(anchorLineRenderer.vao);
-	glUseProgram(anchorLineRenderer.program);
-    glUniform4f(anchorLineRenderer.colorUI, 1.0f, 1.0f, 0.0f, phase);
-	glUniformMatrix4fv(anchorLineRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
-	glDrawArrays(GL_LINES, 0, anchorLineRenderer.count);
+//	glBindVertexArray(anchorLineRenderer.vao);
+//	glUseProgram(anchorLineRenderer.program);
+//    glUniform4f(anchorLineRenderer.colorUI, 1.0f, 1.0f, 0.0f, phase);
+//	glUniformMatrix4fv(anchorLineRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
+//	glDrawArrays(GL_LINES, 0, anchorLineRenderer.count);
 
 	// Anchors
     glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
