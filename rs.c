@@ -986,12 +986,6 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
 	
 	RS_set_angular_weight_to_standard(H, 2.0f / 180.0f * M_PI);
 	//RS_set_angular_weight_to_double_cone(H, 2.0f / 180.0f * M_PI);
-
-	RS_set_wind_data_to_cube27(H);
-
-    RS_set_adm_data_to_unity(H);
-    
-    RS_set_rcs_data_to_unity(H);
 	
 	H->verb = user_verb;
 	
@@ -2220,7 +2214,7 @@ void RS_set_angular_weight_to_standard(RSHandle *H, float beamwidth_rad) {
 }
 
 
-void RS_set_wind_data(RSHandle *H, const RSTable3D table) {
+void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 	
 	int i;
 		
@@ -2348,7 +2342,7 @@ void RS_set_wind_data(RSHandle *H, const RSTable3D table) {
 }
 
 
-void RS_set_wind_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
+void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
 	
 	int i;
     float hmax, zmax;
@@ -2427,13 +2421,13 @@ void RS_set_wind_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
     H->vel_desc = *leslie;
     memset(&H->vel_desc.data, 0, sizeof(LESValue));
 
-    RS_set_wind_data(H, table);
+    RS_set_vel_data(H, table);
 	
     RS_table3d_free(table);
 }
 
 
-void RS_set_wind_data_to_cube27(RSHandle *H) {
+void RS_set_vel_data_to_cube27(RSHandle *H) {
 	
 	int i;
 	
@@ -2470,13 +2464,13 @@ void RS_set_wind_data_to_cube27(RSHandle *H) {
 		table.data[i].w = 0.0f;
 	}
 	
-	RS_set_wind_data(H, table);
+	RS_set_vel_data(H, table);
 	
     RS_table3d_free(table);
 }
 
 
-void RS_set_wind_data_to_cube125(RSHandle *H) {
+void RS_set_vel_data_to_cube125(RSHandle *H) {
 	
 	int i;
 	
@@ -2510,14 +2504,14 @@ void RS_set_wind_data_to_cube125(RSHandle *H) {
 		table.data[i].w = 0.0f;
 	}
 	
-	RS_set_wind_data(H, table);
+	RS_set_vel_data(H, table);
     
     RS_table3d_free(table);
 	
 }
 
 
-void RS_clear_wind_data(RSHandle *H) {
+void RS_clear_vel_data(RSHandle *H) {
     // Technically the video RAM hasn't been freed but we will assume there is enough room and this memory gets freed when a new table comes in
     for (int i = 0; i < H->num_workers; i++) {
         cl_uint nx = (cl_uint)H->worker[i].vel_desc.s[RSTableDescriptionMaximumX] + 1;
@@ -3131,6 +3125,17 @@ void RS_populate(RSHandle *H) {
     
     if (H->adm_count != H->rcs_count) {
         printf("%s : RS : ADM & RCS are not consistent. Unexpected behavior may happen.\n", now());
+    }
+    
+    // Use some default tables if there isn't any set
+    if (H->vel_count == 0) {
+        RS_set_vel_data_to_cube27(H);
+    }
+    if (H->adm_count == 0) {
+        RS_set_adm_data_to_unity(H);
+    }
+    if (H->rcs_count == 0) {
+        RS_set_rcs_data_to_unity(H);
     }
 
     //

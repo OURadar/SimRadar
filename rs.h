@@ -489,10 +489,10 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
 void RS_set_angular_weight_to_standard(RSHandle *H, float beamwidth_deg);
 void RS_set_angular_weight_to_double_cone(RSHandle *H, float beamwidth_deg);
 
-void RS_set_wind_data_to_LES_table(RSHandle *H, const LESTable *table);
-void RS_set_wind_data_to_cube27(RSHandle *H);
-void RS_set_wind_data_to_cube125(RSHandle *H);
-void RS_clear_wind_data(RSHandle *H);
+void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *table);
+void RS_set_vel_data_to_cube27(RSHandle *H);
+void RS_set_vel_data_to_cube125(RSHandle *H);
+void RS_clear_vel_data(RSHandle *H);
 
 void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *table);
 void RS_set_adm_data_to_unity(RSHandle *H);
