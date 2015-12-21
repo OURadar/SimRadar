@@ -84,6 +84,8 @@ typedef union _gltext_vertex GLTextVertex;
 @property (nonatomic) CGFloat baseSize;
 @property (nonatomic) GLKMatrix4 modelViewProjection;
 
++ (char *)commaint:(double)value decimals:(int)dec;
+
 - (id)initWithDevicePixelRatio:(GLfloat)ratio;
 
 - (void)showTextureMap;

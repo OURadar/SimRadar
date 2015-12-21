@@ -20,6 +20,47 @@
 @synthesize modelViewProjection;
 
 #pragma mark -
+#pragma mark Class methods
+
++ (char *)commaint:(double)value decimals:(int)dec {
+    static int i = 7;
+    static char buf[8][64];
+    
+    // Might need a semaphore to protect the following line
+    i = i == 7 ? 0 : i + 1;
+    
+    int b = i;
+    if (value >= 1000) {
+        snprintf(buf[b], 48, "%.0f", value);
+        int c = (int)(strlen(buf[b]) - 1) / 3; // Number of commans
+        int p = (int)(strlen(buf[b])) + c;     // End position
+        int d = 1;                             // Count of digits
+        buf[b][p] = '\0';
+        while (p > 0) {
+            p--;
+            buf[b][p] = buf[b][p - c];
+            if (d > 3) {
+                d = 0;
+                buf[b][p] = ',';
+                c--;
+            }
+            d++;
+        }
+        // The decimal portion
+        p = (int)strlen(buf[b]);
+        if (dec == 1) {
+            snprintf(&buf[b][p], 64 - p, ".%1u", (int)(10 * (value - floor(value))));
+        } else if (dec == 1) {
+            snprintf(&buf[b][p], 64 - p, ".%02u", (int)(100 * (value - floor(value))));
+        }
+    } else {
+        snprintf(buf[b], 64, "%.2f", value);
+    }
+    
+    return buf[b];
+}
+
+#pragma mark -
 #pragma mark Life Cycle
 
 - (id)initWithDevicePixelRatio:(GLfloat)ratio

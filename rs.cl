@@ -641,9 +641,7 @@ __kernel void db_atts(__global float4 *p,
     //
     // Update orientation & position ---------------------------------
     //
-    float4 ori_next = quat_mult(ori, tum);
-    ori = normalize(ori_next);
-    
+    ori = normalize(quat_mult(ori, tum));
     pos += vel * dt;
     
     // Check for bounding constraints
@@ -659,14 +657,14 @@ __kernel void db_atts(__global float4 *p,
     
     if (is_outside) {
         uint4 seed = y[i];
-        float4 r = rand(&seed);
-        y[i] = seed;
-        
-        pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
-        pos.z = 10.0f;
-        
+
+        //pos = (float4)(sim_desc.hi.s456 * (rand(&seed)).xyz + sim_desc.hi.s012, 1.0f);
+        pos = (float4)(sim_desc.hi.s45 * (rand(&seed)).xy + sim_desc.hi.s01, 10.0f, 1.0f);
         vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
         tum = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
+        ori = normalize(rand(&seed));
+
+        y[i] = seed;
     }
 
     //

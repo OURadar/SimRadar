@@ -576,8 +576,8 @@
 {
     snprintf(statusMessage[0],
              sizeof(statusMessage[0]),
-             "@ %d Particles",
-             bodyRenderer[0].count);
+             "@ %s Particles",
+             [GLText commaint:(double)bodyRenderer[0].count decimals:0]);
     snprintf(statusMessage[1],
              sizeof(statusMessage[1]),
              "Debris Pop. %d, %d, %d    Color %d / %.3f",
