@@ -41,6 +41,9 @@
 
     size_t returnCounts[RS_MAX_GPU_DEVICE];
     
+    size_t nearest_thousand;
+    size_t nearest_hundred;
+
     FILE *ori_fid;
 }
 

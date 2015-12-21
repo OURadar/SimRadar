@@ -460,8 +460,13 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
         y[i] = seed;
         pos.xyz = (fma(r, sim_desc.hi.s4567, sim_desc.hi.s0123)).xyz;
         vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
-        //ori = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
-        //tum = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
+
+        //pos.xyz = (fma(r, sim_desc.hi.s4567, sim_desc.hi.s0123)).xyz;
+//        pos.xyz = (fma(rand(&seed), sim_desc.hi.s4567, sim_desc.hi.s0123)).xyz;
+
+        //pos = (float4)((fma(rand(&seed), sim_desc.hi.s4567, sim_desc.hi.s0123)).xyz, 1.0f);
+        
+        y[i] = seed;
 
     } else {
     
@@ -641,7 +646,8 @@ __kernel void db_atts(__global float4 *p,
     //
     // Update orientation & position ---------------------------------
     //
-    ori = normalize(quat_mult(ori, tum));
+    float4 ori_next = quat_mult(ori, tum);
+    ori = normalize(ori_next);
     pos += vel * dt;
     
     // Check for bounding constraints
@@ -658,11 +664,17 @@ __kernel void db_atts(__global float4 *p,
     if (is_outside) {
         uint4 seed = y[i];
 
-        //pos = (float4)(sim_desc.hi.s456 * (rand(&seed)).xyz + sim_desc.hi.s012, 1.0f);
-        pos = (float4)(sim_desc.hi.s45 * (rand(&seed)).xy + sim_desc.hi.s01, 10.0f, 1.0f);
+        //pos = (float4)((fma(rand(&seed), sim_desc.hi.s4567, sim_desc.hi.s0123)).xyz, 1.0f);
+        pos = (float4)((fma(rand(&seed), sim_desc.hi.s4567, sim_desc.hi.s0123)).xy, 10.0f, 1.0f);
+        
+//        float4 r = rand(&seed);
+//        
+//        pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
+//        pos.z = 10.0f;
+
         vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
         tum = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
-        ori = normalize(rand(&seed));
+        //ori = normalize(rand(&seed));
 
         y[i] = seed;
     }

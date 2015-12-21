@@ -61,8 +61,12 @@
             }
         }
 
-		L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
-//        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, [resourcePath UTF8String]);
+        // Copy out some convenient constants
+        nearest_thousand = (size_t)ceilf(1000.0f / S->preferred_multiple) * S->preferred_multiple;
+        nearest_hundred = (size_t)ceilf(100.0f / S->preferred_multiple) * S->preferred_multiple;
+        
+//		L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
+        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, NULL);
 
         A = ADM_init_with_config_path(ADMConfigSquarePlate, NULL);
 
@@ -99,16 +103,13 @@
 		
         RS_set_tx_params(S, 30.0f * 2.0f / 3.0e8f, 10.0e3);   // Resolution in m, power in W
 
-//        RS_set_debris_count(S, 1, 4000);
-//        RS_set_debris_count(S, 2, 2000);
-//        RS_set_debris_count(S, 3, 500);
-
-        RS_set_debris_count(S, 1, (size_t)roundf(25000 / 384) * 384);
-        RS_set_debris_count(S, 2, (size_t)roundf(500 / 384) * 384);
+        NSLog(@"S->preferred_multiple = %d", (int)S->preferred_multiple);
+        //        RS_set_debris_count(S, 1, 20);
+        //        RS_set_debris_count(S, 3, 10);
+        RS_set_debris_count(S, 1, 25000);
+        RS_set_debris_count(S, 2, 500);
+        RS_revise_debris_counts_to_gpu_preference(S);
         
-//        RS_set_debris_count(S, 1, 20);
-//        RS_set_debris_count(S, 3, 10);
-
         RS_set_prt(S, 0.03f);
 
 //        char ori_file[4096];
@@ -345,14 +346,13 @@
     if (speciesId == 0) {
         return -1;
     }
-    size_t nearest_thousand = (size_t)ceilf(1000.0f / S->preferred_multiple) * S->preferred_multiple;
-    size_t nearest_hundred = (size_t)ceilf(100.0f / S->preferred_multiple) * S->preferred_multiple;
     size_t pop = RS_get_debris_count(S, speciesId);
-    if (pop > nearest_thousand) {
+    if (pop >= nearest_thousand) {
         pop -= nearest_thousand;
     } else if (pop >= nearest_hundred) {
         pop -= nearest_hundred;
     }
+    NSLog(@"pop ------> %zu  %zu", pop, nearest_hundred);
     RS_set_debris_count(S, speciesId, pop);
     
     RS_get_all_worker_debris_counts(S, speciesId, returnCounts);
@@ -370,8 +370,6 @@
         return -1;
     }
     size_t pop = RS_get_debris_count(S, speciesId);
-    size_t nearest_thousand = (size_t)ceilf(1000.0f / S->preferred_multiple) * S->preferred_multiple;
-    size_t nearest_hundred = (size_t)ceilf(100.0f / S->preferred_multiple) * S->preferred_multiple;
     if (pop >= nearest_thousand && pop <= S->num_scats - nearest_thousand) {
         pop += nearest_thousand;
     } else {

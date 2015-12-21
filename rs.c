@@ -1839,6 +1839,18 @@ void RS_set_debris_count(RSHandle *H, const int species_id, const size_t count) 
 }
 
 
+void RS_revise_debris_counts_to_gpu_preference(RSHandle *H) {
+    
+    int i;
+    
+    for (i = 0; i < RS_MAX_DEBRIS_TYPES; i++) {
+        if (H->species_population[i]) {
+            H->species_population[i] = ((H->species_population[i] + H->preferred_multiple - 1) / H->preferred_multiple) * H->preferred_multiple;
+        }
+    }
+}
+
+
 size_t RS_get_debris_count(RSHandle *H, const int species_id) {
     return H->species_population[species_id];
 }
@@ -3566,7 +3578,6 @@ void RS_advance_time(RSHandle *H) {
                            H->worker[i].angular_weight_desc,
                            H->sim_desc);
 
-
 //            scat_clr_kernel(&H->worker[i].ndrange_scat[0],
 //							(cl_float4 *)H->worker[i].scat_clr,
 //							(cl_float4 *)H->worker[i].scat_att,
@@ -3574,13 +3585,7 @@ void RS_advance_time(RSHandle *H) {
 //
             dispatch_semaphore_signal(H->worker[i].sem);
 		});
-	}
-	
-	for (i = 0; i < H->num_workers; i++) {
-		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
-	}
 
-    for (i = 0; i < H->num_workers; i++) {
         r = 0;
         a = 0;
         for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
@@ -3612,15 +3617,16 @@ void RS_advance_time(RSHandle *H) {
             r = r == H->rcs_count - 1 ? 0 : r + 1;
             a = a == H->adm_count - 1 ? 0 : a + 1;
         }
-    }
-
-    for (i = 0; i < H->num_workers; i++) {
+	}
+	
+	for (i = 0; i < H->num_workers; i++) {
+		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
         for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
             if (H->worker[i].species_population[k]) {
                 dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
             }
         }
-    }
+	}
 
 #else
 
