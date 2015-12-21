@@ -775,27 +775,19 @@
         glGenBuffers(4, bodyRenderer[i].vbo);
         
         glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer[i].vbo[0]);  // position
-        glBufferData(GL_ARRAY_BUFFER, bodyRenderer[i].count * sizeof(cl_float4), NULL, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, bodyRenderer[i].count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
         glVertexAttribPointer(bodyRenderer[i].positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
         glEnableVertexAttribArray(bodyRenderer[i].positionAI);
         
         glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer[i].vbo[1]);  // color
-        glBufferData(GL_ARRAY_BUFFER, bodyRenderer[i].count * sizeof(cl_float4), NULL, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, bodyRenderer[i].count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
         glVertexAttribPointer(bodyRenderer[i].colorAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
         glEnableVertexAttribArray(bodyRenderer[i].colorAI);
 
-        cl_float4 *tmp = (cl_float4 *)malloc(bodyRenderer[i].count * sizeof(cl_float4));
-        for (int k=0; k<bodyRenderer[i].count; k++) {
-            tmp[k].x = 0.0f;
-            tmp[k].y = 0.0f;
-            tmp[k].z = 0.0f;
-            tmp[k].w = 1.0f;
-        }
         glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer[i].vbo[2]);  // orientation
-        glBufferData(GL_ARRAY_BUFFER, bodyRenderer[i].count * sizeof(cl_float4), tmp, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, bodyRenderer[i].count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
         glVertexAttribPointer(bodyRenderer[i].quaternionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
         glEnableVertexAttribArray(bodyRenderer[i].quaternionAI);
-        free(tmp);
     }
     
     // Use .w element for anchor size, scale by pixel ratio for Retina displays

@@ -674,13 +674,13 @@ __kernel void db_atts(__global float4 *p,
 
         vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
         tum = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
-        //ori = normalize(rand(&seed));
+        ori = normalize(rand(&seed));
 
         y[i] = seed;
     }
 
     //
-    // derive alpha & beta of ADM for ADM table lookup ---------------------------------
+    // derive alpha & beta for ADM table lookup ---------------------------------
     //
     float alpha, beta, gamma;
     
