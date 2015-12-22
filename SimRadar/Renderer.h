@@ -21,7 +21,7 @@
 typedef struct _draw_resource {
 	GLuint program;
 	GLuint vao;
-	GLuint vbo[5];       // positions, colors, tex_coord, wvp_mat, etc.
+	GLuint vbo[5];        // positions, colors, tex_coord, wvp_mat, etc.
     GLint mvUI;
 	GLint mvpUI;
     GLint sizeUI;
@@ -33,6 +33,10 @@ typedef struct _draw_resource {
 	GLfloat *colors;       // CPU side color
     GLfloat *textureCoord; // CPU side texture coordinate
 	GLuint *indices;       // CPU side indexing for instancing
+    GLuint *segmentOrigins;
+    GLuint *segmentLengths;
+    GLuint segmentTotalLength;
+    GLuint segmentMax;
     GLint positionAI;
 	GLint rotationAI;
     GLint quaternionAI;
@@ -118,11 +122,11 @@ typedef struct _draw_primitive {
     RenderResource bodyRenderer[8];
     RenderResource instancedGeometryRenderer;
 
-    RenderResource gridRenderer;
     RenderResource anchorRenderer;
-    RenderResource anchorLineRenderer;
+    RenderResource lineRenderer;
+//    RenderResource anchorLineRenderer;
+//    RenderResource hudOutlineRenderer;
     RenderResource debrisRenderer[RENDERER_MAX_DEBRIS_TYPES];
-    RenderResource hudRenderer;
     RenderResource meshRenderer;
 
     RenderPrimitive primitives[4];
