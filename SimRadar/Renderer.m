@@ -31,6 +31,7 @@
 @synthesize beamAzimuth, beamElevation;
 @synthesize showHUD;
 
+#pragma mark -
 #pragma mark Properties
 
 - (void)setRange:(float)newRange
@@ -51,19 +52,6 @@
 	[self setRange:10.0f];
     
     viewParametersNeedUpdate = TRUE;
-}
-
-
-- (void)validateLineRenderer:(GLuint)number
-{
-    if (lineRenderer.positions == NULL) {
-        //NSLog(@"Allocating grid lines");
-        lineRenderer.positions = (GLfloat *)malloc(4096 * sizeof(GLfloat));      // Start with 1000 lines, should be more than enough
-        lineRenderer.segmentOrigins = (GLuint *)malloc(1024 * sizeof(GLfloat));
-        lineRenderer.segmentLengths = (GLuint *)malloc(1024 * sizeof(GLfloat));
-        lineRenderer.segmentMax = 1024;
-    }
-    // To add: check if number can fit in the allocated buffer
 }
 
 
@@ -183,24 +171,8 @@
     lineRenderer.segmentOrigins[0] = 0;
     lineRenderer.segmentLengths[0] = 24;
     lineRenderer.segmentTotalLength = 24;
-    if (lineRenderer.count == 0) {
-        lineRenderer.count = 1;
-    }
+    lineRenderer.count = 1;
     
-//    float pos[] = {
-//        0.0f, 0.0f, 0.0f, 1.0f,   // First part is for the dark area
-//        0.0f, 1.0f, 0.0f, 1.0f,
-//        1.0f, 0.0f, 0.0f, 1.0f,
-//        1.0f, 1.0f, 0.0f, 1.0f,
-//        0.0f, 0.0f, 0.0f, 1.0f,   // Second part is for the outline
-//        1.0f, 0.0f, 0.0f, 1.0f,
-//        1.0f, 1.0f, 0.0f, 1.0f,
-//        0.0f, 1.0f, 0.0f, 1.0f,
-//        0.0f, 0.0f, 0.0f, 1.0f
-//    };
-//
-//    [self addLinesToLineRenderer:pos number:sizeof(pos) / sizeof(float) / 4];
-
     vbosNeedUpdate = TRUE;
 }
 
@@ -237,36 +209,7 @@
 
 - (void)setAnchorLines:(GLfloat *)lines number:(GLuint)number
 {
-//	anchorLineRenderer.positions = lines;
-//	anchorLineRenderer.count = number;
     [self addLinesToLineRenderer:lines number:number];
-}
-
-
-- (void)addLinesToLineRenderer:(GLfloat *)lines number:(GLuint)count
-{
-    [self validateLineRenderer:count];
-    
-    GLuint origin = 0;
-    GLuint k = lineRenderer.count;
-    while (k > 0) {
-        k--;
-        origin += (lineRenderer.segmentLengths[k] * 4);
-    }
-    if (origin != lineRenderer.segmentTotalLength * 4) {
-        NSLog(@"WARNING: Inconsistent segment origin / length combination.  %u / %u", lineRenderer.segmentTotalLength * 4, origin);
-    }
-    
-    memcpy(&lineRenderer.positions[origin], lines, count * 4 * sizeof(GLfloat));
-
-    lineRenderer.segmentOrigins[lineRenderer.count] = origin;
-    lineRenderer.segmentLengths[lineRenderer.count] = count;
-    lineRenderer.segmentTotalLength += count;
-    lineRenderer.count++;
-
-    NSLog(@"addLinesToLineRenderer  %u %u", origin, count);
-    
-	vbosNeedUpdate = TRUE;
 }
 
 
@@ -658,6 +601,46 @@
     snprintf(fpsString, sizeof(fpsString), "%.0f FPS", fps);
 }
 
+
+- (void)validateLineRenderer:(GLuint)number
+{
+    if (lineRenderer.positions == NULL) {
+        //NSLog(@"Allocating grid lines");
+        lineRenderer.positions = (GLfloat *)malloc(4 * 1024 * sizeof(GLfloat));      // Start with 1024 lines, should be more than enough
+        lineRenderer.segmentOrigins = (GLuint *)malloc(1024 * sizeof(GLuint));
+        lineRenderer.segmentLengths = (GLuint *)malloc(1024 * sizeof(GLuint));
+        lineRenderer.segmentMax = 1024;
+    }
+    // To add: check if number can fit in the allocated buffer
+}
+
+
+- (void)addLinesToLineRenderer:(GLfloat *)lines number:(GLuint)count
+{
+    [self validateLineRenderer:count];
+    
+    GLuint origin = 0;
+    GLuint k = lineRenderer.count;
+    while (k > 0) {
+        k--;
+        origin += lineRenderer.segmentLengths[k];
+    }
+    if (origin != lineRenderer.segmentTotalLength) {
+        NSLog(@"WARNING: Inconsistent segment origin (%u) and total length (%u) combination.", origin, lineRenderer.segmentTotalLength);
+    }
+    
+    memcpy(&lineRenderer.positions[origin * 4], lines, count * 4 * sizeof(GLfloat));
+    
+    lineRenderer.segmentOrigins[lineRenderer.count] = origin;
+    lineRenderer.segmentLengths[lineRenderer.count] = count;
+    lineRenderer.segmentTotalLength += count;
+    lineRenderer.count++;
+    
+    //NSLog(@"addLinesToLineRenderer  %u %u", origin, count);
+    
+    vbosNeedUpdate = TRUE;
+}
+
 #pragma mark -
 #pragma mark Initializations & Deallocation
 
@@ -755,27 +738,25 @@
 
     lineRenderer       = [self createRenderResourceFromVertexShader:@"line_sc.vsh" fragmentShader:@"line_sc.fsh"];
     anchorRenderer     = [self createRenderResourceFromVertexShader:@"anchor.vsh" fragmentShader:@"anchor.fsh"];
-//	anchorLineRenderer = [self createRenderResourceFromProgram:gridLineRenderer.program];
-//	hudRenderer        = [self createRenderResourceFromProgram:gridLineRenderer.program];
     meshRenderer       = [self createRenderResourceFromVertexShader:@"mesh.vsh" fragmentShader:@"mesh.fsh"];
     
     NSLog(@"Each renderer uses %zu bytes", sizeof(RenderResource));
     
     //NSLog(@"meshRenderer's drawColor @ %d / %d / %d", meshRenderer.colorUI, meshRenderer.positionAI, meshRenderer.textureCoordAI);
 
-    const GLfloat colors[] = {
-        1.00f, 1.00f, 1.00f,
-        0.00f, 1.00f, 0.00f,
-        1.00f, 0.40f, 1.00f,
-        1.00f, 0.65f, 0.00f
+    const GLfloat colors[][3] = {
+        {1.00f, 1.00f, 1.00f},
+        {0.00f, 1.00f, 0.00f},
+        {1.00f, 0.40f, 1.00f},
+        {1.00f, 0.65f, 0.00f}
     };
     
     for (int k = 0; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
         debrisRenderer[k] = [self createRenderResourceFromProgram:instancedGeometryRenderer.program];
         debrisRenderer[k].colors = malloc(4 * sizeof(GLfloat));
-        debrisRenderer[k].colors[0] = colors[(k % 4) * 3];
-        debrisRenderer[k].colors[1] = colors[(k % 4) * 3 + 1];
-        debrisRenderer[k].colors[2] = colors[(k % 4) * 3 + 2];
+        debrisRenderer[k].colors[0] = colors[(k % 4)][0];
+        debrisRenderer[k].colors[1] = colors[(k % 4)][1];
+        debrisRenderer[k].colors[2] = colors[(k % 4)][2];
         debrisRenderer[k].colors[3] = 1.0f;
     }
 	
@@ -816,14 +797,30 @@
 	NSLog(@"Allocating (%d, %d) particles on GPU ...", bodyRenderer[0].count, bodyRenderer[1].count);
 	#endif
 
-	// Grid lines
+    float pos[] = {
+        0.0f, 0.0f, 0.0f, 1.0f,   // First part is for the dark area
+        0.0f, 1.0f, 0.0f, 1.0f,
+        1.0f, 0.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, 0.0f, 1.0f,
+        0.0f, 0.0f, 0.0f, 1.0f,   // Second part is for the outline
+        1.0f, 0.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, 0.0f, 1.0f,
+        0.0f, 1.0f, 0.0f, 1.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
+    };
+    
+    if (lineRenderer.count == 2) {
+        [self addLinesToLineRenderer:pos number:9];
+        vbosNeedUpdate = FALSE;
+    }
+
+    // Grid lines
 	glBindVertexArray(lineRenderer.vao);
 
     glDeleteBuffers(1, lineRenderer.vbo);
 	glGenBuffers(1, lineRenderer.vbo);
 
 	glBindBuffer(GL_ARRAY_BUFFER, lineRenderer.vbo[0]);
-	//glBufferData(GL_ARRAY_BUFFER, gridLineRenderer.count * sizeof(cl_float4), gridLineRenderer.positions, GL_STATIC_DRAW);
     glBufferData(GL_ARRAY_BUFFER, lineRenderer.segmentTotalLength * 4 * sizeof(GLfloat), lineRenderer.positions, GL_STATIC_DRAW);
 	glVertexAttribPointer(lineRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
 	glEnableVertexAttribArray(lineRenderer.positionAI);
@@ -871,45 +868,6 @@
 	glBufferData(GL_ARRAY_BUFFER, anchorRenderer.count * sizeof(cl_float4), anchorRenderer.positions, GL_STATIC_DRAW);
 	glVertexAttribPointer(anchorRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
 	glEnableVertexAttribArray(anchorRenderer.positionAI);
-
-	
-	// Anchor Line
-//	glBindVertexArray(anchorLineRenderer.vao);
-//
-//    glDeleteBuffers(1, anchorLineRenderer.vbo);
-//	glGenBuffers(1, anchorLineRenderer.vbo);
-//
-//	glBindBuffer(GL_ARRAY_BUFFER, anchorLineRenderer.vbo[0]);
-//	glBufferData(GL_ARRAY_BUFFER, anchorLineRenderer.count * sizeof(cl_float4), anchorLineRenderer.positions, GL_STATIC_DRAW);
-//	glVertexAttribPointer(anchorLineRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
-//	glEnableVertexAttribArray(anchorLineRenderer.positionAI);
-	
-	
-    // HUD
-//	glBindVertexArray(hudRenderer.vao);
-//	
-//    glDeleteBuffers(1, hudRenderer.vbo);
-//	glGenBuffers(1, hudRenderer.vbo);
-//    
-//
-//    glBindBuffer(GL_ARRAY_BUFFER, hudRenderer.vbo[0]);
-//    glBufferData(GL_ARRAY_BUFFER, sizeof(pos), pos, GL_STATIC_DRAW);
-//    glVertexAttribPointer(hudRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
-//    glEnableVertexAttribArray(hudRenderer.positionAI);
-
-    float pos[] = {
-        0.0f, 0.0f, 0.0f, 1.0f,   // First part is for the dark area
-        0.0f, 1.0f, 0.0f, 1.0f,
-        1.0f, 0.0f, 0.0f, 1.0f,
-        1.0f, 1.0f, 0.0f, 1.0f,
-        0.0f, 0.0f, 0.0f, 1.0f,   // Second part is for the outline
-        1.0f, 0.0f, 0.0f, 1.0f,
-        1.0f, 1.0f, 0.0f, 1.0f,
-        0.0f, 1.0f, 0.0f, 1.0f,
-        0.0f, 0.0f, 0.0f, 1.0f
-    };
-	
-    //[self addLinesToLineRenderer:pos number:sizeof(pos) / sizeof(float) / 4];
 	
     // Mesh 1 : colorbar
     glBindVertexArray(meshRenderer.vao);
@@ -1071,15 +1029,8 @@
         glUniform4f(lineRenderer.colorUI, 0.4f, 1.0f, 1.0f, phase);
         glDrawArrays(GL_LINES, 0, lineRenderer.segmentLengths[0]);
         glUniform4f(lineRenderer.colorUI, 1.0f, 1.0f, 0.0f, 1.0f);
-        glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[1], lineRenderer.segmentLengths[1]);
+        glDrawArrays(GL_LINES, 24, MAX(1, lineRenderer.segmentLengths[1]));
     }
-
-	// Anchor Lines
-//	glBindVertexArray(anchorLineRenderer.vao);
-//	glUseProgram(anchorLineRenderer.program);
-//  glUniform4f(anchorLineRenderer.colorUI, 1.0f, 1.0f, 0.0f, phase);
-//	glUniformMatrix4fv(anchorLineRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
-//	glDrawArrays(GL_LINES, 0, anchorLineRenderer.count);
 
 	// Anchors
     glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
@@ -1087,7 +1038,6 @@
 	glBindVertexArray(anchorRenderer.vao);
     glUseProgram(anchorRenderer.program);
     glUniform4f(anchorRenderer.colorUI, 0.4f, 1.0f, 1.0f, phase);
-    //glUniform4f(anchorRenderer.sizeUI, pixelsPerUnit, pixelsPerUnit, pixelsPerUnit, pixelsPerUnit);
     //glUniformMatrix4fv(anchorRenderer.mvUI, 1, GL_FALSE, modelView.m);
 	glUniformMatrix4fv(anchorRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
     glActiveTexture(GL_TEXTURE0);
@@ -1100,7 +1050,6 @@
 //    glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA);
     for (i = 0; i < clDeviceCount; i++) {
         glBindVertexArray(bodyRenderer[i].vao);
-        //glPointSize(4.0f * pixelsPerUnit * devicePixelRatio);
         glUseProgram(bodyRenderer[i].program);
         glUniform4f(bodyRenderer[i].sizeUI, pixelsPerUnit * devicePixelRatio, 1.0f, 1.0f, 1.0f);
         glUniform4f(bodyRenderer[i].colorUI, bodyRenderer[i].colormapIndexNormalized, 1.0f, 1.0f, backgroundOpacity);
@@ -1142,13 +1091,15 @@
     
     if (showHUD) {
         // HUD Background & Outline
-//        glBindVertexArray(hudRenderer.vao);
-//        glUseProgram(hudRenderer.program);
-//        glUniform4f(hudRenderer.colorUI, 0.0f, 0.0f, 0.0f, 0.8f);
-//        glUniformMatrix4fv(hudRenderer.mvpUI, 1, GL_FALSE, hudModelViewProjection.m);
-//        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-//        glUniform4f(hudRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
-//        glDrawArrays(GL_LINE_STRIP, 4, 5);
+        if (lineRenderer.segmentTotalLength) {
+            glBindVertexArray(lineRenderer.vao);
+            glUseProgram(lineRenderer.program);
+            glUniformMatrix4fv(lineRenderer.mvpUI, 1, GL_FALSE, hudModelViewProjection.m);
+            glUniform4f(lineRenderer.colorUI, 0.0f, 0.0f, 0.0f, 0.8f);
+            glDrawArrays(GL_TRIANGLE_STRIP, lineRenderer.segmentOrigins[2], 4);
+            glUniform4f(lineRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
+            glDrawArrays(GL_LINE_STRIP, lineRenderer.segmentOrigins[2] + 4, 5);
+        }
         
         // Objects on HUD (beam's view)
         glViewport(hudOrigin.x * devicePixelRatio, hudOrigin.y * devicePixelRatio, hudSize.width * devicePixelRatio, hudSize.height * devicePixelRatio);
@@ -1165,19 +1116,17 @@
             glDrawElementsInstanced(GL_LINE_STRIP, debrisRenderer[k].instanceSize, GL_UNSIGNED_INT, NULL, debrisRenderer[k].count);
         }
 
-//        glBindVertexArray(anchorLineRenderer.vao);
-//        glUseProgram(anchorLineRenderer.program);
-//        glUniform4f(anchorLineRenderer.colorUI, 1.0f, 1.0f, 0.0f, 0.8f);
-//        glUniformMatrix4fv(anchorLineRenderer.mvpUI, 1, GL_FALSE, beamModelViewProjection.m);
-//        glDrawArrays(GL_LINES, 0, anchorLineRenderer.count);
-        
+        // Draw the grid
         glBindVertexArray(lineRenderer.vao);
         glUseProgram(lineRenderer.program);
         glUniform4f(lineRenderer.colorUI, 0.4f, 1.0f, 1.0f, 0.8f);
         glUniformMatrix4fv(lineRenderer.mvpUI, 1, GL_FALSE, beamModelViewProjection.m);
         glDrawArrays(GL_LINES, 0, lineRenderer.segmentLengths[0]);
+        glUniform4f(lineRenderer.colorUI, 1.0f, 1.0f, 0.0f, 0.8f);
+        glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[1], lineRenderer.segmentLengths[1]);
     }
-    
+
+    // Static overlay viewport
     glViewport(0, 0, width * devicePixelRatio, height * devicePixelRatio);
     
 #ifdef DEBUG_GL
@@ -1217,9 +1166,9 @@
         glUseProgram(lineRenderer.program);
         glUniformMatrix4fv(lineRenderer.mvpUI, 1, GL_FALSE, meshRenderer.modelViewProjectionOffTwo.m);
         glUniform4f(lineRenderer.colorUI, 0.0f, 0.0f, 0.0f, 0.6f);
-        glDrawArrays(GL_TRIANGLE_STRIP, lineRenderer.segmentOrigins[1], 4);
+        glDrawArrays(GL_TRIANGLE_STRIP, lineRenderer.segmentOrigins[2], 4);
         glUniform4f(lineRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
-        glDrawArrays(GL_LINE_STRIP, lineRenderer.segmentOrigins[1] + 4, 5);
+        glDrawArrays(GL_LINE_STRIP, lineRenderer.segmentOrigins[2] + 4, 5);
     }
 
     glBindVertexArray(meshRenderer.vao);

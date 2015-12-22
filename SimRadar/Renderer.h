@@ -124,8 +124,6 @@ typedef struct _draw_primitive {
 
     RenderResource anchorRenderer;
     RenderResource lineRenderer;
-//    RenderResource anchorLineRenderer;
-//    RenderResource hudOutlineRenderer;
     RenderResource debrisRenderer[RENDERER_MAX_DEBRIS_TYPES];
     RenderResource meshRenderer;
 
