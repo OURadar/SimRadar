@@ -57,122 +57,118 @@
 
 - (void)setGridAtOrigin:(GLfloat *)origin size:(GLfloat *)size
 {
-    [self validateLineRenderer:24];
-    
 	//NSLog(@"grid @ (%.1f, %.1f, %.1f)  (%.1f, %.1f, %.1f)", origin[0], origin[1], origin[2], size[0], size[1], size[2]);
-	lineRenderer.positions[0]  = origin[0];
-	lineRenderer.positions[1]  = origin[1];
-	lineRenderer.positions[2]  = origin[2];
-	lineRenderer.positions[3]  = 1.0f;
-	lineRenderer.positions[4]  = origin[0] + size[0];
-	lineRenderer.positions[5]  = origin[1];
-	lineRenderer.positions[6]  = origin[2];
-	lineRenderer.positions[7]  = 1.0f;
-
-	lineRenderer.positions[8]  = origin[0];
-	lineRenderer.positions[9]  = origin[1];
-	lineRenderer.positions[10] = origin[2];
-	lineRenderer.positions[11] = 1.0f;
-	lineRenderer.positions[12] = origin[0];
-	lineRenderer.positions[13] = origin[1] + size[1];
-	lineRenderer.positions[14] = origin[2];
-	lineRenderer.positions[15] = 1.0f;
-
-	lineRenderer.positions[16] = origin[0] + size[0];
-	lineRenderer.positions[17] = origin[1];
-	lineRenderer.positions[18] = origin[2];
-	lineRenderer.positions[19] = 1.0f;
-	lineRenderer.positions[20] = origin[0] + size[0];
-	lineRenderer.positions[21] = origin[1] + size[1];
-	lineRenderer.positions[22] = origin[2];
-	lineRenderer.positions[23] = 1.0f;
-
-	lineRenderer.positions[24] = origin[0];
-	lineRenderer.positions[25] = origin[1] + size[1];
-	lineRenderer.positions[26] = origin[2];
-	lineRenderer.positions[27] = 1.0f;
-	lineRenderer.positions[28] = origin[0] + size[0];
-	lineRenderer.positions[29] = origin[1] + size[1];
-	lineRenderer.positions[30] = origin[2];
-	lineRenderer.positions[31] = 1.0f;
-
-	lineRenderer.positions[32] = origin[0];
-	lineRenderer.positions[33] = origin[1];
-	lineRenderer.positions[34] = origin[2] + size[2];
-	lineRenderer.positions[35] = 1.0f;
-	lineRenderer.positions[36] = origin[0] + size[0];
-	lineRenderer.positions[37] = origin[1];
-	lineRenderer.positions[38] = origin[2] + size[2];
-	lineRenderer.positions[39] = 1.0f;
-	
-	lineRenderer.positions[40] = origin[0];
-	lineRenderer.positions[41] = origin[1];
-	lineRenderer.positions[42] = origin[2] + size[2];
-	lineRenderer.positions[43] = 1.0f;
-	lineRenderer.positions[44] = origin[0];
-	lineRenderer.positions[45] = origin[1] + size[1];
-	lineRenderer.positions[46] = origin[2] + size[2];
-	lineRenderer.positions[47] = 1.0f;
-	
-	lineRenderer.positions[48] = origin[0] + size[0];
-	lineRenderer.positions[49] = origin[1];
-	lineRenderer.positions[50] = origin[2] + size[2];
-	lineRenderer.positions[51] = 1.0f;
-	lineRenderer.positions[52] = origin[0] + size[0];
-	lineRenderer.positions[53] = origin[1] + size[1];
-	lineRenderer.positions[54] = origin[2] + size[2];
-	lineRenderer.positions[55] = 1.0f;
-	
-	lineRenderer.positions[56] = origin[0];
-	lineRenderer.positions[57] = origin[1] + size[1];
-	lineRenderer.positions[58] = origin[2] + size[2];
-	lineRenderer.positions[59] = 1.0f;
-	lineRenderer.positions[60] = origin[0] + size[0];
-	lineRenderer.positions[61] = origin[1] + size[1];
-	lineRenderer.positions[62] = origin[2] + size[2];
-	lineRenderer.positions[63] = 1.0f;
-
-	lineRenderer.positions[64] = origin[0];
-	lineRenderer.positions[65] = origin[1];
-	lineRenderer.positions[66] = origin[2];
-	lineRenderer.positions[67] = 1.0f;
-	lineRenderer.positions[68] = origin[0];
-	lineRenderer.positions[69] = origin[1];
-	lineRenderer.positions[70] = origin[2] + size[2];
-	lineRenderer.positions[71] = 1.0f;
-	
-	lineRenderer.positions[72] = origin[0] + size[0];
-	lineRenderer.positions[73] = origin[1];
-	lineRenderer.positions[74] = origin[2];
-	lineRenderer.positions[75] = 1.0f;
-	lineRenderer.positions[76] = origin[0] + size[0];
-	lineRenderer.positions[77] = origin[1];
-	lineRenderer.positions[78] = origin[2] + size[2];
-	lineRenderer.positions[79] = 1.0f;
-
-	lineRenderer.positions[80] = origin[0];
-	lineRenderer.positions[81] = origin[1] + size[1];
-	lineRenderer.positions[82] = origin[2];
-	lineRenderer.positions[83] = 1.0f;
-	lineRenderer.positions[84] = origin[0];
-	lineRenderer.positions[85] = origin[1] + size[1];
-	lineRenderer.positions[86] = origin[2] + size[2];
-	lineRenderer.positions[87] = 1.0f;
-
-	lineRenderer.positions[88] = origin[0] + size[0];
-	lineRenderer.positions[89] = origin[1] + size[1];
-	lineRenderer.positions[90] = origin[2];
-	lineRenderer.positions[91] = 1.0f;
-	lineRenderer.positions[92] = origin[0] + size[0];
-	lineRenderer.positions[93] = origin[1] + size[1];
-	lineRenderer.positions[94] = origin[2] + size[2];
-	lineRenderer.positions[95] = 1.0f;
-
-    lineRenderer.segmentOrigins[0] = 0;
-    lineRenderer.segmentLengths[0] = 24;
-    lineRenderer.segmentTotalLength = 24;
-    lineRenderer.count = 1;
     
+    GLfloat *pos = lineRenderer.positions + lineRenderer.segmentOrigins[RendererLineSegmentSimulationGrid] * 4;
+
+	*pos++ = origin[0];
+	*pos++ = origin[1];
+	*pos++ = origin[2];
+	*pos++ = 1.0f;
+	*pos++ = origin[0] + size[0];
+	*pos++ = origin[1];
+	*pos++ = origin[2];
+	*pos++ = 1.0f;
+
+	*pos++  = origin[0];
+	*pos++  = origin[1];
+	*pos++ = origin[2];
+	*pos++ = 1.0f;
+	*pos++ = origin[0];
+	*pos++ = origin[1] + size[1];
+	*pos++ = origin[2];
+	*pos++ = 1.0f;
+
+	*pos++ = origin[0] + size[0];
+	*pos++ = origin[1];
+	*pos++ = origin[2];
+	*pos++ = 1.0f;
+	*pos++ = origin[0] + size[0];
+	*pos++ = origin[1] + size[1];
+	*pos++ = origin[2];
+	*pos++ = 1.0f;
+
+	*pos++ = origin[0];
+	*pos++ = origin[1] + size[1];
+	*pos++ = origin[2];
+	*pos++ = 1.0f;
+	*pos++ = origin[0] + size[0];
+	*pos++ = origin[1] + size[1];
+	*pos++ = origin[2];
+	*pos++ = 1.0f;
+
+	*pos++ = origin[0];
+	*pos++ = origin[1];
+	*pos++ = origin[2] + size[2];
+	*pos++ = 1.0f;
+	*pos++ = origin[0] + size[0];
+	*pos++ = origin[1];
+	*pos++ = origin[2] + size[2];
+	*pos++ = 1.0f;
+	
+	*pos++ = origin[0];
+	*pos++ = origin[1];
+	*pos++ = origin[2] + size[2];
+	*pos++ = 1.0f;
+	*pos++ = origin[0];
+	*pos++ = origin[1] + size[1];
+	*pos++ = origin[2] + size[2];
+	*pos++ = 1.0f;
+	
+	*pos++ = origin[0] + size[0];
+	*pos++ = origin[1];
+	*pos++ = origin[2] + size[2];
+	*pos++ = 1.0f;
+	*pos++ = origin[0] + size[0];
+	*pos++ = origin[1] + size[1];
+	*pos++ = origin[2] + size[2];
+	*pos++ = 1.0f;
+	
+	*pos++ = origin[0];
+	*pos++ = origin[1] + size[1];
+	*pos++ = origin[2] + size[2];
+	*pos++ = 1.0f;
+	*pos++ = origin[0] + size[0];
+	*pos++ = origin[1] + size[1];
+	*pos++ = origin[2] + size[2];
+	*pos++ = 1.0f;
+
+	*pos++ = origin[0];
+	*pos++ = origin[1];
+	*pos++ = origin[2];
+	*pos++ = 1.0f;
+	*pos++ = origin[0];
+	*pos++ = origin[1];
+	*pos++ = origin[2] + size[2];
+	*pos++ = 1.0f;
+	
+	*pos++ = origin[0] + size[0];
+	*pos++ = origin[1];
+	*pos++ = origin[2];
+	*pos++ = 1.0f;
+	*pos++ = origin[0] + size[0];
+	*pos++ = origin[1];
+	*pos++ = origin[2] + size[2];
+	*pos++ = 1.0f;
+
+	*pos++ = origin[0];
+	*pos++ = origin[1] + size[1];
+	*pos++ = origin[2];
+	*pos++ = 1.0f;
+	*pos++ = origin[0];
+	*pos++ = origin[1] + size[1];
+	*pos++ = origin[2] + size[2];
+	*pos++ = 1.0f;
+
+	*pos++ = origin[0] + size[0];
+	*pos++ = origin[1] + size[1];
+	*pos++ = origin[2];
+	*pos++ = 1.0f;
+	*pos++ = origin[0] + size[0];
+	*pos++ = origin[1] + size[1];
+	*pos++ = origin[2] + size[2];
+	*pos++ = 1.0f;
+
     vbosNeedUpdate = TRUE;
 }
 
@@ -230,6 +226,41 @@
 
 - (void)makePrimitives
 {
+    // Basic 3D / 2D overlays
+    
+    [self validateLineRenderer:0];
+    
+    // lineRenderer is populated with basic segments:
+    // 0 - a basic geometry for a rectangle: 4 for shaded area, 5 for outline
+    // 1 - the simulation box, fixed with 24 vertices
+    // 2 - anchor lines outlining a radar scan domain
+    // 3 - etc.
+    lineRenderer.segmentOrigins[RendererLineSegmentBasicRectangle] = 0;
+    lineRenderer.segmentLengths[RendererLineSegmentBasicRectangle] = 9;
+    lineRenderer.segmentOrigins[RendererLineSegmentSimulationGrid] = 10;
+    lineRenderer.segmentLengths[RendererLineSegmentSimulationGrid] = 24;
+    lineRenderer.segmentTotalLength = 33;
+    lineRenderer.count = 2;
+    
+    GLfloat rect[] = {
+        0.0f, 0.0f, 0.0f, 1.0f,   // First part is for the dark area
+        0.0f, 1.0f, 0.0f, 1.0f,
+        1.0f, 0.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, 0.0f, 1.0f,
+        0.0f, 0.0f, 0.0f, 1.0f,   // Second part is for the outline, z-component really doesn't matter
+        1.0f, 0.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, 0.0f, 1.0f,
+        0.0f, 1.0f, 0.0f, 1.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
+    };
+    memcpy(lineRenderer.positions, rect, 9 * 4 * sizeof(GLfloat));
+
+    [self setAnchorLines:rect number:1];
+
+    [self setAnchorPoints:rect number:1];
+    
+    // Instancing primitives
+    
     GLfloat *pos;
     RenderPrimitive *prim;
     
@@ -511,8 +542,6 @@
         resource.texture = [self loadTexture:@"disc64.png"];
         resource.textureID = [resource.texture name];
         glUniform1i(resource.textureUI, 0);
-//        glActiveTexture(GL_TEXTURE0);
-//        glBindTexture(GL_TEXTURE_2D, resource.textureID);
     } else if ((resource.textureUI = glGetUniformLocation(resource.program, "drawTemplate2")) >= 0) {
         //resource.texture = [self loadTexture:@"sphere64.png"];
         resource.texture = [self loadTexture:@"spot64.png"];
@@ -605,8 +634,7 @@
 - (void)validateLineRenderer:(GLuint)number
 {
     if (lineRenderer.positions == NULL) {
-        //NSLog(@"Allocating grid lines");
-        lineRenderer.positions = (GLfloat *)malloc(4 * 1024 * sizeof(GLfloat));      // Start with 1024 lines, should be more than enough
+        lineRenderer.positions = (GLfloat *)malloc(4 * 1024 * sizeof(GLfloat));      // Start with 1024 vertices, should be more than enough
         lineRenderer.segmentOrigins = (GLuint *)malloc(1024 * sizeof(GLuint));
         lineRenderer.segmentLengths = (GLuint *)malloc(1024 * sizeof(GLuint));
         lineRenderer.segmentMax = 1024;
@@ -619,24 +647,25 @@
 {
     [self validateLineRenderer:count];
     
-    GLuint origin = 0;
-    GLuint k = lineRenderer.count;
-    while (k > 0) {
-        k--;
+    if (lineRenderer.count < 2) {
+        NSLog(@"WARNING: addLinesToLineRenderer: should have at least count = 2, currently %u", lineRenderer.count);
+    }
+    GLuint origin = lineRenderer.segmentLengths[RendererLineSegmentSimulationGrid] + lineRenderer.segmentLengths[RendererLineSegmentBasicRectangle];
+    GLuint k = 2;
+    while (k < lineRenderer.count) {
         origin += lineRenderer.segmentLengths[k];
+        k++;
     }
     if (origin != lineRenderer.segmentTotalLength) {
         NSLog(@"WARNING: Inconsistent segment origin (%u) and total length (%u) combination.", origin, lineRenderer.segmentTotalLength);
     }
     
-    memcpy(&lineRenderer.positions[origin * 4], lines, count * 4 * sizeof(GLfloat));
+    memcpy(&lineRenderer.positions[lineRenderer.segmentTotalLength * 4], lines, count * 4 * sizeof(GLfloat));
     
     lineRenderer.segmentOrigins[lineRenderer.count] = origin;
     lineRenderer.segmentLengths[lineRenderer.count] = count;
     lineRenderer.segmentTotalLength += count;
     lineRenderer.count++;
-    
-    //NSLog(@"addLinesToLineRenderer  %u %u", origin, count);
     
     vbosNeedUpdate = TRUE;
 }
@@ -706,7 +735,16 @@
 {
     clDeviceCount = count;
     
-	// Get the GL version
+    // Local rotating color table
+    const GLfloat colors[][4] = {
+        {1.00f, 1.00f, 1.00f, 1.00f},
+        {0.00f, 1.00f, 0.00f, 1.00f},
+        {1.00f, 0.40f, 1.00f, 1.00f},
+        {1.00f, 0.65f, 0.00f, 1.00f}
+    };
+    
+
+    // Get the GL version
 	sscanf((char *)glGetString(GL_SHADING_LANGUAGE_VERSION), "%f", &GLSLVersion);
 	
 	NSLog(@"%s / %s / %.2f / %u GPU(s)", glGetString(GL_RENDERER), glGetString(GL_VERSION), GLSLVersion, clDeviceCount);
@@ -734,45 +772,35 @@
         bodyRenderer[i] = [self createRenderResourceFromProgram:bodyRenderer[0].program];
     }
 
+    // This is the renderer that uses GL instancing
     instancedGeometryRenderer = [self createRenderResourceFromVertexShader:@"inst-geom.vsh" fragmentShader:@"inst-geom.fsh"];
 
-    lineRenderer       = [self createRenderResourceFromVertexShader:@"line_sc.vsh" fragmentShader:@"line_sc.fsh"];
-    anchorRenderer     = [self createRenderResourceFromVertexShader:@"anchor.vsh" fragmentShader:@"anchor.fsh"];
-    meshRenderer       = [self createRenderResourceFromVertexShader:@"mesh.vsh" fragmentShader:@"mesh.fsh"];
-    
-    NSLog(@"Each renderer uses %zu bytes", sizeof(RenderResource));
-    
-    //NSLog(@"meshRenderer's drawColor @ %d / %d / %d", meshRenderer.colorUI, meshRenderer.positionAI, meshRenderer.textureCoordAI);
-
-    const GLfloat colors[][3] = {
-        {1.00f, 1.00f, 1.00f},
-        {0.00f, 1.00f, 0.00f},
-        {1.00f, 0.40f, 1.00f},
-        {1.00f, 0.65f, 0.00f}
-    };
-    
     for (int k = 0; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
         debrisRenderer[k] = [self createRenderResourceFromProgram:instancedGeometryRenderer.program];
         debrisRenderer[k].colors = malloc(4 * sizeof(GLfloat));
         debrisRenderer[k].colors[0] = colors[(k % 4)][0];
         debrisRenderer[k].colors[1] = colors[(k % 4)][1];
         debrisRenderer[k].colors[2] = colors[(k % 4)][2];
-        debrisRenderer[k].colors[3] = 1.0f;
+        debrisRenderer[k].colors[3] = colors[(k % 4)][3];
     }
-	
+    
+    lineRenderer   = [self createRenderResourceFromVertexShader:@"line_sc.vsh" fragmentShader:@"line_sc.fsh"];
+    anchorRenderer = [self createRenderResourceFromVertexShader:@"anchor.vsh" fragmentShader:@"anchor.fsh"];
+    meshRenderer   = [self createRenderResourceFromVertexShader:@"mesh.vsh" fragmentShader:@"mesh.fsh"];
+    
+    NSLog(@"Each renderer uses %zu bytes", sizeof(RenderResource));
+    
+    //NSLog(@"meshRenderer's drawColor @ %d / %d / %d", meshRenderer.colorUI, meshRenderer.positionAI, meshRenderer.textureCoordAI);
+
     textRenderer = [GLText new];
     
 #ifdef DEBUG_GL
 	NSLog(@"VAOs = bodyRenderer:%d  instancedGeometryRenderer = %d  lineRenderer %d  anchorRenderer %d",
 		  bodyRenderer[0].vao, instancedGeometryRenderer.vao, lineRenderer.vao, anchorRenderer.vao);
 #endif
-    
-	// Depth test will always be enabled
-	//glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
 
-	// We will always cull back faces for better performance
-	//glEnable(GL_CULL_FACE);
+    // Some OpenGL features
+	glEnable(GL_BLEND);
     glEnable(GL_TEXTURE_2D);
 //    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
@@ -782,7 +810,7 @@
 
     [self makePrimitives];
     
-    // Tell whatever controller that the OpenGL context is ready for sharing and set up renderer's body count
+    // Tell the delegate that the OpenGL context is ready for sharing and set up renderer's body count
 	[delegate glContextVAOPrepared];
 
     [self updateStatusMessage];
@@ -797,23 +825,8 @@
 	NSLog(@"Allocating (%d, %d) particles on GPU ...", bodyRenderer[0].count, bodyRenderer[1].count);
 	#endif
 
-    float pos[] = {
-        0.0f, 0.0f, 0.0f, 1.0f,   // First part is for the dark area
-        0.0f, 1.0f, 0.0f, 1.0f,
-        1.0f, 0.0f, 0.0f, 1.0f,
-        1.0f, 1.0f, 0.0f, 1.0f,
-        0.0f, 0.0f, 0.0f, 1.0f,   // Second part is for the outline
-        1.0f, 0.0f, 0.0f, 1.0f,
-        1.0f, 1.0f, 0.0f, 1.0f,
-        0.0f, 1.0f, 0.0f, 1.0f,
-        0.0f, 0.0f, 0.0f, 1.0f
-    };
+    NSLog(@"total = %u", lineRenderer.segmentTotalLength);
     
-    if (lineRenderer.count == 2) {
-        [self addLinesToLineRenderer:pos number:9];
-        vbosNeedUpdate = FALSE;
-    }
-
     // Grid lines
 	glBindVertexArray(lineRenderer.vao);
 
@@ -886,7 +899,9 @@
                         0.0f, 0.0f};
     
     glBindBuffer(GL_ARRAY_BUFFER, meshRenderer.vbo[0]);  // position
-    glBufferData(GL_ARRAY_BUFFER, sizeof(pos), pos, GL_STATIC_DRAW);
+    //glBufferData(GL_ARRAY_BUFFER, sizeof(pos), pos, GL_STATIC_DRAW);
+    NSLog(@"basic rect is length %u", lineRenderer.segmentLengths[RendererLineSegmentBasicRectangle]);
+    glBufferData(GL_ARRAY_BUFFER, lineRenderer.segmentLengths[RendererLineSegmentBasicRectangle] * 4 * sizeof(GLfloat), &lineRenderer.positions[lineRenderer.segmentOrigins[RendererLineSegmentBasicRectangle]], GL_STATIC_DRAW);
     glVertexAttribPointer(meshRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(meshRenderer.positionAI);
 
@@ -1025,12 +1040,10 @@
 	glBindVertexArray(lineRenderer.vao);
 	glUseProgram(lineRenderer.program);
 	glUniformMatrix4fv(lineRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
-    if (lineRenderer.segmentTotalLength) {
-        glUniform4f(lineRenderer.colorUI, 0.4f, 1.0f, 1.0f, phase);
-        glDrawArrays(GL_LINES, 0, lineRenderer.segmentLengths[0]);
-        glUniform4f(lineRenderer.colorUI, 1.0f, 1.0f, 0.0f, 1.0f);
-        glDrawArrays(GL_LINES, 24, MAX(1, lineRenderer.segmentLengths[1]));
-    }
+    glUniform4f(lineRenderer.colorUI, 0.4f, 1.0f, 1.0f, phase);
+    glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[RendererLineSegmentSimulationGrid], lineRenderer.segmentLengths[RendererLineSegmentSimulationGrid]);
+    glUniform4f(lineRenderer.colorUI, 1.0f, 1.0f, 0.0f, 1.0f);
+    glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[RendererLineSegmentAnchorLines], lineRenderer.segmentLengths[RendererLineSegmentAnchorLines]);
 
 	// Anchors
     glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
@@ -1096,9 +1109,9 @@
             glUseProgram(lineRenderer.program);
             glUniformMatrix4fv(lineRenderer.mvpUI, 1, GL_FALSE, hudModelViewProjection.m);
             glUniform4f(lineRenderer.colorUI, 0.0f, 0.0f, 0.0f, 0.8f);
-            glDrawArrays(GL_TRIANGLE_STRIP, lineRenderer.segmentOrigins[2], 4);
+            glDrawArrays(GL_TRIANGLE_STRIP, lineRenderer.segmentOrigins[RendererLineSegmentBasicRectangle], 4);
             glUniform4f(lineRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
-            glDrawArrays(GL_LINE_STRIP, lineRenderer.segmentOrigins[2] + 4, 5);
+            glDrawArrays(GL_LINE_STRIP, lineRenderer.segmentOrigins[RendererLineSegmentBasicRectangle] + 4, 5);
         }
         
         // Objects on HUD (beam's view)
@@ -1121,9 +1134,9 @@
         glUseProgram(lineRenderer.program);
         glUniform4f(lineRenderer.colorUI, 0.4f, 1.0f, 1.0f, 0.8f);
         glUniformMatrix4fv(lineRenderer.mvpUI, 1, GL_FALSE, beamModelViewProjection.m);
-        glDrawArrays(GL_LINES, 0, lineRenderer.segmentLengths[0]);
+        glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[RendererLineSegmentSimulationGrid], lineRenderer.segmentLengths[RendererLineSegmentSimulationGrid]);
         glUniform4f(lineRenderer.colorUI, 1.0f, 1.0f, 0.0f, 0.8f);
-        glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[1], lineRenderer.segmentLengths[1]);
+        glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[RendererLineSegmentAnchorLines], lineRenderer.segmentLengths[RendererLineSegmentAnchorLines]);
     }
 
     // Static overlay viewport
@@ -1153,22 +1166,14 @@
     }
 
     // Colorbar
-//    glBindVertexArray(hudRenderer.vao);
-//    glUseProgram(hudRenderer.program);
-//    glUniformMatrix4fv(hudRenderer.mvpUI, 1, GL_FALSE, meshRenderer.modelViewProjectionOffTwo.m);
-//    glUniform4f(hudRenderer.colorUI, 0.0f, 0.0f, 0.0f, 0.6f);
-//    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-//    glUniform4f(hudRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
-//    glDrawArrays(GL_LINE_STRIP, 4, 5);
-
     if (lineRenderer.segmentTotalLength) {
         glBindVertexArray(lineRenderer.vao);
         glUseProgram(lineRenderer.program);
         glUniformMatrix4fv(lineRenderer.mvpUI, 1, GL_FALSE, meshRenderer.modelViewProjectionOffTwo.m);
         glUniform4f(lineRenderer.colorUI, 0.0f, 0.0f, 0.0f, 0.6f);
-        glDrawArrays(GL_TRIANGLE_STRIP, lineRenderer.segmentOrigins[2], 4);
+        glDrawArrays(GL_TRIANGLE_STRIP, lineRenderer.segmentOrigins[RendererLineSegmentBasicRectangle], 4);
         glUniform4f(lineRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
-        glDrawArrays(GL_LINE_STRIP, lineRenderer.segmentOrigins[2] + 4, 5);
+        glDrawArrays(GL_LINE_STRIP, lineRenderer.segmentOrigins[RendererLineSegmentBasicRectangle] + 4, 5);
     }
 
     glBindVertexArray(meshRenderer.vao);
@@ -1189,7 +1194,7 @@
     glUniformMatrix4fv(meshRenderer.mvpUI, 1, GL_FALSE, meshRenderer.modelViewProjection.m);
     glUniform4f(meshRenderer.colorUI, 1.0f, 1.0f, 1.0f, 0.9f);
     glBindTexture(GL_TEXTURE_2D, meshRenderer.textureID);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glDrawArrays(GL_TRIANGLE_STRIP, lineRenderer.segmentOrigins[RendererLineSegmentBasicRectangle], 4);
 
     glBindVertexArray(0);
     glUseProgram(0);

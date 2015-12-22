@@ -3947,7 +3947,7 @@ RSBox RS_suggest_scan_doamin(RSHandle *H, const int nbeams) {
     float na = 0.5f * (float)nbeams + RS_DOMAIN_PAD + 0.5f;
     
     // Maximum number of beams in elevation
-    float ne = 20.0f;
+    float ne = 24.0f;
     
     // Maximum y of the emulation box: The range when the width is fully utilized; This is also rmax
     float rmax = w / sinf(na * H->params.antenna_bw_rad);

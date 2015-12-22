@@ -32,7 +32,7 @@
                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="Tp2-Bb-cQg">
                         <rect key="frame" x="176" y="25" width="449" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="center" title="Label" id="ebP-Xf-e7D">
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="center" title="." id="ebP-Xf-e7D">
                             <font key="font" metaFont="system"/>
                             <color key="textColor" name="highlightColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -54,7 +54,7 @@
                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="C0j-r1-hGc">
                         <rect key="frame" x="150" y="156" width="226" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="left" title="Version 0.0" id="aRb-hU-lLK">
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="left" title="Version" id="aRb-hU-lLK">
                             <font key="font" metaFont="system"/>
                             <color key="textColor" name="highlightColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>

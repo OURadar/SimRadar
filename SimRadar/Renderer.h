@@ -67,6 +67,12 @@ typedef struct _draw_primitive {
     GLenum drawMode;
 } RenderPrimitive;
 
+enum RendererLineSegment {
+    RendererLineSegmentBasicRectangle  = 0,
+    RendererLineSegmentSimulationGrid  = 1,
+    RendererLineSegmentAnchorLines     = 2
+};
+
 @protocol RendererDelegate <NSObject>
 
 - (void)glContextVAOPrepared;
