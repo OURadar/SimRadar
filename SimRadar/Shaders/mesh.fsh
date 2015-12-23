@@ -1,8 +1,8 @@
-uniform vec4      drawColor;
-uniform sampler2D diffuseTexture;
-
 in vec2           varTextureCoord;
 out vec4          fragColor;
+
+uniform vec4      drawColor;
+uniform sampler2D diffuseTexture;
 
 void main (void)
 {

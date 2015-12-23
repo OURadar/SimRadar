@@ -13,7 +13,7 @@
 - (void)attachShader:(NSString *)filename toProgram:(GLuint)program;
 - (RenderResource)createRenderResourceFromVertexShader:(NSString *)vShader fragmentShader:(NSString *)fShader;
 - (RenderResource)createRenderResourceFromProgram:(GLuint)program;
-- (void)updateFBO;
+- (void)allocateFBO;
 - (void)allocateVBO;
 - (GLKTextureInfo *)loadTexture:(NSString *)filename;
 - (void)updateStatusMessage;
@@ -223,6 +223,7 @@
 {
     beamElevation = elevation * M_PI / 180.0f;
     beamAzimuth = azimuth * M_PI / 180.0f;
+    viewParametersNeedUpdate = true;
 }
 
 
@@ -410,6 +411,95 @@
 	glDeleteShader(shader);
 }
 
+- (void)getUniformsAndAttributes:(RenderResource *)resource
+{
+    const char verb = 0;
+    
+    glUseProgram(resource->program);
+    
+    // Get MV matrix location
+    resource->mvUI = glGetUniformLocation(resource->program, "modelViewMatrix");
+    if (resource->mvUI >= 0) {
+        glUniformMatrix4fv(resource->mvUI, 1, GL_FALSE, GLKMatrix4Identity.m);
+    } else if (verb) {
+         NSLog(@"%s shader has no modelView Matrix %d", resource->vShaderName, resource->mvUI);
+    }
+    
+    // Get MVP matrix location
+    resource->mvpUI = glGetUniformLocation(resource->program, "modelViewProjectionMatrix");
+    if (resource->mvpUI >= 0) {
+        glUniformMatrix4fv(resource->mvpUI, 1, GL_FALSE, GLKMatrix4Identity.m);
+    } else if (verb) {
+        NSLog(@"%s shader has no modelViewProjection Matrix %d", resource->vShaderName, resource->mvpUI);
+    }
+    
+    // Get color location
+    resource->colorUI = glGetUniformLocation(resource->program, "drawColor");
+    if (resource->colorUI >= 0) {
+        glUniform4f(resource->colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
+    } else if (verb) {
+        NSLog(@"%s shader has no drawColor %d", resource->vShaderName, resource->colorUI);
+    }
+    
+    // Get size location
+    resource->sizeUI = glGetUniformLocation(resource->program, "drawSize");
+    if (resource->sizeUI >= 0) {
+        //NSLog(@"%@ has drawSize", vShader);
+        glUniform4f(resource->sizeUI, 1.0f, 1.0f, 1.0f, 1.0f);
+    }
+    
+    // Use drawTemplate1, drawTemplate2, etc. for various drawing shapes; All to TEXTURE0
+    if ((resource->textureUI = glGetUniformLocation(resource->program, "drawTemplate1")) >= 0) {
+        //resource->texture = [self loadTexture:@"texture_32.png"];
+        //resource->texture = [self loadTexture:@"sphere1.png"];
+        resource->texture = [self loadTexture:@"disc64.png"];
+        resource->textureID = [resource->texture name];
+        glUniform1i(resource->textureUI, 0);
+    } else if ((resource->textureUI = glGetUniformLocation(resource->program, "drawTemplate2")) >= 0) {
+        //resource->texture = [self loadTexture:@"sphere64.png"];
+        resource->texture = [self loadTexture:@"spot64.png"];
+        //resource->texture = [self loadTexture:@"disc64.png"];
+        resource->textureID = [resource->texture name];
+        glUniform1i(resource->textureUI, 0);
+    } else if ((resource->textureUI = glGetUniformLocation(resource->program, "diffuseTexture")) >= 0) {
+        resource->texture = [self loadTexture:@"colormap.png"];
+        resource->textureID = [resource->texture name];
+        glUniform1i(resource->textureUI, 0);
+    }
+    
+    // Get colormap location
+    resource->colormapUI = glGetUniformLocation(resource->program, "colormapTexture");
+    if (resource->colormapUI >= 0) {
+        resource->colormap = [self loadTexture:@"colormap.png"];
+        resource->colormapID = [resource->colormap name];
+        resource->colormapCount = resource->colormap.height;
+        resource->colormapIndex = 3;
+        glUniform1i(resource->colormapUI, 1);  // TEXTURE1 for colormap
+        if (verb) {
+            NSLog(@"Colormap has %d maps, each with %d colors", resource->colormap.height, resource->colormap.width);
+        }
+    }
+
+    // Get ping pong location: Some shaders have a ping-pong mode of operations
+    resource->pingPongUI = glGetUniformLocation(resource->program, "pingPong");
+    if (resource->pingPongUI >= 0) {
+        glUniform1i(resource->pingPongUI, 1);
+    }
+    
+    // Get attributes
+    resource->colorAI = glGetAttribLocation(resource->program, "inColor");
+    resource->positionAI = glGetAttribLocation(resource->program, "inPosition");
+    resource->rotationAI = glGetAttribLocation(resource->program, "inRotation");
+    resource->quaternionAI = glGetAttribLocation(resource->program, "inQuaternion");
+    resource->translationAI = glGetAttribLocation(resource->program, "inTranslation");
+    resource->textureCoordAI = glGetAttribLocation(resource->program, "inTextureCoord");
+    
+    // Others
+    resource->modelViewProjection = GLKMatrix4Identity;
+    resource->modelViewProjectionOffOne = GLKMatrix4Identity;
+    resource->modelViewProjectionOffTwo = GLKMatrix4Identity;
+}
+
 
 - (RenderResource)createRenderResourceFromProgram:(GLuint)program
 {
@@ -421,30 +511,8 @@
 	glBindVertexArray(resource.vao);
 
 	resource.program = program;
-
-	glUseProgram(resource.program);
-	
-	// Get matrix location
-	resource.mvpUI = glGetUniformLocation(resource.program, "modelViewProjectionMatrix");
-	if (resource.mvpUI < 0) {
-		NSLog(@"No modelViewProjection Matrix %d", resource.mvpUI);
-	}
-	
-	// Get color location
-	resource.colorUI = glGetUniformLocation(resource.program, "drawColor");
-	if (resource.colorUI < 0) {
-		NSLog(@"No drawColor %d", resource.colorUI);
-    } else {
-        glUniform4f(resource.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
-    }
-	
-	// Get attributes
-    resource.colorAI = glGetAttribLocation(resource.program, "inColor");
-    resource.positionAI = glGetAttribLocation(resource.program, "inPosition");
-    resource.rotationAI = glGetAttribLocation(resource.program, "inRotation");
-    resource.quaternionAI = glGetAttribLocation(resource.program, "inQuaternion");
-    resource.translationAI = glGetAttribLocation(resource.program, "inTranslation");
-    resource.textureCoordAI = glGetAttribLocation(resource.program, "inTextureCoord");
+    
+    [self getUniformsAndAttributes:&resource];
 
 	return resource;
 }
@@ -455,8 +523,6 @@
 	GLint param;
 
 	RenderResource resource;
-	
-    const GLKMatrix4 idMat = GLKMatrix4Identity;
 
     memset(&resource, 0, sizeof(RenderResource));
 
@@ -466,9 +532,11 @@
 	resource.program = glCreateProgram();
     NSString *shaderPath = [[NSBundle mainBundle] pathForResource:@"Shaders" ofType:nil];
 	if (vShader) {
+        sprintf(resource.vShaderName, "_clone_");
 		[self attachShader:[shaderPath stringByAppendingString:[NSString stringWithFormat:@"/%@", vShader]] toProgram:resource.program];
 	}
 	if (fShader) {
+        sprintf(resource.fShaderName, "_clone_");
 		[self attachShader:[shaderPath stringByAppendingString:[NSString stringWithFormat:@"/%@", fShader]] toProgram:resource.program];
 	}
 
@@ -504,81 +572,7 @@
 		return resource;
 	}
 	
-	glUseProgram(resource.program);
-	
-    // Get MV matrix location
-    resource.mvUI = glGetUniformLocation(resource.program, "modelViewMatrix");
-    if (resource.mvUI < 0) {
-        // NSLog(@"%@ shader has no modelView Matrix %d", vShader, resource.mvUI);
-    } else {
-        glUniformMatrix4fv(resource.mvUI, 1, GL_FALSE, idMat.m);
-    }
-
-    // Get MVP matrix location
-	resource.mvpUI = glGetUniformLocation(resource.program, "modelViewProjectionMatrix");
-	if (resource.mvpUI < 0) {
-		NSLog(@"%@ shader has no modelViewProjection Matrix %d", vShader, resource.mvpUI);
-	} else {
-		glUniformMatrix4fv(resource.mvpUI, 1, GL_FALSE, idMat.m);
-	}
-	
-	// Get color location
-	resource.colorUI = glGetUniformLocation(resource.program, "drawColor");
-	if (resource.colorUI < 0) {
-		NSLog(@"%@ shader has no drawColor %d", vShader, resource.colorUI);
-	} else {
-        glUniform4f(resource.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
-    }
-	
-    // Get size location
-    resource.sizeUI = glGetUniformLocation(resource.program, "drawSize");
-    if (resource.sizeUI >= 0) {
-        //NSLog(@"%@ has drawSize", vShader);
-        glUniform4f(resource.sizeUI, 1.0f, 1.0f, 1.0f, 1.0f);
-    }
-    
-    // Use drawTemplate1, drawTemplate2, etc. for various drawing shapes; All to TEXTURE0
-	if ((resource.textureUI = glGetUniformLocation(resource.program, "drawTemplate1")) >= 0) {
-        //resource.texture = [self loadTexture:@"texture_32.png"];
-        //resource.texture = [self loadTexture:@"sphere1.png"];
-        resource.texture = [self loadTexture:@"disc64.png"];
-        resource.textureID = [resource.texture name];
-        glUniform1i(resource.textureUI, 0);
-    } else if ((resource.textureUI = glGetUniformLocation(resource.program, "drawTemplate2")) >= 0) {
-        //resource.texture = [self loadTexture:@"sphere64.png"];
-        resource.texture = [self loadTexture:@"spot64.png"];
-        //resource.texture = [self loadTexture:@"disc64.png"];
-        resource.textureID = [resource.texture name];
-        glUniform1i(resource.textureUI, 0);
-    } else if ((resource.textureUI = glGetUniformLocation(resource.program, "diffuseTexture")) >= 0) {
-        resource.texture = [self loadTexture:@"colormap.png"];
-        resource.textureID = [resource.texture name];
-        glUniform1i(resource.textureUI, 0);
-    }
-    
-    // Get colormap location
-    resource.colormapUI = glGetUniformLocation(resource.program, "colormapTexture");
-    if (resource.colormapUI >= 0) {
-        resource.colormap = [self loadTexture:@"colormap.png"];
-        resource.colormapID = [resource.colormap name];
-        resource.colormapCount = resource.colormap.height;
-        resource.colormapIndex = 3;
-        glUniform1i(resource.colormapUI, 1);  // TEXTURE1 for colormap
-        #ifdef DEBUG_GL
-        NSLog(@"Colormap has %d maps, each with %d colors", resource.colormap.height, resource.colormap.width);
-        #endif
-    }
-    
-	// Get attributes
-	resource.colorAI = glGetAttribLocation(resource.program, "inColor");
-    resource.positionAI = glGetAttribLocation(resource.program, "inPosition");
-	resource.rotationAI = glGetAttribLocation(resource.program, "inRotation");
-    resource.quaternionAI = glGetAttribLocation(resource.program, "inQuaternion");
-	resource.translationAI = glGetAttribLocation(resource.program, "inTranslation");
-    resource.textureCoordAI = glGetAttribLocation(resource.program, "inTextureCoord");
-
-    // Others
-    resource.modelViewProjection = GLKMatrix4Identity;
+    [self getUniformsAndAttributes:&resource];
     
 	return resource;
 }
@@ -741,15 +735,15 @@
 
 // This method is called right after the OpenGL context is initialized
 
-- (void)allocateVAO:(GLuint)count
+- (void)allocateVAO:(GLuint)gpuCount
 {
-    clDeviceCount = count;
+    clDeviceCount = gpuCount;
     
     // Local rotating color table
     const GLfloat colors[][4] = {
         {1.00f, 1.00f, 1.00f, 1.00f},
         {0.00f, 1.00f, 0.00f, 1.00f},
-        {1.00f, 0.40f, 1.00f, 1.00f},
+        {1.00f, 0.20f, 1.00f, 1.00f},
         {1.00f, 0.65f, 0.00f, 1.00f}
     };
     
@@ -798,6 +792,7 @@
     anchorRenderer = [self createRenderResourceFromVertexShader:@"anchor.vsh" fragmentShader:@"anchor.fsh"];
     meshRenderer   = [self createRenderResourceFromVertexShader:@"mesh.vsh" fragmentShader:@"mesh.fsh"];
     frameRenderer  = [self createRenderResourceFromProgram:meshRenderer.program];
+    blurRenderer   = [self createRenderResourceFromVertexShader:@"mesh.vsh" fragmentShader:@"blur.fsh"];
     
     NSLog(@"Each renderer uses %zu bytes", sizeof(RenderResource));
     
@@ -810,6 +805,8 @@
 		  bodyRenderer[0].vao, instancedGeometryRenderer.vao, lineRenderer.vao, anchorRenderer.vao);
 #endif
 
+    [self allocateFBO];
+    
     // Some OpenGL features
 	glEnable(GL_BLEND);
     glEnable(GL_TEXTURE_2D);
@@ -817,7 +814,8 @@
 
 	// Always use this clear color
 	//glClearColor(0.0f, 0.2f, 0.25f, 1.0f);
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	//glClearColor(0.0f, 0.0f, 0.0f, 0.01f);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
     [self makePrimitives];
     
@@ -882,7 +880,7 @@
         }
     }
 
-    // Anchor
+    // Anchors
 	glBindVertexArray(anchorRenderer.vao);
 	
     glDeleteBuffers(1, anchorRenderer.vbo);
@@ -938,7 +936,7 @@
     }
 	[delegate vbosAllocated:vbos];
 	
-    // Framebuffer VBOs
+    // Frame renderer VBOs
     float coord[] = {
         0.0f, 0.0f,
         0.0f, 1.0f,
@@ -960,7 +958,47 @@
     glVertexAttribPointer(frameRenderer.textureCoordAI, 2, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(frameRenderer.textureCoordAI);
 
+    // Blur renderer
+    glBindVertexArray(blurRenderer.vao);
+    
+    glDeleteBuffers(2, blurRenderer.vbo);
+    glGenBuffers(2, blurRenderer.vbo);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, blurRenderer.vbo[0]);
+    glBufferData(GL_ARRAY_BUFFER, 4 * 4 * sizeof(GLfloat), &lineRenderer.positions[lineRenderer.segmentOrigins[RendererLineSegmentBasicRectangle]], GL_STATIC_DRAW);
+    glVertexAttribPointer(blurRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(blurRenderer.positionAI);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, blurRenderer.vbo[1]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(coord), coord, GL_STATIC_DRAW);
+    glVertexAttribPointer(blurRenderer.textureCoordAI, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(blurRenderer.textureCoordAI);
+
 	viewParametersNeedUpdate = true;
+}
+
+
+- (void)allocateFBO {
+    GLenum status;
+    glDeleteFramebuffersEXT(3, frameBuffers);
+    glGenFramebuffersEXT(3, frameBuffers);
+    glDeleteTextures(3, frameBufferTextures);
+    glGenTextures(3, frameBufferTextures);
+    for (int i = 0; i < 3; i++) {
+        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[i]);
+        glBindTexture(GL_TEXTURE_2D, frameBufferTextures[i]);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width * devicePixelRatio, height * devicePixelRatio, 0, GL_RGBA, GL_BYTE, NULL);
+        glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, frameBufferTextures[i], 0);
+        status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
+        if (status != GL_FRAMEBUFFER_COMPLETE_EXT) {
+            NSLog(@"Error setting up framebuffer");
+        }
+    }
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 }
 
 
@@ -1017,12 +1055,13 @@
     }
 }
 
+#pragma mark -
+#pragma mark Render
 
 - (void)render
 {
     int i;
-    static float theta = 0.0f;
-    static float phase = 0.0f;
+    int k;
     
 	if (vbosNeedUpdate) {
 		vbosNeedUpdate = false;
@@ -1049,7 +1088,7 @@
     
     if (fboNeedsUpdate) {
         fboNeedsUpdate = false;
-        [self updateFBO];
+        [self allocateFBO];
     }
 	
     // Breathing phase
@@ -1072,7 +1111,7 @@
 	// Tell the delgate I'm about to draw
 	[delegate willDrawScatterBody];
 
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, framebuffer);
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[0]);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
@@ -1088,18 +1127,6 @@
     glUniform4f(lineRenderer.colorUI, 1.0f, 1.0f, 0.0f, 1.0f);
     glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[RendererLineSegmentAnchorLines], lineRenderer.segmentLengths[RendererLineSegmentAnchorLines]);
 
-	// Anchors
-    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glBindVertexArray(anchorRenderer.vao);
-    glUseProgram(anchorRenderer.program);
-    glUniform4f(anchorRenderer.colorUI, 0.4f, 1.0f, 1.0f, phase);
-    //glUniformMatrix4fv(anchorRenderer.mvUI, 1, GL_FALSE, modelView.m);
-	glUniformMatrix4fv(anchorRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, anchorRenderer.textureID);
-	glDrawArrays(GL_POINTS, 0, anchorRenderer.count);
-    
 	// The scatter bodies
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1124,7 +1151,7 @@
     glUniformMatrix4fv(instancedGeometryRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
 
     for (i = 0; i < clDeviceCount; i++) {
-        for (int k = 1; k < RENDERER_MAX_DEBRIS_TYPES > 0; k++) {
+        for (k = 1; k < RENDERER_MAX_DEBRIS_TYPES > 0; k++) {
             if (debrisRenderer[k].count == 0) {
                 continue;
             }
@@ -1182,31 +1209,72 @@
         glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[RendererLineSegmentAnchorLines], lineRenderer.segmentLengths[RendererLineSegmentAnchorLines]);
     }
 
-    // Static overlay viewport
+    // Restore to full view port
     glViewport(0, 0, width * devicePixelRatio, height * devicePixelRatio);
 
     // Restore to texture 0
     glActiveTexture(GL_TEXTURE0);
 
-    // Show the framebuffer on the window
     glBlendFunc(GL_ONE, GL_ZERO);
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-    glBindTexture(GL_TEXTURE_2D, frameBufferTexture);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Copy and blur frame buffer #0 to frame buffer #1
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[1]);
+//    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glBindVertexArray(frameRenderer.vao);
     glUseProgram(frameRenderer.program);
+    glBindTexture(GL_TEXTURE_2D, frameBufferTextures[0]);
     glUniformMatrix4fv(frameRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
     glUniform4f(frameRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glUniformMatrix4fv(frameRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjectionOffOne.m);
-    glUniform4f(frameRenderer.colorUI, 1.0f, 1.0f, 1.0f, 0.8f);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glUseProgram(blurRenderer.program);
+    glUniformMatrix4fv(blurRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
+    glUniform4f(blurRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
+
+    for (i = 0; i < 3; i++) {
+        // Copy and blur frame buffer #1 to frame buffer #2
+        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[2]);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glBindTexture(GL_TEXTURE_2D, frameBufferTextures[1]);
+        glUniform1i(blurRenderer.pingPongUI, 0);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        
+        // Copy and blur frame buffer #2 to frame buffer #1
+        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[1]);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glBindTexture(GL_TEXTURE_2D, frameBufferTextures[2]);
+        glUniform1i(blurRenderer.pingPongUI, 1);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    }
+
+    // The original
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_DST_COLOR);
     
-    glUniformMatrix4fv(frameRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjectionOffTwo.m);
+    glUseProgram(frameRenderer.program);
+    glBindTexture(GL_TEXTURE_2D, frameBufferTextures[0]);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
+    glBlendFunc(GL_ONE, GL_ZERO);
+
+    // Show the framebuffer on the window
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glUseProgram(frameRenderer.program);
+    glBindTexture(GL_TEXTURE_2D, frameBufferTextures[ifbo]);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    // Anchors
+    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBindVertexArray(anchorRenderer.vao);
+    glUseProgram(anchorRenderer.program);
+    glUniform4f(anchorRenderer.colorUI, 0.4f, 1.0f, 1.0f, phase);
+    //glUniformMatrix4fv(anchorRenderer.mvUI, 1, GL_FALSE, modelView.m);
+    glUniformMatrix4fv(anchorRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, anchorRenderer.textureID);
+    glDrawArrays(GL_POINTS, 0, anchorRenderer.count);
+    
 #ifdef DEBUG_GL
     [textRenderer showTextureMap];
 #endif
@@ -1214,7 +1282,7 @@
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Text
-    snprintf(statusMessage[2], 256, "Frame %d", iframe);
+    snprintf(statusMessage[2], 256, "FBO %u  Frame %d", ifbo, iframe);
     
     [textRenderer drawText:"SimRadar" origin:NSMakePoint(25.0f, height - 60.0f) scale:0.5f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
     [textRenderer drawText:statusMessage[0] origin:NSMakePoint(25.0f, height - 90.0f) scale:0.3f];
@@ -1271,27 +1339,6 @@
 #pragma mark -
 #pragma mark Interaction
 
-- (void)updateFBO {
-    GLenum status;
-    glDeleteFramebuffersEXT(1, &framebuffer);
-    glGenFramebuffersEXT(1, &framebuffer);
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, framebuffer);
-    glGenTextures(1, &frameBufferTexture);
-    glBindTexture(GL_TEXTURE_2D, frameBufferTexture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width * devicePixelRatio, height * devicePixelRatio, 0, GL_RGBA, GL_BYTE, NULL);
-    glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, frameBufferTexture, 0);
-    status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
-    if (status != GL_FRAMEBUFFER_COMPLETE_EXT) {
-        NSLog(@"Error setting up framebuffer");
-    }
-    NSLog(@"Framebuffer %d setup okay %.1f x %.1f", framebuffer, width * devicePixelRatio, height * devicePixelRatio);
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-}
-
 - (void)updateViewParameters {
 
     #ifdef DEBUG_INTERACTION
@@ -1347,12 +1394,20 @@
     
     frameRenderer.modelViewProjection = GLKMatrix4MakeOrtho(0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f);
 
-    mat = GLKMatrix4MakeTranslation(0.75f, 0.0f, 0.0f);
-    mat = GLKMatrix4Scale(mat, 0.25f, 0.25f, 1.0f);
+    mat = GLKMatrix4MakeTranslation(0.6f, 0.0f, 0.0f);
+    mat = GLKMatrix4Scale(mat, 0.4f, 0.4f, 1.0f);
     frameRenderer.modelViewProjectionOffOne = GLKMatrix4Multiply(frameRenderer.modelViewProjection, mat);
-    frameRenderer.modelViewProjectionOffTwo = GLKMatrix4Translate(frameRenderer.modelViewProjection, 5.0f / width, 0.0f, 0.0f);
     
     [textRenderer setModelViewProjection:hudProjection];
+}
+
+
+- (void)resetViewParameters
+{
+    range = resetRange;
+    modelRotate = resetModelRotate;
+    
+    viewParametersNeedUpdate = true;
 }
 
 
@@ -1379,15 +1434,6 @@
 		angle += 2.0 * M_PI;
 	}
 	modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeZRotation(angle), modelRotate);
-	viewParametersNeedUpdate = true;
-}
-
-
-- (void)resetViewParameters
-{
-    range = resetRange;
-    modelRotate = resetModelRotate;
-    
 	viewParametersNeedUpdate = true;
 }
 
@@ -1450,6 +1496,14 @@
     bodyRenderer[0].colormapIndexNormalized = ((GLfloat)bodyRenderer[0].colormapIndex + 0.5f) / bodyRenderer[0].colormapCount;
     statusMessageNeedsUpdate = true;
     colorbarNeedsUpdate = true;
+}
+
+- (void)cycleFBO {
+    ifbo = ifbo >= 2 ? 0 : ifbo + 1;
+}
+
+- (void)cycleFBOReverse {
+    ifbo = ifbo == 0 ? 2 : ifbo - 1;
 }
 
 @end

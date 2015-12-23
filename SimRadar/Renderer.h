@@ -16,47 +16,59 @@
 #define RENDERER_MAX_DEBRIS_TYPES           4
 #define RENDERER_MAX_VBO_GROUPS             8
 #define RENDERER_DEFAULT_BODY_COLOR_INDEX   24
-#define RENDERER_DEFAULT_BODY_OPACITY       0.72
+#define RENDERER_DEFAULT_BODY_OPACITY       0.3
 
 typedef struct _draw_resource {
-	GLuint program;
-	GLuint vao;
-	GLuint vbo[5];        // positions, colors, tex_coord, wvp_mat, etc.
-    GLint mvUI;
-	GLint mvpUI;
-    GLint sizeUI;
-	GLint colorUI;
-    GLint textureUI;
-    GLint colormapUI;
-	GLuint count;
-	GLfloat *positions;    // CPU side position
-	GLfloat *colors;       // CPU side color
-    GLfloat *textureCoord; // CPU side texture coordinate
-	GLuint *indices;       // CPU side indexing for instancing
-    GLuint *segmentOrigins;
-    GLuint *segmentLengths;
-    GLuint segmentTotalLength;
-    GLuint segmentMax;
-    GLint positionAI;
-	GLint rotationAI;
-    GLint quaternionAI;
-	GLint translationAI;
-    GLint textureCoordAI;
-	GLint colorAI;
+    GLchar        vShaderName[64];
+    GLchar        fShaderName[64];
+	GLuint        program;
+	GLuint        vao;
+	GLuint        vbo[5];             // positions, colors, tex_coord, wvp_mat, etc.
+    
+    GLint          mvUI;
+	GLint          mvpUI;
+    GLint          sizeUI;
+	GLint          colorUI;
+    GLint          textureUI;
+    GLint          colormapUI;
+    GLint          pingPongUI;
+	
+    GLuint         count;
+	
+    GLfloat        *colors;           // CPU side color
+    GLfloat        *positions;        // CPU side position
+    GLfloat        *textureCoord;     // CPU side texture coordinate
+	GLuint         *indices;          // CPU side indexing for instancing
+
+    GLuint         *segmentOrigins;
+    GLuint         *segmentLengths;
+    GLuint         segmentTotalLength;
+    GLuint         segmentMax;
+
+    GLint          colorAI;
+    GLint          positionAI;
+	GLint          rotationAI;
+    GLint          quaternionAI;
+	GLint          translationAI;
+    GLint          textureCoordAI;
+
     GLKTextureInfo *texture;
-    GLuint textureID;
+    GLuint         textureID;
+
     GLKTextureInfo *colormap;
-    GLuint colormapCount;
-    GLuint colormapIndex;
-    GLfloat colormapIndexNormalized;
-    GLuint colormapID;
-    GLuint sourceOffset;
-    GLuint instanceSize;
-    GLenum drawMode;
-    GLKMatrix4 modelView;
-    GLKMatrix4 modelViewProjection;
-    GLKMatrix4 modelViewProjectionOffOne;
-    GLKMatrix4 modelViewProjectionOffTwo;
+    GLuint         colormapCount;
+    GLuint         colormapIndex;
+    GLfloat        colormapIndexNormalized;
+    GLuint         colormapID;
+
+    GLuint         sourceOffset;
+    GLuint         instanceSize;
+    GLenum         drawMode;
+
+    GLKMatrix4     modelView;
+    GLKMatrix4     modelViewProjection;
+    GLKMatrix4     modelViewProjectionOffOne;
+    GLKMatrix4     modelViewProjectionOffTwo;
 } RenderResource;
 
 typedef struct _draw_primitive {
@@ -134,10 +146,12 @@ enum RendererLineSegment {
     RenderResource debrisRenderer[RENDERER_MAX_DEBRIS_TYPES];
     RenderResource meshRenderer;
     RenderResource frameRenderer;
+    RenderResource blurRenderer;
 
     RenderPrimitive primitives[4];
 
     GLfloat backgroundOpacity;
+    GLfloat theta, phase;
 
     GLText *textRenderer;
 
@@ -148,7 +162,8 @@ enum RendererLineSegment {
     float fps;
     char fpsString[16];
 
-    GLuint framebuffer, frameBufferTexture;
+    GLuint frameBuffers[3], frameBufferTextures[3];
+    GLuint ifbo;
 }
 
 @property (nonatomic) GLfloat resetRange;
@@ -191,5 +206,8 @@ enum RendererLineSegment {
 
 - (void)cycleForwardColormap;
 - (void)cycleReverseColormap;
+
+- (void)cycleFBO;
+- (void)cycleFBOReverse;
 
 @end

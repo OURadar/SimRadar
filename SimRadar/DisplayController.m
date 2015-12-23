@@ -252,7 +252,15 @@ NSWindow *standardWindow;
 			}
 			break;
 			
-		case 's':
+        case 'g':
+            [glView.renderer cycleFBO];
+            break;
+        
+        case 'G':
+            [glView.renderer cycleFBOReverse];
+            break;
+
+        case 's':
 			[glView.renderer toggleSpinModelReverse];
 			break;
 			

@@ -1,10 +1,9 @@
+in vec4 inPosition;
+out vec4 varColor;
+
 uniform mat4 modelViewMatrix;
 uniform mat4 modelViewProjectionMatrix;
 uniform vec4 drawColor;
-//uniform vec4 drawSize;
-
-in vec4 inPosition;
-out vec4 varColor;
 
 void main (void)
 {
