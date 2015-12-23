@@ -801,6 +801,7 @@
     
     // Some OpenGL features
 	glEnable(GL_BLEND);
+//    glEnable(GL_DEPTH_TEST);
     glEnable(GL_TEXTURE_2D);
 //    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
@@ -1107,8 +1108,9 @@
     
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[0]);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
-	// The background scatter bodies
+    glEnable(GL_DEPTH_TEST);
+
+    // The background scatter bodies
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     for (i = 0; i < clDeviceCount; i++) {
         glBindVertexArray(bodyRenderer[i].vao);
@@ -1124,11 +1126,8 @@
     }
     glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[1]);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
+    
     // Simulation Grid
     glBindVertexArray(lineRenderer.vao);
     glUseProgram(lineRenderer.program);
@@ -1137,6 +1136,9 @@
     glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[RendererLineSegmentSimulationGrid], lineRenderer.segmentLengths[RendererLineSegmentSimulationGrid]);
     glUniform4f(lineRenderer.colorUI, 1.0f, 1.0f, 0.0f, 1.0f);
     glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[RendererLineSegmentAnchorLines], lineRenderer.segmentLengths[RendererLineSegmentAnchorLines]);
+    
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[1]);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     // Various debris types
     glUseProgram(instancedGeometryRenderer.program);
@@ -1206,9 +1208,13 @@
     // Restore to texture 0
     glActiveTexture(GL_TEXTURE0);
 
+    glDisable(GL_DEPTH_TEST);
+    
     glBlendFunc(GL_ONE, GL_ZERO);
 
     glBindVertexArray(frameRenderer.vao);
+
+    // -- Bloom the background --
 
     glUseProgram(blurRenderer.program);
     glUniformMatrix4fv(blurRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
@@ -1238,34 +1244,38 @@
     glBindTexture(GL_TEXTURE_2D, frameBufferTextures[0]);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-//    glUseProgram(blurRenderer.program);
-//
-//    glBlendFunc(GL_ONE, GL_ZERO);
-//
-//    glUniform4f(blurRenderer.colorUI, 1.0f, 1.0f, 1.0f, 0.5f);
-//
-//    // Copy and blur frame buffer (ping) to frame buffer (pong)
-//    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[4]);
-//    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//    glBindTexture(GL_TEXTURE_2D, frameBufferTextures[1]);
-//    glUniform1i(blurRenderer.pingPongUI, 0);
-//    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-//
-//    glUniform4f(blurRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
-//
-//    // Copy and blur frame buffer (pong) to frame buffer (ping)
-//    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[3]);
-//    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//    glBindTexture(GL_TEXTURE_2D, frameBufferTextures[4]);
-//    glUniform1i(blurRenderer.pingPongUI, 1);
-//    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-//
-//    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-//    
-//    glUseProgram(frameRenderer.program);
-//
-//    glBindTexture(GL_TEXTURE_2D, frameBufferTextures[1]);
-//    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    
+    // -- Bloom the debris --
+    
+    glUseProgram(blurRenderer.program);
+
+    glBlendFunc(GL_ONE, GL_ZERO);
+
+    glUniform4f(blurRenderer.colorUI, 1.0f, 1.0f, 1.0f, 0.5f);
+
+    // Copy and blur frame buffer (ping) to frame buffer (pong)
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[4]);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glBindTexture(GL_TEXTURE_2D, frameBufferTextures[1]);
+    glUniform1i(blurRenderer.pingPongUI, 0);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    glUniform4f(blurRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
+
+    // Copy and blur frame buffer (pong) to frame buffer (ping)
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[3]);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glBindTexture(GL_TEXTURE_2D, frameBufferTextures[4]);
+    glUniform1i(blurRenderer.pingPongUI, 1);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    
+    glUseProgram(frameRenderer.program);
+
+    glBindTexture(GL_TEXTURE_2D, frameBufferTextures[1]);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
     
     glBlendFunc(GL_ONE, GL_ZERO);
     
@@ -1276,7 +1286,7 @@
 
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR);
     
-    glBindTexture(GL_TEXTURE_2D, frameBufferTextures[1]);
+    glBindTexture(GL_TEXTURE_2D, frameBufferTextures[3]);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     // Show the framebuffer on the window
@@ -1285,6 +1295,8 @@
     glUseProgram(frameRenderer.program);
     glBindTexture(GL_TEXTURE_2D, frameBufferTextures[ifbo]);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    glClear(GL_DEPTH_BUFFER_BIT);
 
     // Anchors
     glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
@@ -1322,15 +1334,13 @@
     }
 
     // Colorbar
-    if (lineRenderer.segmentNextOrigin) {
-        glBindVertexArray(lineRenderer.vao);
-        glUseProgram(lineRenderer.program);
-        glUniformMatrix4fv(lineRenderer.mvpUI, 1, GL_FALSE, meshRenderer.modelViewProjectionOffTwo.m);
-        glUniform4f(lineRenderer.colorUI, 0.0f, 0.0f, 0.0f, 0.6f);
-        glDrawArrays(GL_TRIANGLE_STRIP, lineRenderer.segmentOrigins[RendererLineSegmentBasicRectangle], 4);
-        glUniform4f(lineRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
-        glDrawArrays(GL_LINE_STRIP, lineRenderer.segmentOrigins[RendererLineSegmentBasicRectangle] + 4, 5);
-    }
+    glBindVertexArray(lineRenderer.vao);
+    glUseProgram(lineRenderer.program);
+    glUniformMatrix4fv(lineRenderer.mvpUI, 1, GL_FALSE, meshRenderer.modelViewProjectionOffTwo.m);
+    glUniform4f(lineRenderer.colorUI, 0.0f, 0.0f, 0.0f, 0.6f);
+    glDrawArrays(GL_TRIANGLE_STRIP, lineRenderer.segmentOrigins[RendererLineSegmentBasicRectangle], 4);
+    glUniform4f(lineRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
+    glDrawArrays(GL_LINE_STRIP, lineRenderer.segmentOrigins[RendererLineSegmentBasicRectangle] + 4, 5);
 
     glBindVertexArray(meshRenderer.vao);
     glUseProgram(meshRenderer.program);
