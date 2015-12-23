@@ -192,7 +192,7 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 
 - (void)startAnimation {
 	if (!animating) {
-        animating = TRUE;
+        animating = true;
         CVDisplayLinkStart(displayLink);
 	}
 }
@@ -201,7 +201,7 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 - (void)stopAnimation
 {
 	if (animating) {
-        animating = FALSE;
+        animating = false;
 		CVDisplayLinkStop(displayLink);
 	}
 }

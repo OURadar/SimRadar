@@ -120,6 +120,7 @@ enum RendererLineSegment {
     
 	cl_float4 modelCenter;
 
+    BOOL fboNeedsUpdate;
     BOOL vbosNeedUpdate;
     BOOL viewParametersNeedUpdate;
     BOOL statusMessageNeedsUpdate;
@@ -132,6 +133,7 @@ enum RendererLineSegment {
     RenderResource lineRenderer;
     RenderResource debrisRenderer[RENDERER_MAX_DEBRIS_TYPES];
     RenderResource meshRenderer;
+    RenderResource frameRenderer;
 
     RenderPrimitive primitives[4];
 
@@ -145,6 +147,8 @@ enum RendererLineSegment {
     NSTimeInterval tics[RENDERER_TIC_COUNT];
     float fps;
     char fpsString[16];
+
+    GLuint framebuffer, frameBufferTexture;
 }
 
 @property (nonatomic) GLfloat resetRange;

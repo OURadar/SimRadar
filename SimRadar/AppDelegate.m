@@ -27,7 +27,7 @@
 	@autoreleasepool {
 		NSString *minionFolder = [[NSBundle mainBundle] pathForResource:@"Minion-Icons" ofType:nil];
 		
-		while (TRUE) {
+		while (true) {
 			NSArray *icons = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:minionFolder error:nil];
 			if (icons.count > 0) {
 				NSInteger i = rand() * icons.count / RAND_MAX;

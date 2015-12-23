@@ -40,7 +40,7 @@
 - (void)updateProgressIndicator:(id)sender
 {
     [sc.progress setDoubleValue:initProgress];
-    [sc.progress setNeedsDisplay:TRUE];
+    [sc.progress setNeedsDisplay:true];
 }
 
 #pragma mark -
@@ -120,8 +120,8 @@
 
     NSLog(@"%@ %@", startRecordMenuItem, stopRecordMenuItem);
     
-//    [startRecordMenuItem setEnabled:TRUE];
-//    [stopRecordMenuItem setEnabled:FALSE];
+//    [startRecordMenuItem setEnabled:true];
+//    [stopRecordMenuItem setEnabled:false];
     
 }
 
@@ -173,7 +173,7 @@
             [dc.glView startAnimation];
         } else {
             NSLog(@"Error initializing simulation domain.");
-            //[self performSelectorOnMainThread:@selector(alertMissingResources) withObject:nil waitUntilDone:TRUE];
+            //[self performSelectorOnMainThread:@selector(alertMissingResources) withObject:nil waitUntilDone:true];
             //[[NSApplication sharedApplication] terminate:self];
             [dc emptyDomain];
         }
@@ -208,7 +208,7 @@
     } else {
         NSLog(@"No simulation");
     }
-    [dc.glView.renderer setDebrisCountsHaveChanged:TRUE];
+    [dc.glView.renderer setDebrisCountsHaveChanged:true];
 }
 
 

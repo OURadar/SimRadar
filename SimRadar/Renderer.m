@@ -13,6 +13,7 @@
 - (void)attachShader:(NSString *)filename toProgram:(GLuint)program;
 - (RenderResource)createRenderResourceFromVertexShader:(NSString *)vShader fragmentShader:(NSString *)fShader;
 - (RenderResource)createRenderResourceFromProgram:(GLuint)program;
+- (void)updateFBO;
 - (void)allocateVBO;
 - (GLKTextureInfo *)loadTexture:(NSString *)filename;
 - (void)updateStatusMessage;
@@ -51,7 +52,8 @@
 	
 	[self setRange:10.0f];
     
-    viewParametersNeedUpdate = TRUE;
+    viewParametersNeedUpdate = true;
+    fboNeedsUpdate = true;
 }
 
 
@@ -169,14 +171,14 @@
 	*pos++ = origin[2] + size[2];
 	*pos++ = 1.0f;
 
-    vbosNeedUpdate = TRUE;
+    vbosNeedUpdate = true;
 }
 
 
 - (void)setBodyCount:(GLuint)number forDevice:(GLuint)deviceId
 {
 	bodyRenderer[deviceId].count = number;
-	vbosNeedUpdate = TRUE;
+	vbosNeedUpdate = true;
 }
 
 
@@ -191,7 +193,7 @@
     for (int i = 1; i < RENDERER_MAX_DEBRIS_TYPES; i++) {
         debrisRenderer[0].count -= debrisRenderer[i].count;
     }
-    statusMessageNeedsUpdate = TRUE;
+    statusMessageNeedsUpdate = true;
 }
 
 
@@ -199,7 +201,7 @@
 {
 	anchorRenderer.positions = points;
 	anchorRenderer.count = number;
-	vbosNeedUpdate = TRUE;
+	vbosNeedUpdate = true;
 }
 
 
@@ -640,6 +642,14 @@
         lineRenderer.segmentMax = 1024;
     }
     // To add: check if number can fit in the allocated buffer
+    if (lineRenderer.segmentMax < lineRenderer.segmentTotalLength + number) {
+        size_t next_vertex_count = (lineRenderer.segmentMax + number + 1023) / 1024;
+        NSLog(@"Expanding lineRenderer buffers to %zu vertices ...", next_vertex_count);
+        lineRenderer.positions = (GLfloat *)realloc(lineRenderer.positions, 4 * next_vertex_count * sizeof(GLfloat));
+        lineRenderer.segmentOrigins = (GLuint *)realloc(lineRenderer.segmentOrigins, next_vertex_count);
+        lineRenderer.segmentLengths = (GLuint *)realloc(lineRenderer.segmentLengths, next_vertex_count);
+        lineRenderer.segmentMax = (GLuint)next_vertex_count;
+    }
 }
 
 
@@ -667,7 +677,7 @@
     lineRenderer.segmentTotalLength += count;
     lineRenderer.count++;
     
-    vbosNeedUpdate = TRUE;
+    vbosNeedUpdate = true;
 }
 
 #pragma mark -
@@ -688,7 +698,7 @@
         resetRange = 5000.0f;
         resetModelRotate = GLKMatrix4Identity;
         
-        //showHUD = TRUE;
+        //showHUD = true;
         
         hudModelViewProjection = GLKMatrix4Identity;
         beamModelViewProjection = GLKMatrix4Identity;
@@ -787,6 +797,7 @@
     lineRenderer   = [self createRenderResourceFromVertexShader:@"line_sc.vsh" fragmentShader:@"line_sc.fsh"];
     anchorRenderer = [self createRenderResourceFromVertexShader:@"anchor.vsh" fragmentShader:@"anchor.fsh"];
     meshRenderer   = [self createRenderResourceFromVertexShader:@"mesh.vsh" fragmentShader:@"mesh.fsh"];
+    frameRenderer  = [self createRenderResourceFromProgram:meshRenderer.program];
     
     NSLog(@"Each renderer uses %zu bytes", sizeof(RenderResource));
     
@@ -888,15 +899,17 @@
     glDeleteBuffers(2, meshRenderer.vbo);
     glGenBuffers(2, meshRenderer.vbo);
     
-    float texCoord[] = {0.0f, bodyRenderer[0].colormapIndexNormalized,
-                        0.0f, bodyRenderer[0].colormapIndexNormalized,
-                        1.0f, bodyRenderer[0].colormapIndexNormalized,
-                        1.0f, bodyRenderer[0].colormapIndexNormalized,
-                        0.0f, 0.0f,
-                        0.0f, 0.0f,
-                        0.0f, 0.0f,
-                        0.0f, 0.0f,
-                        0.0f, 0.0f};
+    float texCoord[] = {
+        0.0f, bodyRenderer[0].colormapIndexNormalized,
+        0.0f, bodyRenderer[0].colormapIndexNormalized,
+        1.0f, bodyRenderer[0].colormapIndexNormalized,
+        1.0f, bodyRenderer[0].colormapIndexNormalized,
+        0.0f, 0.0f,
+        0.0f, 0.0f,
+        0.0f, 0.0f,
+        0.0f, 0.0f,
+        0.0f, 0.0f
+    };
     
     glBindBuffer(GL_ARRAY_BUFFER, meshRenderer.vbo[0]);  // position
     //glBufferData(GL_ARRAY_BUFFER, sizeof(pos), pos, GL_STATIC_DRAW);
@@ -925,7 +938,29 @@
     }
 	[delegate vbosAllocated:vbos];
 	
-	viewParametersNeedUpdate = TRUE;
+    // Framebuffer VBOs
+    float coord[] = {
+        0.0f, 0.0f,
+        0.0f, 1.0f,
+        1.0f, 0.0f,
+        1.0f, 1.0f
+    };
+    glBindVertexArray(frameRenderer.vao);
+    
+    glDeleteBuffers(2, frameRenderer.vbo);
+    glGenBuffers(2, frameRenderer.vbo);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, frameRenderer.vbo[0]);
+    glBufferData(GL_ARRAY_BUFFER, 4 * 4 * sizeof(GLfloat), &lineRenderer.positions[lineRenderer.segmentOrigins[RendererLineSegmentBasicRectangle]], GL_STATIC_DRAW);
+    glVertexAttribPointer(frameRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(frameRenderer.positionAI);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, frameRenderer.vbo[1]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(coord), coord, GL_STATIC_DRAW);
+    glVertexAttribPointer(frameRenderer.textureCoordAI, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(frameRenderer.textureCoordAI);
+
+	viewParametersNeedUpdate = true;
 }
 
 
@@ -990,12 +1025,12 @@
     static float phase = 0.0f;
     
 	if (vbosNeedUpdate) {
-		vbosNeedUpdate = FALSE;
+		vbosNeedUpdate = false;
 		[self allocateVBO];
 	}
 	
     if (statusMessageNeedsUpdate) {
-        statusMessageNeedsUpdate = FALSE;
+        statusMessageNeedsUpdate = false;
         [self updateBodyToDebrisMappings];
         [self updateStatusMessage];
     }
@@ -1004,12 +1039,18 @@
 		//modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeYRotation(0.001f * spinModel), modelRotate);
         modelRotate = GLKMatrix4Multiply(modelRotate, GLKMatrix4MakeYRotation(0.001f * spinModel));
         theta = theta + 0.005f;
-		viewParametersNeedUpdate = TRUE;
+		viewParametersNeedUpdate = true;
 	}
 	
 	if (viewParametersNeedUpdate) {
+        viewParametersNeedUpdate = false;
 		[self updateViewParameters];
 	}
+    
+    if (fboNeedsUpdate) {
+        fboNeedsUpdate = false;
+        [self updateFBO];
+    }
 	
     // Breathing phase
 #ifdef GEN_IMG
@@ -1031,7 +1072,9 @@
 	// Tell the delgate I'm about to draw
 	[delegate willDrawScatterBody];
 
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, framebuffer);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     glViewport(0, 0, width * devicePixelRatio, height * devicePixelRatio);
 
@@ -1132,8 +1175,8 @@
         // Draw the grid
         glBindVertexArray(lineRenderer.vao);
         glUseProgram(lineRenderer.program);
-        glUniform4f(lineRenderer.colorUI, 0.4f, 1.0f, 1.0f, 0.8f);
         glUniformMatrix4fv(lineRenderer.mvpUI, 1, GL_FALSE, beamModelViewProjection.m);
+        glUniform4f(lineRenderer.colorUI, 0.4f, 1.0f, 1.0f, 0.8f);
         glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[RendererLineSegmentSimulationGrid], lineRenderer.segmentLengths[RendererLineSegmentSimulationGrid]);
         glUniform4f(lineRenderer.colorUI, 1.0f, 1.0f, 0.0f, 0.8f);
         glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[RendererLineSegmentAnchorLines], lineRenderer.segmentLengths[RendererLineSegmentAnchorLines]);
@@ -1141,14 +1184,25 @@
 
     // Static overlay viewport
     glViewport(0, 0, width * devicePixelRatio, height * devicePixelRatio);
+
+    // Restore to texture 0
+    glActiveTexture(GL_TEXTURE0);
+
+    // Show the framebuffer on the window
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+    glBindTexture(GL_TEXTURE_2D, frameBufferTexture);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glBindVertexArray(frameRenderer.vao);
+    glUseProgram(frameRenderer.program);
+    glUniformMatrix4fv(frameRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
+    glUniform4f(frameRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     
 #ifdef DEBUG_GL
     [textRenderer showTextureMap];
 #endif
     
     // Text
-    glActiveTexture(GL_TEXTURE0);
-
     snprintf(statusMessage[2], 256, "Frame %d", iframe);
     
     [textRenderer drawText:"SimRadar" origin:NSMakePoint(25.0f, height - 60.0f) scale:0.5f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
@@ -1179,7 +1233,8 @@
     glBindVertexArray(meshRenderer.vao);
     glUseProgram(meshRenderer.program);
     if (colorbarNeedsUpdate) {
-        float texCoord[] = {0.0f, bodyRenderer[0].colormapIndexNormalized,
+        float texCoord[] = {
+            0.0f, bodyRenderer[0].colormapIndexNormalized,
             0.0f, bodyRenderer[0].colormapIndexNormalized,
             1.0f, bodyRenderer[0].colormapIndexNormalized,
             1.0f, bodyRenderer[0].colormapIndexNormalized,
@@ -1187,7 +1242,8 @@
             0.0f, 0.0f,
             0.0f, 0.0f,
             0.0f, 0.0f,
-            0.0f, 0.0f};
+            0.0f, 0.0f
+        };
         glBindBuffer(GL_ARRAY_BUFFER, meshRenderer.vbo[1]);  // textureCoord
         glBufferData(GL_ARRAY_BUFFER, sizeof(texCoord), texCoord, GL_STATIC_DRAW);
     }
@@ -1204,11 +1260,34 @@
 #pragma mark -
 #pragma mark Interaction
 
+- (void)updateFBO {
+    GLenum status;
+    glDeleteFramebuffersEXT(1, &framebuffer);
+    glGenFramebuffersEXT(1, &framebuffer);
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, framebuffer);
+    glGenTextures(1, &frameBufferTexture);
+    glBindTexture(GL_TEXTURE_2D, frameBufferTexture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width * devicePixelRatio, height * devicePixelRatio, 0, GL_RGBA, GL_FLOAT, NULL);
+    glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, frameBufferTexture, 0);
+    status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
+    if (status != GL_FRAMEBUFFER_COMPLETE_EXT) {
+        NSLog(@"Error setting up framebuffer");
+    }
+    NSLog(@"Framebuffer %d setup okay %.1f x %.1f", framebuffer, width * devicePixelRatio, height * devicePixelRatio);
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+}
+
 - (void)updateViewParameters {
 
-    GLfloat near = 2.0f / range * modelCenter.y;
+    #ifdef DEBUG_INTERACTION
+    NSLog(@"updateViewParameters:");
+    #endif
     
-//    glLineWidth(2.0f * devicePixelRatio);
+    GLfloat near = 2.0f / range * modelCenter.y;
     
     unitsPerPixel = range / height / devicePixelRatio;
     pixelsPerUnit = 1.0f / unitsPerPixel;
@@ -1242,7 +1321,6 @@
     float cy = 25.0f;
     float cw = roundf(0.5f * width);
     float ch = 20.0f;
-    //float ch = MIN(MAX(roundf(0.0125f * width), 16.0f), 30.0f);
     
     mat = GLKMatrix4MakeTranslation(cx, cy, 0.0f);
     mat = GLKMatrix4Scale(mat, cw, ch, 1.0f);
@@ -1256,6 +1334,11 @@
     mat = GLKMatrix4Scale(mat, cw + 3.0f, ch + 3.0f, 1.0f);
     meshRenderer.modelViewProjectionOffTwo = GLKMatrix4Multiply(hudProjection, mat);
     
+    //frameRenderer.modelViewProjection = GLKMatrix4MakeOrtho(-1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f);
+    //mat = GLKMatrix4MakeScale(width, height, 1.0f);
+    //frameRenderer.modelViewProjection = GLKMatrix4Multiply(hudProjection, mat);
+    frameRenderer.modelViewProjection = GLKMatrix4MakeOrtho(0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+    
     [textRenderer setModelViewProjection:hudProjection];
 }
 
@@ -1264,13 +1347,14 @@
 {
 	modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeYRotation(2.0f * dx / width), modelRotate);
 	modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeXRotation(2.0f * dy / height), modelRotate);
+    viewParametersNeedUpdate = true;
 }
 
 
 - (void)magnify:(GLfloat)scale
 {
 	range = MIN(RENDERER_FAR_RANGE, MAX(RENDERER_NEAR_RANGE, range * (1.0f - scale)));
-	viewParametersNeedUpdate = TRUE;
+	viewParametersNeedUpdate = true;
 }
 
 
@@ -1282,7 +1366,7 @@
 		angle += 2.0 * M_PI;
 	}
 	modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeZRotation(angle), modelRotate);
-	viewParametersNeedUpdate = TRUE;
+	viewParametersNeedUpdate = true;
 }
 
 
@@ -1291,9 +1375,7 @@
     range = resetRange;
     modelRotate = resetModelRotate;
     
-//    iframe = 0;
-    
-	viewParametersNeedUpdate = TRUE;
+	viewParametersNeedUpdate = true;
 }
 
 
@@ -1329,14 +1411,14 @@
 - (void)increaseBackgroundOpacity
 {
     backgroundOpacity = MIN(1.0f, backgroundOpacity + 0.01f);
-    statusMessageNeedsUpdate = TRUE;
+    statusMessageNeedsUpdate = true;
 }
 
 
 - (void)decreaseBackgroundOpacity
 {
     backgroundOpacity = MAX(0.01f, backgroundOpacity - 0.01f);
-    statusMessageNeedsUpdate = TRUE;
+    statusMessageNeedsUpdate = true;
 }
 
 
@@ -1344,8 +1426,8 @@
 {
     bodyRenderer[0].colormapIndex = bodyRenderer[0].colormapIndex >= bodyRenderer[0].colormapCount - 1 ? 0 : bodyRenderer[0].colormapIndex + 1;
     bodyRenderer[0].colormapIndexNormalized = ((GLfloat)bodyRenderer[0].colormapIndex + 0.5f) / bodyRenderer[0].colormapCount;
-    statusMessageNeedsUpdate = TRUE;
-    colorbarNeedsUpdate = TRUE;
+    statusMessageNeedsUpdate = true;
+    colorbarNeedsUpdate = true;
 }
 
 
@@ -1353,8 +1435,8 @@
 {
     bodyRenderer[0].colormapIndex = bodyRenderer[0].colormapIndex <= 0 ? bodyRenderer[0].colormapCount - 1 : bodyRenderer[0].colormapIndex - 1;
     bodyRenderer[0].colormapIndexNormalized = ((GLfloat)bodyRenderer[0].colormapIndex + 0.5f) / bodyRenderer[0].colormapCount;
-    statusMessageNeedsUpdate = TRUE;
-    colorbarNeedsUpdate = TRUE;
+    statusMessageNeedsUpdate = true;
+    colorbarNeedsUpdate = true;
 }
 
 @end

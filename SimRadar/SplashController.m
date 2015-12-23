@@ -33,7 +33,7 @@
     [progress setMinValue:0.0];
     [progress setMaxValue:100.0];
     [progress setDoubleValue:10.0];
-    [progress setUsesThreadedAnimation:TRUE];
+    [progress setUsesThreadedAnimation:true];
     //[progress setControlTint:NSBlueControlTint];
     if (delegate) {
         [delegate splashWindowDidLoad:self];

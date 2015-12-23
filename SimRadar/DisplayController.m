@@ -277,7 +277,7 @@ NSWindow *standardWindow;
                 for (int i = 0; i< sim.deviceCount; i++) {
                     [glView.renderer setPopulationTo:counts[i] forSpecies:speciesId forDevice:i];
                 }
-                [glView.renderer setDebrisCountsHaveChanged:TRUE];
+                [glView.renderer setDebrisCountsHaveChanged:true];
             }
 			break;
             
@@ -288,7 +288,7 @@ NSWindow *standardWindow;
                 for (int i = 0; i< sim.deviceCount; i++) {
                     [glView.renderer setPopulationTo:counts[i] forSpecies:speciesId forDevice:i];
                 }
-                [glView.renderer setDebrisCountsHaveChanged:TRUE];
+                [glView.renderer setDebrisCountsHaveChanged:true];
             }
 			break;
 			

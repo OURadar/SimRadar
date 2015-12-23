@@ -276,7 +276,7 @@
 		return;
 	}
 	
-	busy = TRUE;
+	busy = true;
 	
 	@autoreleasepool {
 		NSLog(@"Commencing simulation ...");
