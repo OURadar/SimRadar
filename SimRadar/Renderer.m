@@ -207,6 +207,7 @@
 
 - (void)setAnchorLines:(GLfloat *)lines number:(GLuint)number
 {
+    lineRenderer.count = 2;
     [self addLinesToLineRenderer:lines number:number];
 }
 
@@ -242,7 +243,7 @@
     lineRenderer.segmentLengths[RendererLineSegmentBasicRectangle] = 9;
     lineRenderer.segmentOrigins[RendererLineSegmentSimulationGrid] = 10;
     lineRenderer.segmentLengths[RendererLineSegmentSimulationGrid] = 24;
-    lineRenderer.segmentTotalLength = 33;
+    lineRenderer.segmentNextOrigin = 34;
     lineRenderer.count = 2;
     
     GLfloat rect[] = {
@@ -636,7 +637,7 @@
         lineRenderer.segmentMax = 1024;
     }
     // To add: check if number can fit in the allocated buffer
-    if (lineRenderer.segmentMax < lineRenderer.segmentTotalLength + number) {
+    if (lineRenderer.segmentMax < lineRenderer.segmentNextOrigin + number) {
         size_t next_vertex_count = (lineRenderer.segmentMax + number + 1023) / 1024;
         NSLog(@"Expanding lineRenderer buffers to %zu vertices ...", next_vertex_count);
         lineRenderer.positions = (GLfloat *)realloc(lineRenderer.positions, 4 * next_vertex_count * sizeof(GLfloat));
@@ -654,21 +655,12 @@
     if (lineRenderer.count < 2) {
         NSLog(@"WARNING: addLinesToLineRenderer: should have at least count = 2, currently %u", lineRenderer.count);
     }
-    GLuint origin = lineRenderer.segmentLengths[RendererLineSegmentSimulationGrid] + lineRenderer.segmentLengths[RendererLineSegmentBasicRectangle];
-    GLuint k = 2;
-    while (k < lineRenderer.count) {
-        origin += lineRenderer.segmentLengths[k];
-        k++;
-    }
-    if (origin != lineRenderer.segmentTotalLength) {
-        NSLog(@"WARNING: Inconsistent segment origin (%u) and total length (%u) combination.", origin, lineRenderer.segmentTotalLength);
-    }
+
+    memcpy(&lineRenderer.positions[lineRenderer.segmentNextOrigin * 4], lines, count * 4 * sizeof(GLfloat));
     
-    memcpy(&lineRenderer.positions[lineRenderer.segmentTotalLength * 4], lines, count * 4 * sizeof(GLfloat));
-    
-    lineRenderer.segmentOrigins[lineRenderer.count] = origin;
+    lineRenderer.segmentOrigins[lineRenderer.count] = lineRenderer.segmentNextOrigin;
     lineRenderer.segmentLengths[lineRenderer.count] = count;
-    lineRenderer.segmentTotalLength += count;
+    lineRenderer.segmentNextOrigin = lineRenderer.segmentNextOrigin + count;
     lineRenderer.count++;
     
     vbosNeedUpdate = true;
@@ -834,7 +826,7 @@
 	NSLog(@"Allocating (%d, %d) particles on GPU ...", bodyRenderer[0].count, bodyRenderer[1].count);
 	#endif
 
-    NSLog(@"total = %u", lineRenderer.segmentTotalLength);
+    NSLog(@"total = %u", lineRenderer.segmentNextOrigin);
     
     // Grid lines
 	glBindVertexArray(lineRenderer.vao);
@@ -843,7 +835,7 @@
 	glGenBuffers(1, lineRenderer.vbo);
 
 	glBindBuffer(GL_ARRAY_BUFFER, lineRenderer.vbo[0]);
-    glBufferData(GL_ARRAY_BUFFER, lineRenderer.segmentTotalLength * 4 * sizeof(GLfloat), lineRenderer.positions, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, lineRenderer.segmentNextOrigin * 4 * sizeof(GLfloat), lineRenderer.positions, GL_STATIC_DRAW);
 	glVertexAttribPointer(lineRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
 	glEnableVertexAttribArray(lineRenderer.positionAI);
 	
@@ -980,11 +972,11 @@
 
 - (void)allocateFBO {
     GLenum status;
-    glDeleteFramebuffersEXT(3, frameBuffers);
-    glGenFramebuffersEXT(3, frameBuffers);
-    glDeleteTextures(3, frameBufferTextures);
-    glGenTextures(3, frameBufferTextures);
-    for (int i = 0; i < 3; i++) {
+    glDeleteFramebuffersEXT(5, frameBuffers);
+    glGenFramebuffersEXT(5, frameBuffers);
+    glDeleteTextures(5, frameBufferTextures);
+    glGenTextures(5, frameBufferTextures);
+    for (int i = 0; i < 5; i++) {
         glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[i]);
         glBindTexture(GL_TEXTURE_2D, frameBufferTextures[i]);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -1111,26 +1103,13 @@
 	// Tell the delgate I'm about to draw
 	[delegate willDrawScatterBody];
 
+    glViewport(0, 0, width * devicePixelRatio, height * devicePixelRatio);
+    
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[0]);
-
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
-    glViewport(0, 0, width * devicePixelRatio, height * devicePixelRatio);
-
-    // Simulation Grid
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glBindVertexArray(lineRenderer.vao);
-	glUseProgram(lineRenderer.program);
-	glUniformMatrix4fv(lineRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
-    glUniform4f(lineRenderer.colorUI, 0.4f, 1.0f, 1.0f, phase);
-    glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[RendererLineSegmentSimulationGrid], lineRenderer.segmentLengths[RendererLineSegmentSimulationGrid]);
-    glUniform4f(lineRenderer.colorUI, 1.0f, 1.0f, 0.0f, 1.0f);
-    glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[RendererLineSegmentAnchorLines], lineRenderer.segmentLengths[RendererLineSegmentAnchorLines]);
-
-	// The scatter bodies
+	// The background scatter bodies
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-//    glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA);
     for (i = 0; i < clDeviceCount; i++) {
         glBindVertexArray(bodyRenderer[i].vao);
         glUseProgram(bodyRenderer[i].program);
@@ -1145,11 +1124,23 @@
     }
     glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
-    // Various debris types
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[1]);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // Simulation Grid
+    glBindVertexArray(lineRenderer.vao);
+    glUseProgram(lineRenderer.program);
+    glUniformMatrix4fv(lineRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
+    glUniform4f(lineRenderer.colorUI, 0.4f, 1.0f, 1.0f, phase);
+    glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[RendererLineSegmentSimulationGrid], lineRenderer.segmentLengths[RendererLineSegmentSimulationGrid]);
+    glUniform4f(lineRenderer.colorUI, 1.0f, 1.0f, 0.0f, 1.0f);
+    glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[RendererLineSegmentAnchorLines], lineRenderer.segmentLengths[RendererLineSegmentAnchorLines]);
+    
+    // Various debris types
     glUseProgram(instancedGeometryRenderer.program);
     glUniformMatrix4fv(instancedGeometryRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
-
     for (i = 0; i < clDeviceCount; i++) {
         for (k = 1; k < RENDERER_MAX_DEBRIS_TYPES > 0; k++) {
             if (debrisRenderer[k].count == 0) {
@@ -1174,7 +1165,7 @@
     
     if (showHUD) {
         // HUD Background & Outline
-        if (lineRenderer.segmentTotalLength) {
+        if (lineRenderer.segmentNextOrigin) {
             glBindVertexArray(lineRenderer.vao);
             glUseProgram(lineRenderer.program);
             glUniformMatrix4fv(lineRenderer.mvpUI, 1, GL_FALSE, hudModelViewProjection.m);
@@ -1217,44 +1208,76 @@
 
     glBlendFunc(GL_ONE, GL_ZERO);
 
-    // Copy and blur frame buffer #0 to frame buffer #1
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[1]);
-//    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glBindVertexArray(frameRenderer.vao);
-    glUseProgram(frameRenderer.program);
-    glBindTexture(GL_TEXTURE_2D, frameBufferTextures[0]);
-    glUniformMatrix4fv(frameRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
-    glUniform4f(frameRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     glUseProgram(blurRenderer.program);
     glUniformMatrix4fv(blurRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
+    glUniform4f(blurRenderer.colorUI, 1.0f, 1.0f, 1.0f, 0.5f);
+
+    // Copy and blur frame buffer (ping) to frame buffer (pong)
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[4]);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glBindTexture(GL_TEXTURE_2D, frameBufferTextures[0]);
+    glUniform1i(blurRenderer.pingPongUI, 0);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
     glUniform4f(blurRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
 
-    for (i = 0; i < 3; i++) {
-        // Copy and blur frame buffer #1 to frame buffer #2
-        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[2]);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glBindTexture(GL_TEXTURE_2D, frameBufferTextures[1]);
-        glUniform1i(blurRenderer.pingPongUI, 0);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        
-        // Copy and blur frame buffer #2 to frame buffer #1
-        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[1]);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glBindTexture(GL_TEXTURE_2D, frameBufferTextures[2]);
-        glUniform1i(blurRenderer.pingPongUI, 1);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    }
+    // Copy and blur frame buffer (pong) to frame buffer (ping)
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[2]);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glBindTexture(GL_TEXTURE_2D, frameBufferTextures[4]);
+    glUniform1i(blurRenderer.pingPongUI, 1);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    // The original
-    glBlendFunc(GL_ONE, GL_ONE_MINUS_DST_COLOR);
-    
+    glBlendFunc(GL_ONE, GL_ONE);
+
     glUseProgram(frameRenderer.program);
+    glUniformMatrix4fv(frameRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
+    glUniform4f(frameRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
     glBindTexture(GL_TEXTURE_2D, frameBufferTextures[0]);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
+//    glUseProgram(blurRenderer.program);
+//
+//    glBlendFunc(GL_ONE, GL_ZERO);
+//
+//    glUniform4f(blurRenderer.colorUI, 1.0f, 1.0f, 1.0f, 0.5f);
+//
+//    // Copy and blur frame buffer (ping) to frame buffer (pong)
+//    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[4]);
+//    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+//    glBindTexture(GL_TEXTURE_2D, frameBufferTextures[1]);
+//    glUniform1i(blurRenderer.pingPongUI, 0);
+//    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+//
+//    glUniform4f(blurRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
+//
+//    // Copy and blur frame buffer (pong) to frame buffer (ping)
+//    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[3]);
+//    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+//    glBindTexture(GL_TEXTURE_2D, frameBufferTextures[4]);
+//    glUniform1i(blurRenderer.pingPongUI, 1);
+//    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+//
+//    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+//    
+//    glUseProgram(frameRenderer.program);
+//
+//    glBindTexture(GL_TEXTURE_2D, frameBufferTextures[1]);
+//    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    
     glBlendFunc(GL_ONE, GL_ZERO);
+    
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[4]);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glBindTexture(GL_TEXTURE_2D, frameBufferTextures[2]);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR);
+    
+    glBindTexture(GL_TEXTURE_2D, frameBufferTextures[1]);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     // Show the framebuffer on the window
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
@@ -1299,7 +1322,7 @@
     }
 
     // Colorbar
-    if (lineRenderer.segmentTotalLength) {
+    if (lineRenderer.segmentNextOrigin) {
         glBindVertexArray(lineRenderer.vao);
         glUseProgram(lineRenderer.program);
         glUniformMatrix4fv(lineRenderer.mvpUI, 1, GL_FALSE, meshRenderer.modelViewProjectionOffTwo.m);
@@ -1499,11 +1522,11 @@
 }
 
 - (void)cycleFBO {
-    ifbo = ifbo >= 2 ? 0 : ifbo + 1;
+    ifbo = ifbo >= 4 ? 0 : ifbo + 1;
 }
 
 - (void)cycleFBOReverse {
-    ifbo = ifbo == 0 ? 2 : ifbo - 1;
+    ifbo = ifbo == 0 ? 4 : ifbo - 1;
 }
 
 @end

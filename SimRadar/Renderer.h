@@ -42,7 +42,7 @@ typedef struct _draw_resource {
 
     GLuint         *segmentOrigins;
     GLuint         *segmentLengths;
-    GLuint         segmentTotalLength;
+    GLuint         segmentNextOrigin;
     GLuint         segmentMax;
 
     GLint          colorAI;
@@ -162,7 +162,7 @@ enum RendererLineSegment {
     float fps;
     char fpsString[16];
 
-    GLuint frameBuffers[3], frameBufferTextures[3];
+    GLuint frameBuffers[5], frameBufferTextures[5];
     GLuint ifbo;
 }
 
