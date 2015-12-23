@@ -65,22 +65,12 @@
         nearest_thousand = (size_t)ceilf(1000.0f / S->preferred_multiple) * S->preferred_multiple;
         nearest_hundred = (size_t)ceilf(100.0f / S->preferred_multiple) * S->preferred_multiple;
         
-//		L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
-        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, NULL);
+		L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
+//        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, NULL);
 
         A = ADM_init_with_config_path(ADMConfigSquarePlate, NULL);
 
         R = RCS_init_with_config_path(RCSConfigLeaf, NULL);
-        
-        if (reportProgress) {
-            [delegate progressUpdated:3.0 message:[NSString stringWithFormat:@"LES @ %s", LES_data_path(L)]];
-        }
-//        if (reportProgress) {
-//            [delegate progressUpdated:3.5 message:[NSString stringWithFormat:@"ADM @ %s", ADM_data_path(A)]];
-//        }
-//        if (reportProgress) {
-//            [delegate progressUpdated:4.0 message:[NSString stringWithFormat:@"RCS @ %s", RCS_data_path(L)]];
-//        }
 
         NSLog(@"LES @ %s", LES_data_path(L));
         NSLog(@"ADM @ %s", ADM_data_path(A));
@@ -88,8 +78,20 @@
         
         if (A == NULL || L == NULL || S == NULL || S == NULL) {
             NSLog(@"Some error(s) in RS_init(), LES_init(), ADM_init() or RCS_init() occurred.");
+            [delegate progressUpdated:3.0 message:@"LES / ADM / RCS table not found."];
             return nil;
         }
+        
+        if (reportProgress) {
+            [delegate progressUpdated:3.0 message:[NSString stringWithFormat:@"LES @ %s", LES_data_path(L)]];
+        }
+        //        if (reportProgress) {
+        //            [delegate progressUpdated:3.5 message:[NSString stringWithFormat:@"ADM @ %s", ADM_data_path(A)]];
+        //        }
+        //        if (reportProgress) {
+        //            [delegate progressUpdated:4.0 message:[NSString stringWithFormat:@"RCS @ %s", RCS_data_path(L)]];
+        //        }
+        
 
 		#ifdef DEBUG
 		RS_set_verbosity(S, 3);

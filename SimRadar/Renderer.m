@@ -1189,6 +1189,7 @@
     glActiveTexture(GL_TEXTURE0);
 
     // Show the framebuffer on the window
+    glBlendFunc(GL_ONE, GL_ZERO);
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
     glBindTexture(GL_TEXTURE_2D, frameBufferTexture);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1197,11 +1198,21 @@
     glUniformMatrix4fv(frameRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
     glUniform4f(frameRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glUniformMatrix4fv(frameRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjectionOffOne.m);
+    glUniform4f(frameRenderer.colorUI, 1.0f, 1.0f, 1.0f, 0.8f);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     
+    glUniformMatrix4fv(frameRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjectionOffTwo.m);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
 #ifdef DEBUG_GL
     [textRenderer showTextureMap];
 #endif
-    
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     // Text
     snprintf(statusMessage[2], 256, "Frame %d", iframe);
     
@@ -1267,11 +1278,11 @@
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, framebuffer);
     glGenTextures(1, &frameBufferTexture);
     glBindTexture(GL_TEXTURE_2D, frameBufferTexture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16, width * devicePixelRatio, height * devicePixelRatio, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width * devicePixelRatio, height * devicePixelRatio, 0, GL_RGBA, GL_BYTE, NULL);
     glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, frameBufferTexture, 0);
     status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
     if (status != GL_FRAMEBUFFER_COMPLETE_EXT) {
@@ -1334,10 +1345,12 @@
     mat = GLKMatrix4Scale(mat, cw + 3.0f, ch + 3.0f, 1.0f);
     meshRenderer.modelViewProjectionOffTwo = GLKMatrix4Multiply(hudProjection, mat);
     
-    //frameRenderer.modelViewProjection = GLKMatrix4MakeOrtho(-1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f);
-    //mat = GLKMatrix4MakeScale(width, height, 1.0f);
-    //frameRenderer.modelViewProjection = GLKMatrix4Multiply(hudProjection, mat);
     frameRenderer.modelViewProjection = GLKMatrix4MakeOrtho(0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+
+    mat = GLKMatrix4MakeTranslation(0.75f, 0.0f, 0.0f);
+    mat = GLKMatrix4Scale(mat, 0.25f, 0.25f, 1.0f);
+    frameRenderer.modelViewProjectionOffOne = GLKMatrix4Multiply(frameRenderer.modelViewProjection, mat);
+    frameRenderer.modelViewProjectionOffTwo = GLKMatrix4Translate(frameRenderer.modelViewProjection, 5.0f / width, 0.0f, 0.0f);
     
     [textRenderer setModelViewProjection:hudProjection];
 }
