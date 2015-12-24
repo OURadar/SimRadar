@@ -328,6 +328,10 @@ NSWindow *standardWindow;
         case 'C':
             [glView.renderer cycleReverseColormap];
             break;
+        
+        case 'v':
+            [glView.renderer cycleVFX];
+            break;
             
 		default:
 			// Allow other character to be handled by how the superclass defined it

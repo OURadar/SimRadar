@@ -213,4 +213,6 @@ enum RendererLineSegment {
 - (void)cycleFBO;
 - (void)cycleFBOReverse;
 
+- (void)cycleVFX;
+
 @end

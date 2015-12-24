@@ -1137,8 +1137,8 @@
     glUniform4f(lineRenderer.colorUI, 1.0f, 1.0f, 0.0f, 1.0f);
     glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[RendererLineSegmentAnchorLines], lineRenderer.segmentLengths[RendererLineSegmentAnchorLines]);
     
-    if (applyVFX) {
-        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[1]);
+    if (applyVFX == 2) {
+        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[2]);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
     
@@ -1216,7 +1216,7 @@
 
     glBindVertexArray(frameRenderer.vao);
 
-    if (applyVFX) {
+    if (applyVFX == 2) {
         // -- Bloom the background --
         glUseProgram(blurRenderer.program);
         glUniformMatrix4fv(blurRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
@@ -1229,12 +1229,29 @@
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         
         // Copy and blur frame buffer (pong) to frame buffer (ping)
-        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[2]);
+        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[1]);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glBindTexture(GL_TEXTURE_2D, frameBufferTextures[4]);
         glUniform1i(blurRenderer.pingPongUI, 1);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         
+        // Second pass
+//        // Copy and blur frame buffer (ping) to frame buffer (pong)
+//        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[4]);
+//        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+//        glBindTexture(GL_TEXTURE_2D, frameBufferTextures[1]);
+//        glUniform1i(blurRenderer.pingPongUI, 0);
+//        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+//
+//        // Copy and blur frame buffer (pong) to frame buffer (ping)
+//        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[1]);
+//        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+//        glBindTexture(GL_TEXTURE_2D, frameBufferTextures[4]);
+//        glUniform1i(blurRenderer.pingPongUI, 1);
+//        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
         glUseProgram(frameRenderer.program);
         glUniformMatrix4fv(frameRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
         glUniform4f(frameRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
@@ -1250,7 +1267,7 @@
         // Copy and blur frame buffer (ping) to frame buffer (pong)
         glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[4]);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glBindTexture(GL_TEXTURE_2D, frameBufferTextures[1]);
+        glBindTexture(GL_TEXTURE_2D, frameBufferTextures[2]);
         glUniform1i(blurRenderer.pingPongUI, 0);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         
@@ -1261,26 +1278,19 @@
         glUniform1i(blurRenderer.pingPongUI, 1);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     
-        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-    
         glUseProgram(frameRenderer.program);
-    
-        glBindTexture(GL_TEXTURE_2D, frameBufferTextures[1]);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    
-    
-        glBlendFunc(GL_ONE, GL_ZERO);
-        
-        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[4]);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glBindTexture(GL_TEXTURE_2D, frameBufferTextures[2]);
+
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[1]);
+        glBindTexture(GL_TEXTURE_2D, frameBufferTextures[3]);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR);
-        
-        glBindTexture(GL_TEXTURE_2D, frameBufferTextures[3]);
+        glBindTexture(GL_TEXTURE_2D, frameBufferTextures[2]);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    } else {
+
+    } else if (applyVFX == 1) {
         glUseProgram(blurRenderer.program);
         glUniformMatrix4fv(blurRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
 
@@ -1298,7 +1308,6 @@
         glUniform1i(blurRenderer.pingPongUI, 1);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-        // Just the framebuffer presentation
         glUseProgram(frameRenderer.program);
         glUniformMatrix4fv(frameRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
         glUniform4f(frameRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
@@ -1307,6 +1316,11 @@
 
         glBindTexture(GL_TEXTURE_2D, frameBufferTextures[0]);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    } else {
+        // Just the framebuffer for final presentation
+        glUseProgram(frameRenderer.program);
+        glUniformMatrix4fv(frameRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
+        glUniform4f(frameRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
     }
 
     // Show the framebuffer on the window
@@ -1337,7 +1351,7 @@
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Text
-    snprintf(statusMessage[2], 256, "FBO %u  Frame %d", ifbo, iframe);
+    snprintf(statusMessage[2], 256, "FBO %u  VFX %u  Frame %d", ifbo, applyVFX, iframe);
     
     [textRenderer drawText:"SimRadar" origin:NSMakePoint(25.0f, height - 60.0f) scale:0.5f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
     [textRenderer drawText:statusMessage[0] origin:NSMakePoint(25.0f, height - 90.0f) scale:0.3f];
@@ -1523,6 +1537,12 @@
 - (void)toggleVFX
 {
     applyVFX = !applyVFX;
+}
+
+
+- (void)cycleVFX
+{
+    applyVFX = applyVFX == 2 ? 0 : applyVFX + 1;
 }
 
 
