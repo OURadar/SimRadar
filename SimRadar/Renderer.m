@@ -808,7 +808,7 @@
 	// Always use this clear color
 	//glClearColor(0.0f, 0.2f, 0.25f, 1.0f);
 	//glClearColor(0.0f, 0.0f, 0.0f, 0.01f);
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.02f);
 
     [self makePrimitives];
     
@@ -977,6 +977,8 @@
     glGenFramebuffersEXT(RENDERER_FBO_COUNT, frameBuffers);
     glDeleteTextures(RENDERER_FBO_COUNT, frameBufferTextures);
     glGenTextures(RENDERER_FBO_COUNT, frameBufferTextures);
+    GLvoid *zeros = (GLvoid *)malloc(width * devicePixelRatio * height * devicePixelRatio * 4);
+    memset(zeros, 0, width * devicePixelRatio * height * devicePixelRatio * 4);
     for (int i = 0; i < RENDERER_FBO_COUNT; i++) {
         glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[i]);
         glBindTexture(GL_TEXTURE_2D, frameBufferTextures[i]);
@@ -984,13 +986,14 @@
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width * devicePixelRatio, height * devicePixelRatio, 0, GL_RGBA, GL_BYTE, NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width * devicePixelRatio, height * devicePixelRatio, 0, GL_RGBA, GL_BYTE, zeros);
         glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, frameBufferTextures[i], 0);
         status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
         if (status != GL_FRAMEBUFFER_COMPLETE_EXT) {
             NSLog(@"Error setting up framebuffer");
         }
     }
+    free(zeros);
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 }
 
@@ -1137,7 +1140,7 @@
     glUniform4f(lineRenderer.colorUI, 1.0f, 1.0f, 0.0f, 1.0f);
     glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[RendererLineSegmentAnchorLines], lineRenderer.segmentLengths[RendererLineSegmentAnchorLines]);
     
-    if (applyVFX == 2) {
+    if (applyVFX == 3) {
         glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[2]);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
@@ -1216,7 +1219,7 @@
 
     glBindVertexArray(frameRenderer.vao);
 
-    if (applyVFX == 2) {
+    if (applyVFX == 3) {
         // -- Bloom the background --
         glUseProgram(blurRenderer.program);
         glUniformMatrix4fv(blurRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
@@ -1290,7 +1293,8 @@
         glBindTexture(GL_TEXTURE_2D, frameBufferTextures[2]);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    } else if (applyVFX == 1) {
+    } else if (applyVFX == 2) {
+
         glUseProgram(blurRenderer.program);
         glUniformMatrix4fv(blurRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
 
@@ -1316,6 +1320,19 @@
 
         glBindTexture(GL_TEXTURE_2D, frameBufferTextures[0]);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    } else if (applyVFX == 1) {
+
+        glUseProgram(frameRenderer.program);
+        glUniformMatrix4fv(frameRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
+        glUniform4f(frameRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
+        
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        
+        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[1]);
+        glBindTexture(GL_TEXTURE_2D, frameBufferTextures[0]);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
     } else {
         // Just the framebuffer for final presentation
         glUseProgram(frameRenderer.program);
@@ -1351,7 +1368,7 @@
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Text
-    snprintf(statusMessage[2], 256, "FBO %u  VFX %u  Frame %d", ifbo, applyVFX, iframe);
+    snprintf(statusMessage[2], 256, "FBO %u   VFX %u  Frame %d", ifbo, applyVFX, iframe);
     
     [textRenderer drawText:"SimRadar" origin:NSMakePoint(25.0f, height - 60.0f) scale:0.5f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
     [textRenderer drawText:statusMessage[0] origin:NSMakePoint(25.0f, height - 90.0f) scale:0.3f];
@@ -1542,7 +1559,7 @@
 
 - (void)cycleVFX
 {
-    applyVFX = applyVFX == 2 ? 0 : applyVFX + 1;
+    applyVFX = applyVFX == 3 ? 0 : applyVFX + 1;
 }
 
 
