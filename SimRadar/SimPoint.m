@@ -65,8 +65,8 @@
         nearest_thousand = (size_t)ceilf(1000.0f / S->preferred_multiple) * S->preferred_multiple;
         nearest_hundred = (size_t)ceilf(100.0f / S->preferred_multiple) * S->preferred_multiple;
         
-//		L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
-        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, NULL);
+		L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
+//        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, NULL);
 
         A = ADM_init_with_config_path(ADMConfigSquarePlate, NULL);
 

@@ -17,6 +17,7 @@
 #define RENDERER_MAX_VBO_GROUPS             8
 #define RENDERER_DEFAULT_BODY_COLOR_INDEX   24
 #define RENDERER_DEFAULT_BODY_OPACITY       0.3
+#define RENDERER_FBO_COUNT                  5
 
 typedef struct _draw_resource {
     GLchar        vShaderName[64];
@@ -124,6 +125,7 @@ enum RendererLineSegment {
 	id<RendererDelegate> delegate;
     
     BOOL showHUD;
+    BOOL applyVFX;
     BOOL colorbarNeedsUpdate;
 	
 	@private
@@ -200,6 +202,7 @@ enum RendererLineSegment {
 - (void)toggleSpinModel;
 - (void)toggleSpinModelReverse;
 - (void)toggleHUDVisibility;
+- (void)toggleVFX;
 
 - (void)increaseBackgroundOpacity;
 - (void)decreaseBackgroundOpacity;
