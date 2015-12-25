@@ -1595,19 +1595,28 @@
 - (void)cycleVFX
 {
     applyVFX = applyVFX >= 4 ? 0 : applyVFX + 1;
+    // The following needs a better way to get organized
     switch (applyVFX) {
         case 1:
         case 2:
+            backgroundOpacity = 0.12f;
             for (int k = 0; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
                 debrisRenderer[k].colors[3] = 0.05f;
             }
             break;
         default:
+            if (debrisRenderer[0].count > 100000) {
+                backgroundOpacity = 0.3f;
+            } else {
+                backgroundOpacity = 1.0f;
+            }
+            backgroundOpacity = 1.0f;
             for (int k = 0; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
                 debrisRenderer[k].colors[3] = 1.0f;
             }
             break;
     }
+    statusMessageNeedsUpdate = true;
 }
 
 

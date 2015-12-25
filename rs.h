@@ -443,6 +443,9 @@ typedef struct _rs_handle {
 } RSHandle;
 
 
+#pragma mark -
+#pragma mark General Methods
+
 char *commaint(long long num);
 char *now();
 char *nowlong();
@@ -452,6 +455,7 @@ char *nowlong();
 cl_uint RS_gpu_count(void);
 
 #pragma mark -
+#pragma mark Initialization and Deallocation
 
 // Initializes a simulation space
 RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char verb);
@@ -463,6 +467,7 @@ void RS_free(RSHandle *H);
 RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint group_items, cl_uint user_group_counts,
 								   const float range_start, const float range_delta, const unsigned int range_count);
 #pragma mark -
+#pragma mark Radar and Simulation Parameters
 
 void RS_set_prt(RSHandle *H, const float prt);
 void RS_set_density(RSHandle *H, const float density);
@@ -475,7 +480,6 @@ void RS_set_scan_box(RSHandle *H,
 void RS_set_beam_pos(RSHandle *H, RSfloat az_deg, RSfloat el_deg);
 void RS_set_verbosity(RSHandle *H, const char verb);
 void RS_set_debris_count(RSHandle *H, const int species_id, const size_t count);
-void RS_revise_debris_counts_to_gpu_preference(RSHandle *H);
 size_t RS_get_debris_count(RSHandle *H, const int species_id);
 size_t RS_get_worker_debris_count(RSHandle *H, const int species_id, const int worker_id);
 size_t RS_get_all_worker_debris_counts(RSHandle *H, const int species_id, size_t counts[]);
@@ -519,7 +523,13 @@ void RS_derive_ndranges(RSHandle *H);
 void RS_io_test(RSHandle *H);
 void RS_dummy_test(RSHandle *H);
 
+#pragma mark -
+#pragma mark Populate the Emulation Domain
+
 void RS_populate(RSHandle *H);
+
+#pragma mark -
+#pragma mark Accessing Data on the GPUs
 
 void RS_upload(RSHandle *H);
 void RS_download(RSHandle *H);
@@ -529,13 +539,14 @@ void RS_download_pulse_only(RSHandle *H);
 
 void RS_sig_from_dsd(RSHandle *H);
 
-void RS_advance_time(RSHandle *H);
-//void RS_advance_time_cpu(RSHandle *H);
+#pragma mark -
+#pragma mark Simulation Time Evolution
 
+void RS_advance_time(RSHandle *H);
 void RS_make_pulse(RSHandle *H);
-//void RS_make_pulse_cpu(RSHandle *H);
 
 #pragma mark -
+#pragma mark Genera Table Allocation
 
 RSTable RS_table_init(size_t numel);
 void RS_table_free(RSTable T);
@@ -545,13 +556,16 @@ RSTable3D RS_table3d_init(size_t numel);
 void RS_table3d_free(RSTable3D T);
 
 #pragma mark -
+#pragma mark Text Output
 
 void RS_show_scat_pos(RSHandle *H);
 void RS_show_scat_sig(RSHandle *H);
 void RS_show_pulse(RSHandle *H);
 
 #pragma mark -
+#pragma mark High-Level Functions to Condition Emulation Setup
 
 RSBox RS_suggest_scan_doamin(RSHandle *H, const int nbeams);
+void RS_revise_debris_counts_to_gpu_preference(RSHandle *H);
 
 #endif
