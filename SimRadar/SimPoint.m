@@ -55,7 +55,7 @@
         
         if (S->vendors[0] == RS_GPU_VENDOR_INTEL) {
             if (S->num_cus[0] <= 16) {
-                RS_set_density(S, 2.5f);
+                RS_set_density(S, 1.5f);
             } else if (S->num_cus[0] <= 24) {
                 RS_set_density(S, 5.0f);
             }
@@ -106,9 +106,7 @@
         RS_set_tx_params(S, 30.0f * 2.0f / 3.0e8f, 10.0e3);   // Resolution in m, power in W
 
         NSLog(@"S->preferred_multiple = %d", (int)S->preferred_multiple);
-        //        RS_set_debris_count(S, 1, 20);
-        //        RS_set_debris_count(S, 3, 10);
-        RS_set_debris_count(S, 1, 25000);
+        RS_set_debris_count(S, 1, 10000);
         RS_set_debris_count(S, 2, 500);
         RS_revise_debris_counts_to_gpu_preference(S);
         

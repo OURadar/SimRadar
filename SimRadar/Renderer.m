@@ -1122,6 +1122,11 @@
         glUniform4f(bodyRenderer[i].sizeUI, pixelsPerUnit * devicePixelRatio, 1.0f, 1.0f, 1.0f);
         glUniform4f(bodyRenderer[i].colorUI, bodyRenderer[i].colormapIndexNormalized, 1.0f, 1.0f, backgroundOpacity);
         glUniformMatrix4fv(bodyRenderer[i].mvpUI, 1, GL_FALSE, modelViewProjection.m);
+        if (debrisRenderer[0].count > 100000) {
+            glUniform1i(bodyRenderer[i].pingPongUI, 1);
+        } else {
+            glUniform1i(bodyRenderer[i].pingPongUI, 0);
+        }
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, bodyRenderer[i].textureID);
         glActiveTexture(GL_TEXTURE1);
@@ -1590,10 +1595,18 @@
 - (void)cycleVFX
 {
     applyVFX = applyVFX >= 4 ? 0 : applyVFX + 1;
-    if (applyVFX == 1 || applyVFX == 2) {
-        for (int k = 0; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
-            debrisRenderer[k].colors[3] = 0.05f;
-        }
+    switch (applyVFX) {
+        case 1:
+        case 2:
+            for (int k = 0; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
+                debrisRenderer[k].colors[3] = 0.05f;
+            }
+            break;
+        default:
+            for (int k = 0; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
+                debrisRenderer[k].colors[3] = 1.0f;
+            }
+            break;
     }
 }
 

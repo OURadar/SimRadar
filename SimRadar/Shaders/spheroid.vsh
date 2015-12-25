@@ -5,6 +5,7 @@ precision highp float;
 uniform mat4 modelViewProjectionMatrix;
 uniform vec4 drawColor;
 uniform vec4 drawSize;
+uniform bool pingPong;
 
 uniform sampler2D colormapTexture;
 
@@ -29,8 +30,11 @@ void main (void)
     //varColor = texture(colormapTexture, vec2(inPosition.w * 250.0f, drawColor.x));
     varColor = texture(colormapTexture, vec2(inColor.x, drawColor.x));
 
-//    varColor.w = drawColor.w * inColor.x;
     varColor.w = drawColor.w;
+    if (pingPong) {
+        // Make smaller drops more transparent
+        varColor.w *= inColor.x;
+    }
 
 //    gl_PointSize = 8000.0 * (inColor.x + 0.75) * drawSize.x / gl_Position.z;
     gl_PointSize = 10000.0 * (inColor.x + 0.5) * drawSize.x / gl_Position.z;
