@@ -805,10 +805,10 @@
     glEnable(GL_TEXTURE_2D);
 //    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
-	// Always use this clear color
+	// Always use this clear color: I use 16-bit internal FBO texture format, so minimum can only be sqrt ( 1 / 65536 ) = 1 / 256
 	//glClearColor(0.0f, 0.2f, 0.25f, 1.0f);
 	//glClearColor(0.0f, 0.0f, 0.0f, 0.01f);
-    glClearColor(0.0f, 0.0f, 0.0f, 0.02f);
+    glClearColor(0.0f, 0.0f, 0.0f, 4.0f / 256.0f);
 
     [self makePrimitives];
     
@@ -977,8 +977,8 @@
     glGenFramebuffersEXT(RENDERER_FBO_COUNT, frameBuffers);
     glDeleteTextures(RENDERER_FBO_COUNT, frameBufferTextures);
     glGenTextures(RENDERER_FBO_COUNT, frameBufferTextures);
-    GLvoid *zeros = (GLvoid *)malloc(width * devicePixelRatio * height * devicePixelRatio * 4);
-    memset(zeros, 0, width * devicePixelRatio * height * devicePixelRatio * 4);
+    GLvoid *zeros = (GLvoid *)malloc(width * devicePixelRatio * height * devicePixelRatio * 16);
+    memset(zeros, 0, width * devicePixelRatio * height * devicePixelRatio * 16);
     for (int i = 0; i < RENDERER_FBO_COUNT; i++) {
         glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[i]);
         glBindTexture(GL_TEXTURE_2D, frameBufferTextures[i]);
@@ -986,7 +986,8 @@
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width * devicePixelRatio, height * devicePixelRatio, 0, GL_RGBA, GL_BYTE, zeros);
+//        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width * devicePixelRatio, height * devicePixelRatio, 0, GL_RGBA, GL_BYTE, zeros);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16, width * devicePixelRatio, height * devicePixelRatio, 0, GL_RGBA, GL_UNSIGNED_SHORT, zeros);
         glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, frameBufferTextures[i], 0);
         status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
         if (status != GL_FRAMEBUFFER_COMPLETE_EXT) {
@@ -1140,7 +1141,7 @@
     glUniform4f(lineRenderer.colorUI, 1.0f, 1.0f, 0.0f, 1.0f);
     glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[RendererLineSegmentAnchorLines], lineRenderer.segmentLengths[RendererLineSegmentAnchorLines]);
     
-    if (applyVFX == 3) {
+    if (applyVFX == 4) {
         glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[2]);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
@@ -1219,7 +1220,7 @@
 
     glBindVertexArray(frameRenderer.vao);
 
-    if (applyVFX == 3) {
+    if (applyVFX == 4) {
         // -- Bloom the background --
         glUseProgram(blurRenderer.program);
         glUniformMatrix4fv(blurRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
@@ -1293,7 +1294,7 @@
         glBindTexture(GL_TEXTURE_2D, frameBufferTextures[2]);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    } else if (applyVFX == 2) {
+    } else if (applyVFX == 3) {
 
         glUseProgram(blurRenderer.program);
         glUniformMatrix4fv(blurRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
@@ -1321,7 +1322,24 @@
         glBindTexture(GL_TEXTURE_2D, frameBufferTextures[0]);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    } else if (applyVFX == 1) {
+    } else if (applyVFX == 2) {
+        
+        glUseProgram(blurRenderer.program);
+        glUniformMatrix4fv(blurRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
+        
+        // Copy and blur frame buffer (ping) to frame buffer (pong)
+        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[4]);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glBindTexture(GL_TEXTURE_2D, frameBufferTextures[0]);
+        glUniform1i(blurRenderer.pingPongUI, 0);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        
+        // Copy and blur frame buffer (pong) to frame buffer (ping)
+        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[2]);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glBindTexture(GL_TEXTURE_2D, frameBufferTextures[4]);
+        glUniform1i(blurRenderer.pingPongUI, 1);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
         glUseProgram(frameRenderer.program);
         glUniformMatrix4fv(frameRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
@@ -1329,6 +1347,18 @@
         
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
         
+        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[1]);
+        glBindTexture(GL_TEXTURE_2D, frameBufferTextures[2]);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        
+    } else if (applyVFX == 1) {
+
+        glUseProgram(frameRenderer.program);
+        glUniformMatrix4fv(frameRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
+        glUniform4f(frameRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
+        
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
         glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[1]);
         glBindTexture(GL_TEXTURE_2D, frameBufferTextures[0]);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -1559,7 +1589,12 @@
 
 - (void)cycleVFX
 {
-    applyVFX = applyVFX == 3 ? 0 : applyVFX + 1;
+    applyVFX = applyVFX >= 4 ? 0 : applyVFX + 1;
+    if (applyVFX == 1 || applyVFX == 2) {
+        for (int k = 0; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
+            debrisRenderer[k].colors[3] = 0.05f;
+        }
+    }
 }
 
 
