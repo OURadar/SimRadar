@@ -57,7 +57,7 @@
             if (S->num_cus[0] <= 16) {
                 RS_set_density(S, 1.5f);
             } else if (S->num_cus[0] <= 24) {
-                RS_set_density(S, 5.0f);
+                RS_set_density(S, 3.0f);
             }
         }
 
@@ -134,8 +134,7 @@
         }
         
         ADMTable *adm = ADM_get_frame(A);
-        //ADM_show_table_summary(adm);
-        
+
         RS_set_adm_data_to_ADM_table(S, adm);
         
         ADM_transform_scale(adm, 1.0f, 3.0f, 3.0f, 10.0f);
@@ -352,7 +351,7 @@
     } else if (pop >= nearest_hundred) {
         pop -= nearest_hundred;
     }
-    NSLog(@"pop ------> %zu  %zu", pop, nearest_hundred);
+
     RS_set_debris_count(S, speciesId, pop);
     
     RS_get_all_worker_debris_counts(S, speciesId, returnCounts);
