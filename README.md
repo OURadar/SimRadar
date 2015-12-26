@@ -168,9 +168,12 @@ The Sparkle framework is not included as part of the git package simply because 
 
 
 
-Implmentation
-=============
+Implementation
+==============
 
+The emulator is implemented with a master handler in a C structure, which collects all the simulator parameters, some of which are user-set radar parameters, environmental velocity, air-drag-model and radar-cross-section tables. The framework is implemented such that minimal interaction is needed to access directly to the big structure that contains these intricate parameters.
+
+The parameters may be set in arbitrary order prior to the key function `RS_populate()`, which farms out the workload to OpenCL devices. After this stage, only limited set of functions are allowed. These include time advancing, radar beam steering and radar pulse composition.
 
 Details on Scatterer Attributes
 -------------------------------
@@ -185,6 +188,16 @@ Multiple arrays of type `cl_float` are used to keep track of a set of attributes
     cl_mem                 scat_sig;   // signal: Ih Qh Iv Qv
     cl_mem                 scat_rnd;   // random seed
 
+### Main Functions to Set Up the Simulator ###
+
+    RS_set_prt()
+    RS_set_density()
+    RS_set_antenna_params()
+    RS_set_tx_params()
+    RS_set_scan_box()
+    RS_set_beam_pos()
+    RS_set_verbosity()
+    RS_set_debris_count()
 
 ### Functions to Interact Directly with GPUs (Private API) ###
 

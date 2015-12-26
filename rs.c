@@ -1384,25 +1384,33 @@ void RS_init_scat_pos(RSHandle *H) {
 void RS_set_prt(RSHandle *H, const float prt) {
 	H->params.prt = prt;
 	H->params.prf = 1.0f / prt;
-//	for (int i = 0; i < H->num_scats; i++) {
-//		H->scat_att[i].s1 = (float)rand() / RAND_MAX * 1000.0f;
-//	}
-//    H->sim_desc.s[RSSimulationParameterPRT] = H->params.prt;
-//    H->sim_desc.s[RSSimulationParameterAgeIncrement] = H->sim_desc.s[RSSimulationParameterPRT] / H->worker[0].vel_desc.s[RSTableDescriptionRefreshTime];
 }
 
+
 void RS_set_density(RSHandle *H, const float density) {
+    if (H->status & RS_STATUS_DOMAIN_POPULATED) {
+        fprintf(stderr, "%s : RS : Simulation domain has been populated. Density cannot be changed.", now());
+        return;
+    }
 	H->params.body_per_cell = density;
 }
 
 
 void RS_set_antenna_params(RSHandle *H, RSfloat beamwidth_deg, RSfloat gain_dbi) {
+    if (H->status & RS_STATUS_DOMAIN_POPULATED) {
+        fprintf(stderr, "%s : RS : Simulation domain has been populated. Radar antenna parameters cannot be changed.", now());
+        return;
+    }
 	H->params.antenna_bw_deg = beamwidth_deg;
 	H->params.antenna_bw_rad = M_PI * H->params.antenna_bw_deg / 180.0f;
 }
 
 
 void RS_set_tx_params(RSHandle *H, RSfloat pulsewidth, RSfloat tx_power_watt) {
+    if (H->status & RS_STATUS_DOMAIN_POPULATED) {
+        fprintf(stderr, "%s : RS : Simulation domain has been populated. Radar parameters cannot be changed.", now());
+        return;
+    }
 	H->params.tau = pulsewidth;
 	H->params.dr = H->params.c * H->params.tau * 0.5f;
 	H->params.tx_power_watt = tx_power_watt;
@@ -1414,7 +1422,12 @@ void RS_set_scan_box(RSHandle *H,
 					 RSfloat azimuth_start, RSfloat azimuth_end, RSfloat azimuth_delta,
 					 RSfloat elevation_start, RSfloat elevation_end, RSfloat elevation_delta) {
 	
-	H->status &= !RS_STATUS_DOMAIN_POPULATED;
+    if (H->status & RS_STATUS_DOMAIN_POPULATED) {
+        fprintf(stderr, "%s : RS : Simulation domain has been populated. Scan box cannot be changed.", now());
+        return;
+    }
+
+    //	H->status &= !RS_STATUS_DOMAIN_POPULATED;
 	H->params.range_start = range_start;
 	H->params.range_end = range_end;
 	H->params.range_delta = range_delta;
@@ -1944,6 +1957,11 @@ void RS_update_debris_count(RSHandle *H) {
 
 
 void RS_set_dsd(RSHandle *H, const float *pdf, const float *diameters, const int count, const char name) {
+    
+    if (H->status & RS_STATUS_DOMAIN_POPULATED) {
+        fprintf(stderr, "%s : RS : Simulation domain has been populated. DSD cannot be changed.", now());
+        return;
+    }
     
     int i;
     
