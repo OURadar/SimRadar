@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		322C68351C11FF1C00F0DBA4 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5EF317418204B5C002DDEFC /* AppKit.framework */; };
+		B500A4881C2F418F00CCA108 /* GLOverlay.m in Sources */ = {isa = PBXBuildFile; fileRef = B500A4871C2F418F00CCA108 /* GLOverlay.m */; };
 		B50CD9EE1BE8117E0034B5BB /* Recorder.m in Sources */ = {isa = PBXBuildFile; fileRef = B50CD9ED1BE8117E0034B5BB /* Recorder.m */; };
 		B5201C6F1C22396A00EACF53 /* SplashController.m in Sources */ = {isa = PBXBuildFile; fileRef = B5201C6E1C22396A00EACF53 /* SplashController.m */; };
 		B5201C701C22396A00EACF53 /* SplashController.m in Sources */ = {isa = PBXBuildFile; fileRef = B5201C6E1C22396A00EACF53 /* SplashController.m */; };
@@ -227,6 +228,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		B500A4861C2F418F00CCA108 /* GLOverlay.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GLOverlay.h; sourceTree = "<group>"; };
+		B500A4871C2F418F00CCA108 /* GLOverlay.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GLOverlay.m; sourceTree = "<group>"; };
 		B50A280617D7B1EC00E4DE66 /* cldemo.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = cldemo.c; sourceTree = "<group>"; };
 		B50A281117D7B24500E4DE66 /* OpenCL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenCL.framework; path = System/Library/Frameworks/OpenCL.framework; sourceTree = SDKROOT; };
 		B50A281617D7C21F00E4DE66 /* rs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = rs.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
@@ -556,6 +559,8 @@
 				B5A5142618328A2F00921ACE /* FullscreenWindow.m */,
 				B5FDCAE319D453B10016C2F7 /* GLText.h */,
 				B5FDCAE419D453B10016C2F7 /* GLText.m */,
+				B500A4861C2F418F00CCA108 /* GLOverlay.h */,
+				B500A4871C2F418F00CCA108 /* GLOverlay.m */,
 				B535159C1AD32077004C0F50 /* MainMenu.xib */,
 				B5EF31C1182060E1002DDEFC /* LiveDisplay.xib */,
 				B5201C711C2239D100EACF53 /* Splash.xib */,
@@ -957,6 +962,7 @@
 				B56C7FA31ADC221500552B1E /* rcs.c in Sources */,
 				B5EF317E18204B5C002DDEFC /* main.m in Sources */,
 				B5EF318518204B5C002DDEFC /* AppDelegate.m in Sources */,
+				B500A4881C2F418F00CCA108 /* GLOverlay.m in Sources */,
 				B5EF31C51820619E002DDEFC /* RootController.m in Sources */,
 				B50CD9EE1BE8117E0034B5BB /* Recorder.m in Sources */,
 				B5576B8B18315B3B0012E6F5 /* SimPoint.m in Sources */,
