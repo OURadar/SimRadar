@@ -9,4 +9,21 @@
 
 @implementation GLOverlay
 
+- (id)initWithSize:(NSSize)size {
+    self = [super init];
+    if (self) {
+        // Initialize a Core-graphic context of size
+    }
+    return self;
+}
+
+- (int)updateGLTexture {
+    
+}
+
+- (void)drawAtRect:(NSRect)rect {
+    
+}
+
+
 @end

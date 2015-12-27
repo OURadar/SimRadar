@@ -11,6 +11,17 @@
 #import <GLKit/GLKit.h>
 #import <Quartz/Quartz.h>
 
-@interface GLOverlay : NSObject
+@interface GLOverlay : NSObject {
+    
+    @private
+    
+    GLuint textureName;
+}
+
+- (id)initWithSize:(NSSize)size;
+
+- (int)updateGLTexture;
+
+- (void)drawAtRect:(NSRect)rect;
 
 @end
