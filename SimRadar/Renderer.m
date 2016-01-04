@@ -1622,14 +1622,22 @@
 
 - (void)increaseBackgroundOpacity
 {
-    backgroundOpacity = MIN(1.0f, backgroundOpacity + 0.01f);
+    if (backgroundOpacity >= 0.1) {
+        backgroundOpacity = MIN(1.0f, backgroundOpacity + 0.01f);
+    } else {
+        backgroundOpacity = MIN(0.01f, backgroundOpacity + 0.001f);
+    }
     statusMessageNeedsUpdate = true;
 }
 
 
 - (void)decreaseBackgroundOpacity
 {
-    backgroundOpacity = MAX(0.01f, backgroundOpacity - 0.01f);
+    if (backgroundOpacity <= 0.1) {
+        backgroundOpacity = MAX(0.001f, backgroundOpacity - 0.001f);
+    } else {
+        backgroundOpacity = MAX(0.01f, backgroundOpacity - 0.01f);
+    }
     statusMessageNeedsUpdate = true;
 }
 
