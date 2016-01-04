@@ -20,7 +20,7 @@
 
 #import <Foundation/Foundation.h>
 #import <OpenGL/OpenGL.h>
-#import <OpenGL/gl3.h>
+//#import <OpenGL/gl3.h>
 #import <GLKit/GLKit.h>
 #import <Quartz/Quartz.h>
 
