@@ -7,7 +7,7 @@
 
 #import <Foundation/Foundation.h>
 #import <OpenCL/OpenCL.h>
-#import "glUtil.h"
+//#import "glUtil.h"
 #import "GLText.h"
 
 #define RENDERER_NEAR_RANGE                 100.0f
