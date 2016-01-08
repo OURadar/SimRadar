@@ -137,7 +137,7 @@
 
         RS_set_adm_data_to_ADM_table(S, adm);
         
-        ADM_transform_scale(adm, 1.0f, 3.0f, 3.0f, 10.0f);
+        ADM_transform_scale(adm, 1.0f, 3.0f, 3.0f, 1.0f);
         RS_set_adm_data_to_ADM_table(S, adm);
         
         RS_set_adm_data_to_ADM_table(S, adm);
