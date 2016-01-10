@@ -13,9 +13,25 @@
 
 @interface GLOverlay : NSObject {
     
+    GLuint textureName;
+
+    float devicePixelRatio;
+    
     @private
     
-    GLuint textureName;
+    GLuint program;
+    GLuint vao;
+    GLuint vbo[3];
+    
+    GLint mvpUI;
+    GLint colorUI;
+    GLint textureUI;
+    
+    GLint positionAI;
+    GLint textureCoordAI;
+    
+    GLubyte *bitmap;
+    GLsizei bitmapWidth, bitmapHeight;
 }
 
 - (id)initWithSize:(NSSize)size;
