@@ -2346,6 +2346,7 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 #endif
 
         // Copy over to CL worker
+        H->worker[i].vel_desc.s[RSStaggeredTableDescriptionFormat] = *((float *)&table.spacing);
         if (table.spacing & RSTableSpacingStretchedX) {
             H->worker[i].vel_desc.s[RSStaggeredTableDescriptionBaseChangeX] = table.xs;      // "m" for stretched grid: m * log1p(n * pos.x) + o;
             H->worker[i].vel_desc.s[RSStaggeredTableDescriptionPositionScaleX] = table.xo;   // "n" for stretched grid: m * log1p(n * pos.y) + o;
@@ -2487,7 +2488,7 @@ void RS_set_vel_data_to_cube27(RSHandle *H) {
 	//	table.x_ = 3;    table.xm = 2.0f;    table.xs = 2.0f / H->domain.size.x;    table.xo = -H->domain.origin.x * table.xs + 0.5f;
 	//	table.y_ = 3;    table.ym = 2.0f;    table.ys = 2.0f / H->domain.size.y;    table.yo = -H->domain.origin.y * table.ys + 0.5f;
 	//	table.z_ = 3;    table.zm = 2.0f;    table.zs = 2.0f / H->domain.size.z;    table.zo = -H->domain.origin.z * table.zs + 0.5f;
-	
+
 	table.x_ = 3;    table.xm = 2.0f;    table.xs = 3.0f / H->domain.size.x;    table.xo = -H->domain.origin.x * table.xs;
 	table.y_ = 3;    table.ym = 2.0f;    table.ys = 3.0f / H->domain.size.y;    table.yo = -H->domain.origin.y * table.ys;
 	table.z_ = 3;    table.zm = 2.0f;    table.zs = 3.0f / H->domain.size.z;    table.zo = -H->domain.origin.z * table.zs;
@@ -3314,12 +3315,12 @@ void RS_download(RSHandle *H) {
     
     for (i = 0; i < H->num_workers; i++) {
 		dispatch_async(H->worker[i].que, ^{
-			gcl_memcpy((void *)(H->scat_pos + H->offset[i]), H->worker[i].scat_pos, H->worker[i].num_scats * sizeof(cl_float4));
-            gcl_memcpy((void *)(H->scat_vel + H->offset[i]), H->worker[i].scat_vel, H->worker[i].num_scats * sizeof(cl_float4));
-            gcl_memcpy((void *)(H->scat_ori + H->offset[i]), H->worker[i].scat_ori, H->worker[i].num_scats * sizeof(cl_float4));
-			gcl_memcpy((void *)(H->scat_att + H->offset[i]), H->worker[i].scat_att, H->worker[i].num_scats * sizeof(cl_float4));
-			gcl_memcpy((void *)(H->scat_sig + H->offset[i]), H->worker[i].scat_sig, H->worker[i].num_scats * sizeof(cl_float4));
-            gcl_memcpy((void *)H->pulse_tmp[i], H->worker[i].pulse, H->params.range_count * sizeof(cl_float4));
+			gcl_memcpy(H->scat_pos + H->offset[i], H->worker[i].scat_pos, H->worker[i].num_scats * sizeof(cl_float4));
+            gcl_memcpy(H->scat_vel + H->offset[i], H->worker[i].scat_vel, H->worker[i].num_scats * sizeof(cl_float4));
+            gcl_memcpy(H->scat_ori + H->offset[i], H->worker[i].scat_ori, H->worker[i].num_scats * sizeof(cl_float4));
+			gcl_memcpy(H->scat_att + H->offset[i], H->worker[i].scat_att, H->worker[i].num_scats * sizeof(cl_float4));
+			gcl_memcpy(H->scat_sig + H->offset[i], H->worker[i].scat_sig, H->worker[i].num_scats * sizeof(cl_float4));
+            gcl_memcpy(H->pulse_tmp[i], H->worker[i].pulse, H->params.range_count * sizeof(cl_float4));
             dispatch_semaphore_signal(H->worker[i].sem);
 		});
         dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
@@ -3328,7 +3329,7 @@ void RS_download(RSHandle *H) {
 #else
 
     int k;
-    
+
     cl_event events[H->num_workers][6];
     
     // Non-blocking read, wait for events later when they are queue up.
@@ -3375,7 +3376,7 @@ void RS_download_position_only(RSHandle *H) {
 	}
 	
 #endif
-	
+
 }
 
 void RS_download_orientation_only(RSHandle *H) {

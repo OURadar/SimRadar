@@ -65,8 +65,8 @@
         nearest_thousand = (size_t)ceilf(1000.0f / S->preferred_multiple) * S->preferred_multiple;
         nearest_hundred = (size_t)ceilf(100.0f / S->preferred_multiple) * S->preferred_multiple;
         
-		L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
-//        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, NULL);
+//		L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
+        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, NULL);
 
         A = ADM_init_with_config_path(ADMConfigSquarePlate, NULL);
 
@@ -111,17 +111,6 @@
         RS_revise_debris_counts_to_gpu_preference(S);
         
         RS_set_prt(S, 0.03f);
-
-//        char ori_file[4096];
-//        memset(ori_file, 0, 4096);
-//        snprintf(ori_file, 256, "%s/Downloads/sim-%s-orientation.dat", getenv("HOME"), nowlong());
-//        printf("%s : Orientation output file : %s\n", now(), ori_file);
-//        
-//        ori_fid = fopen(ori_file, "wb");
-//        
-//        if (ori_fid == NULL) {
-//            fprintf(stderr, "%s : Error creating file for writing data.\n", now());
-//        }
         
         for (table_id = 0; table_id < RS_MAX_VEL_TABLES; table_id++) {
             if (reportProgress) {
@@ -132,6 +121,8 @@
             //LES_show_table_summary(les);
             RS_set_vel_data_to_LES_table(S, les);
         }
+        
+//        RS_set_vel_data_to_cube27(S);
         
         ADMTable *adm = ADM_get_frame(A);
 
@@ -170,8 +161,6 @@
 {
 	RS_free(S);
 	LES_free(L);
-    
-//    fclose(ori_fid);
     
 	[super dealloc];
 }
