@@ -218,16 +218,11 @@ int main(int argc, char *argv[]) {
         RS_set_beam_pos(S, az_deg, el_deg);
         RS_advance_time(S);
         RS_make_pulse(S);
-        //RS_download(S);
 
-        //RS_download_pulse_only(S);
         if (verb > 1) {
             RS_download(S);
             RS_show_scat_sig(S);
             
-            if (verb < 2) {
-                continue;
-            }
             printf("signal:\n");
             for (int r=0; r<S->params.range_count; r++) {
                 printf("sig[%d] = (%.4f %.4f %.4f %.4f)\n", r, S->pulse[r].s0, S->pulse[r].s1, S->pulse[r].s2, S->pulse[r].s3);
@@ -235,8 +230,12 @@ int main(int argc, char *argv[]) {
             printf("\n");
         }
         
-        
         if (write_file) {
+            if (verb <= 1) {
+                // The data hasn't been downloaded yet, so download it now
+                RS_download_pulse_only(S);
+                //RS_download(S);
+            }
             // Gather information for the  pulse header
             pulse_header.time = S->sim_time;
             pulse_header.az_deg = az_deg;

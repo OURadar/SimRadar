@@ -1,55 +1,76 @@
 #!/bin/bash
 
-app_name="SimRadar"
+APP_NAME=SimRadar
 
-
-cmd="${app_name}.app/Contents/MacOS/${app_name} -v"
-version=`eval $cmd`
-version=${version%% (*}
-
-sub_folder=`echo ${app_name} | tr '[:upper:]' '[:lower:]'`
-
+VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleVersion" ${APP_NAME}.app/Contents/Info.plist)
+VERSION_STRING=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" ${APP_NAME}.app/Contents/Info.plist)
 echo
-echo "Deploying SimRadar $version ..."
+echo "Deploying as version ${VERSION} ..."
 echo
+
 
 echo "Adding a gatekeeper rule ...";
-sudo spctl -a -v ${app_name}.app
+sudo spctl -a -v ${APP_NAME}.app
 
-echo "Mounting disk image...";
-open ${app_name}.dmg
-sleep 1;
-while [ ! -d "/Volumes/${app_name}" ]; do
+if [ ! -f "${APP_NAME}.rw.dmg" ]; then
+	size=$(du -hs ${APP_NAME}.app)
+	size=${size%%M*}
+    size=$(echo "${size} * 2" | bc)
+	echo "Creating image of size ${size} MB ..."
+    hdiutil create -megabytes ${size} -fs HFS+J -volname ${APP_NAME} -attach ${APP_NAME}.rw.dmg
+else
+    echo "Mounting disk image ${APP_NAME}.rw.dmg ...";
+    hdiutil mount ${APP_NAME}.rw.dmg
+fi
+
+while [ ! -d "/Volumes/${APP_NAME}" ]; do
 	echo "Waiting for disk image...";
 	sleep 1;
 done
 
-echo "Code sign with Developer ID Application ...";
-codesign --deep -f -s "Developer ID Application" ${app_name}.app
 
-echo "Updating app...";
-rsync -a --delete ${app_name}.app /Volumes/${app_name}/
+ln -s /Applications /Volume/${APP_NAME}/Applications
 
-echo "Unmounting volume...";
-umount /Volumes/${app_name}
+#echo "Code sign with Developer ID Application ...";
+#codesign -f -s "Developer ID Application" ${APP_NAME}.app
+
+echo "Updating app ...";
+rsync -a --delete ${APP_NAME}.app /Volumes/${APP_NAME}/
+
+echo "Detaching volume...";
+hdiutil detach /Volumes/${APP_NAME}
+while [ -d "/Volumes/${APP_NAME}" ]; do
+	echo "Detaching volume...";
+	sleep 1;
+done
+
+echo "Converting disk image to a read-only version ..."
+if [ -f "${APP_NAME}.dmg" ]; then
+	rm ${APP_NAME}.dmg
+fi
+hdiutil convert ${APP_NAME}.rw.dmg -format UDRO -o ${APP_NAME}.dmg
 
 echo "Archiving application...";
-zip -qr ${app_name}.zip ${app_name}.app
+zip -qr ${APP_NAME}.zip ${APP_NAME}.app
 
 echo "Signing applicaiton archive.";
-cmd="ruby sign_update.rb ${app_name}.zip dsa_priv.pem"
-key=`eval $cmd`
-echo $key
+KEY=`ruby sign_update.rb ${APP_NAME}.zip dsa_priv.pem`
+echo ${KEY}
 
 echo "Generating AppCast feed...";
-curr_date=`date -u`
-key=${key//\//\\/}
-key=${key//+/\\+}
-echo $key
-file_size=`ls -l ${app_name}.zip | awk '{ print $5 }'`
-sed -e s/_APP_NAME_/"$app_name"/g -e s/_SUB_FOLDER_/"$sub_folder"/g -e s/_PUB_DATE_/"$curr_date"/g -e s/_VERSION_/"$version"/g -e s/_DSA_KEY_/"$key"/g -e s/_FILE_SIZE_/"$file_size"/g versions_template.xml > versions.xml
+TODAY=$(date -u)
+FILE_SIZE=$(du -s ${APP_NAME}.app)
+FILE_SIZE=${FILE_SIZE%%${APP_NAME}*}
+FILE_SIZE=$((FILE_SIZE*512))
+# '/' --> '\/' character
+KEY=${KEY//\//\\/}
+KEY=${KEY//+/\\+}
+echo "TODAY=${TODAY}"
+echo "KEY=${KEY}"
+echo "FILE_SIZE=${FILE_SIZE}"
+sed -e s/_APP_NAME_/"${APP_NAME}"/g -e s/_VERSION_/"${VERSION}"/g -e s/_VERSIONSTRING_/"${VERSION_STRING}"/g -e s/_PUB_DATE_/"${TODAY}"/g -e s/_DSA_KEY_/"${KEY}"/g -e s/_FILE_SIZE_/"${FILE_SIZE}"/g versions_template.xml > versions.xml
 #cat versions.xml
 
-echo "Uploading files to the ARRC server...";
-rsync -av ${app_name}.dmg ${app_name}.zip versions.* rayleigh:~/public_html/${sub_folder}/
-
+echo "Uploading files to the ARRC server..."
+#rsync -e 'ssh -p 20004' -av ${APP_NAME}.dmg ${APP_NAME}.zip versions.* localhost:~/public_html/${APP_NAME}/
+rsync -av ${APP_NAME}.dmg ${APP_NAME}.zip versions.* rwv01.arrc.nor.ou.edu:~/public_html/${APP_NAME}/
