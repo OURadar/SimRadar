@@ -3319,6 +3319,7 @@ void RS_download(RSHandle *H) {
             gcl_memcpy((void *)(H->scat_ori + H->offset[i]), H->worker[i].scat_ori, H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy((void *)(H->scat_att + H->offset[i]), H->worker[i].scat_att, H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy((void *)(H->scat_sig + H->offset[i]), H->worker[i].scat_sig, H->worker[i].num_scats * sizeof(cl_float4));
+            gcl_memcpy((void *)H->pulse_tmp[i], H->worker[i].pulse, H->params.range_count * sizeof(cl_float4));
             dispatch_semaphore_signal(H->worker[i].sem);
 		});
         dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
