@@ -844,11 +844,9 @@ __kernel void db_atts(__global float4 *p,
     tum = normalize(tum);
 
     // bound the velocity
-    if (length(vel.xy + dudt.xy * dt.xy) > 2.0 * length(vel_bg.xy)) {
-        vel.xy = vel_bg.xy;
-    } else {
-        vel += dudt * dt;
-    }
+//    if (length(vel.xy + dudt.xy * dt.xy) > 2.0 * length(vel_bg.xy)) {
+//        vel.xy = vel_bg.xy;
+//    }
     
     //    if (length(vel) > length(vel_bg)) {
     //        printf("vel = [%5.2f %5.2f %5.2f %5.2f]  vel_bg = [%5.2f %5.2f %5.2f %5.2f]   %5.2f\n",

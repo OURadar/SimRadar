@@ -1238,10 +1238,6 @@ void RS_init_scat_pos(RSHandle *H) {
 //        H->scat_ori[i].y = -0.707106781186547f;
 //        H->scat_ori[i].z =  0.0f;
 //        H->scat_ori[i].w =  0.707106781186548f;
-        H->scat_ori[i].x =  0.0f;
-        H->scat_ori[i].y = -0.7071;
-        H->scat_ori[i].z =  0.0f;
-        H->scat_ori[i].w =  0.7071;
 
 
         // Facing the beam

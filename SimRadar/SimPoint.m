@@ -103,7 +103,7 @@
         RS_set_debris_count(S, 2, 500);
         RS_revise_debris_counts_to_gpu_preference(S);
         
-        RS_set_prt(S, 0.03f);
+        RS_set_prt(S, 1.0f / 60.0f);
         
         BOOL useLES = TRUE;
         
@@ -155,7 +155,7 @@
                             -7.0f, 7.0f, 1.0f,                    // Azimuth
                             0.0f, 12.0f, 1.0f);                   // Elevation
 
-            cl_float4 vel = (cl_float4){0.0f, 0.0f, 0.0f, 0.0f};
+            cl_float4 vel = (cl_float4){10.0f, 0.0f, 0.0f, 0.0f};
             
             RS_set_vel_data_to_uniform(S, vel);
         }
