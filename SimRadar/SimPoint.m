@@ -112,17 +112,21 @@
         
         RS_set_prt(S, 0.03f);
         
-        for (table_id = 0; table_id < RS_MAX_VEL_TABLES; table_id++) {
-            if (reportProgress) {
-                [delegate progressUpdated:(10.0 + (double)table_id / RS_MAX_VEL_TABLES * 70.0)
-                                  message:[NSString stringWithFormat:@"Loading LES table %d to GPU ...", table_id]];
-            }
-            LESTable *les = LES_get_frame(L, table_id);
-            //LES_show_table_summary(les);
-            RS_set_vel_data_to_LES_table(S, les);
-        }
+        BOOL useLES = FALSE;
         
-//        RS_set_vel_data_to_cube27(S);
+        RSBox box;
+        if (useLES) {
+            for (table_id = 0; table_id < RS_MAX_VEL_TABLES; table_id++) {
+                if (reportProgress) {
+                    [delegate progressUpdated:(10.0 + (double)table_id / RS_MAX_VEL_TABLES * 70.0)
+                                      message:[NSString stringWithFormat:@"Loading LES table %d to GPU ...", table_id]];
+                }
+                LESTable *les = LES_get_frame(L, table_id);
+                //LES_show_table_summary(les);
+                RS_set_vel_data_to_LES_table(S, les);
+            }
+            box = RS_suggest_scan_doamin(S, 16);
+        }
         
         ADMTable *adm = ADM_get_frame(A);
 
@@ -146,13 +150,20 @@
         if (reportProgress) {
             [delegate progressUpdated:95.0 message:@"RCS table"];
         }
-        
-        RSBox box = RS_suggest_scan_doamin(S, 16);
-        
-        RS_set_scan_box(S,
-                        box.origin.r, box.origin.r + box.size.r, 30.0f,   // Range
-                        box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
-                        box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
+
+        if (useLES) {
+            RS_set_scan_box(S,
+                            box.origin.r, box.origin.r + box.size.r, 30.0f,   // Range
+                            box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
+                            box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
+        } else {
+            RS_set_scan_box(S,
+                            3.42e3, 4.04e3, 30.0f,                // Range
+                            -7.0f, 7.0f, 1.0f,                    // Azimuth
+                            0.0f, 12.0f, 1.0f);                   // Elevation
+            cl_float4 vel = (cl_float4){0.0f, 0.0f, 0.0f, 0.0f};
+            RS_set_vel_data_to_uniform(S, vel);
+        }
     }
 	return self;
 }

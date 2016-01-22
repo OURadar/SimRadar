@@ -1,3 +1,10 @@
+enum {
+    RSTableSpacingUniform          = 0,
+    RSTableSpacingStretchedX       = 1,
+    RSTableSpacingStretchedY       = 1 << 1,
+    RSTableSpacingStretchedZ       = 1 << 2
+};
+
 enum RSSimulationParameter {
     RSSimulationParameterBeamUnitX     =  0,
     RSSimulationParameterBeamUnitY     =  1,
@@ -363,7 +370,8 @@ __kernel void bg_atts(__global float4 *p,
     //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
     int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
     
-    if (is_outside | isgreater(aux.s1, 1.0f)) {
+    //if (is_outside | isgreater(aux.s1, 1.0f)) {
+    if (is_outside) {
         uint4 seed = y[i];
         float4 r = rand(&seed);
         y[i] = seed;
@@ -374,8 +382,24 @@ __kernel void bg_atts(__global float4 *p,
         aux.s1 += sim_desc.sf;
     }
     
+    const float s7 = wind_desc.s7;
+    const uint grid_spacing = *(uint *)&s7;
+    
+//    if (i == 0) {
+//        printf("grid_spacing = %d  X:%d Y:%d Z:%d\n", grid_spacing,
+//               grid_spacing & RSTableSpacingStretchedX,
+//               grid_spacing & RSTableSpacingStretchedY,
+//               grid_spacing & RSTableSpacingStretchedZ);
+//    }
+    
     // Background wind
-    float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
+    float4 wind_coord = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
+    if (grid_spacing & RSTableSpacingStretchedX && grid_spacing & RSTableSpacingStretchedY && grid_spacing & RSTableSpacingStretchedZ) {
+        float4 pos_rel = pos - (float4)(sim_desc.hi.s01 + 0.5f * sim_desc.hi.s45, 0.0f, 0.0f);
+        wind_coord = wind_table_index(pos_rel, wind_desc);
+    } else if (grid_spacing == RSTableSpacingUniform) {
+        wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
+    }
     
     vel = read_imagef(wind_uvw, sampler, wind_coord);
     
@@ -744,13 +768,13 @@ __kernel void db_atts(__global float4 *p,
 //    float4 dudt = 0.5f * (dudt1 + dudt2) + (float4)(0.0f, 0.0f, -9.8f, 0.0f);
     
     // bound the velocity
-    if (length(vel.xy + dudt.xy * dt.xy) > length(vel_bg.xy)) {
-        vel.xy = vel_bg.xy;
-    } else {
-        vel += dudt * dt;
-    }
+//    if (length(vel.xy + dudt.xy * dt.xy) > length(vel_bg.xy)) {
+//        vel.xy = vel_bg.xy;
+//    } else {
+//        vel += dudt * dt;
+//    }
 
-    //vel += dudt * dt;
+    vel += dudt * dt;
     
 //    if (length(vel) > length(vel_bg)) {
 //        printf("vel = [%5.2f %5.2f %5.2f %5.2f]  vel_bg = [%5.2f %5.2f %5.2f %5.2f]   %5.2f\n",

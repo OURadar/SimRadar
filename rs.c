@@ -1234,16 +1234,16 @@ void RS_init_scat_pos(RSHandle *H) {
 //        H->scat_ori[i].w = 1.0f;
         
         // Facing the sky
-//        H->scat_ori[i].x =  0.0f;
-//        H->scat_ori[i].y = -0.707106781186547f;
-//        H->scat_ori[i].z =  0.0f;
-//        H->scat_ori[i].w =  0.707106781186548f;
+        H->scat_ori[i].x =  0.0f;
+        H->scat_ori[i].y = -0.707106781186547f;
+        H->scat_ori[i].z =  0.0f;
+        H->scat_ori[i].w =  0.707106781186548f;
 
         // Facing the beam
-        H->scat_ori[i].x =  0.5f;
-        H->scat_ori[i].y = -0.5f;
-        H->scat_ori[i].z = -0.5f;
-        H->scat_ori[i].w =  0.5f;
+//        H->scat_ori[i].x =  0.5f;
+//        H->scat_ori[i].y = -0.5f;
+//        H->scat_ori[i].z = -0.5f;
+//        H->scat_ori[i].w =  0.5f;
         
         // Some other tests
 //        H->scat_ori[i].x =  0.5f;
@@ -2346,7 +2346,8 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 #endif
 
         // Copy over to CL worker
-        H->worker[i].vel_desc.s[RSStaggeredTableDescriptionFormat] = *((float *)&table.spacing);
+        H->worker[i].vel_desc.s[RSStaggeredTableDescriptionFormat] = *(float *)&table.spacing; // Forced type cast so we are maintaining all 32-bits
+        //printf("%s : RS : %d / %.9f\n", now(), table.spacing, H->worker[i].vel_desc.s[RSStaggeredTableDescriptionFormat]);
         if (table.spacing & RSTableSpacingStretchedX) {
             H->worker[i].vel_desc.s[RSStaggeredTableDescriptionBaseChangeX] = table.xs;      // "m" for stretched grid: m * log1p(n * pos.x) + o;
             H->worker[i].vel_desc.s[RSStaggeredTableDescriptionPositionScaleX] = table.xo;   // "n" for stretched grid: m * log1p(n * pos.y) + o;
@@ -2470,6 +2471,36 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
 }
 
 
+void RS_set_vel_data_to_uniform(RSHandle *H, cl_float4 velocity) {
+    
+    RSTable3D table = RS_table3d_init(1);
+    
+    if (H->verb > 1) {
+        printf("%s : RS : Cube27 @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
+               now(),
+               H->domain.origin.x, H->domain.origin.x + H->domain.size.x,
+               H->domain.origin.y, H->domain.origin.y + H->domain.size.y,
+               H->domain.origin.z, H->domain.origin.z + H->domain.size.z);
+    }
+    
+    // Set up the mapping coefficients:
+    table.x_ = 1;    table.xm = 0.0f;    table.xs = 1.0f / H->domain.size.x;    table.xo = -H->domain.origin.x * table.xs;
+    table.y_ = 1;    table.ym = 0.0f;    table.ys = 1.0f / H->domain.size.y;    table.yo = -H->domain.origin.y * table.ys;
+    table.z_ = 1;    table.zm = 0.0f;    table.zs = 1.0f / H->domain.size.z;    table.zo = -H->domain.origin.z * table.zs;
+    
+    table.tr = 1000.0f;
+
+    table.data[0].x = velocity.x;
+    table.data[0].y = velocity.y;
+    table.data[0].z = velocity.z;
+    table.data[0].w = 0.0f;
+    
+    RS_set_vel_data(H, table);
+    
+    RS_table3d_free(table);
+}
+
+
 void RS_set_vel_data_to_cube27(RSHandle *H) {
 	
 	int i;
@@ -2498,7 +2529,7 @@ void RS_set_vel_data_to_cube27(RSHandle *H) {
 	//	printf(" %.2f x %.2f = %.2f\n", -H->domain.origin.x, H->physics_table.xs, -H->domain.origin.x / H->domain.size.x * 2.0f);
 	//	printf("o = [%.2f, %.2f, %.2f]\n", table.xo, table.yo, table.zo);
 	
-	const float v = 1.0f;
+	const float v = 10.0f;
 	
 	for (i = 0; i < 27; i++) {
 		table.data[i].x = (float) (i % 3)      * v - v;
@@ -3587,28 +3618,28 @@ void RS_advance_time(RSHandle *H) {
     for (i = 0; i < H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
 
-//            bg_atts_kernel(&H->worker[i].ndrange_scat[0],
-//                           (cl_float4 *)H->worker[i].scat_pos,
-//                           (cl_float4 *)H->worker[i].scat_vel,
-//                           (cl_float4 *)H->worker[i].scat_att,
-//                           (cl_uint4 *)H->worker[i].scat_rnd,
-//                           (cl_image)H->worker[i].vel[v],
-//                           H->worker[i].vel_desc,
-//                           (cl_float *)H->worker[i].angular_weight,
-//                           H->worker[i].angular_weight_desc,
-//                           H->sim_desc);
-
-            el_atts_kernel(&H->worker[i].ndrange_scat[0],
+            bg_atts_kernel(&H->worker[i].ndrange_scat[0],
                            (cl_float4 *)H->worker[i].scat_pos,
                            (cl_float4 *)H->worker[i].scat_vel,
                            (cl_float4 *)H->worker[i].scat_att,
-                           (cl_float4 *)H->worker[i].scat_sig,
                            (cl_uint4 *)H->worker[i].scat_rnd,
                            (cl_image)H->worker[i].vel[v],
                            H->worker[i].vel_desc,
                            (cl_float *)H->worker[i].angular_weight,
                            H->worker[i].angular_weight_desc,
                            H->sim_desc);
+
+//            el_atts_kernel(&H->worker[i].ndrange_scat[0],
+//                           (cl_float4 *)H->worker[i].scat_pos,
+//                           (cl_float4 *)H->worker[i].scat_vel,
+//                           (cl_float4 *)H->worker[i].scat_att,
+//                           (cl_float4 *)H->worker[i].scat_sig,
+//                           (cl_uint4 *)H->worker[i].scat_rnd,
+//                           (cl_image)H->worker[i].vel[v],
+//                           H->worker[i].vel_desc,
+//                           (cl_float *)H->worker[i].angular_weight,
+//                           H->worker[i].angular_weight_desc,
+//                           H->sim_desc);
 
 //            scat_clr_kernel(&H->worker[i].ndrange_scat[0],
 //							(cl_float4 *)H->worker[i].scat_clr,

@@ -495,6 +495,7 @@ void RS_set_angular_weight_to_standard(RSHandle *H, float beamwidth_deg);
 void RS_set_angular_weight_to_double_cone(RSHandle *H, float beamwidth_deg);
 
 void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *table);
+void RS_set_vel_data_to_uniform(RSHandle *H, cl_float4 velocity);
 void RS_set_vel_data_to_cube27(RSHandle *H);
 void RS_set_vel_data_to_cube125(RSHandle *H);
 void RS_clear_vel_data(RSHandle *H);
