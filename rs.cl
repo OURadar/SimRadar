@@ -842,7 +842,6 @@ __kernel void db_atts(__global float4 *p,
                    c.x * c.y * c.z - s.x * s.y * s.z);
     
     tum = normalize(tum);
-    
 
     // bound the velocity
     if (length(vel.xy + dudt.xy * dt.xy) > 2.0 * length(vel_bg.xy)) {
