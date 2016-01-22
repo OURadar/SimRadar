@@ -78,7 +78,7 @@ float4 quat_rotate(float4 vector, float4 quat);
 float4 quat_identity(void);
 float4 complex_multiply(const float4 a, const float4 b);
 float4 two_way_effects(const float4 sig_in, const float range, const float wav_num);
-float4 wind_table_index(const float4 pos, const float16 wind_desc);
+float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16 sim_desc);
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -243,34 +243,51 @@ float compute_angular_weight(float4 pos,
 // Wind table index
 //
 
-float4 wind_table_index(const float4 pos_rel, const float16 wind_desc) {
-    // Background wind
-    //float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
-    
-    // Get the "m" & "n" parameters for the reverse lookup z[i] = m * log1p( n * z ); where ScaleZ = m, OriginZ = n
-    //    RSTableDescriptionScaleX      =  0,
-    //    RSTableDescriptionScaleY      =  1,
-    //    RSTableDescriptionScaleZ      =  2,
-    //    RSTableDescriptionRefreshTime =  3,
-    //    RSTableDescriptionOriginX     =  4,
-    //    RSTableDescriptionOriginY     =  5,
-    //    RSTableDescriptionOriginZ     =  6,
-    //    RSTableDescription7           =  7,
-    // wind_coord.z = wind_desc.s2 * log1p(wind_desc.s6 * pos.z);
-    
-    //    RSStaggeredTableDescriptionBaseChangeX     =  0,
-    //    RSStaggeredTableDescriptionBaseChangeY     =  1,
-    //    RSStaggeredTableDescriptionBaseChangeZ     =  2,
-    //    RSStaggeredTableDescriptionRefreshTime     =  3,
-    //    RSStaggeredTableDescriptionPositionScaleX  =  4,
-    //    RSStaggeredTableDescriptionPositionScaleY  =  5,
-    //    RSStaggeredTableDescriptionPositionScaleZ  =  6,
-    //    RSStaggeredTableDescription7               =  7,
-    //    RSStaggeredTableDescriptionOffsetX         =  8,
-    //    RSStaggeredTableDescriptionOffsetY         =  9,
-    //    RSStaggeredTableDescriptionOffsetZ         = 10,
-    //return (float4)(copysign(wind_desc.s012, pos.xyz) * log1p(wind_desc.s456 * fabs(pos.xyz)) + wind_desc.s89a, 0.0f);
-    return copysign(wind_desc.s0123, pos_rel) * log1p(wind_desc.s4567 * fabs(pos_rel)) + wind_desc.s89ab;
+float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16 sim_desc) {
+    const float s7 = wind_desc.s7;
+    const uint grid_spacing = *(uint *)&s7;
+
+    if (grid_spacing & RSTableSpacingStretchedX && grid_spacing & RSTableSpacingStretchedY && grid_spacing & RSTableSpacingStretchedZ) {
+        // Background wind table is staggered for all dimensions
+        //    RSStaggeredTableDescriptionBaseChangeX     =  0,
+        //    RSStaggeredTableDescriptionBaseChangeY     =  1,
+        //    RSStaggeredTableDescriptionBaseChangeZ     =  2,
+        //    RSStaggeredTableDescriptionRefreshTime     =  3,
+        //    RSStaggeredTableDescriptionPositionScaleX  =  4,
+        //    RSStaggeredTableDescriptionPositionScaleY  =  5,
+        //    RSStaggeredTableDescriptionPositionScaleZ  =  6,
+        //    RSStaggeredTableDescription7               =  7,
+        //    RSStaggeredTableDescriptionOffsetX         =  8,
+        //    RSStaggeredTableDescriptionOffsetY         =  9,
+        //    RSStaggeredTableDescriptionOffsetZ         = 10,
+        //    RSStaggeredTableDescription11              = 11,
+        //    RSStaggeredTableDescriptionRecipInLnX      = 12,
+        //    RSStaggeredTableDescriptionRecipInLnY      = 13,
+        //    RSStaggeredTableDescriptionRecipInLnZ      = 14,
+        //    RSStaggeredTableDescriptionTachikawa       = 15,
+        float4 pos_rel = pos - (float4)(sim_desc.hi.s01 + 0.5f * sim_desc.hi.s45, 0.0f, 0.0f);
+        return copysign(wind_desc.s0123, pos_rel) * log1p(wind_desc.s4567 * fabs(pos_rel)) + wind_desc.s89ab;
+    } else if (grid_spacing == RSTableSpacingUniform) {
+        // Background wind table is uniform for all dimensions
+        //    RSTableDescriptionScaleX      =  0,
+        //    RSTableDescriptionScaleY      =  1,
+        //    RSTableDescriptionScaleZ      =  2,
+        //    RSTableDescriptionRefreshTime =  3,
+        //    RSTableDescriptionOriginX     =  4,
+        //    RSTableDescriptionOriginY     =  5,
+        //    RSTableDescriptionOriginZ     =  6,
+        //    RSTableDescription7           =  7,
+        //    RSTableDescriptionMaximumX    =  8,
+        //    RSTableDescriptionMaximumY    =  9,
+        //    RSTableDescriptionMaximumZ    = 10,
+        //    RSTableDescription11          = 11,
+        //    RSTableDescriptionRecipInLnX  = 12,
+        //    RSTableDescriptionRecipInLnY  = 13,
+        //    RSTableDescriptionRecipInLnZ  = 14,
+        //    RSTableDescriptionTachikawa   = 15,
+        return fma(pos, wind_desc.s0123, wind_desc.s4567);
+    }
+    return (float4)(0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 #pragma mark -
@@ -381,25 +398,9 @@ __kernel void bg_atts(__global float4 *p,
     } else {
         aux.s1 += sim_desc.sf;
     }
-    
-    const float s7 = wind_desc.s7;
-    const uint grid_spacing = *(uint *)&s7;
-    
-//    if (i == 0) {
-//        printf("grid_spacing = %d  X:%d Y:%d Z:%d\n", grid_spacing,
-//               grid_spacing & RSTableSpacingStretchedX,
-//               grid_spacing & RSTableSpacingStretchedY,
-//               grid_spacing & RSTableSpacingStretchedZ);
-//    }
-    
-    // Background wind
-    float4 wind_coord = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
-    if (grid_spacing & RSTableSpacingStretchedX && grid_spacing & RSTableSpacingStretchedY && grid_spacing & RSTableSpacingStretchedZ) {
-        float4 pos_rel = pos - (float4)(sim_desc.hi.s01 + 0.5f * sim_desc.hi.s45, 0.0f, 0.0f);
-        wind_coord = wind_table_index(pos_rel, wind_desc);
-    } else if (grid_spacing == RSTableSpacingUniform) {
-        wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
-    }
+
+    //
+    float4 wind_coord = wind_table_index(pos, wind_desc, sim_desc);
     
     vel = read_imagef(wind_uvw, sampler, wind_coord);
     
@@ -484,30 +485,14 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
         y[i] = seed;
         pos.xyz = (fma(r, sim_desc.hi.s4567, sim_desc.hi.s0123)).xyz;
         vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
-
-        //pos.xyz = (fma(r, sim_desc.hi.s4567, sim_desc.hi.s0123)).xyz;
-//        pos.xyz = (fma(rand(&seed), sim_desc.hi.s4567, sim_desc.hi.s0123)).xyz;
-
-        //pos = (float4)((fma(rand(&seed), sim_desc.hi.s4567, sim_desc.hi.s0123)).xyz, 1.0f);
-        
         y[i] = seed;
 
     } else {
     
-        float4 pos_rel = pos - (float4)(sim_desc.hi.s01 + 0.5f * sim_desc.hi.s45, 0.0f, 0.0f);
-        //float4 wind_coord = copysign(wind_desc.s0123, pos_rel) * log1p(wind_desc.s4567 * fabs(pos_rel)) + wind_desc.s89ab;
-
-        float4 wind_coord = wind_table_index(pos_rel, wind_desc);
+        float4 wind_coord = wind_table_index(pos, wind_desc, sim_desc);
 
         float4 bg_vel = read_imagef(wind_uvw, sampler, wind_coord);
 
-//        if (i == 0) {
-//            printf("params = [%.2v4f  ;  %.4v4f  ;  %.2v4f]\n", wind_desc.s0123, wind_desc.s4567, wind_desc.s89ab);
-//        }
-//        if (i < 10) {
-//            printf("pos_rel = [ %8.2v4f ]   coord = [ %8.2v4f ]   bg_vel = [ %8.2v4f ]\n", pos_rel, wind_coord, bg_vel);
-//        }
-        
         // Particle velocity due to drag
         float4 delta_v = bg_vel - vel;
         float delta_v_abs = length(delta_v.xyz);
@@ -592,6 +577,11 @@ __kernel void db_atts(__global float4 *p,
 {
     const unsigned int i = get_global_id(0);
     
+    if (i == 513537) {
+        printf("global_id = %d\n", i);
+        //printf("vel = %.4v4f\n", vel);
+    }
+    
     float4 pos = p[i];  // position
     float4 ori = o[i];  // orientation
     float4 vel = v[i];  // velocity
@@ -620,47 +610,8 @@ __kernel void db_atts(__global float4 *p,
     const float4 dt = (float4)(sim_desc.sb, sim_desc.sb, sim_desc.sb, 0.0f);
     const float el = atan2(sim_desc.s2, length(sim_desc.s01));
     const float az = atan2(sim_desc.s0, sim_desc.s1);
-
-    // Background wind
-    //    RSTableDescriptionScaleX      =  0,
-    //    RSTableDescriptionScaleY      =  1,
-    //    RSTableDescriptionScaleZ      =  2,
-    //    RSTableDescriptionRefreshTime =  3,
-    //    RSTableDescriptionOriginX     =  4,
-    //    RSTableDescriptionOriginY     =  5,
-    //    RSTableDescriptionOriginZ     =  6,
-    //    RSTableDescription7           =  7,
-    //    RSTableDescriptionMaximumX    =  8,
-    //    RSTableDescriptionMaximumY    =  9,
-    //    RSTableDescriptionMaximumZ    = 10,
-    //    RSTableDescription11          = 11,
-    //    RSTableDescriptionRecipInLnX  = 12,
-    //    RSTableDescriptionRecipInLnY  = 13,
-    //    RSTableDescriptionRecipInLnZ  = 14,
-    //    RSTableDescriptionTachikawa   = 15,
-    //float4 wind_coord = fma(pos, wind_desc.s0123, wind_desc.s4567);
     
-    //    RSStaggeredTableDescriptionBaseChangeX     =  0,
-    //    RSStaggeredTableDescriptionBaseChangeY     =  1,
-    //    RSStaggeredTableDescriptionBaseChangeZ     =  2,
-    //    RSStaggeredTableDescriptionRefreshTime     =  3,
-    //    RSStaggeredTableDescriptionPositionScaleX  =  4,
-    //    RSStaggeredTableDescriptionPositionScaleY  =  5,
-    //    RSStaggeredTableDescriptionPositionScaleZ  =  6,
-    //    RSStaggeredTableDescription7               =  7,
-    //    RSStaggeredTableDescriptionOffsetX         =  8,
-    //    RSStaggeredTableDescriptionOffsetY         =  9,
-    //    RSStaggeredTableDescriptionOffsetZ         = 10,
-    //    RSStaggeredTableDescription11              = 11,
-    //    RSStaggeredTableDescriptionRecipInLnX      = 12,
-    //    RSStaggeredTableDescriptionRecipInLnY      = 13,
-    //    RSStaggeredTableDescriptionRecipInLnZ      = 14,
-    //    RSStaggeredTableDescriptionTachikawa       = 15,
-   // float4 wind_coord = wind_table_index();
-    
-    float4 pos_rel = pos - (float4)(sim_desc.hi.s01 + 0.5f * sim_desc.hi.s45, 0.0f, 0.0f);
-    
-    float4 wind_coord = wind_table_index(pos_rel, wind_desc);
+    float4 wind_coord = wind_table_index(pos, wind_desc, sim_desc);
     
     float4 vel_bg = read_imagef(wind_uvw, sampler, wind_coord);
     
@@ -690,18 +641,23 @@ __kernel void db_atts(__global float4 *p,
 
         //pos = (float4)((fma(rand(&seed), sim_desc.hi.s4567, sim_desc.hi.s0123)).xyz, 1.0f);
         pos = (float4)((fma(rand(&seed), sim_desc.hi.s4567, sim_desc.hi.s0123)).xy, 10.0f, 1.0f);
-        
-//        float4 r = rand(&seed);
-//        
-//        pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
-//        pos.z = 10.0f;
 
         vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
         tum = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
+        
         ori = normalize(rand(&seed));
-//        ori = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
+        //        ori = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
+
+        p[i] = pos;
+        o[i] = ori;
+        v[i] = vel;
+        t[i] = tum;
+        a[i] = aux;
+        x[i] = sig;
 
         y[i] = seed;
+        
+        return;
     }
 
     //
@@ -732,6 +688,10 @@ __kernel void db_atts(__global float4 *p,
     float2 adm_coord = fma((float2)(beta, alpha), adm_desc.s01, adm_desc.s45);
     float4 cd = read_imagef(adm_cd, sampler, adm_coord);
     float4 cm = read_imagef(adm_cm, sampler, adm_coord);
+
+//    if (i == 0) {
+//        printf("adm_coord = %5.2f\n", adm_coord.x);
+//    }
     
     //    RSTableDescriptionRecipInLnX  = 12,
     //    RSTableDescriptionRecipInLnY  = 13,
@@ -766,16 +726,17 @@ __kernel void db_atts(__global float4 *p,
 //    float4 dudt2 = Ta * ur2_norm_sq * cd;
 //    
 //    float4 dudt = 0.5f * (dudt1 + dudt2) + (float4)(0.0f, 0.0f, -9.8f, 0.0f);
-    
-    // bound the velocity
-//    if (length(vel.xy + dudt.xy * dt.xy) > length(vel_bg.xy)) {
-//        vel.xy = vel_bg.xy;
-//    } else {
-//        vel += dudt * dt;
-//    }
+//    float4 dw = radians((dt * Ta * 0.5f * (ur_norm_sq + ur2_norm_sq) * inv_inln) * cm);
 
     vel += dudt * dt;
     
+    // bound the velocity
+    if (length(vel.xy + dudt.xy * dt.xy) > 2.0 * length(vel_bg.xy)) {
+        vel.xy = vel_bg.xy;
+    } else {
+        vel += dudt * dt;
+    }
+
 //    if (length(vel) > length(vel_bg)) {
 //        printf("vel = [%5.2f %5.2f %5.2f %5.2f]  vel_bg = [%5.2f %5.2f %5.2f %5.2f]   %5.2f\n",
 //               vel.x, vel.y, vel.z, vel.w,
@@ -783,8 +744,7 @@ __kernel void db_atts(__global float4 *p,
 //               ur_norm_sq
 //               );
 //    }
-
-    //float4 dw = radians((dt * Ta * 0.5f * (ur_norm_sq + ur2_norm_sq) * inv_inln) * cm);
+    
     
     float4 c = cos(dw);
     float4 s = sin(dw);

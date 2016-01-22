@@ -138,7 +138,7 @@ ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path) {
     }
     
     #ifdef DEBUG
-    printf("%s    nb = %d    na = %d\n", h->data_path, h->data_grid->nb, h->data_grid->na);
+    printf("%s    nb = %d    na = %d\n", h->data_path, h->grid.nb, h->grid.na);
     #endif
     
     h->grid.b = (float *)malloc(h->grid.nb * sizeof(float));

@@ -173,7 +173,7 @@ RCSHandle *RCS_init_with_config_path(const RCSConfig config, const char *path) {
     }
     
     #ifdef DEBUG
-    printf("%s    na = %d    nb = %d\n", h->data_path, h->data_grid->na, h->data_grid->nb);
+    printf("%s    na = %d    nb = %d\n", h->data_path, h->grid->na, h->grid->nb);
     #endif
     
     h->grid->a = (float *)malloc(h->grid->na * sizeof(float));

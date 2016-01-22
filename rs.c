@@ -1228,16 +1228,21 @@ void RS_init_scat_pos(RSHandle *H) {
 		H->scat_vel[i].w = 0.0f;
 
         // At the reference
-//        H->scat_ori[i].x = 0.0f;
-//        H->scat_ori[i].y = 0.0f;
-//        H->scat_ori[i].z = 0.0f;
-//        H->scat_ori[i].w = 1.0f;
+        H->scat_ori[i].x = 0.0f;
+        H->scat_ori[i].y = 0.0f;
+        H->scat_ori[i].z = 0.0f;
+        H->scat_ori[i].w = 1.0f;
         
         // Facing the sky
+//        H->scat_ori[i].x =  0.0f;
+//        H->scat_ori[i].y = -0.707106781186547f;
+//        H->scat_ori[i].z =  0.0f;
+//        H->scat_ori[i].w =  0.707106781186548f;
         H->scat_ori[i].x =  0.0f;
-        H->scat_ori[i].y = -0.707106781186547f;
+        H->scat_ori[i].y = -0.7071;
         H->scat_ori[i].z =  0.0f;
-        H->scat_ori[i].w =  0.707106781186548f;
+        H->scat_ori[i].w =  0.7071;
+
 
         // Facing the beam
 //        H->scat_ori[i].x =  0.5f;
@@ -1392,6 +1397,11 @@ void RS_init_scat_pos(RSHandle *H) {
 
 #pragma mark -
 #pragma mark Properties
+
+void RS_set_concept(RSHandle *H, RSSimluationConcept c) {
+    H->sim_concept = c;
+}
+
 
 void RS_set_prt(RSHandle *H, const float prt) {
 	H->params.prt = prt;
@@ -3617,30 +3627,30 @@ void RS_advance_time(RSHandle *H) {
 
     for (i = 0; i < H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
-
-            bg_atts_kernel(&H->worker[i].ndrange_scat[0],
-                           (cl_float4 *)H->worker[i].scat_pos,
-                           (cl_float4 *)H->worker[i].scat_vel,
-                           (cl_float4 *)H->worker[i].scat_att,
-                           (cl_uint4 *)H->worker[i].scat_rnd,
-                           (cl_image)H->worker[i].vel[v],
-                           H->worker[i].vel_desc,
-                           (cl_float *)H->worker[i].angular_weight,
-                           H->worker[i].angular_weight_desc,
-                           H->sim_desc);
-
-//            el_atts_kernel(&H->worker[i].ndrange_scat[0],
-//                           (cl_float4 *)H->worker[i].scat_pos,
-//                           (cl_float4 *)H->worker[i].scat_vel,
-//                           (cl_float4 *)H->worker[i].scat_att,
-//                           (cl_float4 *)H->worker[i].scat_sig,
-//                           (cl_uint4 *)H->worker[i].scat_rnd,
-//                           (cl_image)H->worker[i].vel[v],
-//                           H->worker[i].vel_desc,
-//                           (cl_float *)H->worker[i].angular_weight,
-//                           H->worker[i].angular_weight_desc,
-//                           H->sim_desc);
-
+            if (H->sim_concept & RSSimluationConceptDraggedBackground) {
+                el_atts_kernel(&H->worker[i].ndrange_scat[0],
+                               (cl_float4 *)H->worker[i].scat_pos,
+                               (cl_float4 *)H->worker[i].scat_vel,
+                               (cl_float4 *)H->worker[i].scat_att,
+                               (cl_float4 *)H->worker[i].scat_sig,
+                               (cl_uint4 *)H->worker[i].scat_rnd,
+                               (cl_image)H->worker[i].vel[v],
+                               H->worker[i].vel_desc,
+                               (cl_float *)H->worker[i].angular_weight,
+                               H->worker[i].angular_weight_desc,
+                               H->sim_desc);
+            } else {
+                bg_atts_kernel(&H->worker[i].ndrange_scat[0],
+                               (cl_float4 *)H->worker[i].scat_pos,
+                               (cl_float4 *)H->worker[i].scat_vel,
+                               (cl_float4 *)H->worker[i].scat_att,
+                               (cl_uint4 *)H->worker[i].scat_rnd,
+                               (cl_image)H->worker[i].vel[v],
+                               H->worker[i].vel_desc,
+                               (cl_float *)H->worker[i].angular_weight,
+                               H->worker[i].angular_weight_desc,
+                               H->sim_desc);
+            }
 //            scat_clr_kernel(&H->worker[i].ndrange_scat[0],
 //							(cl_float4 *)H->worker[i].scat_clr,
 //							(cl_float4 *)H->worker[i].scat_att,
@@ -3720,8 +3730,11 @@ void RS_advance_time(RSHandle *H) {
         
         // Background
         //printf("H->worker[%d].species_population[0] = %d from %d --> background\n", i, (int)H->worker[i].species_population[0], (int)H->worker[i].species_origin[0]);
-        //clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_bg_atts, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i][0]);
-        clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->species_origin[0], &C->species_population[0], &local_item_size, 0, NULL, &events[i][0]);
+        if (H->sim_concept & RSSimluationConceptDraggedBackground) {
+            clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->species_origin[0], &C->species_population[0], &local_item_size, 0, NULL, &events[i][0]);
+        } else {
+            clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_bg_atts, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i][0]);
+        }
         
         // Debris type
         for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {

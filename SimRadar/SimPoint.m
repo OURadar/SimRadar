@@ -85,13 +85,6 @@
         if (reportProgress) {
             [delegate progressUpdated:3.0 message:[NSString stringWithFormat:@"LES @ %s", LES_data_path(L)]];
         }
-        //        if (reportProgress) {
-        //            [delegate progressUpdated:3.5 message:[NSString stringWithFormat:@"ADM @ %s", ADM_data_path(A)]];
-        //        }
-        //        if (reportProgress) {
-        //            [delegate progressUpdated:4.0 message:[NSString stringWithFormat:@"RCS @ %s", RCS_data_path(L)]];
-        //        }
-        
 
 		#ifdef DEBUG
 		RS_set_verbosity(S, 3);
@@ -161,7 +154,9 @@
                             3.42e3, 4.04e3, 30.0f,                // Range
                             -7.0f, 7.0f, 1.0f,                    // Azimuth
                             0.0f, 12.0f, 1.0f);                   // Elevation
+
             cl_float4 vel = (cl_float4){0.0f, 0.0f, 0.0f, 0.0f};
+            
             RS_set_vel_data_to_uniform(S, vel);
         }
     }

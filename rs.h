@@ -262,6 +262,12 @@ enum {
     RS_GPU_VENDOR_AMD
 };
 
+typedef uint32_t RSSimluationConcept;
+enum {
+    RSSimluationConceptNull                  = 0,
+    RSSimluationConceptDraggedBackground     = 1,
+    RSSimluationConceptBoundedDebrisVelocity = 1 << 1
+};
 
 //
 //
@@ -375,6 +381,7 @@ typedef struct _rs_handle {
 	size_t                 sim_toc;
 	RSfloat                sim_time;
     cl_float16             sim_desc;
+    RSSimluationConcept    sim_concept;
 
     // Table related variables
     uint32_t               vel_idx;
@@ -468,6 +475,8 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint group_
 								   const float range_start, const float range_delta, const unsigned int range_count);
 #pragma mark -
 #pragma mark Radar and Simulation Parameters
+
+void RS_set_concept(RSHandle *H, RSSimluationConcept c);
 
 void RS_set_prt(RSHandle *H, const float prt);
 void RS_set_density(RSHandle *H, const float density);
