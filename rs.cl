@@ -2,7 +2,8 @@ enum {
     RSTableSpacingUniform          = 0,
     RSTableSpacingStretchedX       = 1,
     RSTableSpacingStretchedY       = 1 << 1,
-    RSTableSpacingStretchedZ       = 1 << 2
+    RSTableSpacingStretchedZ       = 1 << 2,
+    RSTableSpacingStretchedXYZ     = RSTableSpacingStretchedX | RSTableSpacingStretchedY | RSTableSpacingStretchedZ
 };
 
 enum RSSimulationParameter {
@@ -257,7 +258,7 @@ float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16
     const float s7 = wind_desc.s7;
     const uint grid_spacing = *(uint *)&s7;
 
-    if (grid_spacing & RSTableSpacingStretchedX && grid_spacing & RSTableSpacingStretchedY && grid_spacing & RSTableSpacingStretchedZ) {
+    if (grid_spacing == RSTableSpacingStretchedXYZ) {
         // Background wind table is staggered for all dimensions
         //    RSStaggeredTableDescriptionBaseChangeX     =  0,
         //    RSStaggeredTableDescriptionBaseChangeY     =  1,
@@ -448,8 +449,8 @@ float4 compute_rcs(float4 ori, __read_only image2d_t rcs_real, __read_only image
     float4 imag = read_imagef(rcs_imag, sampler, rcs_coord);
     
     // For gamma projection
-    float cg = cos(gamma);
-    float sg = sin(gamma);
+    float cg;
+    float sg = sincos(gamma, &cg);
     
     //    >> Tinv * S * T
     //

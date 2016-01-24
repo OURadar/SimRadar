@@ -252,7 +252,8 @@ enum {
     RSTableSpacingUniform          = 0,
     RSTableSpacingStretchedX       = 1,
     RSTableSpacingStretchedY       = 1 << 1,
-    RSTableSpacingStretchedZ       = 1 << 2
+    RSTableSpacingStretchedZ       = 1 << 2,
+    RSTableSpacingStretchedXYZ     = RSTableSpacingStretchedX | RSTableSpacingStretchedY | RSTableSpacingStretchedZ
 };
 
 enum {
