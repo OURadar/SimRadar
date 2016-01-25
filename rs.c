@@ -964,7 +964,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
 	
 	RS_set_range_weight_to_triangle(H, 250.0f);
 	
-	RS_set_angular_weight_to_standard(H, 2.0f / 180.0f * M_PI);
+	RS_set_angular_weight_to_standard(H, 1.0f / 180.0f * M_PI);
 	//RS_set_angular_weight_to_double_cone(H, 2.0f / 180.0f * M_PI);
 	
 	H->verb = user_verb;
@@ -2038,12 +2038,6 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
             fprintf(stderr, "%s : RS : Error creating range weight table on CL device.\n", now());
             return;
         }
-        // Copy over to CL worker. I know it's a bit wasteful but the codes are easier to ready this way.
-        H->worker[i].range_weight_desc.s[RSTable1DDescriptionScale] = table.dx;
-        H->worker[i].range_weight_desc.s[RSTable1DDescriptionOrigin] = table.x0;
-        H->worker[i].range_weight_desc.s[RSTable1DDescriptionMaximum] = table.xm;
-        H->worker[i].range_weight_desc.s3 = 0.0f;
-        H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
     }
 
 #else
@@ -2067,16 +2061,19 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
         if (H->verb > 2) {
             printf("%s : RS : worker[%d] created range weight @ %p.\n", now(), i, H->worker[i].range_weight);
         }
-        // Copy over to CL worker. I know it's a bit wasteful but the codes are easier to ready this way.
+    }
+
+#endif
+
+    for (i = 0; i < H->num_workers; i++) {
+        // Copy over to CL workers. A bit wasteful but the codes are easier to ready this way.
         H->worker[i].range_weight_desc.s[RSTable1DDescriptionScale] = table.dx;
         H->worker[i].range_weight_desc.s[RSTable1DDescriptionOrigin] = table.x0;
         H->worker[i].range_weight_desc.s[RSTable1DDescriptionMaximum] = table.xm;
         H->worker[i].range_weight_desc.s3 = 0.0f;
         H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
     }
-
-#endif
-
+    
     RS_table_free(table);
 
 }
@@ -2146,12 +2143,16 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
     }
 		
 #endif
-    // Copy over to CL worker. I know it's a bit wasteful but the codes are easier to ready this way.
-    H->worker[i].angular_weight_desc.s[RSTable1DDescriptionScale] = table.dx;
-    H->worker[i].angular_weight_desc.s[RSTable1DDescriptionOrigin] = table.x0;
-    H->worker[i].angular_weight_desc.s[RSTable1DDescriptionMaximum] = table.xm;
-    H->worker[i].angular_weight_desc.s3 = 0.0f;
-    H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
+    
+    // Copy over to CL workers. A bit wasteful but the codes are easier to ready this way.
+    for (i = 0; i < H->num_workers; i++) {
+        H->worker[i].angular_weight_desc.s[RSTable1DDescriptionScale] = table.dx;
+        H->worker[i].angular_weight_desc.s[RSTable1DDescriptionOrigin] = table.x0;
+        H->worker[i].angular_weight_desc.s[RSTable1DDescriptionMaximum] = table.xm;
+        H->worker[i].angular_weight_desc.s3 = 0.0f;
+        H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
+        printf("angular_weight_desc = %.3f %.3f %.3f\n", H->worker[i].angular_weight_desc.s0, H->worker[i].angular_weight_desc.s1, H->worker[i].angular_weight_desc.s2);
+    }
 
     RS_table_free(table);
 }
@@ -2165,7 +2166,7 @@ void RS_set_angular_weight_to_double_cone(RSHandle *H, float beamwidth_rad) {
 
 
 void RS_set_angular_weight_to_standard(RSHandle *H, float beamwidth_rad) {
-	unsigned int n = 40;
+	const unsigned int n = 40;
 	float a;
 	float b = 1.27f * M_PI / beamwidth_rad;
 	float c;

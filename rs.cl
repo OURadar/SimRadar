@@ -799,8 +799,7 @@ __kernel void db_atts(__global float4 *p,
     if (is_outside) {
         uint4 seed = y[i];
 
-        //pos = (float4)((fma(rand(&seed), sim_desc.hi.s4567, sim_desc.hi.s0123)).xyz, 1.0f);
-        pos = (float4)((fma(rand(&seed), sim_desc.hi.s4567, sim_desc.hi.s0123)).xy, 10.0f, 1.0f);
+        pos = (float4)((fma(rand(&seed), sim_desc.hi.s4567, sim_desc.hi.s0123)).xy, 3.0f, 1.0f);
 
         vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
         tum = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
@@ -1015,6 +1014,10 @@ __kernel void make_pulse_pass_1(__global float4 *out,
     // Derive the angular weight
     float scat_wa = compute_angular_weight(pos[i], angular_weight, angular_weight_desc, sim_desc);
     att[i].s3 = scat_wa;
+//    if (i == 0) {
+//        float theta = acos(dot(sim_desc.s012, normalize(pos[i].xyz)));
+//        printf("scat_wa = %.4e  for %.3v4f  beam %.4v4f  angle %.2f  %.4v4f\n", scat_wa, pos[i], sim_desc.s0123, theta, angular_weight_desc);
+//    }
     
     // Initialize the block of local memory to zeros
     for (k=0; k<range_count; k++) {
