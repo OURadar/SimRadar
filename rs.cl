@@ -1,4 +1,10 @@
-enum {
+enum RSTable1DDescrip {
+    RSTable1DDescriptionScale     = 0,
+    RSTable1DDescriptionOrigin    = 1,
+    RSTable1DDescriptionMaximum   = 2
+};
+
+enum RSTableSpacing {
     RSTableSpacingUniform          = 0,
     RSTableSpacingStretchedX       = 1,
     RSTableSpacingStretchedY       = 1 << 1,
@@ -25,43 +31,42 @@ enum RSSimulationParameter {
     RSSimulationParameterAgeIncrement  =  15  // PRT / vel_desc.tr
 };
 
-// These enums are for uniform grid
-enum {
-    RSTableDescriptionScaleX      =  0,
-    RSTableDescriptionScaleY      =  1,
-    RSTableDescriptionScaleZ      =  2,
-    RSTableDescriptionRefreshTime =  3,
-    RSTableDescriptionOriginX     =  4,
-    RSTableDescriptionOriginY     =  5,
-    RSTableDescriptionOriginZ     =  6,
-    RSTableDescription7           =  7,
-    RSTableDescriptionMaximumX    =  8,
-    RSTableDescriptionMaximumY    =  9,
-    RSTableDescriptionMaximumZ    = 10,
-    RSTableDescription11          = 11,
-    RSTableDescriptionRecipInLnX  = 12,
-    RSTableDescriptionRecipInLnY  = 13,
-    RSTableDescriptionRecipInLnZ  = 14,
-    RSTableDescriptionTachikawa   = 15,
+enum RSTable3DDescription {
+    RSTable3DDescriptionScaleX      =  0,
+    RSTable3DDescriptionScaleY      =  1,
+    RSTable3DDescriptionScaleZ      =  2,
+    RSTable3DDescriptionRefreshTime =  3,
+    RSTable3DDescriptionOriginX     =  4,
+    RSTable3DDescriptionOriginY     =  5,
+    RSTable3DDescriptionOriginZ     =  6,
+    RSTable3DDescription7           =  7,
+    RSTable3DDescriptionMaximumX    =  8,
+    RSTable3DDescriptionMaximumY    =  9,
+    RSTable3DDescriptionMaximumZ    = 10,
+    RSTable3DDescription11          = 11,
+    RSTable3DDescriptionRecipInLnX  = 12,
+    RSTable3DDescriptionRecipInLnY  = 13,
+    RSTable3DDescriptionRecipInLnZ  = 14,
+    RSTable3DDescriptionTachikawa   = 15,
 };
 
-enum {
-    RSStaggeredTableDescriptionBaseChangeX     =  0,
-    RSStaggeredTableDescriptionBaseChangeY     =  1,
-    RSStaggeredTableDescriptionBaseChangeZ     =  2,
-    RSStaggeredTableDescriptionRefreshTime     =  3,
-    RSStaggeredTableDescriptionPositionScaleX  =  4,
-    RSStaggeredTableDescriptionPositionScaleY  =  5,
-    RSStaggeredTableDescriptionPositionScaleZ  =  6,
-    RSStaggeredTableDescription7               =  7,
-    RSStaggeredTableDescriptionOffsetX         =  8,
-    RSStaggeredTableDescriptionOffsetY         =  9,
-    RSStaggeredTableDescriptionOffsetZ         = 10,
-    RSStaggeredTableDescription11              = 11,
-    RSStaggeredTableDescriptionRecipInLnX      = 12,
-    RSStaggeredTableDescriptionRecipInLnY      = 13,
-    RSStaggeredTableDescriptionRecipInLnZ      = 14,
-    RSStaggeredTableDescriptionTachikawa       = 15,
+enum RSTable3DStaggeredDescription {
+    RSTable3DStaggeredDescriptionBaseChangeX     =  0,
+    RSTable3DStaggeredDescriptionBaseChangeY     =  1,
+    RSTable3DStaggeredDescriptionBaseChangeZ     =  2,
+    RSTable3DStaggeredDescriptionRefreshTime     =  3,
+    RSTable3DStaggeredDescriptionPositionScaleX  =  4,
+    RSTable3DStaggeredDescriptionPositionScaleY  =  5,
+    RSTable3DStaggeredDescriptionPositionScaleZ  =  6,
+    RSTable3DStaggeredDescription7               =  7,
+    RSTable3DStaggeredDescriptionOffsetX         =  8,
+    RSTable3DStaggeredDescriptionOffsetY         =  9,
+    RSTable3DStaggeredDescriptionOffsetZ         = 10,
+    RSTable3DStaggeredDescription11              = 11,
+    RSTable3DStaggeredDescriptionRecipInLnX      = 12,
+    RSTable3DStaggeredDescriptionRecipInLnY      = 13,
+    RSTable3DStaggeredDescriptionRecipInLnZ      = 14,
+    RSTable3DStaggeredDescriptionTachikawa       = 15,
 };
 
 float4 rand(uint4 *seed);
@@ -260,42 +265,42 @@ float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16
 
     if (grid_spacing == RSTableSpacingStretchedXYZ) {
         // Background wind table is staggered for all dimensions
-        //    RSStaggeredTableDescriptionBaseChangeX     =  0,
-        //    RSStaggeredTableDescriptionBaseChangeY     =  1,
-        //    RSStaggeredTableDescriptionBaseChangeZ     =  2,
-        //    RSStaggeredTableDescriptionRefreshTime     =  3,
-        //    RSStaggeredTableDescriptionPositionScaleX  =  4,
-        //    RSStaggeredTableDescriptionPositionScaleY  =  5,
-        //    RSStaggeredTableDescriptionPositionScaleZ  =  6,
-        //    RSStaggeredTableDescription7               =  7,
-        //    RSStaggeredTableDescriptionOffsetX         =  8,
-        //    RSStaggeredTableDescriptionOffsetY         =  9,
-        //    RSStaggeredTableDescriptionOffsetZ         = 10,
-        //    RSStaggeredTableDescription11              = 11,
-        //    RSStaggeredTableDescriptionRecipInLnX      = 12,
-        //    RSStaggeredTableDescriptionRecipInLnY      = 13,
-        //    RSStaggeredTableDescriptionRecipInLnZ      = 14,
-        //    RSStaggeredTableDescriptionTachikawa       = 15,
+        //    RSTable3DStaggeredDescriptionBaseChangeX     =  0,
+        //    RSTable3DStaggeredDescriptionBaseChangeY     =  1,
+        //    RSTable3DStaggeredDescriptionBaseChangeZ     =  2,
+        //    RSTable3DStaggeredDescriptionRefreshTime     =  3,
+        //    RSTable3DStaggeredDescriptionPositionScaleX  =  4,
+        //    RSTable3DStaggeredDescriptionPositionScaleY  =  5,
+        //    RSTable3DStaggeredDescriptionPositionScaleZ  =  6,
+        //    RSTable3DStaggeredDescription7               =  7,
+        //    RSTable3DStaggeredDescriptionOffsetX         =  8,
+        //    RSTable3DStaggeredDescriptionOffsetY         =  9,
+        //    RSTable3DStaggeredDescriptionOffsetZ         = 10,
+        //    RSTable3DStaggeredDescription11              = 11,
+        //    RSTable3DStaggeredDescriptionRecipInLnX      = 12,
+        //    RSTable3DStaggeredDescriptionRecipInLnY      = 13,
+        //    RSTable3DStaggeredDescriptionRecipInLnZ      = 14,
+        //    RSTable3DStaggeredDescriptionTachikawa       = 15,
         float4 pos_rel = pos - (float4)(sim_desc.hi.s01 + 0.5f * sim_desc.hi.s45, 0.0f, 0.0f);
         return copysign(wind_desc.s0123, pos_rel) * log1p(wind_desc.s4567 * fabs(pos_rel)) + wind_desc.s89ab;
     } else if (grid_spacing == RSTableSpacingUniform) {
         // Background wind table is uniform for all dimensions
-        //    RSTableDescriptionScaleX      =  0,
-        //    RSTableDescriptionScaleY      =  1,
-        //    RSTableDescriptionScaleZ      =  2,
-        //    RSTableDescriptionRefreshTime =  3,
-        //    RSTableDescriptionOriginX     =  4,
-        //    RSTableDescriptionOriginY     =  5,
-        //    RSTableDescriptionOriginZ     =  6,
-        //    RSTableDescription7           =  7,
-        //    RSTableDescriptionMaximumX    =  8,
-        //    RSTableDescriptionMaximumY    =  9,
-        //    RSTableDescriptionMaximumZ    = 10,
-        //    RSTableDescription11          = 11,
-        //    RSTableDescriptionRecipInLnX  = 12,
-        //    RSTableDescriptionRecipInLnY  = 13,
-        //    RSTableDescriptionRecipInLnZ  = 14,
-        //    RSTableDescriptionTachikawa   = 15,
+        //    RSTable3DDescriptionScaleX      =  0,
+        //    RSTable3DDescriptionScaleY      =  1,
+        //    RSTable3DDescriptionScaleZ      =  2,
+        //    RSTable3DDescriptionRefreshTime =  3,
+        //    RSTable3DDescriptionOriginX     =  4,
+        //    RSTable3DDescriptionOriginY     =  5,
+        //    RSTable3DDescriptionOriginZ     =  6,
+        //    RSTable3DDescription7           =  7,
+        //    RSTable3DDescriptionMaximumX    =  8,
+        //    RSTable3DDescriptionMaximumY    =  9,
+        //    RSTable3DDescriptionMaximumZ    = 10,
+        //    RSTable3DDescription11          = 11,
+        //    RSTable3DDescriptionRecipInLnX  = 12,
+        //    RSTable3DDescriptionRecipInLnY  = 13,
+        //    RSTable3DDescriptionRecipInLnZ  = 14,
+        //    RSTable3DDescriptionTachikawa   = 15,
         return fma(pos, wind_desc.s0123, wind_desc.s4567);
     }
     return (float4)(0.0f, 0.0f, 0.0f, 0.0f);
@@ -342,7 +347,7 @@ float4 compute_dudt_dwdt(float4 *dwdt, const float4 vel, const float4 vel_bg, co
     //
     // derive alpha & beta for ADM table lookup ---------------------------------
     //
-    float alpha, beta, gamma;
+    float alpha, beta;
     
     float4 ur = vel_bg - vel;
     
@@ -372,10 +377,10 @@ float4 compute_dudt_dwdt(float4 *dwdt, const float4 vel, const float4 vel_bg, co
     //        printf("adm_coord = %5.2f\n", adm_coord.x);
     //    }
     
-    //    RSTableDescriptionRecipInLnX  = 12,
-    //    RSTableDescriptionRecipInLnY  = 13,
-    //    RSTableDescriptionRecipInLnZ  = 14,
-    //    RSTableDescriptionTachikawa   = 15,
+    //    RSTable3DDescriptionRecipInLnX  = 12,
+    //    RSTable3DDescriptionRecipInLnY  = 13,
+    //    RSTable3DDescriptionRecipInLnZ  = 14,
+    //    RSTable3DDescriptionTachikawa   = 15,
     const float Ta = adm_desc.sf;
     const float4 inv_inln = (float4)(adm_desc.scde, 0.0f);
     
@@ -533,8 +538,6 @@ __kernel void bg_atts(__global float4 *p,
                       __global uint4 *y,
                       __read_only image3d_t wind_uvw,
                       const float16 wind_desc,
-                      __constant float *angular_weight,
-                      const float4 angular_weight_desc,
                       const float16 sim_desc)
 {
 
@@ -598,7 +601,7 @@ __kernel void bg_atts(__global float4 *p,
     // Range of the point
     aux.s0 = length(pos.xyz);
 
-    aux.s3 = compute_angular_weight(pos, angular_weight, angular_weight_desc, sim_desc);
+    // aux.s3 = compute_angular_weight(pos, angular_weight, angular_weight_desc, sim_desc);
     
     p[i] = pos;
     v[i] = vel;
@@ -614,8 +617,6 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
                       __global uint4 *y,                   // 128-bit random seed (4 x 32-bit)
                       __read_only image3d_t wind_uvw,
                       const float16 wind_desc,
-                      __constant float *angular_weight,
-                      const float4 angular_weight_desc,
                       const float16 sim_desc)
 {
     
@@ -724,7 +725,6 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
     // Range of the point
     aux.s0 = length(pos.xyz);
     //aux.s1 = aux.s1 + sim_desc.sf;
-    aux.s3 = compute_angular_weight(pos, angular_weight, angular_weight_desc, sim_desc);
     
     const float wav_num = M_PI_F * 4.0f * native_recip(0.03f);  // 4 * PI / lambda
 
@@ -762,8 +762,6 @@ __kernel void db_atts(__global float4 *p,
                       __read_only image2d_t rcs_real,
                       __read_only image2d_t rcs_imag,
                       const float16 rcs_desc,
-                      __constant float *angular_weight,
-                      const float4 angular_weight_desc,
                       const float16 sim_desc)
 {
     const unsigned int i = get_global_id(0);
@@ -863,10 +861,9 @@ __kernel void db_atts(__global float4 *p,
     // - s0 = range of the point
     // - s1 = age
     // - s2 =
-    // - s3 = angular weight
+    // - s3 = angular weight (make_pulse_pass_1)
     aux.s0 = length(pos.xyz);
     aux.s1 = aux.s1 + sim_desc.sf;
-    aux.s3 = compute_angular_weight(pos, angular_weight, angular_weight_desc, sim_desc);
 
     const float wav_num = M_PI_F * 4.0f * native_recip(0.03f);  // 4 * PI / lambda
 
@@ -950,6 +947,7 @@ __kernel void scat_clr_dsd(__global float4 *c,
 
 //
 // out - output
+// pos - position
 // sig - signal
 // att - attributes
 // shared - local memory space __local space (64 kB max)
@@ -963,19 +961,34 @@ __kernel void scat_clr_dsd(__global float4 *c,
 // group_count - number of parallel groups
 // n - last element (number of scatter bodies)
 //
+//__kernel void make_pulse_pass_1(__global float4 *out,
+//                                __global const float4 *sig,
+//                                __global const float4 *att,
+//                                __local float4 *shared,
+//                                __constant float *weight_table,
+//                                const float table_xs,
+//                                const float table_x0,
+//                                const float table_xm,
+//                                const float range_start,
+//                                const float range_delta,
+//                                const unsigned int range_count,
+//                                const unsigned int group_count,
+//                                const unsigned int n)
 __kernel void make_pulse_pass_1(__global float4 *out,
-                                __global const float4 *sig,
-                                __global const float4 *att,
+                                __global float4 *pos,
+                                __global float4 *sig,
+                                __global float4 *att,
                                 __local float4 *shared,
-                                __constant float *weight_table,
-                                const float table_xs,
-                                const float table_x0,
-                                const float table_xm,
+                                __constant float *range_weight,
+                                const float4 range_weight_desc,
+                                __constant float *angular_weight,
+                                const float4 angular_weight_desc,
                                 const float range_start,
                                 const float range_delta,
                                 const unsigned int range_count,
                                 const unsigned int group_count,
-                                const unsigned int n)
+                                const unsigned int n,
+                                const float16 sim_desc)
 {
     const float4 zero = {0.0f, 0.0f, 0.0f, 0.0f};
     const unsigned int group_id = get_group_id(0);
@@ -984,8 +997,11 @@ __kernel void make_pulse_pass_1(__global float4 *out,
     const unsigned int group_stride = 2 * local_size;
     const unsigned int local_stride = group_stride * group_count;
     
-    const float4 table_xs_4 = (float4)(table_xs, table_xs, table_xs, table_xs);
-    const float4 table_x0_4 = (float4)(table_x0, table_x0, table_x0, table_x0) + (float4)(0.0f, 1.0f, 0.0f, 1.0f);
+//    const float4 table_xs_4 = (float4)(table_xs, table_xs, table_xs, table_xs);
+//    const float4 table_x0_4 = (float4)(table_x0, table_x0, table_x0, table_x0) + (float4)(0.0f, 1.0f, 0.0f, 1.0f);
+    const float4 table_xs_4 = (float4)(range_weight_desc.s0, range_weight_desc.s0, range_weight_desc.s0, range_weight_desc.s0);
+    const float4 table_x0_4 = (float4)(range_weight_desc.s1, range_weight_desc.s1, range_weight_desc.s1, range_weight_desc.s1) + (float4)(0.0f, 1.0f, 0.0f, 1.0f);
+    
     const float4 dr = (float4)(range_delta, range_delta, range_delta, range_delta);
     
     float r_a;
@@ -1000,6 +1016,10 @@ __kernel void make_pulse_pass_1(__global float4 *out,
     
     unsigned int k;
     unsigned int i = group_id * group_stride + local_id;
+    
+    // Derive the angular weight
+    float scat_wa = compute_angular_weight(pos[i], angular_weight, angular_weight_desc, sim_desc);
+    att[i].s3 = scat_wa;
     
     // Initialize the block of local memory to zeros
     for (k=0; k<range_count; k++) {
@@ -1021,6 +1041,7 @@ __kernel void make_pulse_pass_1(__global float4 *out,
     // Why do it like this rather than the plain C code? Keep the CU's SIMD processors busy.
     
     // att.s0 - range
+    // att.s3 - angle from pointing beam
     
     while (i < n) {
         a = sig[i];
@@ -1031,28 +1052,16 @@ __kernel void make_pulse_pass_1(__global float4 *out,
         for (k=0; k<range_count; k++) {
             float4 dr_from_center = (float4)(r_a, r_a, r_b, r_b) - r;
             
-            fidx_raw = clamp(fma(dr_from_center, table_xs_4, table_x0_4), 0.0f, table_xm);     // Index [0 ... xm] in float
-            fidx_dec = fract(fidx_raw, &fidx_int);                                             // The integer and decimal fraction
+            fidx_raw = clamp(fma(dr_from_center, table_xs_4, table_x0_4), 0.0f, range_weight_desc.s2);     // Index [0 ... xm] in float
+            fidx_dec = fract(fidx_raw, &fidx_int);                                                         // The integer and decimal fraction
             iidx_int = convert_uint4(fidx_int);
             
-            float2 w2 = mix((float2)(weight_table[iidx_int.s0], weight_table[iidx_int.s2]),
-                            (float2)(weight_table[iidx_int.s1], weight_table[iidx_int.s3]),
+            float2 w2 = mix((float2)(range_weight[iidx_int.s0], range_weight[iidx_int.s2]),
+                            (float2)(range_weight[iidx_int.s1], range_weight[iidx_int.s3]),
                             fidx_dec.s02);
             
-//            // Range attenuation
-//            float2 atten = native_recip((float2)(r_a, r_b));
-//            atten *= atten;  // ()^-2
-//            atten *= atten;  // ()^-4
-//
-//            w2 *= atten;
-//            
-//            // Return phase due to two-way path
-//            float2 phase = (float2)(r_a, r_b) * wave_num;
-//            float2 cos_phase = cos(phase);
-//            float2 sin_phase = sin(phase);
-//            
-//            a = complex_multiply(a, (float4)(cos_phase.s0, sin_phase.s0, cos_phase.s0, sin_phase.s0));
-//            b = complex_multiply(b, (float4)(cos_phase.s1, sin_phase.s1, cos_phase.s1, sin_phase.s1));
+            // Multiple range weight to angular weight
+            w2 *= (float2)(att[i].s3, att[i + local_size].s3);
             
             w_a = (float4)(w2.s0, w2.s0, w2.s0, w2.s0);
             w_b = (float4)(w2.s1, w2.s1, w2.s1, w2.s1);
@@ -1147,7 +1156,6 @@ __kernel void make_pulse_pass_1(__global float4 *out,
             *o++ = shared[k];
         }
     }
-    
 }
 
 

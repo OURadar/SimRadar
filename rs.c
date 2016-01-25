@@ -331,7 +331,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     sim_desc.s[RSSimulationParameterBoundOriginZ] = H->domain.origin.z;
     sim_desc.s[RSSimulationParameterPRT]          = H->params.prt;
     sim_desc.s[RSSimulationParameterDebrisCount]  = 0.0f;
-    sim_desc.s[RSSimulationParameterAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTableDescriptionRefreshTime];
+    sim_desc.s[RSSimulationParameterAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTable3DDescriptionRefreshTime];
 
     ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
@@ -340,16 +340,12 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
-    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentAngularWeight,                 sizeof(cl_mem),     &C->angular_weight);
-    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentAngularWeightDescription,      sizeof(cl_float4),  &C->angular_weight_desc);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_bg_atts().\n", now());
         exit(EXIT_FAILURE);
     }
 
-    //    ret |= clSetKernelArg(C->kern_el_atts, RSDraggedSpheroidAttributeKernelArgumentOrientation,                   sizeof(cl_mem),     &C->scat_ori);
-    //    ret |= clSetKernelArg(C->kern_el_atts, RSDraggedSpheroidAttributeKernelArgumentTumble,                        sizeof(cl_mem),     &C->scat_tum);
     ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
@@ -358,8 +354,6 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
-    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentAngularWeight,                 sizeof(cl_mem),     &C->angular_weight);
-    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentAngularWeightDescription,      sizeof(cl_float4),  &C->angular_weight_desc);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_el_atts().\n", now());
@@ -382,8 +376,6 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &C->rcs_real[0]);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[0]);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[0]);
-	ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAngularWeight,                 sizeof(cl_mem),     &C->angular_weight);
-	ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAngularWeightDescription,      sizeof(cl_float4),  &C->angular_weight_desc);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_db_atts().\n", now());
@@ -420,18 +412,20 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	}
 	ret = CL_SUCCESS;
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 0, sizeof(cl_mem),                         &C->work);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 1, sizeof(cl_mem),                         &C->scat_sig);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 2, sizeof(cl_mem),                         &C->scat_att);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 3, C->make_pulse_params.local_mem_size[0], NULL);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 4, sizeof(cl_mem),                         &C->range_weight);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 5, sizeof(float),                          &C->range_weight_desc.s0);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 6, sizeof(float),                          &C->range_weight_desc.s1);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 7, sizeof(float),                          &C->range_weight_desc.s2);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 8, sizeof(float),                          &C->make_pulse_params.range_start);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 9, sizeof(float),                          &C->make_pulse_params.range_delta);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 10, sizeof(unsigned int),                  &C->make_pulse_params.range_count);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 11, sizeof(unsigned int),                  &C->make_pulse_params.group_counts[0]);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 12, sizeof(unsigned int),                  &C->make_pulse_params.entry_counts[0]);
+    ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 1, sizeof(cl_mem),                         &C->scat_pos);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 2, sizeof(cl_mem),                         &C->scat_sig);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 3, sizeof(cl_mem),                         &C->scat_att);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 4, C->make_pulse_params.local_mem_size[0], NULL);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 5, sizeof(cl_mem),                         &C->range_weight);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 6, sizeof(cl_float4),                      &C->range_weight_desc);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 7, sizeof(cl_mem),                         &C->angular_weight);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 8, sizeof(cl_float4),                      &C->angular_weight_desc);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 9, sizeof(float),                          &C->make_pulse_params.range_start);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 10, sizeof(float),                         &C->make_pulse_params.range_delta);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 11, sizeof(unsigned int),                  &C->make_pulse_params.range_count);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 12, sizeof(unsigned int),                  &C->make_pulse_params.group_counts[0]);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 13, sizeof(unsigned int),                  &C->make_pulse_params.entry_counts[0]);
+    ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 14, sizeof(cl_float16),                    &sim_desc);
 	if (ret != CL_SUCCESS) {
 		fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel make_pulse_pass_1().\n", now());
 		exit(EXIT_FAILURE);
@@ -1336,7 +1330,7 @@ void RS_init_scat_pos(RSHandle *H) {
     H->sim_desc.s[RSSimulationParameterBoundOriginZ] = H->domain.origin.z;
     H->sim_desc.s[RSSimulationParameterPRT] = H->params.prt;
     H->sim_desc.s[RSSimulationParameterDebrisCount] = H->species_population[0];
-    H->sim_desc.s[RSSimulationParameterAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTableDescriptionRefreshTime];
+    H->sim_desc.s[RSSimulationParameterAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTable3DDescriptionRefreshTime];
 
     // This part should be moved to setting ADM
 //    for (k = 0; k < H->adm_count; k++) {
@@ -1383,10 +1377,10 @@ void RS_init_scat_pos(RSHandle *H) {
 //        }
 //        
 //        for (i = 0; i < H->num_workers; i++) {
-//            H->worker[i].adm_desc[k].s[RSTableDescriptionRecipInLnX] = H->inv_inln.x;
-//            H->worker[i].adm_desc[k].s[RSTableDescriptionRecipInLnY] = H->inv_inln.y;
-//            H->worker[i].adm_desc[k].s[RSTableDescriptionRecipInLnZ] = H->inv_inln.z;
-//            H->worker[i].adm_desc[k].s[RSTableDescriptionTachikawa] = H->Ta;
+//            H->worker[i].adm_desc[k].s[RSTable3DDescriptionRecipInLnX] = H->inv_inln.x;
+//            H->worker[i].adm_desc[k].s[RSTable3DDescriptionRecipInLnY] = H->inv_inln.y;
+//            H->worker[i].adm_desc[k].s[RSTable3DDescriptionRecipInLnZ] = H->inv_inln.z;
+//            H->worker[i].adm_desc[k].s[RSTable3DDescriptionTachikawa] = H->Ta;
 //        }
 //    }
 }
@@ -1592,10 +1586,11 @@ void RS_set_scan_box(RSHandle *H,
                1e-3*r_lo, 1e-3*r_hi,
                el_lo, el_hi,
                az_lo, az_hi);
-		printf("%s : RS :             @ X:[ %.2f ~ %.2f ] m   Y:[ %.2f ~ %.2f ] m   Z:[ %.2f ~ %.2f ] m   ( %.2f m x %.2f m x %.2f m )\n", now(),
+		printf("%s : RS :             @ X:[ %.2f ~ %.2f ] m   Y:[ %.2f ~ %.2f ] m   Z:[ %.2f ~ %.2f ] m\n", now(),
 			   xmin, xmax,
 			   ymin, ymax,
-               zmin, zmax,
+               zmin, zmax);
+        printf("%s : RS :               = ( %.2f m x %.2f m x %.2f m )\n", now(),
                xmax - xmin, ymax - ymin, zmax - zmin);
         printf("%s : RS : nvol = %s.%02d\n", now(), commaint(floor(nvol)), (int)(100 * (nvol - floor(nvol))));
 		printf("%s : RS : Suggested %s bodies\n", now(), commaint(H->num_scats));
@@ -2105,9 +2100,9 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
             return;
         }
         // Copy over to CL worker. I know it's a bit wasteful but the codes are easier to ready this way.
-        H->worker[i].range_weight_desc.s0 = table.dx;
-        H->worker[i].range_weight_desc.s1 = table.x0;
-        H->worker[i].range_weight_desc.s2 = table.xm;
+        H->worker[i].range_weight_desc.s[RSTable1DDescriptionScale] = table.dx;
+        H->worker[i].range_weight_desc.s[RSTable1DDescriptionOrigin] = table.x0;
+        H->worker[i].range_weight_desc.s[RSTable1DDescriptionMaximum] = table.xm;
         H->worker[i].range_weight_desc.s3 = 0.0f;
         H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
     }
@@ -2134,9 +2129,9 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
             printf("%s : RS : worker[%d] created range weight @ %p.\n", now(), i, H->worker[i].range_weight);
         }
         // Copy over to CL worker. I know it's a bit wasteful but the codes are easier to ready this way.
-        H->worker[i].range_weight_desc.s0 = table.dx;
-        H->worker[i].range_weight_desc.s1 = table.x0;
-        H->worker[i].range_weight_desc.s2 = table.xm;
+        H->worker[i].range_weight_desc.s[RSTable1DDescriptionScale] = table.dx;
+        H->worker[i].range_weight_desc.s[RSTable1DDescriptionOrigin] = table.x0;
+        H->worker[i].range_weight_desc.s[RSTable1DDescriptionMaximum] = table.xm;
         H->worker[i].range_weight_desc.s3 = 0.0f;
         H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
     }
@@ -2186,12 +2181,6 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
             fprintf(stderr, "%s : RS : Error creating angular weight table on CL device.\n", now());
             return;
         }
-        // Copy over to CL worker. I know it's a bit wasteful but the codes are easier to ready this way.
-        H->worker[i].angular_weight_desc.s0 = table.dx;
-        H->worker[i].angular_weight_desc.s1 = table.x0;
-        H->worker[i].angular_weight_desc.s2 = table.xm;
-        H->worker[i].angular_weight_desc.s3 = 0.0f;
-        H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
     }
 		
 #else
@@ -2215,15 +2204,15 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
         if (H->verb > 1) {
             printf("%s : RS : worker[%d] created angular weight.\n", now(), i);
         }
-        // Copy over to CL worker. I know it's a bit wasteful but the codes are easier to ready this way.
-        H->worker[i].angular_weight_desc.s0 = table.dx;
-        H->worker[i].angular_weight_desc.s1 = table.x0;
-        H->worker[i].angular_weight_desc.s2 = table.xm;
-        H->worker[i].angular_weight_desc.s3 = 0.0f;
-        H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
     }
 		
 #endif
+    // Copy over to CL worker. I know it's a bit wasteful but the codes are easier to ready this way.
+    H->worker[i].angular_weight_desc.s[RSTable1DDescriptionScale] = table.dx;
+    H->worker[i].angular_weight_desc.s[RSTable1DDescriptionOrigin] = table.x0;
+    H->worker[i].angular_weight_desc.s[RSTable1DDescriptionMaximum] = table.xm;
+    H->worker[i].angular_weight_desc.s3 = 0.0f;
+    H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
 
     RS_table_free(table);
 }
@@ -2352,36 +2341,36 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 #endif
 
         // Copy over to CL worker
-        H->worker[i].vel_desc.s[RSStaggeredTableDescriptionFormat] = *(float *)&table.spacing; // Forced type cast so we are maintaining all 32-bits
-        //printf("%s : RS : %d / %.9f\n", now(), table.spacing, H->worker[i].vel_desc.s[RSStaggeredTableDescriptionFormat]);
+        H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionFormat] = *(float *)&table.spacing; // Forced type cast so we are maintaining all 32-bits
+        //printf("%s : RS : %d / %.9f\n", now(), table.spacing, H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionFormat]);
         if (table.spacing & RSTableSpacingStretchedX) {
-            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionBaseChangeX] = table.xs;      // "m" for stretched grid: m * log1p(n * pos.x) + o;
-            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionPositionScaleX] = table.xo;   // "n" for stretched grid: m * log1p(n * pos.y) + o;
-            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionOffsetX] = table.xm;          // "o" for stretched grid: m * log1p(n * pos.z) + o;
+            H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionBaseChangeX] = table.xs;      // "m" for stretched grid: m * log1p(n * pos.x) + o;
+            H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionPositionScaleX] = table.xo;   // "n" for stretched grid: m * log1p(n * pos.y) + o;
+            H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionOffsetX] = table.xm;          // "o" for stretched grid: m * log1p(n * pos.z) + o;
         } else {
-            H->worker[i].vel_desc.s[RSTableDescriptionScaleX] = table.xs;
-            H->worker[i].vel_desc.s[RSTableDescriptionOriginX] = table.xo;
-            H->worker[i].vel_desc.s[RSTableDescriptionMaximumX] = table.xm;
+            H->worker[i].vel_desc.s[RSTable3DDescriptionScaleX] = table.xs;
+            H->worker[i].vel_desc.s[RSTable3DDescriptionOriginX] = table.xo;
+            H->worker[i].vel_desc.s[RSTable3DDescriptionMaximumX] = table.xm;
         }
         if (table.spacing & RSTableSpacingStretchedY) {
-            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionBaseChangeY] = table.ys;
-            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionPositionScaleY] = table.yo;
-            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionOffsetY] = table.ym;
+            H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionBaseChangeY] = table.ys;
+            H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionPositionScaleY] = table.yo;
+            H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionOffsetY] = table.ym;
         } else {
-            H->worker[i].vel_desc.s[RSTableDescriptionScaleY] = table.ys;
-            H->worker[i].vel_desc.s[RSTableDescriptionOriginY] = table.yo;
-            H->worker[i].vel_desc.s[RSTableDescriptionMaximumY] = table.ym;
+            H->worker[i].vel_desc.s[RSTable3DDescriptionScaleY] = table.ys;
+            H->worker[i].vel_desc.s[RSTable3DDescriptionOriginY] = table.yo;
+            H->worker[i].vel_desc.s[RSTable3DDescriptionMaximumY] = table.ym;
         }
         if (table.spacing & RSTableSpacingStretchedZ) {
-            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionBaseChangeZ] = table.zs;
-            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionPositionScaleZ] = table.zo;
-            H->worker[i].vel_desc.s[RSStaggeredTableDescriptionOffsetZ] = table.zm;
+            H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionBaseChangeZ] = table.zs;
+            H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionPositionScaleZ] = table.zo;
+            H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionOffsetZ] = table.zm;
         } else {
-            H->worker[i].vel_desc.s[RSTableDescriptionScaleZ] = table.zs;
-            H->worker[i].vel_desc.s[RSTableDescriptionOriginZ] = table.zo;
-            H->worker[i].vel_desc.s[RSTableDescriptionMaximumZ] = table.zm;
+            H->worker[i].vel_desc.s[RSTable3DDescriptionScaleZ] = table.zs;
+            H->worker[i].vel_desc.s[RSTable3DDescriptionOriginZ] = table.zo;
+            H->worker[i].vel_desc.s[RSTable3DDescriptionMaximumZ] = table.zm;
         }
-        H->worker[i].vel_desc.s[RSTableDescriptionRefreshTime] = table.tr;
+        H->worker[i].vel_desc.s[RSTable3DDescriptionRefreshTime] = table.tr;
 
         H->worker[i].mem_size += (cl_uint)((table.xm + 1.0f) * (table.ym + 1.0f) * (table.zm + 1.0f)) * sizeof(cl_float4);
         
@@ -2594,9 +2583,9 @@ void RS_set_vel_data_to_cube125(RSHandle *H) {
 void RS_clear_vel_data(RSHandle *H) {
     // Technically the video RAM hasn't been freed but we will assume there is enough room and this memory gets freed when a new table comes in
     for (int i = 0; i < H->num_workers; i++) {
-        cl_uint nx = (cl_uint)H->worker[i].vel_desc.s[RSTableDescriptionMaximumX] + 1;
-        cl_uint ny = (cl_uint)H->worker[i].vel_desc.s[RSTableDescriptionMaximumY] + 1;
-        cl_uint nz = (cl_uint)H->worker[i].vel_desc.s[RSTableDescriptionMaximumZ] + 1;
+        cl_uint nx = (cl_uint)H->worker[i].vel_desc.s[RSTable3DDescriptionMaximumX] + 1;
+        cl_uint ny = (cl_uint)H->worker[i].vel_desc.s[RSTable3DDescriptionMaximumY] + 1;
+        cl_uint nz = (cl_uint)H->worker[i].vel_desc.s[RSTable3DDescriptionMaximumZ] + 1;
         H->worker[i].mem_size -= nx * ny * nz * H->vel_count * sizeof(cl_float4);
     }
     H->vel_count = 0;
@@ -2711,19 +2700,19 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
 #endif
         
         // Copy over to CL worker
-        H->worker[i].adm_desc[t].s[RSTableDescriptionScaleX] = cd.xs;
-        H->worker[i].adm_desc[t].s[RSTableDescriptionScaleY] = cd.ys;
-        H->worker[i].adm_desc[t].s[RSTableDescriptionScaleZ] = 0.0f;
-        H->worker[i].adm_desc[t].s[RSTableDescriptionOriginX] = cd.xo;
-        H->worker[i].adm_desc[t].s[RSTableDescriptionOriginY] = cd.yo;
-        H->worker[i].adm_desc[t].s[RSTableDescriptionOriginZ] = 0.0f;
-        H->worker[i].adm_desc[t].s[RSTableDescriptionMaximumX] = cd.xm;
-        H->worker[i].adm_desc[t].s[RSTableDescriptionMaximumY] = cd.ym;
-        H->worker[i].adm_desc[t].s[RSTableDescriptionMaximumZ] = 0.0f;
-        H->worker[i].adm_desc[t].s[RSTableDescriptionRecipInLnX] = H->adm_desc[t].phys.inv_inln_x;
-        H->worker[i].adm_desc[t].s[RSTableDescriptionRecipInLnY] = H->adm_desc[t].phys.inv_inln_y;
-        H->worker[i].adm_desc[t].s[RSTableDescriptionRecipInLnZ] = H->adm_desc[t].phys.inv_inln_z;
-        H->worker[i].adm_desc[t].s[RSTableDescriptionTachikawa] = H->adm_desc[t].phys.Ta;
+        H->worker[i].adm_desc[t].s[RSTable3DDescriptionScaleX] = cd.xs;
+        H->worker[i].adm_desc[t].s[RSTable3DDescriptionScaleY] = cd.ys;
+        H->worker[i].adm_desc[t].s[RSTable3DDescriptionScaleZ] = 0.0f;
+        H->worker[i].adm_desc[t].s[RSTable3DDescriptionOriginX] = cd.xo;
+        H->worker[i].adm_desc[t].s[RSTable3DDescriptionOriginY] = cd.yo;
+        H->worker[i].adm_desc[t].s[RSTable3DDescriptionOriginZ] = 0.0f;
+        H->worker[i].adm_desc[t].s[RSTable3DDescriptionMaximumX] = cd.xm;
+        H->worker[i].adm_desc[t].s[RSTable3DDescriptionMaximumY] = cd.ym;
+        H->worker[i].adm_desc[t].s[RSTable3DDescriptionMaximumZ] = 0.0f;
+        H->worker[i].adm_desc[t].s[RSTable3DDescriptionRecipInLnX] = H->adm_desc[t].phys.inv_inln_x;
+        H->worker[i].adm_desc[t].s[RSTable3DDescriptionRecipInLnY] = H->adm_desc[t].phys.inv_inln_y;
+        H->worker[i].adm_desc[t].s[RSTable3DDescriptionRecipInLnZ] = H->adm_desc[t].phys.inv_inln_z;
+        H->worker[i].adm_desc[t].s[RSTable3DDescriptionTachikawa] = H->adm_desc[t].phys.Ta;
         H->worker[i].mem_size += ((cl_uint)(cd.xm + 1.0f) * (cd.ym + 1.0f)) * 2 * sizeof(cl_float4);
     }
     H->adm_count++;
@@ -2807,8 +2796,8 @@ void RS_set_adm_data_to_unity(RSHandle *H) {
 void RS_clear_adm_data(RSHandle *H) {
     for (int i = 0; i < H->num_workers; i++) {
         for (int t = 0; t < H->adm_count; t++) {
-            cl_uint nx = (cl_uint)H->worker[i].adm_desc[t].s[RSTableDescriptionMaximumX] + 1;
-            cl_uint ny = (cl_uint)H->worker[i].adm_desc[t].s[RSTableDescriptionMaximumY] + 1;
+            cl_uint nx = (cl_uint)H->worker[i].adm_desc[t].s[RSTable3DDescriptionMaximumX] + 1;
+            cl_uint ny = (cl_uint)H->worker[i].adm_desc[t].s[RSTable3DDescriptionMaximumY] + 1;
             H->worker[i].mem_size -= nx * ny * 2 * sizeof(cl_float4);
         }
     }
@@ -2925,15 +2914,15 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
 #endif
         
         // Copy over to CL worker
-        H->worker[i].rcs_desc[t].s[RSTableDescriptionScaleX] = real.xs;
-        H->worker[i].rcs_desc[t].s[RSTableDescriptionScaleY] = real.ys;
-        H->worker[i].rcs_desc[t].s[RSTableDescriptionScaleZ] = 0.0f;
-        H->worker[i].rcs_desc[t].s[RSTableDescriptionOriginX] = real.xo;
-        H->worker[i].rcs_desc[t].s[RSTableDescriptionOriginY] = real.yo;
-        H->worker[i].rcs_desc[t].s[RSTableDescriptionOriginZ] = 0.0f;
-        H->worker[i].rcs_desc[t].s[RSTableDescriptionMaximumX] = real.xm;
-        H->worker[i].rcs_desc[t].s[RSTableDescriptionMaximumY] = real.ym;
-        H->worker[i].rcs_desc[t].s[RSTableDescriptionMaximumZ] = 0.0f;
+        H->worker[i].rcs_desc[t].s[RSTable3DDescriptionScaleX] = real.xs;
+        H->worker[i].rcs_desc[t].s[RSTable3DDescriptionScaleY] = real.ys;
+        H->worker[i].rcs_desc[t].s[RSTable3DDescriptionScaleZ] = 0.0f;
+        H->worker[i].rcs_desc[t].s[RSTable3DDescriptionOriginX] = real.xo;
+        H->worker[i].rcs_desc[t].s[RSTable3DDescriptionOriginY] = real.yo;
+        H->worker[i].rcs_desc[t].s[RSTable3DDescriptionOriginZ] = 0.0f;
+        H->worker[i].rcs_desc[t].s[RSTable3DDescriptionMaximumX] = real.xm;
+        H->worker[i].rcs_desc[t].s[RSTable3DDescriptionMaximumY] = real.ym;
+        H->worker[i].rcs_desc[t].s[RSTable3DDescriptionMaximumZ] = 0.0f;
         H->worker[i].mem_size += ((cl_uint)(real.xm + 1.0f) * (real.ym + 1.0f)) * 2 * sizeof(cl_float4);
     }
     H->rcs_count++;
@@ -3021,8 +3010,8 @@ void RS_set_rcs_data_to_unity(RSHandle *H) {
 void RS_clear_rcs_data(RSHandle *H) {
     for (int i = 0; i < H->num_workers; i++) {
         for (int t = 0; t < H->rcs_count; t++) {
-            cl_uint nx = (cl_uint)H->worker[i].rcs_desc[t].s[RSTableDescriptionMaximumX] + 1;
-            cl_uint ny = (cl_uint)H->worker[i].rcs_desc[t].s[RSTableDescriptionMaximumY] + 1;
+            cl_uint nx = (cl_uint)H->worker[i].rcs_desc[t].s[RSTable3DDescriptionMaximumX] + 1;
+            cl_uint ny = (cl_uint)H->worker[i].rcs_desc[t].s[RSTable3DDescriptionMaximumY] + 1;
             H->worker[i].mem_size -= nx * ny * 2 * sizeof(cl_float4);
         }
     }
@@ -3632,8 +3621,6 @@ void RS_advance_time(RSHandle *H) {
                                (cl_uint4 *)H->worker[i].scat_rnd,
                                (cl_image)H->worker[i].vel[v],
                                H->worker[i].vel_desc,
-                               (cl_float *)H->worker[i].angular_weight,
-                               H->worker[i].angular_weight_desc,
                                H->sim_desc);
             } else {
                 bg_atts_kernel(&H->worker[i].ndrange_scat[0],
@@ -3643,8 +3630,6 @@ void RS_advance_time(RSHandle *H) {
                                (cl_uint4 *)H->worker[i].scat_rnd,
                                (cl_image)H->worker[i].vel[v],
                                H->worker[i].vel_desc,
-                               (cl_float *)H->worker[i].angular_weight,
-                               H->worker[i].angular_weight_desc,
                                H->sim_desc);
             }
 //            scat_clr_kernel(&H->worker[i].ndrange_scat[0],
@@ -3676,8 +3661,6 @@ void RS_advance_time(RSHandle *H) {
                                    (cl_image)H->worker[i].rcs_real[r],
                                    (cl_image)H->worker[i].rcs_imag[r],
                                    H->worker[i].rcs_desc[r],
-                                   (cl_float *)H->worker[i].angular_weight,
-                                   H->worker[i].angular_weight_desc,
                                    H->sim_desc);
                     
                     dispatch_semaphore_signal(H->worker[i].sem);
@@ -3714,28 +3697,25 @@ void RS_advance_time(RSHandle *H) {
 
         RSWorker *C = &H->worker[i];
 
-        // Need to refresh some parameters at each time update
-        //clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
-        //clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-        
-        clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
-        clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-
-        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
-        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-        
-        // Background
+        // Background: Need to refresh some parameters at each time update
         //printf("H->worker[%d].species_population[0] = %d from %d --> background\n", i, (int)H->worker[i].species_population[0], (int)H->worker[i].species_origin[0]);
         if (H->sim_concept & RSSimluationConceptDraggedBackground) {
+            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
+            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
             clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->species_origin[0], &C->species_population[0], &local_item_size, 0, NULL, &events[i][0]);
         } else {
+            clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
+            clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
             clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_bg_atts, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i][0]);
         }
         
-        // Debris type
+        // Debris particles
+        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
+        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
         for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
             if (C->species_population[k]) {
-                printf("r = %d  a = %d\n", r, a);
+                if (H->verb)
+                    printf("r = %d  a = %d\n", r, a);
                 //printf("H->worker[%d].species_population[%d] = %d from %d --> debris\n", i, k, (int)H->worker[i].species_population[k], (int)H->worker[i].species_origin[k]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &C->adm_cd[a]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelMomentum,          sizeof(cl_mem),     &C->adm_cm[a]);
@@ -3789,23 +3769,40 @@ void RS_make_pulse(RSHandle *H) {
 	}
 	
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
-	
-	for (i = 0; i < H->num_workers; i++) {
-		dispatch_async(H->worker[i].que, ^{
+
+    for (i = 0; i < H->num_workers; i++) {
+        dispatch_async(H->worker[i].que, ^{
             make_pulse_pass_1_kernel(&H->worker[i].ndrange_pulse_pass_1,
                                      (cl_float4 *)H->worker[i].work,
+                                     (cl_float4 *)H->worker[i].scat_pos,
                                      (cl_float4 *)H->worker[i].scat_sig,
                                      (cl_float4 *)H->worker[i].scat_att,
                                      H->worker[i].make_pulse_params.local_mem_size[0],
                                      (cl_float *)H->worker[i].range_weight,
-                                     H->worker[i].range_weight_desc.s0,
-                                     H->worker[i].range_weight_desc.s1,
-                                     H->worker[i].range_weight_desc.s2,
+                                     H->worker[i].range_weight_desc,
+                                     (cl_float *)H->worker[i].angular_weight,
+                                     H->worker[i].angular_weight_desc,
                                      H->worker[i].make_pulse_params.range_start,
                                      H->worker[i].make_pulse_params.range_delta,
                                      H->worker[i].make_pulse_params.range_count,
                                      H->worker[i].make_pulse_params.group_counts[0],
-                                     H->worker[i].make_pulse_params.entry_counts[0]);
+                                     H->worker[i].make_pulse_params.entry_counts[0],
+                                     H->sim_desc);
+//		dispatch_async(H->worker[i].que, ^{
+//            make_pulse_pass_1_kernel(&H->worker[i].ndrange_pulse_pass_1,
+//                                     (cl_float4 *)H->worker[i].work,
+//                                     (cl_float4 *)H->worker[i].scat_sig,
+//                                     (cl_float4 *)H->worker[i].scat_att,
+//                                     H->worker[i].make_pulse_params.local_mem_size[0],
+//                                     (cl_float *)H->worker[i].range_weight,
+//                                     H->worker[i].range_weight_desc.s0,
+//                                     H->worker[i].range_weight_desc.s1,
+//                                     H->worker[i].range_weight_desc.s2,
+//                                     H->worker[i].make_pulse_params.range_start,
+//                                     H->worker[i].make_pulse_params.range_delta,
+//                                     H->worker[i].make_pulse_params.range_count,
+//                                     H->worker[i].make_pulse_params.group_counts[0],
+//                                     H->worker[i].make_pulse_params.entry_counts[0]);
 
             switch (H->worker[i].make_pulse_params.cl_pass_2_method) {
 				case RS_CL_PASS_2_IN_LOCAL:
@@ -3990,6 +3987,7 @@ void RS_show_scat_sig(RSHandle *H) {
         }
     }
 }
+
 
 void RS_show_pulse(RSHandle *H) {
 	unsigned int i;

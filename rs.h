@@ -182,44 +182,49 @@ typedef struct _rs_box {
 } RSBox;
 
 
-// A typical convention for table description, which is a set of parameters
-// along with a table
-enum {
-    RSTableDescriptionScaleX      =  0,
-    RSTableDescriptionScaleY      =  1,
-    RSTableDescriptionScaleZ      =  2,
-    RSTableDescriptionRefreshTime =  3,
-    RSTableDescriptionOriginX     =  4,
-    RSTableDescriptionOriginY     =  5,
-    RSTableDescriptionOriginZ     =  6,
-    RSTableDescriptionFormat      =  7,
-    RSTableDescriptionMaximumX    =  8,
-    RSTableDescriptionMaximumY    =  9,
-    RSTableDescriptionMaximumZ    = 10,
-    RSTableDescription11          = 11,
-    RSTableDescriptionRecipInLnX  = 12,
-    RSTableDescriptionRecipInLnY  = 13,
-    RSTableDescriptionRecipInLnZ  = 14,
-    RSTableDescriptionTachikawa   = 15,
+// A typical convention for table description, which is a set of parameters along with a table
+enum RSTable1DDescrip {
+    RSTable1DDescriptionScale     = 0,
+    RSTable1DDescriptionOrigin    = 1,
+    RSTable1DDescriptionMaximum   = 2
 };
 
-enum {
-    RSStaggeredTableDescriptionBaseChangeX     =  0,
-    RSStaggeredTableDescriptionBaseChangeY     =  1,
-    RSStaggeredTableDescriptionBaseChangeZ     =  2,
-    RSStaggeredTableDescriptionRefreshTime     =  3,
-    RSStaggeredTableDescriptionPositionScaleX  =  4,
-    RSStaggeredTableDescriptionPositionScaleY  =  5,
-    RSStaggeredTableDescriptionPositionScaleZ  =  6,
-    RSStaggeredTableDescriptionFormat          =  7,
-    RSStaggeredTableDescriptionOffsetX         =  8,
-    RSStaggeredTableDescriptionOffsetY         =  9,
-    RSStaggeredTableDescriptionOffsetZ         = 10,
-    RSStaggeredTableDescription11              = 11,
-    RSStaggeredTableDescriptionRecipInLnX      = 12,
-    RSStaggeredTableDescriptionRecipInLnY      = 13,
-    RSStaggeredTableDescriptionRecipInLnZ      = 14,
-    RSStaggeredTableDescriptionTachikawa       = 15,
+enum RSTable3DDescription {
+    RSTable3DDescriptionScaleX      =  0,
+    RSTable3DDescriptionScaleY      =  1,
+    RSTable3DDescriptionScaleZ      =  2,
+    RSTable3DDescriptionRefreshTime =  3,
+    RSTable3DDescriptionOriginX     =  4,
+    RSTable3DDescriptionOriginY     =  5,
+    RSTable3DDescriptionOriginZ     =  6,
+    RSTable3DDescriptionFormat      =  7,
+    RSTable3DDescriptionMaximumX    =  8,
+    RSTable3DDescriptionMaximumY    =  9,
+    RSTable3DDescriptionMaximumZ    = 10,
+    RSTable3DDescription11          = 11,
+    RSTable3DDescriptionRecipInLnX  = 12,
+    RSTable3DDescriptionRecipInLnY  = 13,
+    RSTable3DDescriptionRecipInLnZ  = 14,
+    RSTable3DDescriptionTachikawa   = 15,
+};
+
+enum RSTable3DStaggeredDescription {
+    RSTable3DStaggeredDescriptionBaseChangeX     =  0,
+    RSTable3DStaggeredDescriptionBaseChangeY     =  1,
+    RSTable3DStaggeredDescriptionBaseChangeZ     =  2,
+    RSTable3DStaggeredDescriptionRefreshTime     =  3,
+    RSTable3DStaggeredDescriptionPositionScaleX  =  4,
+    RSTable3DStaggeredDescriptionPositionScaleY  =  5,
+    RSTable3DStaggeredDescriptionPositionScaleZ  =  6,
+    RSTable3DStaggeredDescriptionFormat          =  7,
+    RSTable3DStaggeredDescriptionOffsetX         =  8,
+    RSTable3DStaggeredDescriptionOffsetY         =  9,
+    RSTable3DStaggeredDescriptionOffsetZ         = 10,
+    RSTable3DStaggeredDescription11              = 11,
+    RSTable3DStaggeredDescriptionRecipInLnX      = 12,
+    RSTable3DStaggeredDescriptionRecipInLnY      = 13,
+    RSTable3DStaggeredDescriptionRecipInLnZ      = 14,
+    RSTable3DStaggeredDescriptionTachikawa       = 15,
 };
 
 enum {
