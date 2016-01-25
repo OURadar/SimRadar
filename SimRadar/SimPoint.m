@@ -329,7 +329,8 @@
 
 - (RSVolume)simulationDomain
 {
-	return S->domain;
+	//return S->domain;
+    return RS_get_domain(S);
 }
 
 #pragma mark -
@@ -392,7 +393,8 @@
 
 - (GLfloat)recommendedViewRange
 {
-    return 1.2f * S->domain.size.z;
+    RSVolume v = RS_get_domain(S);
+    return 1.2f * v.size.z;
 }
 
 @end

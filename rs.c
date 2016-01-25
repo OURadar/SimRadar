@@ -1188,13 +1188,15 @@ void RS_init_scat_pos(RSHandle *H) {
     
     memset(counts, 0, H->dsd_count * sizeof(int));
     
-	//
+    RSVolume domain = RS_get_domain(H);
+
+    //
 	// Initialize the scatter body positions & velocities
 	//
 	for (i = 0; i < H->num_scats; i++) {
-		H->scat_pos[i].x = (float)rand() / RAND_MAX * H->domain.size.x + H->domain.origin.x;
-		H->scat_pos[i].y = (float)rand() / RAND_MAX * H->domain.size.y + H->domain.origin.y;
-		H->scat_pos[i].z = (float)rand() / RAND_MAX * H->domain.size.z + H->domain.origin.z;
+		H->scat_pos[i].x = (float)rand() / RAND_MAX * domain.size.x + domain.origin.x;
+		H->scat_pos[i].y = (float)rand() / RAND_MAX * domain.size.y + domain.origin.y;
+		H->scat_pos[i].z = (float)rand() / RAND_MAX * domain.size.z + domain.origin.z;
         H->scat_pos[i].w = 0.0f;                       // Use this to store drop radius
         
 		H->scat_att[i].s0 = 0.0f;                      // Use this to store range
@@ -1288,9 +1290,9 @@ void RS_init_scat_pos(RSHandle *H) {
     }
 	
 	// Replace a few points for debugging purpose.
-//	H->scat_pos[0].x = H->domain.origin.x + 0.5f * H->domain.size.x;
-//	H->scat_pos[0].y = H->domain.origin.y + 0.5f * H->domain.size.y;
-//	H->scat_pos[0].z = H->domain.origin.z + 0.5f * H->domain.size.z;
+//	H->scat_pos[0].x = domain.origin.x + 0.5f * domain.size.x;
+//	H->scat_pos[0].y = domain.origin.y + 0.5f * domain.size.y;
+//	H->scat_pos[0].z = domain.origin.z + 0.5f * domain.size.z;
 	
     if (H->species_population[1]) {
         k = (int)H->species_population[0] / H->num_workers;
@@ -1301,19 +1303,13 @@ void RS_init_scat_pos(RSHandle *H) {
         H->scat_att[k].s0 = H->params.range_start + floorf(H->params.range_count * 0.5f) * H->params.range_delta;
     }
 	
-	// Restore simulation time
+	// Restore simulation time, default beam position at unit vector (0, 1, 0)
 	H->sim_tic = 0;
 	H->sim_toc = 0;
 	H->sim_time = 0.0f;
     H->sim_desc.s[RSSimulationParameterBeamUnitX] = 0.0f;
     H->sim_desc.s[RSSimulationParameterBeamUnitY] = 1.0f;
     H->sim_desc.s[RSSimulationParameterBeamUnitZ] = 0.0f;
-    H->sim_desc.s[RSSimulationParameterBoundSizeX] = H->domain.size.x;
-    H->sim_desc.s[RSSimulationParameterBoundSizeY] = H->domain.size.y;
-    H->sim_desc.s[RSSimulationParameterBoundSizeZ] = H->domain.size.z;
-    H->sim_desc.s[RSSimulationParameterBoundOriginX] = H->domain.origin.x;
-    H->sim_desc.s[RSSimulationParameterBoundOriginY] = H->domain.origin.y;
-    H->sim_desc.s[RSSimulationParameterBoundOriginZ] = H->domain.origin.z;
     H->sim_desc.s[RSSimulationParameterPRT] = H->params.prt;
     H->sim_desc.s[RSSimulationParameterDebrisCount] = H->species_population[0];
     H->sim_desc.s[RSSimulationParameterAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTable3DDescriptionRefreshTime];
@@ -1494,12 +1490,13 @@ void RS_set_scan_box(RSHandle *H,
 	RSfloat vol = (H->params.antenna_bw_rad * r) * (H->params.antenna_bw_rad * r) * (H->params.c * H->params.tau * 0.5f);
 	RSfloat nvol = ((xmax - xmin) * (ymax - ymin) * (zmax - zmin)) / vol;
 	
-	H->domain.origin.x = xmin;
-	H->domain.origin.y = ymin;
-	H->domain.origin.z = zmin;
-	H->domain.size.x = xmax - xmin;
-	H->domain.size.y = ymax - ymin;
-	H->domain.size.z = zmax - zmin;
+    // The closing domain of the simulation
+    H->sim_desc.s[RSSimulationParameterBoundSizeX] = xmax - xmin;
+    H->sim_desc.s[RSSimulationParameterBoundSizeY] = ymax - ymin;
+    H->sim_desc.s[RSSimulationParameterBoundSizeZ] = zmax - zmin;
+    H->sim_desc.s[RSSimulationParameterBoundOriginX] = xmin;
+    H->sim_desc.s[RSSimulationParameterBoundOriginY] = ymin;
+    H->sim_desc.s[RSSimulationParameterBoundOriginZ] = zmin;
 	
 	// Suggest a number of scatter bodies to use
 	H->num_scats = (size_t)(H->params.body_per_cell * nvol);
@@ -1825,6 +1822,18 @@ size_t RS_get_all_worker_debris_counts(RSHandle *H, const int species_id, size_t
         counts[i] = H->worker[i].species_population[species_id];
     }
     return H->species_population[species_id];
+}
+
+
+RSVolume RS_get_domain(RSHandle *H) {
+    RSVolume v;
+    v.size.x = H->sim_desc.s[RSSimulationParameterBoundSizeX];
+    v.size.y = H->sim_desc.s[RSSimulationParameterBoundSizeY];
+    v.size.z = H->sim_desc.s[RSSimulationParameterBoundSizeZ];
+    v.origin.x = H->sim_desc.s[RSSimulationParameterBoundOriginX];
+    v.origin.y = H->sim_desc.s[RSSimulationParameterBoundOriginY];
+    v.origin.z = H->sim_desc.s[RSSimulationParameterBoundOriginZ];
+    return v;
 }
 
 
@@ -2322,10 +2331,6 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
         return;
     }
 
-	// Set up the mapping coefficients (old; left here for future reference)
-    //	table.x_ = leslie->nx;    table.xm = (float)(table.x_ - 1);    table.xs = (float)leslie->nx / H->domain.size.x;    table.xo = -H->domain.origin.x * table.xs;
-    //	table.y_ = leslie->ny;    table.ym = (float)(table.y_ - 1);    table.ys = (float)leslie->ny / H->domain.size.y;    table.yo = -H->domain.origin.y * table.ys;
-
     // For LES tables:
     //
     // dz(k) = a * r ^ 1.05
@@ -2354,13 +2359,6 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
     }
     
     if (H->verb > 1) {
-//        printf("%s : RS : LES[%2d] @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
-//               now(),
-//               H->vel_count,
-//               H->domain.origin.x, H->domain.origin.x + H->domain.size.x,
-//               H->domain.origin.y, H->domain.origin.y + H->domain.size.y,
-//               H->domain.origin.z, H->domain.origin.z + H->domain.size.z);
-
         printf("%s : RS : GPU LES[%2d] @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
                now(),
                H->vel_count,
@@ -2400,18 +2398,20 @@ void RS_set_vel_data_to_uniform(RSHandle *H, cl_float4 velocity) {
     
     RSTable3D table = RS_table3d_init(1);
     
+    RSVolume domain = RS_get_domain(H);
+    
     if (H->verb > 1) {
-        printf("%s : RS : Cube27 @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
+        printf("%s : RS : Uniform @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
                now(),
-               H->domain.origin.x, H->domain.origin.x + H->domain.size.x,
-               H->domain.origin.y, H->domain.origin.y + H->domain.size.y,
-               H->domain.origin.z, H->domain.origin.z + H->domain.size.z);
+               domain.origin.x, domain.origin.x + domain.size.x,
+               domain.origin.y, domain.origin.y + domain.size.y,
+               domain.origin.z, domain.origin.z + domain.size.z);
     }
     
     // Set up the mapping coefficients:
-    table.x_ = 1;    table.xm = 0.0f;    table.xs = 1.0f / H->domain.size.x;    table.xo = -H->domain.origin.x * table.xs;
-    table.y_ = 1;    table.ym = 0.0f;    table.ys = 1.0f / H->domain.size.y;    table.yo = -H->domain.origin.y * table.ys;
-    table.z_ = 1;    table.zm = 0.0f;    table.zs = 1.0f / H->domain.size.z;    table.zo = -H->domain.origin.z * table.zs;
+    table.x_ = 1;    table.xm = 0.0f;    table.xs = 1.0f / domain.size.x;    table.xo = -domain.origin.x * table.xs;
+    table.y_ = 1;    table.ym = 0.0f;    table.ys = 1.0f / domain.size.y;    table.yo = -domain.origin.y * table.ys;
+    table.z_ = 1;    table.zm = 0.0f;    table.zs = 1.0f / domain.size.z;    table.zo = -domain.origin.z * table.zs;
     
     table.tr = 1000.0f;
 
@@ -2432,26 +2432,24 @@ void RS_set_vel_data_to_cube27(RSHandle *H) {
 	
 	RSTable3D table = RS_table3d_init(27);
 	
+    RSVolume domain = RS_get_domain(H);
+    
 	if (H->verb > 1) {
 		printf("%s : RS : Cube27 @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
 			   now(),
-			   H->domain.origin.x, H->domain.origin.x + H->domain.size.x,
-			   H->domain.origin.y, H->domain.origin.y + H->domain.size.y,
-			   H->domain.origin.z, H->domain.origin.z + H->domain.size.z);
+               domain.origin.x, domain.origin.x + domain.size.x,
+               domain.origin.y, domain.origin.y + domain.size.y,
+               domain.origin.z, domain.origin.z + domain.size.z);
 	}
 	
 	// Set up the mapping coefficients: -table_start * table_xs
-	//	table.x_ = 3;    table.xm = 2.0f;    table.xs = 2.0f / H->domain.size.x;    table.xo = -H->domain.origin.x * table.xs + 0.5f;
-	//	table.y_ = 3;    table.ym = 2.0f;    table.ys = 2.0f / H->domain.size.y;    table.yo = -H->domain.origin.y * table.ys + 0.5f;
-	//	table.z_ = 3;    table.zm = 2.0f;    table.zs = 2.0f / H->domain.size.z;    table.zo = -H->domain.origin.z * table.zs + 0.5f;
-
-	table.x_ = 3;    table.xm = 2.0f;    table.xs = 3.0f / H->domain.size.x;    table.xo = -H->domain.origin.x * table.xs;
-	table.y_ = 3;    table.ym = 2.0f;    table.ys = 3.0f / H->domain.size.y;    table.yo = -H->domain.origin.y * table.ys;
-	table.z_ = 3;    table.zm = 2.0f;    table.zs = 3.0f / H->domain.size.z;    table.zo = -H->domain.origin.z * table.zs;
+	table.x_ = 3;    table.xm = 2.0f;    table.xs = 3.0f / domain.size.x;    table.xo = -domain.origin.x * table.xs;
+	table.y_ = 3;    table.ym = 2.0f;    table.ys = 3.0f / domain.size.y;    table.yo = -domain.origin.y * table.ys;
+	table.z_ = 3;    table.zm = 2.0f;    table.zs = 3.0f / domain.size.z;    table.zo = -domain.origin.z * table.zs;
 	
 	table.tr = 1000.0f;
 	
-	//	printf(" %.2f x %.2f = %.2f\n", -H->domain.origin.x, H->physics_table.xs, -H->domain.origin.x / H->domain.size.x * 2.0f);
+	//	printf(" %.2f x %.2f = %.2f\n", -domain.origin.x, H->physics_table.xs, -domain.origin.x / domain.size.x * 2.0f);
 	//	printf("o = [%.2f, %.2f, %.2f]\n", table.xo, table.yo, table.zo);
 	
 	const float v = 10.0f;
@@ -2475,22 +2473,20 @@ void RS_set_vel_data_to_cube125(RSHandle *H) {
 	
 	RSTable3D table = RS_table3d_init(125);
 	
+    RSVolume domain = RS_get_domain(H);
+    
 	if (H->verb > 1) {
 		printf("%s : RS : Cube125 @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
 			   now(),
-			   H->domain.origin.x, H->domain.origin.x + H->domain.size.x,
-			   H->domain.origin.y, H->domain.origin.y + H->domain.size.y,
-			   H->domain.origin.z, H->domain.origin.z + H->domain.size.z);
+               domain.origin.x, domain.origin.x + domain.size.x,
+               domain.origin.y, domain.origin.y + domain.size.y,
+               domain.origin.z, domain.origin.z + domain.size.z);
 	}
 	
 	// Set up the mapping coefficients
-	//	table.x_ = 5;    table.xm = 4.0f;    table.xs = 4.0f / H->domain.size.x;    table.xo = -H->domain.origin.x * table.xs + 0.5f;
-	//	table.y_ = 5;    table.ym = 4.0f;    table.ys = 4.0f / H->domain.size.y;    table.yo = -H->domain.origin.y * table.ys + 0.5f;
-	//	table.z_ = 5;    table.zm = 4.0f;    table.zs = 4.0f / H->domain.size.z;    table.zo = -H->domain.origin.z * table.zs + 0.5f;
-	
-	table.x_ = 5;    table.xm = 4.0f;    table.xs = 5.0f / H->domain.size.x;    table.xo = -H->domain.origin.x * table.xs;
-	table.y_ = 5;    table.ym = 4.0f;    table.ys = 5.0f / H->domain.size.y;    table.yo = -H->domain.origin.y * table.ys;
-	table.z_ = 5;    table.zm = 4.0f;    table.zs = 5.0f / H->domain.size.z;    table.zo = -H->domain.origin.z * table.zs;
+	table.x_ = 5;    table.xm = 4.0f;    table.xs = 5.0f / domain.size.x;    table.xo = -domain.origin.x * table.xs;
+	table.y_ = 5;    table.ym = 4.0f;    table.ys = 5.0f / domain.size.y;    table.yo = -domain.origin.y * table.ys;
+	table.z_ = 5;    table.zm = 4.0f;    table.zs = 5.0f / domain.size.z;    table.zo = -domain.origin.z * table.zs;
 	
 	table.tr = 1000.0f;
 	

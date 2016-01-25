@@ -218,8 +218,7 @@ float4 two_way_effects(const float4 sig_in, const float range, const float wav_n
     float phase = range * wav_num;
 
     // cosine & sine to represent exp(j phase)
-    float c, s;
-    s = sincos(phase, &c);
+    float c, s = sincos(phase, &c);
     
     return complex_multiply(sig_in, (float4)(c, s, c, s)) * atten;
 }
@@ -428,10 +427,8 @@ float4 compute_rcs(float4 ori, __read_only image2d_t rcs_real, __read_only image
     //
     // derive alpha, beta & gamma of RCS for RCS table lookup --------------------------
     //
-    float ce = cos(0.5f * el);
-    float se = sin(0.5f * el);
-    float ca = cos(0.5f * az);
-    float sa = sin(0.5f * az);
+    float ce, se = sincos(0.5f * el, &ce);
+    float ca, sa = sincos(0.5f * az, &ca);
     
     // I know this part looks like a black box, check reference MATLAB implementation quat2euler.m for the raw version
     float4 F = (float4)(-M_SQRT1_2_F * sa * (ce + se), -M_SQRT1_2_F * ca * (ce + se), M_SQRT1_2_F * ca * (ce - se), -M_SQRT1_2_F * sa * (ce - se));
@@ -454,8 +451,7 @@ float4 compute_rcs(float4 ori, __read_only image2d_t rcs_real, __read_only image
     float4 imag = read_imagef(rcs_imag, sampler, rcs_coord);
     
     // For gamma projection
-    float cg;
-    float sg = sincos(gamma, &cg);
+    float cg, sg = sincos(gamma, &cg);
     
     //    >> Tinv * S * T
     //
@@ -833,8 +829,7 @@ __kernel void db_atts(__global float4 *p,
 
     float4 dw = dwdt * dt;
    
-    float4 c = cos(dw);
-    float4 s = sin(dw);
+    float4 c, s = sincos(dw, &c);
     tum = (float4)(c.x * s.y * s.z + s.x * c.y * c.z,
                    c.x * s.y * c.z - s.x * c.y * s.z,
                    c.x * c.y * s.z + s.x * s.y * c.z,
