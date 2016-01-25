@@ -1,9 +1,9 @@
 UNAME := $(shell uname)
 
 CFLAGS = -std=gnu99 -Wall -Wno-unknown-pragmas -Os -msse -msse2 -mavx -I /usr/local/include
-LDFLAGS = -L lib -L /usr/local/lib -lrs -lhdf5
+LDFLAGS = -L lib -L /usr/local/lib -lrs
 
-OBJS = rs.o les.o adm.o rcs.o arps.o
+OBJS = rs.o les.o adm.o rcs.o
 
 MYLIB = lib/librs.a
 
@@ -16,6 +16,7 @@ LDFLAGS += -framework OpenCL
 else
 CC = gcc
 # This option is actually special for OSCER's boomer
+CFLAGS += -D_GNU_SOURCE
 CFLAGS += -I /opt/local/software/Cuda/4.2.9/include
 LDFLAGS += -L /usr/lib64/nvidia -lOpenCL
 endif

@@ -120,8 +120,8 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     C->kern_bg_atts = clCreateKernel(C->prog, "bg_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
     C->kern_el_atts = clCreateKernel(C->prog, "el_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
     C->kern_db_atts = clCreateKernel(C->prog, "db_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
+    C->kern_scat_clr = clCreateKernel(C->prog, "scat_clr", &ret);                                 CHECK_CL_CREATE_KERNEL
     C->kern_scat_sig_dsd = clCreateKernel(C->prog, "scat_sig_dsd", &ret);                         CHECK_CL_CREATE_KERNEL
-    C->kern_scat_clr_dsd = clCreateKernel(C->prog, "scat_clr_dsd", &ret);                         CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_1 = clCreateKernel(C->prog, "make_pulse_pass_1", &ret);               CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_2_group = clCreateKernel(C->prog, "make_pulse_pass_2_group", &ret);   CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_2_local = clCreateKernel(C->prog, "make_pulse_pass_2_range", &ret);   CHECK_CL_CREATE_KERNEL
@@ -179,8 +179,8 @@ void RS_worker_free(RSWorker *C) {
     clReleaseKernel(C->kern_bg_atts);
     clReleaseKernel(C->kern_el_atts);
     clReleaseKernel(C->kern_db_atts);
+    clReleaseKernel(C->kern_scat_clr);
     clReleaseKernel(C->kern_scat_sig_dsd);
-    clReleaseKernel(C->kern_scat_clr_dsd);
     clReleaseKernel(C->kern_make_pulse_pass_1);
     clReleaseKernel(C->kern_make_pulse_pass_2_group);
     clReleaseKernel(C->kern_make_pulse_pass_2_local);
@@ -276,6 +276,9 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     //printf("shared_vbo: %d %d %d\n", C->vbo_scat_pos, C->vbo_scat_clr, C->vbo_scat_ori);
 
     if (H->has_vbo_from_gl) {
+
+#if defined (CL_VERSION_1_2)
+
         C->scat_pos = clCreateFromGLBuffer(C->context, CL_MEM_READ_WRITE, C->vbo_scat_pos, &ret);
         C->scat_clr = clCreateFromGLBuffer(C->context, CL_MEM_READ_WRITE, C->vbo_scat_clr, &ret);
         C->scat_ori = clCreateFromGLBuffer(C->context, CL_MEM_READ_WRITE, C->vbo_scat_ori, &ret);
@@ -285,6 +288,9 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
             C->scat_clr = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
             C->scat_ori = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
         }
+        
+#endif
+
     } else {
         C->scat_pos = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
         C->scat_clr = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
@@ -378,11 +384,11 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     }
 
     ret = CL_SUCCESS;
-    ret |= clSetKernelArg(C->kern_scat_clr_dsd, RSScattererColorDropSizeDistributionKernalArgumentColor,     sizeof(cl_mem), &C->scat_clr);
-    ret |= clSetKernelArg(C->kern_scat_clr_dsd, RSScattererColorDropSizeDistributionKernalArgumentPosition,  sizeof(cl_mem), &C->scat_pos);
-    ret |= clSetKernelArg(C->kern_scat_clr_dsd, RSScattererColorDropSizeDistributionKernalArgumentAttribute, sizeof(cl_mem), &C->scat_att);
+    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorDropSizeDistributionKernalArgumentColor,     sizeof(cl_mem), &C->scat_clr);
+    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorDropSizeDistributionKernalArgumentPosition,  sizeof(cl_mem), &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorDropSizeDistributionKernalArgumentAttribute, sizeof(cl_mem), &C->scat_att);
     if (ret != CL_SUCCESS) {
-        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_clr_dsd().\n", now());
+        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_clr().\n", now());
         exit(EXIT_FAILURE);
     }
 
@@ -711,7 +717,8 @@ cl_uint read_kernel_source_from_files(char *src_ptr[], ...) {
 	}
 	
 	if (len >= RS_MAX_KERNEL_SRC || count >= RS_MAX_KERNEL_LINES) {
-		fprintf(stderr, "Kernel source exceeds buffer size constraints.  (len = %d / %d, count = %d / %d)\n", len, RS_MAX_KERNEL_SRC, count, RS_MAX_KERNEL_LINES);
+		fprintf(stderr, "%s : RS : Kernel source exceeds buffer size constraints.  (len = %s / %s, count = %s / %s)\n",
+                now(), commaint(len), commaint(RS_MAX_KERNEL_SRC), commaint(count), commaint(RS_MAX_KERNEL_LINES));
 		return 0;
 	}
 	
@@ -1867,13 +1874,15 @@ void RS_update_debris_count(RSHandle *H) {
         k--;
         size_t species_count_left = H->species_population[k];
         if (species_count_left == 0) {
-            H->worker[i].species_population[k] = 0;
+            for (i = 0; i < H->num_workers; i++) {
+                H->worker[i].species_population[k] = 0;
+            }
             continue;
         }
         // Groups of debris types
         size_t round_up_down_toggle = H->num_workers > 1 ? k % H->num_workers : k;
         size_t sub_species_population = (H->species_population[k] + round_up_down_toggle) / H->num_workers;
-        for (i = 0; i < H->num_workers-1; i++) {
+        for (i = 0; i < H->num_workers - 1; i++) {
             H->worker[i].species_population[k] = sub_species_population;
             species_count_left -= sub_species_population;
         }
@@ -2151,7 +2160,6 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
         H->worker[i].angular_weight_desc.s[RSTable1DDescriptionMaximum] = table.xm;
         H->worker[i].angular_weight_desc.s3 = 0.0f;
         H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
-        printf("angular_weight_desc = %.3f %.3f %.3f\n", H->worker[i].angular_weight_desc.s0, H->worker[i].angular_weight_desc.s1, H->worker[i].angular_weight_desc.s2);
     }
 
     RS_table_free(table);
@@ -2281,7 +2289,8 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 #endif
 
         // Copy over to CL worker
-        H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionFormat] = *(float *)&table.spacing; // Forced type cast so we are maintaining all 32-bits
+        float tmpf; memcpy(&tmpf, &table.spacing, sizeof(float));
+        H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionFormat] = tmpf;                   // Make a copy in float so we are maintaining all 32-bits
         //printf("%s : RS : %d / %.9f\n", now(), table.spacing, H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionFormat]);
         if (table.spacing & RSTableSpacingStretchedX) {
             H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionBaseChangeX] = table.xs;      // "m" for stretched grid: m * log1p(n * pos.x) + o;
@@ -2951,25 +2960,22 @@ void RS_clear_rcs_data(RSHandle *H) {
 
 #if defined (GUI) || defined (_SHARE_OBJ_)
 
-void RS_update_colors_only(RSHandle *H) {
+void RS_update_colors(RSHandle *H) {
+
+    int i;
     
-//    int i;
-//    
-//    for (i = 0; i < H->num_workers; i++) {
-//        dispatch_async(H->worker[i].que, ^{
-//            scat_clr2_kernel(&H->worker[i].ndrange_scat[0],
-//                             (cl_float4 *)H->worker[i].scat_clr,
-//                             (cl_float4 *)H->worker[i].scat_pos,
-//                             (cl_float4 *)H->worker[i].scat_att,
-//                             (cl_float *)H->worker[i].angular_weight,
-//                             H->worker[i].angular_weight_desc,
-//                             H->beam_pos,
-//                             (unsigned int)H->worker[i].num_scats);
-//            dispatch_semaphore_signal(H->worker[i].sem);
-//        });
-//    }
-//    for (i = 0; i < H->num_workers; i++)
-//        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+    for (i = 0; i < H->num_workers; i++) {
+        dispatch_async(H->worker[i].que, ^{
+            // Set individual color based on drop size
+            scat_clr_kernel(&H->worker[i].ndrange_scat[0],
+                            (cl_float4 *)H->worker[i].scat_clr,
+                            (cl_float4 *)H->worker[i].scat_pos,
+                            (cl_float4 *)H->worker[i].scat_att);
+            
+            dispatch_semaphore_signal(H->worker[i].sem);
+        });
+        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+    }
 }
 
 
@@ -3428,11 +3434,11 @@ void RS_upload(RSHandle *H) {
 			gcl_memcpy(H->worker[i].scat_sig, H->scat_sig + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->worker[i].scat_rnd, H->scat_rnd + H->offset[i], H->worker[i].num_scats * sizeof(cl_uint4));
             
-            // Set individual color based on drop size
-            scat_clr_dsd_kernel(&H->worker[i].ndrange_scat[0],
-                                (cl_float4 *)H->worker[i].scat_clr,
-                                (cl_float4 *)H->worker[i].scat_pos,
-                                (cl_float4 *)H->worker[i].scat_att);
+            // Set individual color
+            scat_clr_kernel(&H->worker[i].ndrange_scat[0],
+                            (cl_float4 *)H->worker[i].scat_clr,
+                            (cl_float4 *)H->worker[i].scat_pos,
+                            (cl_float4 *)H->worker[i].scat_att);
 
             dispatch_semaphore_signal(H->worker[i].sem);
 		});
@@ -3452,22 +3458,22 @@ void RS_upload(RSHandle *H) {
         clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_rnd, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_uint4),  H->scat_rnd + H->offset[i], 0, NULL, NULL);
 	}
     
-    size_t local_item_size = 1;
-
-    cl_event events[RS_MAX_GPU_DEVICE];
-
-    for (i = 0; i < H->num_workers; i++) {
-        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_clr_dsd, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i]);
-    }
-    
-    for (i = 0; i < H->num_workers; i++) {
-        clFlush(H->worker[i].que);
-    }
-    
-    for (i = 0; i < H->num_workers; i++) {
-        clWaitForEvents(1, &events[i]);
-        clReleaseEvent(events[i]);
-    }
+//    size_t local_item_size = 1;
+//
+//    cl_event events[RS_MAX_GPU_DEVICE];
+//
+//    for (i = 0; i < H->num_workers; i++) {
+//        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_clr, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i]);
+//    }
+//    
+//    for (i = 0; i < H->num_workers; i++) {
+//        clFlush(H->worker[i].que);
+//    }
+//    
+//    for (i = 0; i < H->num_workers; i++) {
+//        clWaitForEvents(1, &events[i]);
+//        clReleaseEvent(events[i]);
+//    }
 
 #endif
 	
@@ -3643,9 +3649,10 @@ void RS_advance_time(RSHandle *H) {
         clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
         for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
             if (C->species_population[k]) {
-                if (H->verb)
-                    printf("r = %d  a = %d\n", r, a);
-                //printf("H->worker[%d].species_population[%d] = %d from %d --> debris\n", i, k, (int)H->worker[i].species_population[k], (int)H->worker[i].species_origin[k]);
+                if (H->verb > 2) {
+                    printf("%s : RS : RCS[%d]  ADM[%d]\n", now(), r, a);
+                    //printf("H->worker[%d].species_population[%d] = %d from %d --> debris\n", i, k, (int)H->worker[i].species_population[k], (int)H->worker[i].species_origin[k]);
+                }
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &C->adm_cd[a]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelMomentum,          sizeof(cl_mem),     &C->adm_cm[a]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &C->adm_desc);

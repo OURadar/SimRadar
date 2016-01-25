@@ -24,7 +24,7 @@
 #include "les.h"
 #include "adm.h"
 #include "rcs.h"
-#include "arps.h"
+//#include "arps.h"
 
 #if defined (__APPLE__)
 #include <OpenCL/opencl.h>
@@ -357,8 +357,8 @@ typedef struct _rs_worker {
     cl_kernel              kern_bg_atts;
     cl_kernel              kern_el_atts;
     cl_kernel              kern_db_atts;
+    cl_kernel              kern_scat_clr;
     cl_kernel              kern_scat_sig_dsd;
-    cl_kernel              kern_scat_clr_dsd;
 	cl_kernel              kern_make_pulse_pass_1;
 	cl_kernel              kern_make_pulse_pass_2;
 	cl_kernel              kern_make_pulse_pass_2_group;
@@ -523,7 +523,7 @@ void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *table);
 void RS_set_rcs_data_to_unity(RSHandle *H);
 void RS_clear_rcs_data(RSHandle *H);
 
-void RS_update_colors_only(RSHandle *H);
+void RS_update_colors(RSHandle *H);
 
 #if defined (GUI) || defined (_SHARE_OBJ_)
 void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[][n]);

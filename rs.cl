@@ -596,8 +596,6 @@ __kernel void bg_atts(__global float4 *p,
     
     // Range of the point
     aux.s0 = length(pos.xyz);
-
-    // aux.s3 = compute_angular_weight(pos, angular_weight, angular_weight_desc, sim_desc);
     
     p[i] = pos;
     v[i] = vel;
@@ -873,49 +871,6 @@ __kernel void db_atts(__global float4 *p,
     x[i] = sig;
 }
 
-// generic scatter
-__kernel void scat_clr(__global float4 *c,
-                       __global float4 *a,
-                       const unsigned int n)
-{
-    unsigned int i = get_global_id(0);
-    
-    c[i] = set_clr(a[i]);
-}
-
-
-__kernel void scat_clr2(__global float4 *c,
-                        __global float4 *p,
-                        __global float4 *a,
-                        __constant float *angular_weight,
-                        const float4 angular_weight_desc,
-                        const float4 b,
-                        const unsigned int n)
-{
-    unsigned int i = get_global_id(0);
-    
-    float angle = acos(dot(b.xyz, normalize(p[i].xyz)));
-    
-    const float2 table_s = (float2)(angular_weight_desc.s0, angular_weight_desc.s0);
-    const float2 table_o = (float2)(angular_weight_desc.s1, angular_weight_desc.s1) + (float2)(0.0f, 1.0f);
-    const float2 angle_2 = (float2)(angle, angle);
-    
-    float2 fidx_raw;
-    float2 fidx_dec;
-    float2 fidx_int;
-    uint2  iidx_int;
-    
-    fidx_raw = clamp(fma(angle_2, table_s, table_o), 0.0f, angular_weight_desc.s2);
-    fidx_dec = fract(fidx_raw, &fidx_int);
-    iidx_int = convert_uint2(fidx_int);
-    
-    a[i].s3 = mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
-    
-    //float w = mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
-    
-    //c[i] = set_clr(a[i]);
-}
-
 
 __kernel void scat_sig_dsd(__global float4 *x,
                            __global float4 *p,
@@ -926,18 +881,21 @@ __kernel void scat_sig_dsd(__global float4 *x,
 }
 
 
-__kernel void scat_clr_dsd(__global float4 *c,
-                           __global float4 *p,
-                           __global float4 *a)
+__kernel void scat_clr(__global float4 *c,
+                       __global float4 *p,
+                       __global float4 *a)
 {
     unsigned int i = get_global_id(0);
     
-    //c[i].x = clamp(4.8f + log10(0.3f * p[i].w), 0.0f, 1.0f);   // radius to bin index
     c[i].x = clamp(a[i].s2, 0.0f, 1.0f);
-    //    if (i < 10)
-    //        printf("i=%d  d=%.1fmm  c=%.3f\n", i, p[i].w * 1000.0f, c[i].x);
-}
 
+//    c[i].x = clamp(fma(log10(100.0f * a[i].s3), 0.1f, 0.8f), 0.0f, 1.0f);
+
+//    if (i < 20) {
+//        printf("i=%d  w=%.4f\n", i, c[i].x);
+//        //printf("i=%d  d=%.1fmm  c=%.3f\n", i, p[i].w * 1000.0f, c[i].x);
+//    }
+}
 
 //
 // out - output
@@ -991,8 +949,6 @@ __kernel void make_pulse_pass_1(__global float4 *out,
     const unsigned int group_stride = 2 * local_size;
     const unsigned int local_stride = group_stride * group_count;
     
-//    const float4 table_xs_4 = (float4)(table_xs, table_xs, table_xs, table_xs);
-//    const float4 table_x0_4 = (float4)(table_x0, table_x0, table_x0, table_x0) + (float4)(0.0f, 1.0f, 0.0f, 1.0f);
     const float4 table_xs_4 = (float4)(range_weight_desc.s0, range_weight_desc.s0, range_weight_desc.s0, range_weight_desc.s0);
     const float4 table_x0_4 = (float4)(range_weight_desc.s1, range_weight_desc.s1, range_weight_desc.s1, range_weight_desc.s1) + (float4)(0.0f, 1.0f, 0.0f, 1.0f);
     
@@ -1014,9 +970,9 @@ __kernel void make_pulse_pass_1(__global float4 *out,
     // Derive the angular weight
     float scat_wa = compute_angular_weight(pos[i], angular_weight, angular_weight_desc, sim_desc);
     att[i].s3 = scat_wa;
-//    if (i == 0) {
+//    if (i == 1) {
 //        float theta = acos(dot(sim_desc.s012, normalize(pos[i].xyz)));
-//        printf("scat_wa = %.4e  for %.3v4f  beam %.4v4f  angle %.2f  %.4v4f\n", scat_wa, pos[i], sim_desc.s0123, theta, angular_weight_desc);
+//        printf("scat_wa = %.4e  for %.3v4f  beam %.4v4f  angle %.2f  %.4v4f  s3->w = %.2f\n", scat_wa, pos[i], sim_desc.s0123, theta, angular_weight_desc, clamp(fma(log10(100.0f * scat_wa), 0.1f, 0.8f), 0.0f, 1.0f));
 //    }
     
     // Initialize the block of local memory to zeros
