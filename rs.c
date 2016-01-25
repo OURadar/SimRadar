@@ -273,7 +273,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     
     cl_int ret;
     
-    printf("shared_vbo: %d %d %d\n", C->vbo_scat_pos, C->vbo_scat_clr, C->vbo_scat_ori);
+    //printf("shared_vbo: %d %d %d\n", C->vbo_scat_pos, C->vbo_scat_clr, C->vbo_scat_ori);
 
     if (H->has_vbo_from_gl) {
         C->scat_pos = clCreateFromGLBuffer(C->context, CL_MEM_READ_WRITE, C->vbo_scat_pos, &ret);
@@ -318,20 +318,6 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel dummy().\n", now());
         exit(EXIT_FAILURE);
     }
-    
-    cl_float16 sim_desc;
-    sim_desc.s[RSSimulationParameterBeamUnitX]    = H->beam_pos.x;
-    sim_desc.s[RSSimulationParameterBeamUnitY]    = H->beam_pos.y;
-    sim_desc.s[RSSimulationParameterBeamUnitZ]    = H->beam_pos.z;
-    sim_desc.s[RSSimulationParameterBoundSizeX]   = H->domain.size.x;
-    sim_desc.s[RSSimulationParameterBoundSizeY]   = H->domain.size.y;
-    sim_desc.s[RSSimulationParameterBoundSizeZ]   = H->domain.size.z;
-    sim_desc.s[RSSimulationParameterBoundOriginX] = H->domain.origin.x;
-    sim_desc.s[RSSimulationParameterBoundOriginY] = H->domain.origin.y;
-    sim_desc.s[RSSimulationParameterBoundOriginZ] = H->domain.origin.z;
-    sim_desc.s[RSSimulationParameterPRT]          = H->params.prt;
-    sim_desc.s[RSSimulationParameterDebrisCount]  = 0.0f;
-    sim_desc.s[RSSimulationParameterAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTable3DDescriptionRefreshTime];
 
     ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
@@ -340,7 +326,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
-    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
+    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_bg_atts().\n", now());
         exit(EXIT_FAILURE);
@@ -354,7 +340,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
-    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
+    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_el_atts().\n", now());
         exit(EXIT_FAILURE);
@@ -376,7 +362,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &C->rcs_real[0]);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[0]);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[0]);
-    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_db_atts().\n", now());
         exit(EXIT_FAILURE);
@@ -425,7 +411,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 11, sizeof(unsigned int),                  &C->make_pulse_params.range_count);
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 12, sizeof(unsigned int),                  &C->make_pulse_params.group_counts[0]);
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 13, sizeof(unsigned int),                  &C->make_pulse_params.entry_counts[0]);
-    ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 14, sizeof(cl_float16),                    &sim_desc);
+    ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 14, sizeof(cl_float16),                    &H->sim_desc);
 	if (ret != CL_SUCCESS) {
 		fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel make_pulse_pass_1().\n", now());
 		exit(EXIT_FAILURE);
@@ -1319,9 +1305,9 @@ void RS_init_scat_pos(RSHandle *H) {
 	H->sim_tic = 0;
 	H->sim_toc = 0;
 	H->sim_time = 0.0f;
-    H->sim_desc.s[RSSimulationParameterBeamUnitX] = H->beam_pos.x;
-    H->sim_desc.s[RSSimulationParameterBeamUnitY] = H->beam_pos.y;
-    H->sim_desc.s[RSSimulationParameterBeamUnitZ] = H->beam_pos.z;
+    H->sim_desc.s[RSSimulationParameterBeamUnitX] = 0.0f;
+    H->sim_desc.s[RSSimulationParameterBeamUnitY] = 1.0f;
+    H->sim_desc.s[RSSimulationParameterBeamUnitZ] = 0.0f;
     H->sim_desc.s[RSSimulationParameterBoundSizeX] = H->domain.size.x;
     H->sim_desc.s[RSSimulationParameterBoundSizeY] = H->domain.size.y;
     H->sim_desc.s[RSSimulationParameterBoundSizeZ] = H->domain.size.z;
@@ -1331,58 +1317,6 @@ void RS_init_scat_pos(RSHandle *H) {
     H->sim_desc.s[RSSimulationParameterPRT] = H->params.prt;
     H->sim_desc.s[RSSimulationParameterDebrisCount] = H->species_population[0];
     H->sim_desc.s[RSSimulationParameterAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTable3DDescriptionRefreshTime];
-
-    // This part should be moved to setting ADM
-//    for (k = 0; k < H->adm_count; k++) {
-//        // Plate dimension in meters
-//        float v0 = 100.0f;
-//        const float rho = 1.21f;
-//        const float g = 9.8f;
-//        
-//        float len = 0.04f;
-//        float thi = 0.002f;
-//        float rhod = 1120.0f;
-//        float mass = len * len * thi * rhod;
-//        
-//        cl_float4 ii = {{
-//            (len * len + len * len) * mass / 12.0f,
-//            (len * len + thi * thi) * mass / 12.0f,
-//            (thi * thi + len * len) * mass / 12.0f,
-//            0.0f
-//        }};
-//        cl_float4 inln = {{
-//            ii.x * g * len / (mass * len * len * v0 * v0),
-//            ii.y * g * len / (mass * len * len * v0 * v0),
-//            ii.z * g * len / (mass * len * len * v0 * v0)
-//        }};
-//        H->inv_inln = (cl_float4) {{
-//            1.0f / inln.x,
-//            1.0f / inln.y,
-//            1.0f / inln.z,
-//            0.0f
-//        }};
-//        H->Ta = rho * (len * len * v0 * v0) / (2.0f * mass * g);
-//        
-//        // De-dimensionalize
-//        // Velocity should have v0 * v0 / g whenever velocity is retrieved but pre-done here
-//        // Angular momentum's len needs to be dimensionalized by v0 * v0 / g
-//        H->inv_inln.x = (mass * len) / (ii.x * g * g);
-//        H->inv_inln.y = (mass * len) / (ii.y * g * g);
-//        H->inv_inln.z = (mass * len) / (ii.z * g * g);
-//        H->Ta *= g / (v0 * v0);
-//        
-//        if (H->verb) {
-//            printf("%s : RS : ADM[%d]   Ta = %.4f  inv_inln = [%.4f %.4f %.4f]   mass = %.4f kg\n",
-//                   now(), k, H->Ta, H->inv_inln.x, H->inv_inln.y, H->inv_inln.z, mass);
-//        }
-//        
-//        for (i = 0; i < H->num_workers; i++) {
-//            H->worker[i].adm_desc[k].s[RSTable3DDescriptionRecipInLnX] = H->inv_inln.x;
-//            H->worker[i].adm_desc[k].s[RSTable3DDescriptionRecipInLnY] = H->inv_inln.y;
-//            H->worker[i].adm_desc[k].s[RSTable3DDescriptionRecipInLnZ] = H->inv_inln.z;
-//            H->worker[i].adm_desc[k].s[RSTable3DDescriptionTachikawa] = H->Ta;
-//        }
-//    }
 }
 
 #pragma mark -
@@ -1815,13 +1749,9 @@ void RS_set_scan_box(RSHandle *H,
 
 void RS_set_beam_pos(RSHandle *H, RSfloat az_deg, RSfloat el_deg) {
 	// Compute the unit vector of the pointing direction
-	H->beam_pos.x = cosf(el_deg / 180.0f * M_PI) * sinf(az_deg / 180.0f * M_PI);
-	H->beam_pos.y = cosf(el_deg / 180.0f * M_PI) * cosf(az_deg / 180.0f * M_PI);
-	H->beam_pos.z = sinf(el_deg / 180.0f * M_PI);
-	H->beam_pos.w = 0.0f;
-    H->sim_desc.s[RSSimulationParameterBeamUnitX] = H->beam_pos.x;
-    H->sim_desc.s[RSSimulationParameterBeamUnitY] = H->beam_pos.y;
-    H->sim_desc.s[RSSimulationParameterBeamUnitZ] = H->beam_pos.z;
+    H->sim_desc.s[RSSimulationParameterBeamUnitX] = cosf(el_deg / 180.0f * M_PI) * sinf(az_deg / 180.0f * M_PI);
+    H->sim_desc.s[RSSimulationParameterBeamUnitY] = cosf(el_deg / 180.0f * M_PI) * cosf(az_deg / 180.0f * M_PI);
+    H->sim_desc.s[RSSimulationParameterBeamUnitZ] = sinf(el_deg / 180.0f * M_PI);
 }
 
 
@@ -3247,7 +3177,10 @@ void RS_populate(RSHandle *H) {
 		return;
 	}
 	
-	//
+    // Initialize the scatter body positions on CPU, will upload to the GPU later
+    RS_init_scat_pos(H);
+
+    //
 	// GPU memory allocation
 	//
 	
@@ -3281,8 +3214,7 @@ void RS_populate(RSHandle *H) {
 
 #endif
 
-    // Initialize the scatter body positions on CPU, then upload to the GPU
-	RS_init_scat_pos(H);
+    // Upload the particle parameters to the GPU
     RS_upload(H);
 
     if (H->verb) {
@@ -3297,11 +3229,11 @@ void RS_populate(RSHandle *H) {
     const int a = 0;
     const int r = 0;
     for (i = 0; i < H->num_workers; i++) {
-        ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription,      sizeof(cl_float16), &H->worker[i].vel_desc);
-        ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,              sizeof(cl_float16), &H->sim_desc);
+        ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &H->worker[i].vel_desc);
+        ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
         
-        ret |= clSetKernelArg(H->worker[i].kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocityDescription,       sizeof(cl_float16), &H->worker[i].vel_desc);
-        ret |= clSetKernelArg(H->worker[i].kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription,               sizeof(cl_float16), &H->sim_desc);
+        ret |= clSetKernelArg(H->worker[i].kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocityDescription,  sizeof(cl_float16), &H->worker[i].vel_desc);
+        ret |= clSetKernelArg(H->worker[i].kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription,          sizeof(cl_float16), &H->sim_desc);
         
         ret |= clSetKernelArg(H->worker[i].kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocityDescription,     sizeof(cl_float16), &H->worker[i].vel_desc);
         ret |= clSetKernelArg(H->worker[i].kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDescription,           sizeof(cl_float16), &H->worker[i].adm_desc[a]);

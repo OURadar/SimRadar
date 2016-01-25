@@ -441,7 +441,6 @@ typedef struct _rs_handle {
 	// CPU side memory
 	cl_float4              *anchor_pos;
 	cl_float4              *anchor_lines;
-	cl_float4              beam_pos;
     
     // DSD parameters
     char                   dsd_name;
