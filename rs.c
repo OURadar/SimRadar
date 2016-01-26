@@ -376,25 +376,6 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     }
 
     ret = CL_SUCCESS;
-    ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentSignal,    sizeof(cl_mem), &C->scat_sig);
-    ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentPosition,  sizeof(cl_mem), &C->scat_pos);
-    ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentAttribute, sizeof(cl_mem), &C->scat_att);
-    if (ret != CL_SUCCESS) {
-        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_sig_dsd().\n", now());
-        exit(EXIT_FAILURE);
-    }
-
-    ret = CL_SUCCESS;
-    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorDropSizeDistributionKernalArgumentColor,     sizeof(cl_mem),   &C->scat_clr);
-    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorDropSizeDistributionKernalArgumentPosition,  sizeof(cl_mem),   &C->scat_pos);
-    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorDropSizeDistributionKernalArgumentAttribute, sizeof(cl_mem),   &C->scat_att);
-    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorDropSizeDistributionKernalArgumentAttribute, sizeof(cl_uint4), &H->draw_mode);
-    if (ret != CL_SUCCESS) {
-        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_clr().\n", now());
-        exit(EXIT_FAILURE);
-    }
-
-    ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentAttribute,              sizeof(cl_mem),    &C->scat_att);
     ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentPosition,               sizeof(cl_mem),    &C->scat_pos);
     ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentWeightTable,            sizeof(cl_mem),    &C->angular_weight);
@@ -402,6 +383,25 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentSimulationDescription,  sizeof(cl_mem),    &H->sim_desc);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_wa().\n", now());
+        exit(EXIT_FAILURE);
+    }
+    
+    ret = CL_SUCCESS;
+    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentColor,     sizeof(cl_mem),   &C->scat_clr);
+    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentPosition,  sizeof(cl_mem),   &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentAttribute, sizeof(cl_mem),   &C->scat_att);
+    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentDrawMode,  sizeof(cl_uint4), &H->draw_mode);
+    if (ret != CL_SUCCESS) {
+        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_clr().\n", now());
+        exit(EXIT_FAILURE);
+    }
+    
+    ret = CL_SUCCESS;
+    ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentSignal,    sizeof(cl_mem), &C->scat_sig);
+    ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentPosition,  sizeof(cl_mem), &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentAttribute, sizeof(cl_mem), &C->scat_att);
+    if (ret != CL_SUCCESS) {
+        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_sig_dsd().\n", now());
         exit(EXIT_FAILURE);
     }
 
@@ -869,6 +869,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
 	H->params.c = 3.0e8f;
 	H->params.body_per_cell = RS_BODY_PER_CELL;
 	H->params.domain_pad_factor = RS_DOMAIN_PAD;
+    H->params.lambda = 0.1f;
 	H->params.prt = 0.0f;
 	H->num_workers = 1;
     H->num_species = 1;
@@ -1328,6 +1329,7 @@ void RS_init_scat_pos(RSHandle *H) {
     H->sim_desc.s[RSSimulationDescriptionBeamUnitX] = 0.0f;
     H->sim_desc.s[RSSimulationDescriptionBeamUnitY] = 1.0f;
     H->sim_desc.s[RSSimulationDescriptionBeamUnitZ] = 0.0f;
+    H->sim_desc.s[RSSimulationDescriptionWaveNumber] = 4.0f * M_PI / H->params.lambda;
     H->sim_desc.s[RSSimulationDescriptionTimeIncrement] = H->params.prt;
     H->sim_desc.s[RSSimulationDescriptionTotalParticles] = H->num_scats;
     H->sim_desc.s[RSSimulationDescriptionDebrisAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTable3DDescriptionRefreshTime];
@@ -1344,6 +1346,11 @@ void RS_set_concept(RSHandle *H, RSSimluationConcept c) {
 void RS_set_prt(RSHandle *H, const float prt) {
 	H->params.prt = prt;
 	H->params.prf = 1.0f / prt;
+}
+
+
+void RS_set_lambda(RSHandle *H, const float lambda) {
+    H->params.lambda = lambda;
 }
 
 
@@ -3794,6 +3801,7 @@ void RS_make_pulse(RSHandle *H) {
 	
     for (i = 0; i < H->num_workers; i++) {
         clWaitForEvents(1, &pass_2_events[i]);
+        clReleaseEvent(wa_events[i]);
 		clReleaseEvent(pass_1_events[i]);
 		clReleaseEvent(pass_2_events[i]);
     }

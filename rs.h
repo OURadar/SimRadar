@@ -232,7 +232,7 @@ enum RSSimulationDescription {
     RSSimulationDescriptionBeamUnitY          =  1,
     RSSimulationDescriptionBeamUnitZ          =  2,
     RSSimulationDescriptionTotalParticles     =  3,
-    RSSimulationDescription4                  =  4,
+    RSSimulationDescriptionWaveNumber         =  4,
     RSSimulationDescription5                  =  5,
     RSSimulationDescription6                  =  6,
     RSSimulationDescriptionSimTic             =  7,
@@ -486,6 +486,7 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint group_
 void RS_set_concept(RSHandle *H, RSSimluationConcept c);
 
 void RS_set_prt(RSHandle *H, const float prt);
+void RS_set_lambda(RSHandle *H, const float lambda);
 void RS_set_density(RSHandle *H, const float density);
 void RS_set_antenna_params(RSHandle *H, RSfloat beamwidth_deg, RSfloat gain_dbi);
 void RS_set_tx_params(RSHandle *H, RSfloat pulsewidth, RSfloat tx_power_watt);

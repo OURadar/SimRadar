@@ -195,18 +195,20 @@ int main(int argc, char *argv[]) {
 
     // Now, we are ready to bake
     int k = 0;
-//    const int ks = 10;
-//    for (k=0; k<ks; k++) {
-//        RS_make_pulse(S);
-//        RS_set_beam_pos(S, 15.0f, 10.0f);
-//        RS_advance_time(S);
-//        
-//        if (verb > 2) {
-//            RS_download(S);
-//            printf("== k = %d ==============\n", k);
-//            RS_show_scat_pos(S);
-//        }
-//    }
+
+    // Some warm up
+    const int ks = 10;
+    for (k=0; k<ks; k++) {
+        RS_set_beam_pos(S, 15.0f, 10.0f);
+        RS_make_pulse(S);
+        RS_advance_time(S);
+        
+        if (verb > 2) {
+            RS_download(S);
+            printf("== k = %d ==============\n", k);
+            RS_show_scat_pos(S);
+        }
+    }
     
     //RS_sig_from_dsd(S);
     
@@ -216,8 +218,8 @@ int main(int argc, char *argv[]) {
     
     for (; k<num_frames; k++) {
         RS_set_beam_pos(S, az_deg, el_deg);
-        RS_advance_time(S);
         RS_make_pulse(S);
+        RS_advance_time(S);
 
         if (verb > 1) {
             RS_download(S);

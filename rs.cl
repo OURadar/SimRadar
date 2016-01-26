@@ -12,23 +12,23 @@ enum RSTableSpacing {
     RSTableSpacingStretchedXYZ     = RSTableSpacingStretchedX | RSTableSpacingStretchedY | RSTableSpacingStretchedZ
 };
 
-enum RSSimulationParameter {
-    RSSimulationParameterBeamUnitX     =  0,
-    RSSimulationParameterBeamUnitY     =  1,
-    RSSimulationParameterBeamUnitZ     =  2,
-    RSSimulationParameterDebrisCount   =  3,
-    RSSimulationParameter4             =  4,
-    RSSimulationParameter5             =  5,
-    RSSimulationParameter6             =  6,
-    RSSimulationParameterSimTic        =  7,
-    RSSimulationParameterBoundOriginX  =  8,
-    RSSimulationParameterBoundOriginY  =  9,
-    RSSimulationParameterBoundOriginZ  =  10,
-    RSSimulationParameterPRT           =  11,
-    RSSimulationParameterBoundSizeX    =  12, // hi.s4
-    RSSimulationParameterBoundSizeY    =  13, // hi.s5
-    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
-    RSSimulationParameterAgeIncrement  =  15  // PRT / vel_desc.tr
+enum RSSimulationDescription {
+    RSSimulationDescriptionBeamUnitX     =  0,
+    RSSimulationDescriptionBeamUnitY     =  1,
+    RSSimulationDescriptionBeamUnitZ     =  2,
+    RSSimulationDescriptionDebrisCount   =  3,
+    RSSimulationDescriptionWaveNumber    =  4,
+    RSSimulationDescription5             =  5,
+    RSSimulationDescription6             =  6,
+    RSSimulationDescriptionSimTic        =  7,
+    RSSimulationDescriptionBoundOriginX  =  8,
+    RSSimulationDescriptionBoundOriginY  =  9,
+    RSSimulationDescriptionBoundOriginZ  =  10,
+    RSSimulationDescriptionPRT           =  11,
+    RSSimulationDescriptionBoundSizeX    =  12, // hi.s4
+    RSSimulationDescriptionBoundSizeY    =  13, // hi.s5
+    RSSimulationDescriptionBoundSizeZ    =  14, // hi.s6
+    RSSimulationDescriptionAgeIncrement  =  15  // PRT / vel_desc.tr
 };
 
 enum RSTable3DDescription {
@@ -71,10 +71,7 @@ enum RSTable3DStaggeredDescription {
 
 float4 rand(uint4 *seed);
 float4 set_clr(float4 att);
-float compute_angular_weight(float4 pos,
-                             __constant float *angular_weight,
-                             const float4 angular_weight_desc,
-                             const float16 sim_desc);
+
 #pragma mark -
 
 float4 quat_mult(float4 left, float4 right);
@@ -223,37 +220,6 @@ float4 two_way_effects(const float4 sig_in, const float range, const float wav_n
     return complex_multiply(sig_in, (float4)(c, s, c, s)) * atten;
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////
-//
-// Angular weighting function
-//
-
-float compute_angular_weight(float4 pos,
-                             __constant float *angular_weight,
-                             const float4 angular_weight_desc,
-                             const float16 sim_desc)
-{
-    //
-    //    RSSimulationParameterBeamUnitX     =  0,
-    //    RSSimulationParameterBeamUnitY     =  1,
-    //    RSSimulationParameterBeamUnitZ     =  2,
-    //
-    float angle = acos(dot(sim_desc.s012, normalize(pos.xyz)));
-    
-    float2 table_s = (float2)(angular_weight_desc.s0, angular_weight_desc.s0);
-    float2 table_o = (float2)(angular_weight_desc.s1, angular_weight_desc.s1) + (float2)(0.0f, 1.0f);
-    float2 angle_2 = (float2)(angle, angle);
-    
-    // scale, offset, clamp to edge
-    uint2  iidx_int;
-    float2 fidx_int;
-    float2 fidx_raw = clamp(fma(angle_2, table_s, table_o), 0.0f, angular_weight_desc.s2);
-    float2 fidx_dec = fract(fidx_raw, &fidx_int);
-    
-    iidx_int = convert_uint2(fidx_int);
-    
-    return mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
-}
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -322,24 +288,7 @@ float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16
 
 float4 compute_bg_vel(const float4 pos, __read_only image3d_t wind_uvw, const float16 wind_desc, const float16 sim_desc) {
     const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
-    //
-    //    RSSimulationParameterBeamUnitX     =  0,
-    //    RSSimulationParameterBeamUnitY     =  1,
-    //    RSSimulationParameterBeamUnitZ     =  2,
-    //    RSSimulationParameterDebrisCount   =  3,
-    //    RSSimulationParameter4             =  4,
-    //    RSSimulationParameter5             =  5,
-    //    RSSimulationParameter6             =  6,
-    //    RSSimulationParameterSimTic        =  7,
-    //    RSSimulationParameterBoundOriginX  =  8,  // hi.s0
-    //    RSSimulationParameterBoundOriginY  =  9,  // hi.s1
-    //    RSSimulationParameterBoundOriginZ  =  10, // hi.s2
-    //    RSSimulationParameterPRT           =  11,
-    //    RSSimulationParameterBoundSizeX    =  12, // hi.s4
-    //    RSSimulationParameterBoundSizeY    =  13, // hi.s5
-    //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
-    //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
-    //
+
     float4 wind_coord = wind_table_index(pos, wind_desc, sim_desc);
     
     return read_imagef(wind_uvw, sampler, wind_coord);
@@ -557,36 +506,27 @@ __kernel void bg_atts(__global float4 *p,
     
     const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
     
-    //    RSSimulationParameterBeamUnitX     =  0,
-    //    RSSimulationParameterBeamUnitY     =  1,
-    //    RSSimulationParameterBeamUnitZ     =  2,
-    //    RSSimulationParameterDebrisCount   =  3,
-    //    RSSimulationParameter4             =  4,
-    //    RSSimulationParameter5             =  5,
-    //    RSSimulationParameter6             =  6,
-    //    RSSimulationParameter7             =  7,
-    //    RSSimulationParameterBoundOriginX  =  8,  // hi.s0
-    //    RSSimulationParameterBoundOriginY  =  9,  // hi.s1
-    //    RSSimulationParameterBoundOriginZ  =  10, // hi.s2
-    //    RSSimulationParameterPRT           =  11,
-    //    RSSimulationParameterBoundSizeX    =  12, // hi.s4
-    //    RSSimulationParameterBoundSizeY    =  13, // hi.s5
-    //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
-    //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
+    //    RSSimulationDescriptionBeamUnitX     =  0,
+    //    RSSimulationDescriptionBeamUnitY     =  1,
+    //    RSSimulationDescriptionBeamUnitZ     =  2,
+    //    RSSimulationDescriptionDebrisCount   =  3,
+    //    RSSimulationDescriptionWaveNumber    =  4,
+    //    RSSimulationDescription5             =  5,
+    //    RSSimulationDescription6             =  6,
+    //    RSSimulationDescription7             =  7,
+    //    RSSimulationDescriptionBoundOriginX  =  8,  // hi.s0
+    //    RSSimulationDescriptionBoundOriginY  =  9,  // hi.s1
+    //    RSSimulationDescriptionBoundOriginZ  =  10, // hi.s2
+    //    RSSimulationDescriptionPRT           =  11,
+    //    RSSimulationDescriptionBoundSizeX    =  12, // hi.s4
+    //    RSSimulationDescriptionBoundSizeY    =  13, // hi.s5
+    //    RSSimulationDescriptionBoundSizeZ    =  14, // hi.s6
+    //    RSSimulationDescriptionAgeIncrement  =  15, // PRT / vel_desc.tr
     const float4 dt = (float4)(sim_desc.sb, sim_desc.sb, sim_desc.sb, 0.0f);
     
     // Future position, orientation, etc.
     pos += vel * dt;
     
-    // Check for bounding constraints
-    //    RSSimulationParameterBoundOriginX  =  8,  // hi.s0
-    //    RSSimulationParameterBoundOriginY  =  9,  // hi.s1
-    //    RSSimulationParameterBoundOriginZ  =  10, // hi.s2
-    //    RSSimulationParameterPRT           =  11,
-    //    RSSimulationParameterBoundSizeX    =  12, // hi.s4
-    //    RSSimulationParameterBoundSizeY    =  13, // hi.s5
-    //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
-    //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
     int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
     
     //if (is_outside | isgreater(aux.s1, 1.0f)) {
@@ -597,6 +537,12 @@ __kernel void bg_atts(__global float4 *p,
         pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
         aux.s1 = 0.0f;
         vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
+        
+        p[i] = pos;
+        v[i] = vel;
+        a[i] = aux;
+
+        return;
     } else {
         aux.s1 += sim_desc.sf;
     }
@@ -635,22 +581,22 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
 
     const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
 
-    //    RSSimulationParameterBeamUnitX     =  0,
-    //    RSSimulationParameterBeamUnitY     =  1,
-    //    RSSimulationParameterBeamUnitZ     =  2,
-    //    RSSimulationParameterDebrisCount   =  3,
-    //    RSSimulationParameter4             =  4,
-    //    RSSimulationParameter5             =  5,
-    //    RSSimulationParameter6             =  6,
-    //    RSSimulationParameter7             =  7,
-    //    RSSimulationParameterBoundOriginX  =  8,  // hi.s0
-    //    RSSimulationParameterBoundOriginY  =  9,  // hi.s1
-    //    RSSimulationParameterBoundOriginZ  =  10, // hi.s2
-    //    RSSimulationParameterPRT           =  11,
-    //    RSSimulationParameterBoundSizeX    =  12, // hi.s4
-    //    RSSimulationParameterBoundSizeY    =  13, // hi.s5
-    //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
-    //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
+    //    RSSimulationDescriptionBeamUnitX     =  0,
+    //    RSSimulationDescriptionBeamUnitY     =  1,
+    //    RSSimulationDescriptionBeamUnitZ     =  2,
+    //    RSSimulationDescriptionDebrisCount   =  3,
+    //    RSSimulationDescriptionWaveNumber    =  4,
+    //    RSSimulationDescription5             =  5,
+    //    RSSimulationDescription6             =  6,
+    //    RSSimulationDescription7             =  7,
+    //    RSSimulationDescriptionBoundOriginX  =  8,  // hi.s0
+    //    RSSimulationDescriptionBoundOriginY  =  9,  // hi.s1
+    //    RSSimulationDescriptionBoundOriginZ  =  10, // hi.s2
+    //    RSSimulationDescriptionPRT           =  11,
+    //    RSSimulationDescriptionBoundSizeX    =  12, // hi.s4
+    //    RSSimulationDescriptionBoundSizeY    =  13, // hi.s5
+    //    RSSimulationDescriptionBoundSizeZ    =  14, // hi.s6
+    //    RSSimulationDescriptionAgeIncrement  =  15, // PRT / vel_desc.tr
     const float4 dt = (float4)(sim_desc.sb, sim_desc.sb, sim_desc.sb, 0.0f);
     
     //pos.w = 0.0003f; // fixed size @ .3 mm
@@ -666,14 +612,14 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
     pos += vel * dt;
     
     // Check for bounding constraints
-    //    RSSimulationParameterBoundOriginX  =  8,  // hi.s0
-    //    RSSimulationParameterBoundOriginY  =  9,  // hi.s1
-    //    RSSimulationParameterBoundOriginZ  =  10, // hi.s2
-    //    RSSimulationParameterPRT           =  11,
-    //    RSSimulationParameterBoundSizeX    =  12, // hi.s4
-    //    RSSimulationParameterBoundSizeY    =  13, // hi.s5
-    //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
-    //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
+    //    RSSimulationDescriptionBoundOriginX  =  8,  // hi.s0
+    //    RSSimulationDescriptionBoundOriginY  =  9,  // hi.s1
+    //    RSSimulationDescriptionBoundOriginZ  =  10, // hi.s2
+    //    RSSimulationDescriptionPRT           =  11,
+    //    RSSimulationDescriptionBoundSizeX    =  12, // hi.s4
+    //    RSSimulationDescriptionBoundSizeY    =  13, // hi.s5
+    //    RSSimulationDescriptionBoundSizeZ    =  14, // hi.s6
+    //    RSSimulationDescriptionAgeIncrement  =  15, // PRT / vel_desc.tr
     int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456) | !all(isfinite(pos.xyz)));
     
     if (is_outside) {
@@ -685,54 +631,58 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
         vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
         y[i] = seed;
 
-    } else {
-    
-        float4 wind_coord = wind_table_index(pos, wind_desc, sim_desc);
-
-        float4 bg_vel = read_imagef(wind_uvw, sampler, wind_coord);
-
-        // Particle velocity due to drag
-        float4 delta_v = bg_vel - vel;
-        float delta_v_abs = length(delta_v.xyz);
+        aux.s0 = length(pos.xyz);
         
+        p[i] = pos;
+        v[i] = vel;
+        a[i] = aux;
+        x[i] = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
+
+        return;
+    }
+
+    float4 wind_coord = wind_table_index(pos, wind_desc, sim_desc);
+
+    float4 bg_vel = read_imagef(wind_uvw, sampler, wind_coord);
+
+    // Particle velocity due to drag
+    float4 delta_v = bg_vel - vel;
+    float delta_v_abs = length(delta_v.xyz);
+    
 //        if (i < 10)
 //            printf("bg_vel = %.2v4f  vel = %.2v4f  delta_v = %.2v4f  bd = %.2v4f\n", bg_vel, vel, delta_v, bg_vel / dt);
 //        else if (i == 10)
 //            printf("--------\n");
+    
+    if (delta_v_abs > 1.0e-3f) {
+
+        // Calculate Reynold's number with air density and viscousity
+        const float rho_air = 1.225f;                                // 1.225 kg m^-3
+        const float rho_over_mu_air = 6.7308e4f;                     // 1.225 / 1.82e-5 kg m^-1 s^-1 = 6.7308e4 (David)
+        const float area_over_mass_particle = 0.003006012f / pos.w;  // 4 * PI * R ^ 2 / ( ( 4 / 3 ) * PI * R ^ 3 * rho ) = 0.0030054 / r (rho = 998)
         
-        if (delta_v_abs > 1.0e-3f) {
+        float re = rho_over_mu_air * (2.0f * pos.w) * delta_v_abs;
+        float cd = 24.0f / re + 6.0f / (1.0f + sqrt(re)) + 0.4f;
+        float4 dudt = (0.5f * rho_air * cd * area_over_mass_particle * delta_v_abs) * delta_v + (float4)(0.0f, 0.0f, -9.8f, 0.0f);
+        //float4 dudt = (float4)(0.0f, 0.0f, -9.8f, 0.0f);
 
-            // Calculate Reynold's number with air density and viscousity
-            const float rho_air = 1.225f;                                // 1.225 kg m^-3
-            const float rho_over_mu_air = 6.7308e4f;                     // 1.225 / 1.82e-5 kg m^-1 s^-1 = 6.7308e4 (David)
-            const float area_over_mass_particle = 0.003006012f / pos.w;  // 4 * PI * R ^ 2 / ( ( 4 / 3 ) * PI * R ^ 3 * rho ) = 0.0030054 / r (rho = 998)
-            
-            float re = rho_over_mu_air * (2.0f * pos.w) * delta_v_abs;
-            float cd = 24.0f / re + 6.0f / (1.0f + sqrt(re)) + 0.4f;
-            float4 dudt = (0.5f * rho_air * cd * area_over_mass_particle * delta_v_abs) * delta_v + (float4)(0.0f, 0.0f, -9.8f, 0.0f);
-            //float4 dudt = (float4)(0.0f, 0.0f, -9.8f, 0.0f);
+        vel += dudt * dt;
 
-            vel += dudt * dt;
+        // Bound the velocity change
+//            if (length(vel) > max(1.0f, 3.0f * length(bg_vel))) {
+//                //vel = normalize(vel) * length(bg_vel) + (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
+//                vel = bg_vel + (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
+//            }
 
-            // Bound the velocity change
-            if (length(vel) > max(1.0f, 3.0f * length(bg_vel))) {
-                //vel = normalize(vel) * length(bg_vel) + (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
-                vel = bg_vel + (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
-            }
+    } else {
 
-        } else {
-
-            vel += (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
-
-        }
+        vel += (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
 
     }
-    
+
     // Range of the point
     aux.s0 = length(pos.xyz);
     //aux.s1 = aux.s1 + sim_desc.sf;
-    
-    const float wav_num = M_PI_F * 4.0f * native_recip(0.03f);  // 4 * PI / lambda
 
     // Ratio is usually in ( semi-major : semi-minor ) = ( H : V );
     // Use (1.0, 0.0) for H and (v, 0.0) for V
@@ -742,8 +692,8 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
     float4 DD = pown((float4)(D, D, D, D), (int4)(1, 2, 3, 4));
     float vv = 1.0048f + dot((float4)(5.7e-4f, -2.628e-2f, 3.682e-3f, -1.667e-4f), DD);
 
-    // Parameterize sig_in as a function of drop size
-    sig = two_way_effects((float4)(1.0f, 0.0f, vv, 0.0f), aux.s0, wav_num);
+    // Parameterize signal as a function of drop size; aux.s0 = range
+    sig = two_way_effects((float4)(1.0f, 0.0f, vv, 0.0f), aux.s0, sim_desc.s4);
 
     p[i] = pos;
     v[i] = vel;
@@ -778,10 +728,6 @@ __kernel void db_atts(__global float4 *p,
     float4 tum = t[i];  // tumbling (orientation change)
     float4 aux = a[i];  // auxiliary
     float4 sig = x[i];  // signal
-    
-//    if (i == 513536) {
-//        printf("global_id = %d   vel = %.4v4f\n", i, vel);
-//    }
 
 //    if (sim_desc.s7 < 10 && i == (int)sim_desc.s3) {
 //        printf("i=%.1f  ori = %5.2v4f  tum =  = %5.2v4f\n", sim_desc.s3, ori, tum);
@@ -796,14 +742,14 @@ __kernel void db_atts(__global float4 *p,
     pos += vel * dt;
     
     // Check for bounding constraints
-    //    RSSimulationParameterBoundOriginX  =  8,  // hi.s0
-    //    RSSimulationParameterBoundOriginY  =  9,  // hi.s1
-    //    RSSimulationParameterBoundOriginZ  =  10, // hi.s2
-    //    RSSimulationParameterPRT           =  11,
-    //    RSSimulationParameterBoundSizeX    =  12, // hi.s4
-    //    RSSimulationParameterBoundSizeY    =  13, // hi.s5
-    //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
-    //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
+    //    RSSimulationDescriptionBoundOriginX  =  8,  // hi.s0
+    //    RSSimulationDescriptionBoundOriginY  =  9,  // hi.s1
+    //    RSSimulationDescriptionBoundOriginZ  =  10, // hi.s2
+    //    RSSimulationDescriptionPRT           =  11,
+    //    RSSimulationDescriptionBoundSizeX    =  12, // hi.s4
+    //    RSSimulationDescriptionBoundSizeY    =  13, // hi.s5
+    //    RSSimulationDescriptionBoundSizeZ    =  14, // hi.s6
+    //    RSSimulationDescriptionAgeIncrement  =  15, // PRT / vel_desc.tr
     int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
     
     if (is_outside) {
@@ -919,9 +865,9 @@ __kernel void scat_wa(__global float4 *a,
 {
     unsigned int i = get_global_id(0);
 
-    //    RSSimulationParameterBeamUnitX     =  0,
-    //    RSSimulationParameterBeamUnitY     =  1,
-    //    RSSimulationParameterBeamUnitZ     =  2,
+    //    RSSimulationDescriptionBeamUnitX     =  0,
+    //    RSSimulationDescriptionBeamUnitY     =  1,
+    //    RSSimulationDescriptionBeamUnitZ     =  2,
     float angle = acos(dot(sim_desc.s012, normalize(p[i].xyz)));
     
     float2 table_s = (float2)(angular_weight_desc.s0, angular_weight_desc.s0);

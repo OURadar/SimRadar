@@ -48,16 +48,18 @@ enum RSDebrisAttributeKernelArgument {
     RSDebrisAttributeKernelArgumentSimulationDescription         = 15
 };
 
+enum RSScattererColorKernelArgument {
+    RSScattererColorKernelArgumentColor     = 0,
+    RSScattererColorKernelArgumentPosition  = 1,
+    RSScattererColorKernelArgumentAttribute = 2,
+    RSScattererColorKernelArgumentDrawMode  = 3
+};
+
+
 enum RSScattererSignalDropSizeDistributionKernalArgument {
     RSScattererSignalDropSizeDistributionKernalArgumentSignal    = 0,
     RSScattererSignalDropSizeDistributionKernalArgumentPosition  = 1,
     RSScattererSignalDropSizeDistributionKernalArgumentAttribute = 2
-};
-
-enum RSScattererColorDropSizeDistributionKernalArgument {
-    RSScattererColorDropSizeDistributionKernalArgumentColor     = 0,
-    RSScattererColorDropSizeDistributionKernalArgumentPosition  = 1,
-    RSScattererColorDropSizeDistributionKernalArgumentAttribute = 2
 };
 
 enum RSScattererAngularWeightKernalArgument {
