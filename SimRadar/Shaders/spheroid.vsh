@@ -33,7 +33,7 @@ void main (void)
     // The alpha component follows the drawColor's alpha
     varColor.w = drawColor.w;
     if (pingPong) {
-        // Make smaller drops more transparent
+        // Make smaller drops even more transparent
         varColor.w *= inColor.x;
     }
 

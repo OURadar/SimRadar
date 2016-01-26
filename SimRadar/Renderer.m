@@ -1122,11 +1122,12 @@
         glUniform4f(bodyRenderer[i].sizeUI, pixelsPerUnit * devicePixelRatio, 1.0f, 1.0f, 1.0f);
         glUniform4f(bodyRenderer[i].colorUI, bodyRenderer[i].colormapIndexNormalized, 1.0f, 1.0f, backgroundOpacity);
         glUniformMatrix4fv(bodyRenderer[i].mvpUI, 1, GL_FALSE, modelViewProjection.m);
-        if (debrisRenderer[0].count > 100000) {
-            glUniform1i(bodyRenderer[i].pingPongUI, 1);
-        } else {
-            glUniform1i(bodyRenderer[i].pingPongUI, 0);
-        }
+//        if (debrisRenderer[0].count > 100000) {
+//            glUniform1i(bodyRenderer[i].pingPongUI, 1);
+//        } else {
+//            glUniform1i(bodyRenderer[i].pingPongUI, 0);
+//        }
+        glUniform1i(bodyRenderer[i].pingPongUI, blurSmallScatterers);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, bodyRenderer[i].textureID);
         glActiveTexture(GL_TEXTURE1);
@@ -1590,6 +1591,12 @@
 {
     applyVFX = !applyVFX;
 }
+
+
+- (void)toggleBlurSmallScatterer {
+    blurSmallScatterers = !blurSmallScatterers;
+}
+
 
 
 - (void)cycleVFX

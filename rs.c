@@ -3660,11 +3660,13 @@ void RS_advance_time(RSHandle *H) {
         if (H->sim_concept & RSSimluationConceptDraggedBackground) {
             clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
             clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-            clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->species_origin[0], &C->species_population[0], &local_item_size, 0, NULL, &events[i][0]);
+            //clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->species_origin[0], &C->species_population[0], &local_item_size, 0, NULL, &events[i][0]);
+            clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->species_origin[0], &C->species_population[0], &local_item_size, 0, NULL, NULL);
         } else {
             clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
             clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-            clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_bg_atts, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i][0]);
+            //clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_bg_atts, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i][0]);
+            clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_bg_atts, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, NULL);
         }
         
         // Debris particles
@@ -3683,7 +3685,8 @@ void RS_advance_time(RSHandle *H) {
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[r]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[r]);
 
-                clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->species_origin[k], &C->species_population[k], &local_item_size, 0, NULL, &events[i][k]);
+                //clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->species_origin[k], &C->species_population[k], &local_item_size, 0, NULL, &events[i][k]);
+                clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->species_origin[k], &C->species_population[k], &local_item_size, 0, NULL, NULL);
             }
             r = r == H->rcs_count - 1 ? 0 : r + 1;
             a = a == H->adm_count - 1 ? 0 : a + 1;
@@ -3695,21 +3698,25 @@ void RS_advance_time(RSHandle *H) {
     }
     
     for (i = 0; i < H->num_workers; i++) {
-        clWaitForEvents(1, events[i]);
-        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
-            if (H->worker[i].species_population[k]) {
-                clWaitForEvents(1, &events[i][k]);
-            }
-        }
+        clFinish(H->worker[i].que);
     }
-	
-    for (i = 0; i < H->num_workers; i++) {
-        for (k=0; k < RS_MAX_DEBRIS_TYPES; k++) {
-            if (H->worker[i].species_population[k]) {
-                clReleaseEvent(events[i][k]);
-            }
-        }
-    }
+    
+//    for (i = 0; i < H->num_workers; i++) {
+//        clWaitForEvents(1, events[i]);
+//        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
+//            if (H->worker[i].species_population[k]) {
+//                clWaitForEvents(1, &events[i][k]);
+//            }
+//        }
+//    }
+//	
+//    for (i = 0; i < H->num_workers; i++) {
+//        for (k=0; k < RS_MAX_DEBRIS_TYPES; k++) {
+//            if (H->worker[i].species_population[k]) {
+//                clReleaseEvent(events[i][k]);
+//            }
+//        }
+//    }
 	
 #endif
 	

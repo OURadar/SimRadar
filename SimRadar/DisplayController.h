@@ -26,6 +26,8 @@
     GLfloat *sampleAnchorLines, *sampleAnchors;
     
     Recorder *recorder;
+    
+    int mkey;
 }
 
 @property (nonatomic, retain) SimPoint *sim;

@@ -127,6 +127,7 @@ enum RendererLineSegment {
     BOOL showHUD;
     BOOL applyVFX;
     BOOL colorbarNeedsUpdate;
+    BOOL blurSmallScatterers;
 	
 	@private
 	
@@ -203,6 +204,7 @@ enum RendererLineSegment {
 - (void)toggleSpinModelReverse;
 - (void)toggleHUDVisibility;
 - (void)toggleVFX;
+- (void)toggleBlurSmallScatterer;
 
 - (void)increaseBackgroundOpacity;
 - (void)decreaseBackgroundOpacity;

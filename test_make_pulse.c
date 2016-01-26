@@ -16,12 +16,13 @@
 #define GROUP_COUNTS  (64)
 
 enum {
-	TEST_N0NE        = 0,
-	TEST_CPU         = 1,
-	TEST_GPU_PASS_1  = 1 << 1,
-	TEST_GPU_PASS_2  = 1 << 2,
-	TEST_GPU         = TEST_GPU_PASS_1 | TEST_GPU_PASS_2,
-	TEST_ALL         = TEST_CPU | TEST_GPU
+	TEST_N0NE         = 0,
+	TEST_CPU          = 1,
+	TEST_GPU_PASS_1   = 1 << 1,
+	TEST_GPU_PASS_2   = 1 << 2,
+    TEST_GPU_DB_ATTS  = 1 << 3,
+	TEST_GPU          = TEST_GPU_PASS_1 | TEST_GPU_PASS_2 | TEST_GPU_DB_ATTS,
+	TEST_ALL          = TEST_CPU | TEST_GPU
 };
 
 
@@ -50,13 +51,35 @@ int main(int argc, char **argv)
 	cl_int ret;
 	cl_context context;
 	cl_program program;
-	cl_mem sig;
+	
+    cl_mem sig;
     cl_mem pos;
+    cl_mem vel;
+    cl_mem ori;
+    cl_mem tum;
 	cl_mem att;
+    cl_mem rnd;
 	cl_mem work;
 	cl_mem pulse;
+    
+    cl_float16 sim_desc;
+    
 	cl_mem range_weight;
-	cl_kernel kernel_pop;
+    cl_float4 range_weight_desc;
+    
+    cl_mem les;
+    cl_float16 les_desc;
+    
+    cl_mem adm_cd;
+    cl_mem adm_cm;
+    cl_float16 adm_desc;
+    
+    cl_mem rcs_real;
+    cl_mem rcs_imag;
+    cl_float16 rcs_desc;
+	
+    cl_kernel kernel_pop;
+    cl_kernel kernel_db_atts;
 	cl_kernel kernel_make_pulse_pass_1;
 	cl_kernel kernel_make_pulse_pass_2;
 	cl_command_queue queue;
@@ -64,9 +87,11 @@ int main(int argc, char **argv)
 	size_t size = 0;
 	size_t max_workgroup_size = 0;
 	
-	unsigned int num_elem = NUM_ELEM;
+    cl_event events[2];
+    
+    unsigned int num_elem = NUM_ELEM;
 
-	while ((c = getopt(argc, argv, "ac12gvn:p:h?")) != -1) {
+	while ((c = getopt(argc, argv, "ac12dgvn:p:h?")) != -1) {
 		switch (c) {
 			case 'a':
 				test = TEST_ALL;
@@ -77,6 +102,9 @@ int main(int argc, char **argv)
 			case '2':
 				test |= TEST_GPU_PASS_2;
 				break;
+            case 'd':
+                test |= TEST_GPU_DB_ATTS;
+                break;
 			case 'g':
 				test |= TEST_GPU;
 				break;
@@ -100,6 +128,7 @@ int main(int argc, char **argv)
 					   "    -c     CPU test\n"
 					   "    -1     GPU Pass 1 test\n"
 					   "    -2     GPU Pass 2 test\n"
+                       "    -d     GPU db_atts test\n"
 					   "    -g     All GPU Tests\n"
 					   "    -v     increases verbosity\n"
 					   "    -n N   speed test using N iterations\n"
@@ -182,7 +211,11 @@ int main(int argc, char **argv)
 	// GPU memory
 	sig = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_float4), NULL, &ret);
     pos = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_float4), NULL, &ret);
+    vel = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_float4), NULL, &ret);
+    ori = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_float4), NULL, &ret);
+    tum = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_float4), NULL, &ret);
 	att = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_float4), NULL, &ret);
+    rnd = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_uint4), NULL, &ret);
 	work = clCreateBuffer(context, CL_MEM_READ_WRITE, RANGE_GATES * GROUP_ITEMS * sizeof(cl_float4), NULL, &ret);
 	pulse = clCreateBuffer(context, CL_MEM_READ_WRITE, RANGE_GATES * sizeof(cl_float4), NULL, &ret);
 	range_weight = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 3 * sizeof(cl_float), range_weight_cpu, &ret);
@@ -274,7 +307,7 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-    cl_float4 range_weight_desc = {{range_weight_table_dx, range_weight_table_x0, range_weight_table_xm, 0.0f}};
+    range_weight_desc = (cl_float4){{range_weight_table_dx, range_weight_table_x0, range_weight_table_xm, 0.0f}};
     
 	err = CL_SUCCESS;
 	err |= clSetKernelArg(kernel_make_pulse_pass_1, 0, sizeof(cl_mem), &work);
@@ -331,8 +364,6 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-    cl_event events[2];
-    
 	err = CL_SUCCESS;
 	err |= clEnqueueNDRangeKernel(queue, kernel_make_pulse_pass_1, 1, NULL, &R.global[0], &R.local[0], 0, NULL, &events[0]);
 	err |= clEnqueueNDRangeKernel(queue, kernel_make_pulse_pass_2, 1, NULL, &R.global[1], &R.local[1], 1, &events[0], &events[1]);
@@ -371,7 +402,133 @@ int main(int argc, char **argv)
 	printf("\n");
 	printf("Delta avg : %e\n", avg_delta);
 	
-	if (test & TEST_ALL) {
+
+    
+    // db_atts
+    
+    cl_float4 *table = (cl_float4 *)malloc(3 * 4 * 5 * sizeof(cl_float4));
+    
+#if defined (CL_VERSION_1_2)
+    
+    cl_image_desc desc;
+    desc.image_type = CL_MEM_OBJECT_IMAGE3D;
+    desc.image_width  = 3;
+    desc.image_height = 4;
+    desc.image_depth  = 5;
+    desc.image_array_size = 0;
+    desc.image_row_pitch = desc.image_width * sizeof(cl_float4);
+    desc.image_slice_pitch = desc.image_height * desc.image_row_pitch;
+    desc.num_mip_levels = 0;
+    desc.num_samples = 0;
+    desc.buffer = NULL;
+    
+    cl_mem_flags flags = CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR;
+    cl_image_format format = {CL_RGBA, CL_FLOAT};
+    
+    les = clCreateImage(context, flags, &format, &desc, table, &ret);
+    adm_cd = clCreateImage(context, flags, &format, &desc, table, &ret);
+    adm_cm = clCreateImage(context, flags, &format, &desc, table, &ret);
+    rcs_real = clCreateImage(context, flags, &format, &desc, table, &ret);
+    rcs_imag = clCreateImage(context, flags, &format, &desc, table, &ret);
+    
+#else
+    
+    les = clCreateImage3D(H->worker[i].context, flags, &format, 3, 4, 5, 3 * sizeof(cl_float4), 4 * 3 * sizeof(cl_float4), table, &ret);
+    adm_cd = clCreateImage3D(H->worker[i].context, flags, &format, 3, 4, 5, 3 * sizeof(cl_float4), 4 * 3 * sizeof(cl_float4), table, &ret);
+    adm_cm = clCreateImage3D(H->worker[i].context, flags, &format, 3, 4, 5, 3 * sizeof(cl_float4), 4 * 3 * sizeof(cl_float4), table, &ret);
+    rcs_real = clCreateImage3D(H->worker[i].context, flags, &format, 3, 4, 5, 3 * sizeof(cl_float4), 4 * 3 * sizeof(cl_float4), table, &ret);
+    rcs_imag = clCreateImage3D(H->worker[i].context, flags, &format, 3, 4, 5, 3 * sizeof(cl_float4), 4 * 3 * sizeof(cl_float4), table, &ret);
+    
+#endif
+    
+    les_desc.s[RSTable3DDescriptionScaleX] = 1.0f;
+    les_desc.s[RSTable3DDescriptionScaleY] = 1.0f;
+    les_desc.s[RSTable3DDescriptionScaleZ] = 1.0f;
+    les_desc.s[RSTable3DDescriptionOriginX] = 0.0f;
+    les_desc.s[RSTable3DDescriptionOriginY] = 0.0f;
+    les_desc.s[RSTable3DDescriptionOriginZ] = 0.0f;
+    les_desc.s[RSTable3DDescriptionMaximumX] = 2.0f;
+    les_desc.s[RSTable3DDescriptionMaximumY] = 3.0f;
+    les_desc.s[RSTable3DDescriptionMaximumZ] = 4.0f;
+    les_desc.s[RSTable3DDescriptionRefreshTime] = 1.0f;
+    
+    rcs_desc.s[RSTable3DDescriptionScaleX] = 1.0f;
+    rcs_desc.s[RSTable3DDescriptionScaleY] = 1.0f;
+    rcs_desc.s[RSTable3DDescriptionScaleZ] = 1.0f;
+    rcs_desc.s[RSTable3DDescriptionOriginX] = 0.0f;
+    rcs_desc.s[RSTable3DDescriptionOriginY] = 0.0f;
+    rcs_desc.s[RSTable3DDescriptionOriginZ] = 0.0f;
+    rcs_desc.s[RSTable3DDescriptionMaximumX] = 2.0f;
+    rcs_desc.s[RSTable3DDescriptionMaximumY] = 3.0f;
+    rcs_desc.s[RSTable3DDescriptionMaximumZ] = 4.0f;
+    
+    adm_desc.s[RSTable3DDescriptionScaleX] = 1.0f;
+    adm_desc.s[RSTable3DDescriptionScaleY] = 1.0f;
+    adm_desc.s[RSTable3DDescriptionScaleZ] = 1.0f;
+    adm_desc.s[RSTable3DDescriptionOriginX] = 0.0f;
+    adm_desc.s[RSTable3DDescriptionOriginY] = 0.0f;
+    adm_desc.s[RSTable3DDescriptionOriginZ] = 0.0f;
+    adm_desc.s[RSTable3DDescriptionMaximumX] = 2.0f;
+    adm_desc.s[RSTable3DDescriptionMaximumY] = 3.0f;
+    adm_desc.s[RSTable3DDescriptionMaximumZ] = 4.0f;
+    
+    sim_desc.s[RSSimulationDescriptionBeamUnitX] = 0.0f;
+    sim_desc.s[RSSimulationDescriptionBeamUnitY] = 1.0f;
+    sim_desc.s[RSSimulationDescriptionBeamUnitZ] = 0.0f;
+    sim_desc.s[RSSimulationDescriptionTotalParticles] = num_elem;
+    sim_desc.s[RSSimulationDescriptionWaveNumber] = 4.0f * M_PI / 0.1f;
+    sim_desc.s[RSSimulationDescriptionBoundOriginX] = -1000.0f;
+    sim_desc.s[RSSimulationDescriptionBoundOriginY] = 8000.0f;
+    sim_desc.s[RSSimulationDescriptionBoundOriginZ] = 0.0f;
+    sim_desc.s[RSSimulationDescriptionBoundSizeX] = 2000.0f;
+    sim_desc.s[RSSimulationDescriptionBoundSizeY] = 2000.0f;
+    sim_desc.s[RSSimulationDescriptionBoundSizeZ] = 2000.0f;
+    
+    free(table);
+    
+    // Debris attributes
+    kernel_db_atts = clCreateKernel(program, "db_atts", &ret);
+    if (ret != CL_SUCCESS) {
+        fprintf(stderr, "Error: Failed to compile kernel.\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    err = CL_SUCCESS;
+    ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &pos);
+    ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentOrientation,                   sizeof(cl_mem),     &ori);
+    ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &vel);
+    ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentTumble,                        sizeof(cl_mem),     &tum);
+    ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentExtras,                        sizeof(cl_mem),     &att);
+    ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentSignal,                        sizeof(cl_mem),     &sig);
+    ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &rnd);
+    ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &les);
+    ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &les_desc);
+    ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &adm_cd);
+    ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentAirDragModelMomentum,          sizeof(cl_mem),     &adm_cm);
+    ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &adm_desc);
+    ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &rcs_real);
+    ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &rcs_imag);
+    ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &rcs_desc);
+    ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
+    if (ret != CL_SUCCESS) {
+        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_db_atts().\n", now());
+        exit(EXIT_FAILURE);
+    }
+
+    size = num_elem;
+    err = clEnqueueNDRangeKernel(queue, kernel_db_atts, 1, NULL, &size, NULL, 0, NULL, NULL);
+    if (err != CL_SUCCESS) {
+        fprintf(stderr, "Error: Failed in clEnqueueNDRangeKernel() for kernel_db_atts.\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    err = clFinish(queue);
+    if (err != CL_SUCCESS) {
+        fprintf(stderr, "Error: Failed in clFinish().\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    if (test & TEST_ALL) {
 		int k = 0;
 		double t = 0.0f;
 
@@ -428,6 +585,19 @@ int main(int argc, char **argv)
 				   t / speed_test_iterations * 1000.0f,
 				   1e-9 * R.entry_counts[1] * sizeof(cl_float4) * speed_test_iterations / t);
 		}
+        
+        if (test & TEST_GPU_DB_ATTS) {
+            gettimeofday(&t1, NULL);
+            for (k=0; k<speed_test_iterations; k++) {
+                err = clEnqueueNDRangeKernel(queue, kernel_db_atts, 1, NULL, &size, NULL, 0, NULL, NULL);
+            }
+            clFinish(queue);
+            gettimeofday(&t2, NULL);
+            t = DTIME(t1, t2);
+            printf("GPU Exec Time = %6.2f ms   Throughput = %5.2f GB/s  (db_atts)\n",
+                   t / speed_test_iterations * 1000.0f,
+                   1e-9 * num_elem * 7 * sizeof(cl_float4) * speed_test_iterations / t);
+        }
 	}
 
 	free(cpu_pulse);
@@ -442,8 +612,12 @@ int main(int argc, char **argv)
 	clReleaseKernel(kernel_make_pulse_pass_2);
 	clReleaseMemObject(sig);
 	clReleaseMemObject(pos);
+    clReleaseMemObject(vel);
+    clReleaseMemObject(ori);
+    clReleaseMemObject(tum);
     clReleaseMemObject(att);
-	clReleaseMemObject(work);
+    clReleaseMemObject(rnd);
+    clReleaseMemObject(work);
 	clReleaseMemObject(pulse);
 	clReleaseMemObject(range_weight);
 	clReleaseProgram(program);

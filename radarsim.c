@@ -197,8 +197,8 @@ int main(int argc, char *argv[]) {
     int k = 0;
 
     // Some warm up
-    const int ks = 10;
-    for (k=0; k<ks; k++) {
+    const int ks = 100;
+    for (k = 0; k < ks; k++) {
         RS_set_beam_pos(S, 15.0f, 10.0f);
         RS_make_pulse(S);
         RS_advance_time(S);
@@ -212,9 +212,9 @@ int main(int argc, char *argv[]) {
     
     //RS_sig_from_dsd(S);
     
-    gettimeofday(&t1, NULL);
-    
     float az_deg = 0.0f, el_deg = 0.0f;
+    
+    gettimeofday(&t1, NULL);
     
     for (; k<num_frames; k++) {
         RS_set_beam_pos(S, az_deg, el_deg);

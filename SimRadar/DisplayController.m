@@ -108,6 +108,8 @@ NSWindow *standardWindow;
 {
 	// Initialization code here.
 	[glView.renderer setDelegate:rootSender];
+    
+    mkey = 0;
 }
 
 
@@ -333,8 +335,12 @@ NSWindow *standardWindow;
             [glView.renderer cycleVFX];
             break;
             
-        case'm':
-            [sim cycleScattererColorMode];
+        case 'm':
+            mkey = mkey >= 3 ? 0 : mkey + 1;
+            if (mkey % 2 == 0) {
+                [sim cycleScattererColorMode];
+            }
+            [glView.renderer toggleBlurSmallScatterer];
             break;
             
 		default:
