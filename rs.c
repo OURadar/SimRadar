@@ -385,9 +385,10 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     }
 
     ret = CL_SUCCESS;
-    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorDropSizeDistributionKernalArgumentColor,     sizeof(cl_mem), &C->scat_clr);
-    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorDropSizeDistributionKernalArgumentPosition,  sizeof(cl_mem), &C->scat_pos);
-    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorDropSizeDistributionKernalArgumentAttribute, sizeof(cl_mem), &C->scat_att);
+    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorDropSizeDistributionKernalArgumentColor,     sizeof(cl_mem),   &C->scat_clr);
+    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorDropSizeDistributionKernalArgumentPosition,  sizeof(cl_mem),   &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorDropSizeDistributionKernalArgumentAttribute, sizeof(cl_mem),   &C->scat_att);
+    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorDropSizeDistributionKernalArgumentAttribute, sizeof(cl_uint4), &H->draw_mode);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_clr().\n", now());
         exit(EXIT_FAILURE);
@@ -405,7 +406,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     }
 
     if (C->verb > 1) {
-		printf("%s : RS : Pass 1   global =%6s   local = %3zu x %2d = %6s B   groups = %4d   N = %9s\n",
+		printf("%s : RS : Pass 1   global =%7s   local = %3zu x %2d = %6s B   groups = %4d   N = %9s\n",
 			   now(),
 			   commaint(C->make_pulse_params.global[0]),
 			   C->make_pulse_params.local[0],
@@ -426,7 +427,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 8, sizeof(float),                          &C->make_pulse_params.range_delta);
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 9, sizeof(unsigned int),                   &C->make_pulse_params.range_count);
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 10, sizeof(unsigned int),                  &C->make_pulse_params.group_counts[0]);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 11, sizeof(unsigned int),                  &C->make_pulse_params.entry_counts[0]);
+    ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 11, sizeof(unsigned int),                  &C->make_pulse_params.entry_counts[0]);
     ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 12, sizeof(cl_float16),                    &H->sim_desc);
 	if (ret != CL_SUCCESS) {
 		fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel make_pulse_pass_1().\n", now());
@@ -442,7 +443,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	}
 	
 	if (C->verb > 1) {
-		printf("%s : RS : Pass 2   global =%6s   local = %3zu x %2lu = %6s B   groups = %3d%s   N = %9s\n",
+		printf("%s : RS : Pass 2   global =%7s   local = %3zu x %2lu = %6s B   groups = %3d%s   N = %9s\n",
 			   now(),
 			   commaint(C->make_pulse_params.global[1]),
 			   C->make_pulse_params.local[1],
@@ -1324,12 +1325,12 @@ void RS_init_scat_pos(RSHandle *H) {
 	H->sim_tic = 0;
 	H->sim_toc = 0;
 	H->sim_time = 0.0f;
-    H->sim_desc.s[RSSimulationParameterBeamUnitX] = 0.0f;
-    H->sim_desc.s[RSSimulationParameterBeamUnitY] = 1.0f;
-    H->sim_desc.s[RSSimulationParameterBeamUnitZ] = 0.0f;
-    H->sim_desc.s[RSSimulationParameterPRT] = H->params.prt;
-    H->sim_desc.s[RSSimulationParameterDebrisCount] = H->species_population[0];
-    H->sim_desc.s[RSSimulationParameterAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTable3DDescriptionRefreshTime];
+    H->sim_desc.s[RSSimulationDescriptionBeamUnitX] = 0.0f;
+    H->sim_desc.s[RSSimulationDescriptionBeamUnitY] = 1.0f;
+    H->sim_desc.s[RSSimulationDescriptionBeamUnitZ] = 0.0f;
+    H->sim_desc.s[RSSimulationDescriptionTimeIncrement] = H->params.prt;
+    H->sim_desc.s[RSSimulationDescriptionTotalParticles] = H->num_scats;
+    H->sim_desc.s[RSSimulationDescriptionDebrisAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTable3DDescriptionRefreshTime];
 }
 
 #pragma mark -
@@ -1508,12 +1509,12 @@ void RS_set_scan_box(RSHandle *H,
 	RSfloat nvol = ((xmax - xmin) * (ymax - ymin) * (zmax - zmin)) / vol;
 	
     // The closing domain of the simulation
-    H->sim_desc.s[RSSimulationParameterBoundSizeX] = xmax - xmin;
-    H->sim_desc.s[RSSimulationParameterBoundSizeY] = ymax - ymin;
-    H->sim_desc.s[RSSimulationParameterBoundSizeZ] = zmax - zmin;
-    H->sim_desc.s[RSSimulationParameterBoundOriginX] = xmin;
-    H->sim_desc.s[RSSimulationParameterBoundOriginY] = ymin;
-    H->sim_desc.s[RSSimulationParameterBoundOriginZ] = zmin;
+    H->sim_desc.s[RSSimulationDescriptionBoundSizeX] = xmax - xmin;
+    H->sim_desc.s[RSSimulationDescriptionBoundSizeY] = ymax - ymin;
+    H->sim_desc.s[RSSimulationDescriptionBoundSizeZ] = zmax - zmin;
+    H->sim_desc.s[RSSimulationDescriptionBoundOriginX] = xmin;
+    H->sim_desc.s[RSSimulationDescriptionBoundOriginY] = ymin;
+    H->sim_desc.s[RSSimulationDescriptionBoundOriginZ] = zmin;
 	
 	// Suggest a number of scatter bodies to use
 	H->num_scats = (size_t)(H->params.body_per_cell * nvol);
@@ -1763,9 +1764,9 @@ void RS_set_scan_box(RSHandle *H,
 
 void RS_set_beam_pos(RSHandle *H, RSfloat az_deg, RSfloat el_deg) {
 	// Compute the unit vector of the pointing direction
-    H->sim_desc.s[RSSimulationParameterBeamUnitX] = cosf(el_deg / 180.0f * M_PI) * sinf(az_deg / 180.0f * M_PI);
-    H->sim_desc.s[RSSimulationParameterBeamUnitY] = cosf(el_deg / 180.0f * M_PI) * cosf(az_deg / 180.0f * M_PI);
-    H->sim_desc.s[RSSimulationParameterBeamUnitZ] = sinf(el_deg / 180.0f * M_PI);
+    H->sim_desc.s[RSSimulationDescriptionBeamUnitX] = cosf(el_deg / 180.0f * M_PI) * sinf(az_deg / 180.0f * M_PI);
+    H->sim_desc.s[RSSimulationDescriptionBeamUnitY] = cosf(el_deg / 180.0f * M_PI) * cosf(az_deg / 180.0f * M_PI);
+    H->sim_desc.s[RSSimulationDescriptionBeamUnitZ] = sinf(el_deg / 180.0f * M_PI);
 }
 
 
@@ -1844,12 +1845,12 @@ size_t RS_get_all_worker_debris_counts(RSHandle *H, const int species_id, size_t
 
 RSVolume RS_get_domain(RSHandle *H) {
     RSVolume v;
-    v.size.x = H->sim_desc.s[RSSimulationParameterBoundSizeX];
-    v.size.y = H->sim_desc.s[RSSimulationParameterBoundSizeY];
-    v.size.z = H->sim_desc.s[RSSimulationParameterBoundSizeZ];
-    v.origin.x = H->sim_desc.s[RSSimulationParameterBoundOriginX];
-    v.origin.y = H->sim_desc.s[RSSimulationParameterBoundOriginY];
-    v.origin.z = H->sim_desc.s[RSSimulationParameterBoundOriginZ];
+    v.size.x = H->sim_desc.s[RSSimulationDescriptionBoundSizeX];
+    v.size.y = H->sim_desc.s[RSSimulationDescriptionBoundSizeY];
+    v.size.z = H->sim_desc.s[RSSimulationDescriptionBoundSizeZ];
+    v.origin.x = H->sim_desc.s[RSSimulationDescriptionBoundOriginX];
+    v.origin.y = H->sim_desc.s[RSSimulationDescriptionBoundOriginY];
+    v.origin.z = H->sim_desc.s[RSSimulationDescriptionBoundOriginZ];
     return v;
 }
 
@@ -2332,8 +2333,6 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
         H->worker[i].vel_desc.s[RSTable3DDescriptionRefreshTime] = table.tr;
 
         H->worker[i].mem_size += (cl_uint)((table.xm + 1.0f) * (table.ym + 1.0f) * (table.zm + 1.0f)) * sizeof(cl_float4);
-        
-        //H->sim_desc.s[RSSimulationParameterAgeIncrement] = H->sim_desc.s[RSSimulationParameterPRT] / table.tr;
 	}
 
     H->vel_count++;
@@ -2980,7 +2979,8 @@ void RS_update_colors(RSHandle *H) {
             scat_clr_kernel(&H->worker[i].ndrange_scat[0],
                             (cl_float4 *)H->worker[i].scat_clr,
                             (cl_float4 *)H->worker[i].scat_pos,
-                            (cl_float4 *)H->worker[i].scat_att);
+                            (cl_float4 *)H->worker[i].scat_att,
+                            H->draw_mode);
             
             dispatch_semaphore_signal(H->worker[i].sem);
         });
@@ -3414,7 +3414,7 @@ void RS_download_pulse_only(RSHandle *H) {
 	}
 	
 #endif
-    printf("pulse %d [ %.4e %.4e %.4e ... ]\n", H->sim_tic, H->pulse[0].s0, H->pulse[0].s1, H->pulse[0].s2);
+    printf("pulse %zu [ %.4e %.4e %.4e ... ]\n", H->sim_tic, H->pulse[0].s0, H->pulse[0].s1, H->pulse[0].s2);
 	RS_merge_pulse_tmp(H);
 }
 
@@ -3453,7 +3453,8 @@ void RS_upload(RSHandle *H) {
             scat_clr_kernel(&H->worker[i].ndrange_scat[0],
                             (cl_float4 *)H->worker[i].scat_clr,
                             (cl_float4 *)H->worker[i].scat_pos,
-                            (cl_float4 *)H->worker[i].scat_att);
+                            (cl_float4 *)H->worker[i].scat_att,
+                            H->draw_mode);
 
             dispatch_semaphore_signal(H->worker[i].sem);
 		});
@@ -3705,7 +3706,7 @@ void RS_advance_time(RSHandle *H) {
 	
 #endif
 	
-    H->sim_desc.s[RSSimulationParameterSimTic] = ++H->sim_tic;
+    H->sim_desc.s[RSSimulationDescriptionSimTic] = ++H->sim_tic;
     H->sim_time = H->sim_tic * H->params.prt;
 }
 

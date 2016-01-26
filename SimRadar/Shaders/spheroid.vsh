@@ -30,6 +30,7 @@ void main (void)
     //varColor = texture(colormapTexture, vec2(inPosition.w * 250.0f, drawColor.x));
     varColor = texture(colormapTexture, vec2(inColor.x, drawColor.x));
 
+    // The alpha component follows the drawColor's alpha
     varColor.w = drawColor.w;
     if (pingPong) {
         // Make smaller drops more transparent

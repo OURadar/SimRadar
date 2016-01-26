@@ -333,6 +333,10 @@ NSWindow *standardWindow;
             [glView.renderer cycleVFX];
             break;
             
+        case'm':
+            [sim cycleScattererColorMode];
+            break;
+            
 		default:
 			// Allow other character to be handled by how the superclass defined it
 			[super keyDown:event];

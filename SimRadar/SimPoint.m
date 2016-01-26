@@ -262,6 +262,10 @@
 	[NSThread detachNewThreadSelector:@selector(runInBackground) toTarget:self withObject:nil];
 }
 
+- (void)cycleScattererColorMode {
+    S->draw_mode.s0 = !S->draw_mode.s0;
+}
+
 #pragma mark -
 #pragma mark Private Methods
 

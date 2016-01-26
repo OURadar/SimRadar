@@ -227,33 +227,33 @@ enum RSTable3DStaggeredDescription {
     RSTable3DStaggeredDescriptionTachikawa       = 15,
 };
 
-enum {
-    RSSimulationParameterBeamUnitX     =  0,
-    RSSimulationParameterBeamUnitY     =  1,
-    RSSimulationParameterBeamUnitZ     =  2,
-    RSSimulationParameterDebrisCount   =  3,
-    RSSimulationParameter4             =  4,
-    RSSimulationParameter5             =  5,
-    RSSimulationParameter6             =  6,
-    RSSimulationParameterSimTic        =  7,
-    RSSimulationParameterBoundOriginX  =  8,  // hi.s0
-    RSSimulationParameterBoundOriginY  =  9,  // hi.s1
-    RSSimulationParameterBoundOriginZ  =  10, // hi.s2
-    RSSimulationParameterPRT           =  11,
-    RSSimulationParameterBoundSizeX    =  12, // hi.s4
-    RSSimulationParameterBoundSizeY    =  13, // hi.s5
-    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
-    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
+enum RSSimulationDescription {
+    RSSimulationDescriptionBeamUnitX          =  0,
+    RSSimulationDescriptionBeamUnitY          =  1,
+    RSSimulationDescriptionBeamUnitZ          =  2,
+    RSSimulationDescriptionTotalParticles     =  3,
+    RSSimulationDescription4                  =  4,
+    RSSimulationDescription5                  =  5,
+    RSSimulationDescription6                  =  6,
+    RSSimulationDescriptionSimTic             =  7,
+    RSSimulationDescriptionBoundOriginX       =  8,  // hi.s0
+    RSSimulationDescriptionBoundOriginY       =  9,  // hi.s1
+    RSSimulationDescriptionBoundOriginZ       =  10, // hi.s2
+    RSSimulationDescriptionTimeIncrement      =  11,
+    RSSimulationDescriptionBoundSizeX         =  12, // hi.s4
+    RSSimulationDescriptionBoundSizeY         =  13, // hi.s5
+    RSSimulationDescriptionBoundSizeZ         =  14, // hi.s6
+    RSSimulationDescriptionDebrisAgeIncrement =  15, // PRT / vel_desc.tr
 };
 
-enum {
+enum RSDropSizeDistribution {
     RSDropSizeDistributionUndefined      = 0,
     RSDropSizeDistributionMarshallPalmer = 1,
     RSDropSizeDistributionGamma          = 2,
     RSDropSizeDistributionArbitrary      = 3
 };
 
-enum {
+enum RSTableSpacing {
     RSTableSpacingUniform          = 0,
     RSTableSpacingStretchedX       = 1,
     RSTableSpacingStretchedY       = 1 << 1,
@@ -380,7 +380,6 @@ typedef struct _rs_worker {
 typedef struct _rs_handle {
 	char                   verb;
 	char                   method;
-//	RSVolume               domain;
 	RSParams               params;
 
 	// Various simualtor state variables
@@ -439,6 +438,7 @@ typedef struct _rs_handle {
 	// Anchors
 	ssize_t                num_anchors;
 	ssize_t                num_anchor_lines;
+    cl_uint4               draw_mode;
 
 	// CPU side memory
 	cl_float4              *anchor_pos;

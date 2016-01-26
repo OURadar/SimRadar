@@ -233,9 +233,11 @@ float compute_angular_weight(float4 pos,
                              const float4 angular_weight_desc,
                              const float16 sim_desc)
 {
+    //
     //    RSSimulationParameterBeamUnitX     =  0,
     //    RSSimulationParameterBeamUnitY     =  1,
     //    RSSimulationParameterBeamUnitZ     =  2,
+    //
     float angle = acos(dot(sim_desc.s012, normalize(pos.xyz)));
     
     float2 table_s = (float2)(angular_weight_desc.s0, angular_weight_desc.s0);
@@ -258,12 +260,17 @@ float compute_angular_weight(float4 pos,
 // Wind table index
 //
 
-float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16 sim_desc) {
+float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16 sim_desc)
+{
     const float s7 = wind_desc.s7;
     const uint grid_spacing = *(uint *)&s7;
 
     if (grid_spacing == RSTableSpacingStretchedXYZ) {
+        // Relative position from the center of the domain
+        float4 pos_rel = pos - (float4)(sim_desc.hi.s01 + 0.5f * sim_desc.hi.s45, 0.0f, 0.0f);
+        //
         // Background wind table is staggered for all dimensions
+        //
         //    RSTable3DStaggeredDescriptionBaseChangeX     =  0,
         //    RSTable3DStaggeredDescriptionBaseChangeY     =  1,
         //    RSTable3DStaggeredDescriptionBaseChangeZ     =  2,
@@ -280,10 +287,12 @@ float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16
         //    RSTable3DStaggeredDescriptionRecipInLnY      = 13,
         //    RSTable3DStaggeredDescriptionRecipInLnZ      = 14,
         //    RSTable3DStaggeredDescriptionTachikawa       = 15,
-        float4 pos_rel = pos - (float4)(sim_desc.hi.s01 + 0.5f * sim_desc.hi.s45, 0.0f, 0.0f);
+        //
         return copysign(wind_desc.s0123, pos_rel) * log1p(wind_desc.s4567 * fabs(pos_rel)) + wind_desc.s89ab;
     } else if (grid_spacing == RSTableSpacingUniform) {
+        //
         // Background wind table is uniform for all dimensions
+        //
         //    RSTable3DDescriptionScaleX      =  0,
         //    RSTable3DDescriptionScaleY      =  1,
         //    RSTable3DDescriptionScaleZ      =  2,
@@ -300,6 +309,7 @@ float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16
         //    RSTable3DDescriptionRecipInLnY  = 13,
         //    RSTable3DDescriptionRecipInLnZ  = 14,
         //    RSTable3DDescriptionTachikawa   = 15,
+        //
         return fma(pos, wind_desc.s0123, wind_desc.s4567);
     }
     return (float4)(0.0f, 0.0f, 0.0f, 0.0f);
@@ -312,7 +322,7 @@ float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16
 
 float4 compute_bg_vel(const float4 pos, __read_only image3d_t wind_uvw, const float16 wind_desc, const float16 sim_desc) {
     const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
-    
+    //
     //    RSSimulationParameterBeamUnitX     =  0,
     //    RSSimulationParameterBeamUnitY     =  1,
     //    RSSimulationParameterBeamUnitZ     =  2,
@@ -329,7 +339,7 @@ float4 compute_bg_vel(const float4 pos, __read_only image3d_t wind_uvw, const fl
     //    RSSimulationParameterBoundSizeY    =  13, // hi.s5
     //    RSSimulationParameterBoundSizeZ    =  14, // hi.s6
     //    RSSimulationParameterAgeIncrement  =  15, // PRT / vel_desc.tr
-    
+    //
     float4 wind_coord = wind_table_index(pos, wind_desc, sim_desc);
     
     return read_imagef(wind_uvw, sampler, wind_coord);
@@ -376,10 +386,12 @@ float4 compute_dudt_dwdt(float4 *dwdt, const float4 vel, const float4 vel_bg, co
     //        printf("adm_coord = %5.2f\n", adm_coord.x);
     //    }
     
+    //
     //    RSTable3DDescriptionRecipInLnX  = 12,
     //    RSTable3DDescriptionRecipInLnY  = 13,
     //    RSTable3DDescriptionRecipInLnZ  = 14,
     //    RSTable3DDescriptionTachikawa   = 15,
+    //
     const float Ta = adm_desc.sf;
     const float4 inv_inln = (float4)(adm_desc.scde, 0.0f);
     
@@ -883,18 +895,20 @@ __kernel void scat_sig_dsd(__global float4 *x,
 
 __kernel void scat_clr(__global float4 *c,
                        __global float4 *p,
-                       __global float4 *a)
+                       __global float4 *a,
+                       const uint4 mode)
 {
     unsigned int i = get_global_id(0);
     
-//    c[i].x = clamp(a[i].s2, 0.0f, 1.0f);
-
-    c[i].x = clamp(fma(log10(100.0f * a[i].s3), 0.1f, 0.8f), 0.0f, 1.0f);
-
-//    if (i < 20) {
-//        printf("i=%d  w=%.4f\n", i, c[i].x);
-//        //printf("i=%d  d=%.1fmm  c=%.3f\n", i, p[i].w * 1000.0f, c[i].x);
-//    }
+    if (mode.s0 == 0) {
+        c[i].x = clamp(a[i].s2, 0.0f, 1.0f);
+    } else {
+        c[i].x = clamp(fma(log10(100.0f * a[i].s3), 0.1f, 0.8f), 0.0f, 1.0f);
+        //    if (i < 20) {
+        //        printf("i=%d  w=%.4f\n", i, c[i].x);
+        //        //printf("i=%d  d=%.1fmm  c=%.3f\n", i, p[i].w * 1000.0f, c[i].x);
+        //    }
+    }
 }
 
 __kernel void scat_wa(__global float4 *a,
@@ -931,15 +945,14 @@ __kernel void scat_wa(__global float4 *a,
 // sig - signal
 // att - attributes
 // shared - local memory space __local space (64 kB max)
-// weight_table - range weighting function, __constant space (64 kB max)
-// table_xs - scale to convert range to table index
-// table_x0 - offset to convert range to table index
-// table_xm - last table index
+// range_weight - range weighting function, __constant space (64 kB max)
+// range_weight_desc - scale, offset, and max to convert range to table index
 // range_start - start range of the domain
 // range_delta - range spacing (not resolution)
 // range_count - number of range gates
 // group_count - number of parallel groups
-// n - last element (number of scatter bodies)
+// n - total number of elements (for this GPU device)
+// sim_desc - simulation description
 //
 __kernel void make_pulse_pass_1(__global float4 *out,
                                 __global float4 *pos,

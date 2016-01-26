@@ -7,7 +7,6 @@
 //
 
 #import <Foundation/Foundation.h>
-//#import <AppKit/AppKit.h>
 #import "rs.h"
 
 @protocol SimPointDelegate <NSObject>
@@ -64,6 +63,7 @@
 - (void)randomBeamPosition;
 - (void)homeBeamPosition;
 - (void)run;
+- (void)cycleScattererColorMode;
 
 - (NSInteger)deviceCount;
 
