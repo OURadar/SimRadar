@@ -813,7 +813,7 @@ __kernel void db_atts(__global float4 *p,
     // - s2 =
     // - s3 = angular weight (make_pulse_pass_1)
     aux.s0 = length(pos.xyz);
-    aux.s1 = aux.s1 + sim_desc.sf;
+    //aux.s1 = aux.s1 + sim_desc.sf;
 
     const float wav_num = M_PI_F * 4.0f * native_recip(0.03f);  // 4 * PI / lambda
 
@@ -887,7 +887,6 @@ __kernel void scat_wa(__global float4 *a,
 
 //
 // out - output
-// pos - position
 // sig - signal
 // att - attributes
 // shared - local memory space __local space (64 kB max)
@@ -898,10 +897,8 @@ __kernel void scat_wa(__global float4 *a,
 // range_count - number of range gates
 // group_count - number of parallel groups
 // n - total number of elements (for this GPU device)
-// sim_desc - simulation description
 //
 __kernel void make_pulse_pass_1(__global float4 *out,
-                                __global float4 *pos,
                                 __global float4 *sig,
                                 __global float4 *att,
                                 __local float4 *shared,
@@ -911,8 +908,7 @@ __kernel void make_pulse_pass_1(__global float4 *out,
                                 const float range_delta,
                                 const unsigned int range_count,
                                 const unsigned int group_count,
-                                const unsigned int n,
-                                const float16 sim_desc)
+                                const unsigned int n)
 {
     const float4 zero = {0.0f, 0.0f, 0.0f, 0.0f};
     const unsigned int group_id = get_group_id(0);
@@ -951,6 +947,8 @@ __kernel void make_pulse_pass_1(__global float4 *out,
     float4 fidx_dec;
     uint4  iidx_int;
     
+    float2 wa_ab;
+    
     // Will use:
     // Elements 0 & 1 for scatter body from the left group (a)
     // Elements 2 & 3 for scatter body from the right group (b)
@@ -966,7 +964,11 @@ __kernel void make_pulse_pass_1(__global float4 *out,
         b = sig[i + local_size];
         r_a = att[i].s0;
         r_b = att[i + local_size].s0;
-        r = (float4)(range_start, range_start, range_start, range_start);
+        r = (float4)range_start;
+
+        // Angular weight
+        wa_ab = (float2)(att[i].s3, att[i + local_size].s3);
+        
         for (k = 0; k < range_count; k++) {
             float4 dr_from_center = (float4)(r_a, r_a, r_b, r_b) - r;
             
@@ -979,16 +981,15 @@ __kernel void make_pulse_pass_1(__global float4 *out,
                             (float2)(range_weight[iidx_int.s1], range_weight[iidx_int.s3]),
                             fidx_dec.s02);
             
-            // Angular weight
-            w2 *= (float2)(att[i].s3, att[i + local_size].s3);
-            
+            // Range weight * Angular weight
+            w2 *= wa_ab;
+
             // Vectorized range * angular weights
             w_a = (float4)(w2.s0, w2.s0, w2.s0, w2.s0);
             w_b = (float4)(w2.s1, w2.s1, w2.s1, w2.s1);
             
             shared[local_id + k * local_size] += (w_a * a + w_b * b);
-            // printf("%d shared[%d] = %.2f  %.2f\n", group_id, local_id + k, shared[local_id + k].x, wr);
-            
+
             r += dr;
         }
         i += local_stride;
@@ -1000,70 +1001,70 @@ __kernel void make_pulse_pass_1(__global float4 *out,
     // Consolidate the local memory
     if (local_size > 512 && local_id < 512)
     {
-        for (k=0; k<local_numel; k+=local_size)
+        for (k = 0; k < local_numel; k += local_size)
             shared[local_id + k] += shared[local_id + k + 512];
     }
     barrier(CLK_LOCAL_MEM_FENCE);
 
     if (local_size > 256 && local_id < 256)
     {
-        for (k=0; k<local_numel; k+=local_size)
+        for (k = 0; k < local_numel; k += local_size)
             shared[local_id + k] += shared[local_id + k + 256];
     }
     barrier(CLK_LOCAL_MEM_FENCE);
 
     if (local_size > 128 && local_id < 128)
     {
-        for (k=0; k<local_numel; k+=local_size)
+        for (k = 0; k < local_numel; k += local_size)
             shared[local_id + k] += shared[local_id + k + 128];
     }
     barrier(CLK_LOCAL_MEM_FENCE);
     
     if (local_size > 64 && local_id < 64)
     {
-        for (k=0; k<local_numel; k+=local_size)
+        for (k = 0; k < local_numel; k += local_size)
             shared[local_id + k] += shared[local_id + k + 64];
     }
     barrier(CLK_LOCAL_MEM_FENCE);
     
     if (local_size > 32 && local_id < 32)
     {
-        for (k=0; k<local_numel; k+=local_size)
+        for (k = 0; k < local_numel; k += local_size)
             shared[local_id + k] += shared[local_id + k + 32];
     }
     barrier(CLK_LOCAL_MEM_FENCE);
     
     if (local_size > 16 && local_id < 16)
     {
-        for (k=0; k<local_numel; k+=local_size)
+        for (k = 0; k < local_numel; k += local_size)
             shared[local_id + k] += shared[local_id + k + 16];
     }
     barrier(CLK_LOCAL_MEM_FENCE);
     
     if (local_size > 8 && local_id < 8)
     {
-        for (k=0; k<local_numel; k+=local_size)
+        for (k = 0; k < local_numel; k += local_size)
             shared[local_id + k] += shared[local_id + k + 8];
     }
     barrier(CLK_LOCAL_MEM_FENCE);
     
     if (local_size > 4 && local_id < 4)
     {
-        for (k=0; k<local_numel; k+=local_size)
+        for (k = 0; k < local_numel; k += local_size)
             shared[local_id + k] += shared[local_id + k + 4];
     }
     barrier(CLK_LOCAL_MEM_FENCE);
     
     if (local_size > 2 && local_id < 2)
     {
-        for (k=0; k<local_numel; k+=local_size)
+        for (k = 0; k < local_numel; k += local_size)
             shared[local_id + k] += shared[local_id + k + 2];
     }
     barrier(CLK_LOCAL_MEM_FENCE);
     
     if (local_size > 1 && local_id < 1)
     {
-        for (k=0; k<local_numel; k+=local_size)
+        for (k = 0; k < local_numel; k += local_size)
             shared[local_id + k] += shared[local_id + k + 1];
     }
     barrier(CLK_LOCAL_MEM_FENCE);
@@ -1071,8 +1072,8 @@ __kernel void make_pulse_pass_1(__global float4 *out,
     if (local_id == 0)
     {
         __global float4 *o = &out[group_id * range_count];
-        for (k=0; k<range_count*local_size; k+=local_size) {
-            //printf("groupd_id=%d  out[%d] = shared[%d] = %.2f\n", group_id, (int)(o-out), k, shared[k].x);
+        for (k = 0; k < range_count * local_size; k += local_size) {
+            //printf("groupd_id=%d  out[%d] = shared[%d] = %.2f\n", group_id, (int)(o - out), k, shared[k].x);
             *o++ = shared[k];
         }
     }
@@ -1224,7 +1225,6 @@ __kernel void pop(__global float4 *sig, __global float4 *att)
     unsigned int k = get_global_id(0);
     
     //float v = (float)(k % 8);
-    float v = 1.0f;
-    sig[k] = (float4)(v, v, v, v);
-    att[k] = (float4)((float)k * 0.5f + 10.0f, 0.0f, 0.0f, 0.0f);
+    sig[k] = (float4)(1.0f, 0.5f, 1.0f, 0.5f);
+    att[k] = (float4)((float)k * 0.5f + 10.0f, 1.0f, 1.0f, 1.0f);
 }

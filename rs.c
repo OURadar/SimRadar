@@ -417,18 +417,16 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	}
 	ret = CL_SUCCESS;
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 0, sizeof(cl_mem),                         &C->work);
-    ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 1, sizeof(cl_mem),                         &C->scat_pos);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 2, sizeof(cl_mem),                         &C->scat_sig);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 3, sizeof(cl_mem),                         &C->scat_att);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 4, C->make_pulse_params.local_mem_size[0], NULL);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 5, sizeof(cl_mem),                         &C->range_weight);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 6, sizeof(cl_float4),                      &C->range_weight_desc);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 7, sizeof(float),                          &C->make_pulse_params.range_start);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 8, sizeof(float),                          &C->make_pulse_params.range_delta);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 9, sizeof(unsigned int),                   &C->make_pulse_params.range_count);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 10, sizeof(unsigned int),                  &C->make_pulse_params.group_counts[0]);
-    ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 11, sizeof(unsigned int),                  &C->make_pulse_params.entry_counts[0]);
-    ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 12, sizeof(cl_float16),                    &H->sim_desc);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 1, sizeof(cl_mem),                         &C->scat_sig);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 2, sizeof(cl_mem),                         &C->scat_att);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 3, C->make_pulse_params.local_mem_size[0], NULL);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 4, sizeof(cl_mem),                         &C->range_weight);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 5, sizeof(cl_float4),                      &C->range_weight_desc);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 6, sizeof(float),                          &C->make_pulse_params.range_start);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 7, sizeof(float),                          &C->make_pulse_params.range_delta);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 8, sizeof(unsigned int),                   &C->make_pulse_params.range_count);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 9, sizeof(unsigned int),                   &C->make_pulse_params.group_counts[0]);
+    ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 10, sizeof(unsigned int),                  &C->make_pulse_params.entry_counts[0]);
 	if (ret != CL_SUCCESS) {
 		fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel make_pulse_pass_1().\n", now());
 		exit(EXIT_FAILURE);
@@ -1526,8 +1524,10 @@ void RS_set_scan_box(RSHandle *H,
 	// Suggest a number of scatter bodies to use
 	H->num_scats = (size_t)(H->params.body_per_cell * nvol);
 	
-	// Round to a GPU preferred number
-	size_t mul = H->num_cus[0] * H->num_devs * 128;
+	// Round to a GPU preferred number: make_pulse_pass_1 uses 2 x max_work_group_size stride
+    size_t max_work_group_size;
+    clGetDeviceInfo(H->worker[0].dev, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max_work_group_size), &max_work_group_size, NULL);
+    size_t mul = H->num_cus[0] * H->num_devs * max_work_group_size * 2;
 	size_t preferred_n = (size_t)(H->num_scats / mul) * mul;
 	while (preferred_n < H->params.body_per_cell * 9 / 10) {
 		preferred_n += mul;
@@ -3739,7 +3739,6 @@ void RS_make_pulse(RSHandle *H) {
                            H->sim_desc);
             make_pulse_pass_1_kernel(&H->worker[i].ndrange_pulse_pass_1,
                                      (cl_float4 *)H->worker[i].work,
-                                     (cl_float4 *)H->worker[i].scat_pos,
                                      (cl_float4 *)H->worker[i].scat_sig,
                                      (cl_float4 *)H->worker[i].scat_att,
                                      H->worker[i].make_pulse_params.local_mem_size[0],
@@ -3749,8 +3748,7 @@ void RS_make_pulse(RSHandle *H) {
                                      H->worker[i].make_pulse_params.range_delta,
                                      H->worker[i].make_pulse_params.range_count,
                                      H->worker[i].make_pulse_params.group_counts[0],
-                                     H->worker[i].make_pulse_params.entry_counts[0],
-                                     H->sim_desc);
+                                     H->worker[i].make_pulse_params.entry_counts[0]);
             switch (H->worker[i].make_pulse_params.cl_pass_2_method) {
 				case RS_CL_PASS_2_IN_LOCAL:
 					make_pulse_pass_2_local_kernel(&H->worker[i].ndrange_pulse_pass_2,
