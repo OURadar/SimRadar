@@ -336,6 +336,7 @@ typedef struct _rs_worker {
 	
 	dispatch_queue_t       que;
 	dispatch_semaphore_t   sem;
+    cl_ndrange             ndrange_scat_all;
 	cl_ndrange             ndrange_scat[RS_MAX_DEBRIS_TYPES];
 	cl_ndrange             ndrange_pulse_pass_1;
 	cl_ndrange             ndrange_pulse_pass_2;
@@ -357,6 +358,7 @@ typedef struct _rs_worker {
     cl_kernel              kern_bg_atts;
     cl_kernel              kern_el_atts;
     cl_kernel              kern_db_atts;
+    cl_kernel              kern_scat_wa;
     cl_kernel              kern_scat_clr;
     cl_kernel              kern_scat_sig_dsd;
 	cl_kernel              kern_make_pulse_pass_1;

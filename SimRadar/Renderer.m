@@ -1622,7 +1622,7 @@
 
 - (void)increaseBackgroundOpacity
 {
-    if (backgroundOpacity >= 0.1) {
+    if (backgroundOpacity >= 0.01) {
         backgroundOpacity = MIN(1.0f, backgroundOpacity + 0.01f);
     } else {
         backgroundOpacity = MIN(0.01f, backgroundOpacity + 0.001f);

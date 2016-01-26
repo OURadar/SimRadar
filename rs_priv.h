@@ -60,6 +60,14 @@ enum RSScattererColorDropSizeDistributionKernalArgument {
     RSScattererColorDropSizeDistributionKernalArgumentAttribute = 2
 };
 
+enum RSScattererAngularWeightKernalArgument {
+    RSScattererAngularWeightKernalArgumentAttribute              = 0,
+    RSScattererAngularWeightKernalArgumentPosition               = 1,
+    RSScattererAngularWeightKernalArgumentWeightTable            = 2,
+    RSScattererAngularWeightKernalArgumentWeightTableDescription = 3,
+    RSScattererAngularWeightKernalArgumentSimulationDescription  = 4
+};
+
 void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device_id *devices, cl_uint *num_cus, cl_uint *vendors, cl_int detail_level);
 void pfn_prog_notify(cl_program program, void *user_data);
 void pfn_notify(const char *errinfo, const void *private_info, size_t cb, void *user_data);

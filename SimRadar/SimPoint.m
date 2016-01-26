@@ -210,6 +210,8 @@
 - (void)advanceTime
 {
 	RS_advance_time(S);
+    RS_make_pulse(S);
+    RS_update_colors(S);
 //    RS_download_position_only(S);
 //    RS_download(S);
 //    RS_make_pulse(S);
@@ -220,8 +222,7 @@
 //    for (int i = 0; i < 1; i++) {
 //        debris_ind = S->worker[0].species_global_offset + S->worker[0].species_origin[1] + i;
 //        fwrite(&S->scat_ori[debris_ind], sizeof(cl_float4), 1, ori_fid);
-//    }
-    
+//    }    
 }
 
 - (void)advanceBeamPosition

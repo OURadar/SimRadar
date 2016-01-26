@@ -887,14 +887,42 @@ __kernel void scat_clr(__global float4 *c,
 {
     unsigned int i = get_global_id(0);
     
-    c[i].x = clamp(a[i].s2, 0.0f, 1.0f);
+//    c[i].x = clamp(a[i].s2, 0.0f, 1.0f);
 
-//    c[i].x = clamp(fma(log10(100.0f * a[i].s3), 0.1f, 0.8f), 0.0f, 1.0f);
+    c[i].x = clamp(fma(log10(100.0f * a[i].s3), 0.1f, 0.8f), 0.0f, 1.0f);
 
 //    if (i < 20) {
 //        printf("i=%d  w=%.4f\n", i, c[i].x);
 //        //printf("i=%d  d=%.1fmm  c=%.3f\n", i, p[i].w * 1000.0f, c[i].x);
 //    }
+}
+
+__kernel void scat_wa(__global float4 *a,
+                      __global float4 *p,
+                      __constant float *angular_weight,
+                      const float4 angular_weight_desc,
+                      const float16 sim_desc)
+{
+    unsigned int i = get_global_id(0);
+
+    //    RSSimulationParameterBeamUnitX     =  0,
+    //    RSSimulationParameterBeamUnitY     =  1,
+    //    RSSimulationParameterBeamUnitZ     =  2,
+    float angle = acos(dot(sim_desc.s012, normalize(p[i].xyz)));
+    
+    float2 table_s = (float2)(angular_weight_desc.s0, angular_weight_desc.s0);
+    float2 table_o = (float2)(angular_weight_desc.s1, angular_weight_desc.s1) + (float2)(0.0f, 1.0f);
+    float2 angle_2 = (float2)(angle, angle);
+    
+    // scale, offset, clamp to edge
+    uint2  iidx_int;
+    float2 fidx_int;
+    float2 fidx_raw = clamp(fma(angle_2, table_s, table_o), 0.0f, angular_weight_desc.s2);
+    float2 fidx_dec = fract(fidx_raw, &fidx_int);
+    
+    iidx_int = convert_uint2(fidx_int);
+    
+    a[i].s3 = mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
 }
 
 //
@@ -913,19 +941,6 @@ __kernel void scat_clr(__global float4 *c,
 // group_count - number of parallel groups
 // n - last element (number of scatter bodies)
 //
-//__kernel void make_pulse_pass_1(__global float4 *out,
-//                                __global const float4 *sig,
-//                                __global const float4 *att,
-//                                __local float4 *shared,
-//                                __constant float *weight_table,
-//                                const float table_xs,
-//                                const float table_x0,
-//                                const float table_xm,
-//                                const float range_start,
-//                                const float range_delta,
-//                                const unsigned int range_count,
-//                                const unsigned int group_count,
-//                                const unsigned int n)
 __kernel void make_pulse_pass_1(__global float4 *out,
                                 __global float4 *pos,
                                 __global float4 *sig,
@@ -933,8 +948,6 @@ __kernel void make_pulse_pass_1(__global float4 *out,
                                 __local float4 *shared,
                                 __constant float *range_weight,
                                 const float4 range_weight_desc,
-                                __constant float *angular_weight,
-                                const float4 angular_weight_desc,
                                 const float range_start,
                                 const float range_delta,
                                 const unsigned int range_count,
@@ -967,16 +980,8 @@ __kernel void make_pulse_pass_1(__global float4 *out,
     unsigned int k;
     unsigned int i = group_id * group_stride + local_id;
     
-    // Derive the angular weight
-    float scat_wa = compute_angular_weight(pos[i], angular_weight, angular_weight_desc, sim_desc);
-    att[i].s3 = scat_wa;
-//    if (i == 1) {
-//        float theta = acos(dot(sim_desc.s012, normalize(pos[i].xyz)));
-//        printf("scat_wa = %.4e  for %.3v4f  beam %.4v4f  angle %.2f  %.4v4f  s3->w = %.2f\n", scat_wa, pos[i], sim_desc.s0123, theta, angular_weight_desc, clamp(fma(log10(100.0f * scat_wa), 0.1f, 0.8f), 0.0f, 1.0f));
-//    }
-    
     // Initialize the block of local memory to zeros
-    for (k=0; k<range_count; k++) {
+    for (k = 0; k < range_count; k++) {
         shared[local_id + k * local_size] = zero;
     }
     
@@ -1003,20 +1008,22 @@ __kernel void make_pulse_pass_1(__global float4 *out,
         r_a = att[i].s0;
         r_b = att[i + local_size].s0;
         r = (float4)(range_start, range_start, range_start, range_start);
-        for (k=0; k<range_count; k++) {
+        for (k = 0; k < range_count; k++) {
             float4 dr_from_center = (float4)(r_a, r_a, r_b, r_b) - r;
             
             fidx_raw = clamp(fma(dr_from_center, table_xs_4, table_x0_4), 0.0f, range_weight_desc.s2);     // Index [0 ... xm] in float
             fidx_dec = fract(fidx_raw, &fidx_int);                                                         // The integer and decimal fraction
             iidx_int = convert_uint4(fidx_int);
             
+            // Range weight
             float2 w2 = mix((float2)(range_weight[iidx_int.s0], range_weight[iidx_int.s2]),
                             (float2)(range_weight[iidx_int.s1], range_weight[iidx_int.s3]),
                             fidx_dec.s02);
             
-            // Multiple range weight to angular weight
+            // Angular weight
             w2 *= (float2)(att[i].s3, att[i + local_size].s3);
             
+            // Vectorized range * angular weights
             w_a = (float4)(w2.s0, w2.s0, w2.s0, w2.s0);
             w_b = (float4)(w2.s1, w2.s1, w2.s1, w2.s1);
             
@@ -1147,7 +1154,6 @@ __kernel void make_pulse_pass_2_local(__global float4 *out,
     
     //	printf("out[%d] = %.2f\n", groupd_id, shared[local_id].x);
     out[groupd_id] = shared[local_id];
-    
 }
 
 
