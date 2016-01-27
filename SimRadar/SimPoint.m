@@ -93,13 +93,15 @@
         if (reportProgress) {
             [delegate progressUpdated:10.0 message:[NSString stringWithFormat:@"Configuring radar parameters ..."]];
         }
+        
+        RS_set_concept(S, RSSimulationConceptDraggedBackground | RSSimulationConceptBoundedParticleVelocity);
 
-		RS_set_antenna_params(S, 1.0f, 44.5f);                // 1.0-deg, 44.5 dBi gain
+		RS_set_antenna_params(S, 1.0f, 44.5f);                // 1.0-deg beamwidth, 44.5-dBi gain
 		
         RS_set_tx_params(S, 30.0f * 2.0f / 3.0e8f, 10.0e3);   // Resolution in m, power in W
 
         NSLog(@"S->preferred_multiple = %d", (int)S->preferred_multiple);
-        RS_set_debris_count(S, 1, 10000);
+        RS_set_debris_count(S, 1, 20000);
         RS_set_debris_count(S, 2, 500);
         RS_revise_debris_counts_to_gpu_preference(S);
         
@@ -155,7 +157,7 @@
                             -7.0f, 7.0f, 1.0f,                    // Azimuth
                             0.0f, 12.0f, 1.0f);                   // Elevation
 
-            cl_float4 vel = (cl_float4){0.0f, 0.0f, 0.0f, 0.0f};
+            cl_float4 vel = (cl_float4){10.0f, 0.0f, 0.0f, 0.0f};
             
             RS_set_vel_data_to_uniform(S, vel);
         }
@@ -212,17 +214,6 @@
 	RS_advance_time(S);
     RS_make_pulse(S);
     RS_update_colors(S);
-//    RS_download_position_only(S);
-//    RS_download(S);
-//    RS_make_pulse(S);
-//    RS_download_orientation_only(S);
-    
-//    unsigned long debris_ind;
-//    
-//    for (int i = 0; i < 1; i++) {
-//        debris_ind = S->worker[0].species_global_offset + S->worker[0].species_origin[1] + i;
-//        fwrite(&S->scat_ori[debris_ind], sizeof(cl_float4), 1, ori_fid);
-//    }    
 }
 
 - (void)advanceBeamPosition
@@ -254,7 +245,7 @@
 {
     az_deg = 0.0f;
     RS_set_beam_pos(S, az_deg, el_deg);
-//    RS_update_colors_only(S);
+    RS_update_colors(S);
 }
 
 - (void)run

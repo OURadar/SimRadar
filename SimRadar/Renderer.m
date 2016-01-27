@@ -683,6 +683,7 @@
         
         resetRange = 5000.0f;
         resetModelRotate = GLKMatrix4Identity;
+        //resetModelRotate = GLKMatrix4MakeRotation(1.0, 0.0f, 1.0f, 1.0f);
         
         //showHUD = true;
         

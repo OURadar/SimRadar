@@ -17,23 +17,29 @@ enum RSTableSpacing {
     RSTableSpacingStretchedXYZ     = RSTableSpacingStretchedX | RSTableSpacingStretchedY | RSTableSpacingStretchedZ
 };
 
+enum RSSimulationConcept {
+    RSSimulationConceptNull                    = 0,
+    RSSimulationConceptDraggedBackground       = 1,
+    RSSimulationConceptBoundedParticleVelocity = 1 << 1
+};
+
 enum RSSimulationDescription {
-    RSSimulationDescriptionBeamUnitX     =  0,
-    RSSimulationDescriptionBeamUnitY     =  1,
-    RSSimulationDescriptionBeamUnitZ     =  2,
-    RSSimulationDescriptionDebrisCount   =  3,
-    RSSimulationDescriptionWaveNumber    =  4,
-    RSSimulationDescription5             =  5,
-    RSSimulationDescription6             =  6,
-    RSSimulationDescriptionSimTic        =  7,
-    RSSimulationDescriptionBoundOriginX  =  8,
-    RSSimulationDescriptionBoundOriginY  =  9,
-    RSSimulationDescriptionBoundOriginZ  =  10,
-    RSSimulationDescriptionPRT           =  11,
-    RSSimulationDescriptionBoundSizeX    =  12, // hi.s4
-    RSSimulationDescriptionBoundSizeY    =  13, // hi.s5
-    RSSimulationDescriptionBoundSizeZ    =  14, // hi.s6
-    RSSimulationDescriptionAgeIncrement  =  15  // PRT / vel_desc.tr
+    RSSimulationDescriptionBeamUnitX          =  0,
+    RSSimulationDescriptionBeamUnitY          =  1,
+    RSSimulationDescriptionBeamUnitZ          =  2,
+    RSSimulationDescriptionTotalParticles     =  3,
+    RSSimulationDescriptionWaveNumber         =  4,
+    RSSimulationDescriptionConcept            =  5,
+    RSSimulationDescription6                  =  6,
+    RSSimulationDescriptionSimTic             =  7,
+    RSSimulationDescriptionBoundOriginX       =  8,  // hi.s0
+    RSSimulationDescriptionBoundOriginY       =  9,  // hi.s1
+    RSSimulationDescriptionBoundOriginZ       =  10, // hi.s2
+    RSSimulationDescriptionTimeIncrement      =  11,
+    RSSimulationDescriptionBoundSizeX         =  12, // hi.s4
+    RSSimulationDescriptionBoundSizeY         =  13, // hi.s5
+    RSSimulationDescriptionBoundSizeZ         =  14, // hi.s6
+    RSSimulationDescriptionDebrisAgeIncrement =  15  // PRT / vel_desc.tr
 };
 
 enum RSTable3DDescription {
@@ -207,11 +213,7 @@ float4 complex_multiply(const float4 a, const float4 b)
 float4 two_way_effects(const float4 sig_in, const float range, const float wav_num)
 {
     // Range attenuation R ^ -4
-    float4 atten = pown((float4)(range, range, range, range), (int4)(-4, -4, -4, -4));
-//    float rinv = native_recip(range);
-//    rinv *= rinv;  // () ^ -2
-//    rinv *= rinv;  // () ^ -4
-//    float4 atten = (float4)(rinv, rinv, rinv, rinv);
+    float atten = pown(range, -4);
 
     // Return phase due to two-way path
     float phase = range * wav_num;
@@ -587,14 +589,9 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
 
     const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
 
-    //    RSSimulationDescriptionBeamUnitX     =  0,
-    //    RSSimulationDescriptionBeamUnitY     =  1,
-    //    RSSimulationDescriptionBeamUnitZ     =  2,
-    //    RSSimulationDescriptionDebrisCount   =  3,
-    //    RSSimulationDescriptionWaveNumber    =  4,
-    //    RSSimulationDescription5             =  5,
-    //    RSSimulationDescription6             =  6,
-    //    RSSimulationDescription7             =  7,
+    const float s5 = sim_desc.s5;
+    const uint concept = *(uint *)&s5;
+
     //    RSSimulationDescriptionBoundOriginX  =  8,  // hi.s0
     //    RSSimulationDescriptionBoundOriginY  =  9,  // hi.s1
     //    RSSimulationDescriptionBoundOriginZ  =  10, // hi.s2
@@ -608,24 +605,12 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
     //pos.w = 0.0003f; // fixed size @ .3 mm
     
     //
-    // Update orientation & position ---------------------------------
+    // Update position ---------------------------------
     //
-//    float4 ori_next = quat_mult(ori, tum);
-//    if (all(isfinite(ori_next))) {
-//        ori = normalize(ori_next);
-//    }
 
     pos += vel * dt;
     
     // Check for bounding constraints
-    //    RSSimulationDescriptionBoundOriginX  =  8,  // hi.s0
-    //    RSSimulationDescriptionBoundOriginY  =  9,  // hi.s1
-    //    RSSimulationDescriptionBoundOriginZ  =  10, // hi.s2
-    //    RSSimulationDescriptionPRT           =  11,
-    //    RSSimulationDescriptionBoundSizeX    =  12, // hi.s4
-    //    RSSimulationDescriptionBoundSizeY    =  13, // hi.s5
-    //    RSSimulationDescriptionBoundSizeZ    =  14, // hi.s6
-    //    RSSimulationDescriptionAgeIncrement  =  15, // PRT / vel_desc.tr
     int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456) | !all(isfinite(pos.xyz)));
     
     if (is_outside) {
@@ -633,7 +618,8 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
         uint4 seed = y[i];
         float4 r = rand(&seed);
         y[i] = seed;
-        pos.xyz = (float3)(fma(r.xy, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT);
+        //pos.xyz = (float3)(fma(r.xyz, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT);   // Feed from the bottom
+        pos.xyz = fma(r.xyz, sim_desc.hi.s456, sim_desc.hi.s012);
         vel = FLOAT4_ZERO;
         aux.s0 = length(pos.xyz);
         sig = FLOAT4_ZERO;
@@ -675,10 +661,10 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
         vel += dudt * dt;
 
         // Bound the velocity change
-//            if (length(vel) > max(1.0f, 3.0f * length(bg_vel))) {
-//                //vel = normalize(vel) * length(bg_vel) + (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
-//                vel = bg_vel + (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
-//            }
+        if (concept & RSSimulationConceptBoundedParticleVelocity && length(vel) > max(1.0f, 3.0f * length(bg_vel))) {
+            //vel = normalize(vel) * length(bg_vel) + (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
+            vel = bg_vel + (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
+        }
 
     } else {
 
@@ -735,9 +721,9 @@ __kernel void db_atts(__global float4 *p,
     float4 tum = t[i];  // tumbling (orientation change)
     float4 sig = x[i];  // signal
 
-//    if (sim_desc.s7 < 10 && i == (int)sim_desc.s3) {
-//        printf("i=%.1f  ori = %5.2v4f  tum =  = %5.2v4f\n", sim_desc.s3, ori, tum);
-//    }
+    const float s5 = sim_desc.s5;
+    const uint concept = *(uint *)&s5;
+
     const float4 dt = (float4)(sim_desc.sb, sim_desc.sb, sim_desc.sb, 0.0f);
     
     //
@@ -779,8 +765,7 @@ __kernel void db_atts(__global float4 *p,
 
     float4 vel_bg = compute_bg_vel(pos, wind_uvw, wind_desc, sim_desc);
 
-    float4 dwdt;
-    float4 dudt = compute_dudt_dwdt(&dwdt, vel, vel_bg, ori, adm_cd, adm_cm, adm_desc);
+    float4 dwdt, dudt = compute_dudt_dwdt(&dwdt, vel, vel_bg, ori, adm_cd, adm_cm, adm_desc);
     
     vel += dudt * dt;
 
@@ -795,17 +780,10 @@ __kernel void db_atts(__global float4 *p,
     tum = normalize(tum);
 
     // bound the velocity
-//    if (length(vel.xy + dudt.xy * dt.xy) > 2.0 * length(vel_bg.xy)) {
-//        vel.xy = vel_bg.xy;
-//    }
-    
-    //    if (length(vel) > length(vel_bg)) {
-    //        printf("vel = [%5.2f %5.2f %5.2f %5.2f]  vel_bg = [%5.2f %5.2f %5.2f %5.2f]   %5.2f\n",
-    //               vel.x, vel.y, vel.z, vel.w,
-    //               vel_bg.x, vel_bg.y, vel_bg.z, vel_bg.w,
-    //               ur_norm_sq
-    //               );
-    //    }
+    if (concept & RSSimulationConceptBoundedParticleVelocity && length(vel.xy + dudt.xy * dt.xy) > 3.0 * length(vel_bg.xy)) {
+        //printf("vel = [%5.2v4f]  vel_bg = [%5.2v4f]\n", vel, vel_bg);
+        vel.xy = vel_bg.xy;
+    }
     
     sig = compute_rcs(ori, rcs_real, rcs_imag, rcs_desc, sim_desc);
     

@@ -1332,6 +1332,10 @@ void RS_init_scat_pos(RSHandle *H) {
     H->sim_desc.s[RSSimulationDescriptionTotalParticles] = H->num_scats;
     H->sim_desc.s[RSSimulationDescriptionDebrisAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTable3DDescriptionRefreshTime];
     
+    // Make a copy in float so we are maintaining all 32-bits
+    float tmpf; memcpy(&tmpf, &H->sim_concept, sizeof(float));
+    H->sim_desc.s[RSSimulationDescriptionConcept] = tmpf;
+    
     // Propagate / duplicate some constants to other places for efficient kernel execution
     for (i = 0; i < H->num_workers; i++) {
         H->worker[i].range_weight_desc.s[RSTable1DDescriptionUserConstant] = H->sim_desc.s[RSSimulationDescriptionWaveNumber];
@@ -1341,7 +1345,7 @@ void RS_init_scat_pos(RSHandle *H) {
 #pragma mark -
 #pragma mark Properties
 
-void RS_set_concept(RSHandle *H, RSSimluationConcept c) {
+void RS_set_concept(RSHandle *H, RSSimulationConcept c) {
     H->sim_concept = c;
 }
 
@@ -2985,7 +2989,7 @@ void RS_update_colors(RSHandle *H) {
     
     for (i = 0; i < H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
-            // Set individual color based on drop size
+            // Set individual color based on draw mode
             scat_clr_kernel(&H->worker[i].ndrange_scat[0],
                             (cl_float4 *)H->worker[i].scat_clr,
                             (cl_float4 *)H->worker[i].scat_pos,
@@ -3573,7 +3577,7 @@ void RS_advance_time(RSHandle *H) {
 
     for (i = 0; i < H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
-            if (H->sim_concept & RSSimluationConceptDraggedBackground) {
+            if (H->sim_concept & RSSimulationConceptDraggedBackground) {
                 el_atts_kernel(&H->worker[i].ndrange_scat[0],
                                (cl_float4 *)H->worker[i].scat_pos,
                                (cl_float4 *)H->worker[i].scat_vel,
@@ -3593,11 +3597,6 @@ void RS_advance_time(RSHandle *H) {
                                H->worker[i].vel_desc,
                                H->sim_desc);
             }
-//            scat_clr_kernel(&H->worker[i].ndrange_scat[0],
-//							(cl_float4 *)H->worker[i].scat_clr,
-//							(cl_float4 *)H->worker[i].scat_aux,
-//							(unsigned int)H->worker[i].num_scats);
-//
             dispatch_semaphore_signal(H->worker[i].sem);
 		});
 
@@ -3659,16 +3658,14 @@ void RS_advance_time(RSHandle *H) {
 
         // Background: Need to refresh some parameters at each time update
         //printf("H->worker[%d].species_population[0] = %d from %d --> background\n", i, (int)H->worker[i].species_population[0], (int)H->worker[i].species_origin[0]);
-        if (H->sim_concept & RSSimluationConceptDraggedBackground) {
+        if (H->sim_concept & RSSimulationConceptDraggedBackground) {
             clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
             clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-            //clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->species_origin[0], &C->species_population[0], &local_item_size, 0, NULL, &events[i][0]);
-            clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->species_origin[0], &C->species_population[0], &local_item_size, 0, NULL, NULL);
+            clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->species_origin[0], &C->species_population[0], &local_item_size, 0, NULL, &events[i][0]);
         } else {
             clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
             clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-            //clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_bg_atts, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i][0]);
-            clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_bg_atts, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, NULL);
+            clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_bg_atts, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i][0]);
         }
         
         // Debris particles
@@ -3687,8 +3684,7 @@ void RS_advance_time(RSHandle *H) {
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[r]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[r]);
 
-                //clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->species_origin[k], &C->species_population[k], &local_item_size, 0, NULL, &events[i][k]);
-                clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->species_origin[k], &C->species_population[k], &local_item_size, 0, NULL, NULL);
+                clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->species_origin[k], &C->species_population[k], &local_item_size, 0, NULL, &events[i][k]);
             }
             r = r == H->rcs_count - 1 ? 0 : r + 1;
             a = a == H->adm_count - 1 ? 0 : a + 1;
@@ -3698,27 +3694,16 @@ void RS_advance_time(RSHandle *H) {
     for (i = 0; i < H->num_workers; i++) {
         clFlush(H->worker[i].que);
     }
-    
+   
     for (i = 0; i < H->num_workers; i++) {
-        clFinish(H->worker[i].que);
+        clWaitForEvents(1, events[i]);
+        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
+            if (H->worker[i].species_population[k]) {
+                clWaitForEvents(1, &events[i][k]);
+                clReleaseEvent(events[i][k]);
+            }
+        }
     }
-    
-//    for (i = 0; i < H->num_workers; i++) {
-//        clWaitForEvents(1, events[i]);
-//        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
-//            if (H->worker[i].species_population[k]) {
-//                clWaitForEvents(1, &events[i][k]);
-//            }
-//        }
-//    }
-//	
-//    for (i = 0; i < H->num_workers; i++) {
-//        for (k=0; k < RS_MAX_DEBRIS_TYPES; k++) {
-//            if (H->worker[i].species_population[k]) {
-//                clReleaseEvent(events[i][k]);
-//            }
-//        }
-//    }
 	
 #endif
 	

@@ -78,8 +78,12 @@ NSWindow *standardWindow;
     
     [glView.renderer setResetRange:sim.recommendedViewRange];
     
-    GLKMatrix4 modelRotate = GLKMatrix4MakeRotation(-0.15f, 1.0f, 0.0f, 0.0f);
-    modelRotate = GLKMatrix4RotateY(modelRotate, 1.5f);
+//    GLKMatrix4 modelRotate = GLKMatrix4MakeRotation(-0.15f, 1.0f, 0.0f, 0.0f);
+//    modelRotate = GLKMatrix4RotateY(modelRotate, 1.5f);
+    
+    GLKMatrix4 modelRotate = GLKMatrix4MakeRotation(0.25f, 1.0f, 0.0f, 0.0f);
+    modelRotate = GLKMatrix4RotateY(modelRotate, -0.3f);
+    
     
     [glView.renderer setResetModelRotate:modelRotate];
     
