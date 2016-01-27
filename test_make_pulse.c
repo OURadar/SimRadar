@@ -79,8 +79,8 @@ int main(int argc, char **argv)
 	
     cl_mem sig;
     cl_mem pos;
-    cl_mem vel;
     cl_mem ori;
+    cl_mem vel;
     cl_mem tum;
 	cl_mem aux;
     cl_mem rnd;
@@ -246,36 +246,33 @@ int main(int argc, char **argv)
 	host_aux = (cl_float4 *)malloc(MAX(num_elem, RANGE_GATES * GROUP_ITEMS) * sizeof(cl_float4));
 	cpu_pulse = (cl_float4 *)malloc(RANGE_GATES * sizeof(cl_float4));
 
-	float table_range_start = -25.0f;
-	float table_range_delta = 25.0f;
-	float range_weight_cpu[] = {0.0f, 1.0f, 0.0f};
+    // Range weight table parameters
+    float range_weight_cpu[] = {0.0f, 1.0f, 0.0f};
+    float table_range_start = -25.0f, table_range_delta = 25.0f;
+    const float xs = 1.0f / table_range_delta;
+    const float xo = -table_range_start * xs;
+    const float xm = (float)(sizeof(range_weight_cpu) / sizeof(float)) - 1.0;
+    range_weight_desc = (cl_float4){{xs, xo, xm, 0.0f}};
+    printf("Range weight:  dx = %.2f  x0 = %.2f  xm = %.1f\n", xs, xo, xm);
+    
+    // Angular weight table parameters
     float angular_weight_cpu[] = {0.0f, 0.7f, 1.0f, 0.7f, 0.0f};
-    //float angular_weight_cpu[] = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+    angular_weight_desc = (cl_float4){{1.0f / deg2rad(10.0f), -(deg2rad(-20.0f)) * 1.0f / deg2rad(10.0f), 4.0f}};
+    printf("Angular weight:  dx = %.2f  x0 = %.2f  xm = %.1f\n", angular_weight_desc.s0, angular_weight_desc.s1, angular_weight_desc.s2);
 	
 	// GPU memory
 	sig = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_float4), NULL, &ret);
     pos = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_float4), NULL, &ret);
-    vel = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_float4), NULL, &ret);
     ori = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_float4), NULL, &ret);
+    vel = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_float4), NULL, &ret);
     tum = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_float4), NULL, &ret);
 	aux = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_float4), NULL, &ret);
     rnd = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_uint4), NULL, &ret);
 	work = clCreateBuffer(context, CL_MEM_READ_WRITE, RANGE_GATES * GROUP_ITEMS * sizeof(cl_float4), NULL, &ret);
 	pulse = clCreateBuffer(context, CL_MEM_READ_WRITE, RANGE_GATES * sizeof(cl_float4), NULL, &ret);
-	range_weight = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 3 * sizeof(cl_float), range_weight_cpu, &ret);
-    angular_weight = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 5 * sizeof(cl_float), angular_weight_cpu, &ret);
+	range_weight = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(range_weight_cpu), range_weight_cpu, &ret);
+    angular_weight = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(angular_weight_cpu), angular_weight_cpu, &ret);
 
-    // Range weight table parameters
-    const float range_weight_table_dx = 1.0f / table_range_delta;
-    const float range_weight_table_x0 = -table_range_start * range_weight_table_dx;
-    const float range_weight_table_xm = 2.0;  // Table only has 3 entries
-    range_weight_desc = (cl_float4){{range_weight_table_dx, range_weight_table_x0, range_weight_table_xm, 0.0f}};
-    printf("Range weight:  dx = %.2f  x0 = %.2f  xm = %.0f\n", range_weight_table_dx, range_weight_table_x0, range_weight_table_xm);
-    
-    // Angular weight table parameters
-    angular_weight_desc = (cl_float4){{1.0f / deg2rad(10.0f), -(deg2rad(-20.0f)) * 1.0f / deg2rad(10.0f), 4.0f}};
-    printf("Angular weight:  dx = %.2f  x0 = %.2f  xm = %.0f\n", angular_weight_desc.s0, angular_weight_desc.s1, angular_weight_desc.s2);
-    
     cl_float4 *table = (cl_float4 *)malloc(3 * 4 * 5 * sizeof(cl_float4));
     
 #if defined (CL_VERSION_1_2)
@@ -428,7 +425,6 @@ int main(int argc, char **argv)
         fprintf(stderr, "Error: Failed to compile kernel.\n");
         exit(EXIT_FAILURE);
     }
-    
     err = CL_SUCCESS;
     err |= clSetKernelArg(kernel_make_pulse_pass_1, 0, sizeof(cl_mem), &work);
     err |= clSetKernelArg(kernel_make_pulse_pass_1, 1, sizeof(cl_mem), &sig);
@@ -484,14 +480,15 @@ int main(int argc, char **argv)
 
     // -----------------------------------------
     
-    // Run populate
+    // Queue populate
     clEnqueueNDRangeKernel(queue, kernel_pop, 1, NULL, &global_size, NULL, 0, NULL, NULL);
 
-    // Read the data back
+    // Queue reading data back
     clEnqueueReadBuffer(queue, sig, CL_TRUE, 0, global_size * sizeof(cl_float4), host_sig, 0, NULL, NULL);
     clEnqueueReadBuffer(queue, aux, CL_TRUE, 0, global_size * sizeof(cl_float4), host_aux, 0, NULL, NULL);
     clEnqueueReadBuffer(queue, pos, CL_TRUE, 0, global_size * sizeof(cl_float4), host_pos, 0, NULL, NULL);
     
+    // Run the queue
     err = clFinish(queue);
     if (err != CL_SUCCESS) {
         fprintf(stderr, "Error: Failed in clFinish().\n");
@@ -501,7 +498,6 @@ int main(int argc, char **argv)
     //
 	// CPU calculation
 	//
-    
 	for (int ir=0; ir<RANGE_GATES; ir++) {
 		cpu_pulse[ir] = zero;
 		float r = (float)ir * R.range_delta + R.range_start;
@@ -509,7 +505,7 @@ int main(int argc, char **argv)
 		for (int i=0; i<num_elem; i++) {
 			float r_a = host_aux[i].s0;
             float angle = acosf((sim_desc.s0 * host_pos[i].x + sim_desc.s1 * host_pos[i].y + sim_desc.s2 * host_pos[i].z) / r_a);
-            float w_r = read_table(range_weight_cpu, range_weight_table_xm, (r_a - r) * range_weight_table_dx + range_weight_table_x0);
+            float w_r = read_table(range_weight_cpu, xm, (r_a - r) * xs + xo);
             float w_a = read_table(angular_weight_cpu, angular_weight_desc.s2, angle * angular_weight_desc.s0 + angular_weight_desc.s1);
             
 //            if (i < 100 && ir == 0) {
@@ -551,8 +547,6 @@ int main(int argc, char **argv)
 		}
 		printf("\n");
 	}
-
-    
     
     // Run the kernels to populate, weight and attenuate, make pulse and read back
 	err = CL_SUCCESS;
@@ -577,13 +571,11 @@ int main(int argc, char **argv)
 		printf(" %.3e", cpu_pulse[j].s0);
 	}
 	printf("\n");
-
 	printf("GPU Pulse :");
 	for (int j=0; j<R.range_count; j++) {
 		printf(" %.3e", host_sig[j].s0);
 	}
 	printf("\n");
-
 	printf("Deltas    :");
 	float delta = 0.0f, avg_delta = 0.0f;
 	for (int j=0; j<R.range_count; j++) {
@@ -613,7 +605,7 @@ int main(int argc, char **argv)
 					for (int i=0; i<num_elem; i++) {
                         float r_a = host_aux[i].s0;
                         float angle = acosf((sim_desc.s0 * host_pos[i].x + sim_desc.s1 * host_pos[i].y + sim_desc.s2 * host_pos[i].z) / r_a);
-                        float w_r = read_table(range_weight_cpu, range_weight_table_xm, (r_a - r) * range_weight_table_dx + range_weight_table_x0);
+                        float w_r = read_table(range_weight_cpu, xm, (r_a - r) * xs + xo);
                         float w_a = read_table(angular_weight_cpu, angular_weight_desc.s2, angle * angular_weight_desc.s0 + angular_weight_desc.s1);
 
                         cl_float4 sig = host_sig[i];
@@ -697,8 +689,8 @@ int main(int argc, char **argv)
 	clReleaseKernel(kernel_make_pulse_pass_2);
 	clReleaseMemObject(sig);
 	clReleaseMemObject(pos);
-    clReleaseMemObject(vel);
     clReleaseMemObject(ori);
+    clReleaseMemObject(vel);
     clReleaseMemObject(tum);
     clReleaseMemObject(aux);
     clReleaseMemObject(rnd);
