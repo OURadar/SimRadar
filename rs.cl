@@ -696,9 +696,6 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
     float4 DD = pown((float4)(D, D, D, D), (int4)(1, 2, 3, 4));
     float vv = 1.0048f + dot((float4)(5.7e-4f, -2.628e-2f, 3.682e-3f, -1.667e-4f), DD);
 
-    // Parameterize signal as a function of drop size; aux.s0 = range
-    sig = two_way_effects((float4)(1.0f, 0.0f, vv, 0.0f), aux.s0, sim_desc.s4);
-
     p[i] = pos;
     v[i] = vel;
     a[i] = aux;
@@ -883,7 +880,7 @@ __kernel void scat_wa(__global float4 *s,
     aux.s3 = mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
     
     sig = two_way_effects(sig, aux.s0, sim_desc.s4);
-    
+
     s[i] = sig;
     a[i] = aux;
 }
