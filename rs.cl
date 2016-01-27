@@ -1,7 +1,12 @@
+#define MIN_HEIGHT        10.0f
+#define FLOAT4_ZERO      (float4)(0.0f, 0.0f, 0.0f, 0.0f)
+#define QUAT_IDENTITY    (float4)(0.0f, 0.0f, 0.0f, 1.0f)
+
 enum RSTable1DDescrip {
-    RSTable1DDescriptionScale     = 0,
-    RSTable1DDescriptionOrigin    = 1,
-    RSTable1DDescriptionMaximum   = 2
+    RSTable1DDescriptionScale        = 0,
+    RSTable1DDescriptionOrigin       = 1,
+    RSTable1DDescriptionMaximum      = 2,
+    RSTable1DDescriptionUserConstant = 3
 };
 
 enum RSTableSpacing {
@@ -47,7 +52,7 @@ enum RSTable3DDescription {
     RSTable3DDescriptionRecipInLnX  = 12,
     RSTable3DDescriptionRecipInLnY  = 13,
     RSTable3DDescriptionRecipInLnZ  = 14,
-    RSTable3DDescriptionTachikawa   = 15,
+    RSTable3DDescriptionTachikawa   = 15
 };
 
 enum RSTable3DStaggeredDescription {
@@ -66,7 +71,7 @@ enum RSTable3DStaggeredDescription {
     RSTable3DStaggeredDescriptionRecipInLnX      = 12,
     RSTable3DStaggeredDescriptionRecipInLnY      = 13,
     RSTable3DStaggeredDescriptionRecipInLnZ      = 14,
-    RSTable3DStaggeredDescriptionTachikawa       = 15,
+    RSTable3DStaggeredDescriptionTachikawa       = 15
 };
 
 float4 rand(uint4 *seed);
@@ -80,7 +85,6 @@ float4 quat_get_x(float4 quat);
 float4 quat_get_y(float4 quat);
 float4 quat_get_z(float4 quat);
 float4 quat_rotate(float4 vector, float4 quat);
-float4 quat_identity(void);
 
 #pragma mark -
 
@@ -169,8 +173,6 @@ float4 quat_rotate(float4 vector, float4 quat)
 {
     return quat_mult(quat_mult(quat, vector), quat_conj(quat));
 }
-
-#define quat_identity  (float4)(0.0f, 0.0f, 0.0f, 1.0f)
 
 #pragma mark -
 #pragma mark Generic Functions
@@ -278,7 +280,7 @@ float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16
         //
         return fma(pos, wind_desc.s0123, wind_desc.s4567);
     }
-    return (float4)(0.0f, 0.0f, 0.0f, 0.0f);
+    return FLOAT4_ZERO;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -533,14 +535,16 @@ __kernel void bg_atts(__global float4 *p,
     if (is_outside) {
         uint4 seed = y[i];
         float4 r = rand(&seed);
-        y[i] = seed;
         pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
+        //pos.xyz = (float3)(fma(r.xy, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT); // This is kind of cool
+        vel = FLOAT4_ZERO;
+        aux.s0 = length(pos.xyz);
         aux.s1 = 0.0f;
-        vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
-        
+
         p[i] = pos;
         v[i] = vel;
         a[i] = aux;
+        y[i] = seed;
 
         return;
     } else {
@@ -627,16 +631,16 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
         uint4 seed = y[i];
         float4 r = rand(&seed);
         y[i] = seed;
-        pos.xyz = (fma(r, sim_desc.hi.s4567, sim_desc.hi.s0123)).xyz;
-        vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
-        y[i] = seed;
-
+        pos.xyz = (float3)(fma(r.xy, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT);
+        vel = FLOAT4_ZERO;
         aux.s0 = length(pos.xyz);
+        sig = FLOAT4_ZERO;
         
         p[i] = pos;
         v[i] = vel;
         a[i] = aux;
-        x[i] = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
+        x[i] = sig;
+        y[i] = seed;
 
         return;
     }
@@ -707,7 +711,6 @@ __kernel void db_atts(__global float4 *p,
                       __global float4 *o,
                       __global float4 *v,
                       __global float4 *t,
-                      __global float4 *a,
                       __global float4 *x,
                       __global uint4 *y,
                       __read_only image3d_t wind_uvw,
@@ -726,7 +729,6 @@ __kernel void db_atts(__global float4 *p,
     float4 ori = o[i];  // orientation
     float4 vel = v[i];  // velocity
     float4 tum = t[i];  // tumbling (orientation change)
-    float4 aux = a[i];  // auxiliary
     float4 sig = x[i];  // signal
 
 //    if (sim_desc.s7 < 10 && i == (int)sim_desc.s3) {
@@ -754,22 +756,18 @@ __kernel void db_atts(__global float4 *p,
     
     if (is_outside) {
         uint4 seed = y[i];
-
-        pos = (float4)((fma(rand(&seed), sim_desc.hi.s4567, sim_desc.hi.s0123)).xy, 3.0f, 1.0f);
-
-        vel = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
-        tum = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
-        
+        float4 r = rand(&seed);
+        pos.xyz = (float3)(fma(r.xy, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT);  // This is kind of cool!
         ori = normalize(rand(&seed));
-        //        ori = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
+        vel = FLOAT4_ZERO;
+        tum = QUAT_IDENTITY;
+        sig = FLOAT4_ZERO;
 
         p[i] = pos;
         o[i] = ori;
         v[i] = vel;
         t[i] = tum;
-        a[i] = aux;
         x[i] = sig;
-
         y[i] = seed;
         
         return;
@@ -807,25 +805,11 @@ __kernel void db_atts(__global float4 *p,
     
     sig = compute_rcs(ori, rcs_real, rcs_imag, rcs_desc, sim_desc);
     
-    // Auxiliary info:
-    // - s0 = range of the point
-    // - s1 = age
-    // - s2 =
-    // - s3 = angular weight (make_pulse_pass_1)
-    aux.s0 = length(pos.xyz);
-    //aux.s1 = aux.s1 + sim_desc.sf;
-
-    const float wav_num = M_PI_F * 4.0f * native_recip(0.03f);  // 4 * PI / lambda
-
-    // Range attenuation and phase adjustment
-    sig = two_way_effects(sig, aux.s0, wav_num);
-    
     // Copy back to global memory space
     p[i] = pos;
     o[i] = ori;
     v[i] = vel;
     t[i] = tum;
-    a[i] = aux;
     x[i] = sig;
 }
 
@@ -857,7 +841,8 @@ __kernel void scat_clr(__global float4 *c,
     }
 }
 
-__kernel void scat_wa(__global float4 *a,
+__kernel void scat_wa(__global float4 *s,
+                      __global float4 *a,
                       __global float4 *p,
                       __constant float *angular_weight,
                       const float4 angular_weight_desc,
@@ -865,10 +850,14 @@ __kernel void scat_wa(__global float4 *a,
 {
     unsigned int i = get_global_id(0);
 
+    float4 sig = s[i];
+    float4 aux = a[i];
+    float4 pos = p[i];
+    
     //    RSSimulationDescriptionBeamUnitX     =  0,
     //    RSSimulationDescriptionBeamUnitY     =  1,
     //    RSSimulationDescriptionBeamUnitZ     =  2,
-    float angle = acos(dot(sim_desc.s012, normalize(p[i].xyz)));
+    float angle = acos(dot(sim_desc.s012, normalize(pos.xyz)));
     
     float2 table_s = (float2)(angular_weight_desc.s0, angular_weight_desc.s0);
     float2 table_o = (float2)(angular_weight_desc.s1, angular_weight_desc.s1) + (float2)(0.0f, 1.0f);
@@ -882,7 +871,21 @@ __kernel void scat_wa(__global float4 *a,
     
     iidx_int = convert_uint2(fidx_int);
     
-    a[i].s3 = mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
+    //
+    // Auxiliary info:
+    // - s0 = range of the point
+    // - s1 = age
+    // - s2 =
+    // - s3 = angular weight (make_pulse_pass_1)
+    //
+    aux.s0 = length(pos.xyz);
+    aux.s1 = aux.s1 + sim_desc.sf;
+    aux.s3 = mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
+    
+    sig = two_way_effects(sig, aux.s0, sim_desc.s4);
+    
+    s[i] = sig;
+    a[i] = aux;
 }
 
 //
@@ -917,23 +920,23 @@ __kernel void make_pulse_pass_1(__global float4 *out,
     const unsigned int group_stride = 2 * local_size;
     const unsigned int local_stride = group_stride * group_count;
     
-    const float4 table_xs_4 = (float4)(range_weight_desc.s0, range_weight_desc.s0, range_weight_desc.s0, range_weight_desc.s0);
-    const float4 table_x0_4 = (float4)(range_weight_desc.s1, range_weight_desc.s1, range_weight_desc.s1, range_weight_desc.s1) + (float4)(0.0f, 1.0f, 0.0f, 1.0f);
-    
-    const float4 dr = (float4)(range_delta, range_delta, range_delta, range_delta);
-    
+    const float4 table_xs_4 = (float4)range_weight_desc.s0;
+    const float4 table_x0_4 = (float4)range_weight_desc.s1 + (float4)(0.0f, 1.0f, 0.0f, 1.0f);
+    //const float wav_num = range_weight_desc.s3;
+        
     float r_a;
     float r_b;
     
     float4 r;
     
-    float4 a;
-    float4 b;
+    float4 s_a;
+    float4 s_b;
     float4 w_a;
     float4 w_b;
     
-    unsigned int k;
     unsigned int i = group_id * group_stride + local_id;
+    unsigned int j;
+    unsigned int k;
     
     // Initialize the block of local memory to zeros
     for (k = 0; k < range_count; k++) {
@@ -947,31 +950,32 @@ __kernel void make_pulse_pass_1(__global float4 *out,
     float4 fidx_dec;
     uint4  iidx_int;
     
-    float2 wa_ab;
-    
+    //float2 wa_ab;
+   
     // Will use:
-    // Elements 0 & 1 for scatter body from the left group (a)
-    // Elements 2 & 3 for scatter body from the right group (b)
+    // Elements 0 & 1 for scatter body from the left group (a); use i indexing
+    // Elements 2 & 3 for scatter body from the right group (b); use j indexing
     // Linearly interpolate weights of element 0 & 1 using decimal fraction stored in dec.s0
     // Linearly interpolate weights of element 2 & 3 using decimal fraction stored in dec.s2
     // Why do it like this rather than the plain C code? Keep the CU's SIMD processors busy.
     
-    // att.s0 - range
-    // att.s3 - angle from pointing beam
-    
     while (i < n) {
-        a = sig[i];
-        b = sig[i + local_size];
+        j = i + local_size;
+        
+        s_a = sig[i];
+        s_b = sig[j];
         r_a = att[i].s0;
-        r_b = att[i + local_size].s0;
+        r_b = att[j].s0;
         r = (float4)range_start;
 
         // Angular weight
-        wa_ab = (float2)(att[i].s3, att[i + local_size].s3);
-        
+        s_a *= att[i].s3;
+        s_b *= att[j].s3;
+
         for (k = 0; k < range_count; k++) {
             float4 dr_from_center = (float4)(r_a, r_a, r_b, r_b) - r;
             
+            // This part can probably be replaced by read_imagef()
             fidx_raw = clamp(fma(dr_from_center, table_xs_4, table_x0_4), 0.0f, range_weight_desc.s2);     // Index [0 ... xm] in float
             fidx_dec = fract(fidx_raw, &fidx_int);                                                         // The integer and decimal fraction
             iidx_int = convert_uint4(fidx_int);
@@ -981,16 +985,13 @@ __kernel void make_pulse_pass_1(__global float4 *out,
                             (float2)(range_weight[iidx_int.s1], range_weight[iidx_int.s3]),
                             fidx_dec.s02);
             
-            // Range weight * Angular weight
-            w2 *= wa_ab;
-
             // Vectorized range * angular weights
-            w_a = (float4)(w2.s0, w2.s0, w2.s0, w2.s0);
-            w_b = (float4)(w2.s1, w2.s1, w2.s1, w2.s1);
+            w_a = (float4)w2.s0;
+            w_b = (float4)w2.s1;
             
-            shared[local_id + k * local_size] += (w_a * a + w_b * b);
+            shared[local_id + k * local_size] += (w_a * s_a + w_b * s_b);
 
-            r += dr;
+            r += range_delta;
         }
         i += local_stride;
     }
@@ -1219,12 +1220,14 @@ __kernel void make_pulse_pass_2_group(__global float4 *out,
     }
 }
 
-// Generate some saw-tooth data
-__kernel void pop(__global float4 *sig, __global float4 *att)
+// Generate some random data
+__kernel void pop(__global float4 *sig, __global float4 *aux, __global float4 *pos, const float16 sim_desc)
 {
     unsigned int k = get_global_id(0);
     
-    //float v = (float)(k % 8);
+    float4 p = (float4)((float)(k % 9) - 4.0f, (float)k / 90000.0f + 1.0f, 0.1f, 1.0f);
+
     sig[k] = (float4)(1.0f, 0.5f, 1.0f, 0.5f);
-    att[k] = (float4)((float)k * 0.5f + 10.0f, 1.0f, 1.0f, 1.0f);
+    aux[k] = (float4)(length(p.xyz), 1.0f, acos(dot(sim_desc.s012, normalize(p.xyz))), 1.0f);
+    pos[k] = p;
 }

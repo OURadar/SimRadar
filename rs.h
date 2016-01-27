@@ -184,9 +184,10 @@ typedef struct _rs_box {
 
 // A typical convention for table description, which is a set of parameters along with a table
 enum RSTable1DDescrip {
-    RSTable1DDescriptionScale     = 0,
-    RSTable1DDescriptionOrigin    = 1,
-    RSTable1DDescriptionMaximum   = 2
+    RSTable1DDescriptionScale        = 0,
+    RSTable1DDescriptionOrigin       = 1,
+    RSTable1DDescriptionMaximum      = 2,
+    RSTable1DDescriptionUserConstant = 3
 };
 
 enum RSTable3DDescription {
@@ -205,7 +206,7 @@ enum RSTable3DDescription {
     RSTable3DDescriptionRecipInLnX  = 12,
     RSTable3DDescriptionRecipInLnY  = 13,
     RSTable3DDescriptionRecipInLnZ  = 14,
-    RSTable3DDescriptionTachikawa   = 15,
+    RSTable3DDescriptionTachikawa   = 15
 };
 
 enum RSTable3DStaggeredDescription {
@@ -224,7 +225,7 @@ enum RSTable3DStaggeredDescription {
     RSTable3DStaggeredDescriptionRecipInLnX      = 12,
     RSTable3DStaggeredDescriptionRecipInLnY      = 13,
     RSTable3DStaggeredDescriptionRecipInLnZ      = 14,
-    RSTable3DStaggeredDescriptionTachikawa       = 15,
+    RSTable3DStaggeredDescriptionTachikawa       = 15
 };
 
 enum RSSimulationDescription {
@@ -243,7 +244,7 @@ enum RSSimulationDescription {
     RSSimulationDescriptionBoundSizeX         =  12, // hi.s4
     RSSimulationDescriptionBoundSizeY         =  13, // hi.s5
     RSSimulationDescriptionBoundSizeZ         =  14, // hi.s6
-    RSSimulationDescriptionDebrisAgeIncrement =  15, // PRT / vel_desc.tr
+    RSSimulationDescriptionDebrisAgeIncrement =  15  // PRT / vel_desc.tr
 };
 
 enum RSDropSizeDistribution {

@@ -9,65 +9,64 @@
 #define rs_priv_h
 
 enum RSBackgroundAttributeKernelArgument {
-    RSBackgroundAttributeKernelArgumentPosition                      = 0,
-    RSBackgroundAttributeKernelArgumentVelocity                      = 1,
-    RSBackgroundAttributeKernelArgumentExtras                        = 2,
-    RSBackgroundAttributeKernelArgumentRandomSeed                    = 3,
-    RSBackgroundAttributeKernelArgumentBackgroundVelocity            = 4,
-    RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription = 5,
-    RSBackgroundAttributeKernelArgumentSimulationDescription         = 6
+    RSBackgroundAttributeKernelArgumentPosition,
+    RSBackgroundAttributeKernelArgumentVelocity,
+    RSBackgroundAttributeKernelArgumentExtras,
+    RSBackgroundAttributeKernelArgumentRandomSeed,
+    RSBackgroundAttributeKernelArgumentBackgroundVelocity,
+    RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription,
+    RSBackgroundAttributeKernelArgumentSimulationDescription
 };
 
 enum RSEllipsoidAttributeKernelArgument {
-    RSEllipsoidAttributeKernelArgumentPosition                      = 0,
-    RSEllipsoidAttributeKernelArgumentVelocity                      = 1,
-    RSEllipsoidAttributeKernelArgumentExtras                        = 2,
-    RSEllipsoidAttributeKernelArgumentSignal                        = 3,
-    RSEllipsoidAttributeKernelArgumentRandomSeed                    = 4,
-    RSEllipsoidAttributeKernelArgumentBackgroundVelocity            = 5,
-    RSEllipsoidAttributeKernelArgumentBackgroundVelocityDescription = 6,
-    RSEllipsoidAttributeKernelArgumentSimulationDescription         = 7
+    RSEllipsoidAttributeKernelArgumentPosition,
+    RSEllipsoidAttributeKernelArgumentVelocity,
+    RSEllipsoidAttributeKernelArgumentExtras,
+    RSEllipsoidAttributeKernelArgumentSignal,
+    RSEllipsoidAttributeKernelArgumentRandomSeed,
+    RSEllipsoidAttributeKernelArgumentBackgroundVelocity,
+    RSEllipsoidAttributeKernelArgumentBackgroundVelocityDescription,
+    RSEllipsoidAttributeKernelArgumentSimulationDescription
 };
 
 enum RSDebrisAttributeKernelArgument {
-    RSDebrisAttributeKernelArgumentPosition                      = 0,
-    RSDebrisAttributeKernelArgumentOrientation                   = 1,
-    RSDebrisAttributeKernelArgumentVelocity                      = 2,
-    RSDebrisAttributeKernelArgumentTumble                        = 3,
-    RSDebrisAttributeKernelArgumentExtras                        = 4,
-    RSDebrisAttributeKernelArgumentSignal                        = 5,
-    RSDebrisAttributeKernelArgumentRandomSeed                    = 6,
-    RSDebrisAttributeKernelArgumentBackgroundVelocity            = 7,
-    RSDebrisAttributeKernelArgumentBackgroundVelocityDescription = 8,
-    RSDebrisAttributeKernelArgumentAirDragModelDrag              = 9,
-    RSDebrisAttributeKernelArgumentAirDragModelMomentum          = 10,
-    RSDebrisAttributeKernelArgumentAirDragModelDescription       = 11,
-    RSDebrisAttributeKernelArgumentRadarCrossSectionReal         = 12,
-    RSDebrisAttributeKernelArgumentRadarCrossSectionImag         = 13,
-    RSDebrisAttributeKernelArgumentRadarCrossSectionDescription  = 14,
-    RSDebrisAttributeKernelArgumentSimulationDescription         = 15
+    RSDebrisAttributeKernelArgumentPosition,
+    RSDebrisAttributeKernelArgumentOrientation,
+    RSDebrisAttributeKernelArgumentVelocity,
+    RSDebrisAttributeKernelArgumentTumble,
+    RSDebrisAttributeKernelArgumentSignal,
+    RSDebrisAttributeKernelArgumentRandomSeed,
+    RSDebrisAttributeKernelArgumentBackgroundVelocity,
+    RSDebrisAttributeKernelArgumentBackgroundVelocityDescription,
+    RSDebrisAttributeKernelArgumentAirDragModelDrag,
+    RSDebrisAttributeKernelArgumentAirDragModelMomentum,
+    RSDebrisAttributeKernelArgumentAirDragModelDescription,
+    RSDebrisAttributeKernelArgumentRadarCrossSectionReal,
+    RSDebrisAttributeKernelArgumentRadarCrossSectionImag,
+    RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,
+    RSDebrisAttributeKernelArgumentSimulationDescription
 };
 
 enum RSScattererColorKernelArgument {
-    RSScattererColorKernelArgumentColor     = 0,
-    RSScattererColorKernelArgumentPosition  = 1,
-    RSScattererColorKernelArgumentAttribute = 2,
-    RSScattererColorKernelArgumentDrawMode  = 3
+    RSScattererColorKernelArgumentColor,
+    RSScattererColorKernelArgumentPosition,
+    RSScattererColorKernelArgumentAttribute,
+    RSScattererColorKernelArgumentDrawMode
 };
 
-
 enum RSScattererSignalDropSizeDistributionKernalArgument {
-    RSScattererSignalDropSizeDistributionKernalArgumentSignal    = 0,
-    RSScattererSignalDropSizeDistributionKernalArgumentPosition  = 1,
-    RSScattererSignalDropSizeDistributionKernalArgumentAttribute = 2
+    RSScattererSignalDropSizeDistributionKernalArgumentSignal,
+    RSScattererSignalDropSizeDistributionKernalArgumentPosition,
+    RSScattererSignalDropSizeDistributionKernalArgumentAttribute
 };
 
 enum RSScattererAngularWeightKernalArgument {
-    RSScattererAngularWeightKernalArgumentAttribute              = 0,
-    RSScattererAngularWeightKernalArgumentPosition               = 1,
-    RSScattererAngularWeightKernalArgumentWeightTable            = 2,
-    RSScattererAngularWeightKernalArgumentWeightTableDescription = 3,
-    RSScattererAngularWeightKernalArgumentSimulationDescription  = 4
+    RSScattererAngularWeightKernalArgumentSignal,
+    RSScattererAngularWeightKernalArgumentAttribute,
+    RSScattererAngularWeightKernalArgumentPosition,
+    RSScattererAngularWeightKernalArgumentWeightTable,
+    RSScattererAngularWeightKernalArgumentWeightTableDescription,
+    RSScattererAngularWeightKernalArgumentSimulationDescription
 };
 
 void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device_id *devices, cl_uint *num_cus, cl_uint *vendors, cl_int detail_level);

@@ -21,11 +21,35 @@ enum {
 	TEST_GPU_PASS_1   = 1 << 1,
 	TEST_GPU_PASS_2   = 1 << 2,
     TEST_GPU_DB_ATTS  = 1 << 3,
-	TEST_GPU          = TEST_GPU_PASS_1 | TEST_GPU_PASS_2 | TEST_GPU_DB_ATTS,
+    TEST_GPU_WA       = 1 << 4,
+	TEST_GPU          = TEST_GPU_PASS_1 | TEST_GPU_PASS_2 | TEST_GPU_DB_ATTS | TEST_GPU_WA,
 	TEST_ALL          = TEST_CPU | TEST_GPU
 };
 
+cl_float4 complex_multiply(const cl_float4 a, const cl_float4 b) {
+    return (cl_float4){{
+        a.s0 * b.s0 - a.s1 * b.s1,
+        a.s1 * b.s0 + a.s0 * b.s1,
+        a.s2 * b.s2 - a.s3 * b.s3,
+        a.s3 * b.s2 + a.s2 * b.s3
+    }};
+}
 
+cl_float4 two_way_effects(const cl_float4 sig_in, const float range, const float wav_num) {
+    float atten = powf(range, -4.0f);
+    float phase = range * wav_num;
+    float c = cosf(phase), s = sinf(phase);
+    cl_float4 tmp = complex_multiply(sig_in, (cl_float4){{c, s, c, s}});
+    tmp.s0 *= atten;
+    tmp.s1 *= atten;
+    tmp.s2 *= atten;
+    tmp.s3 *= atten;
+    return tmp;
+}
+
+float deg2rad(const float deg) {
+    return deg * 0.01745329251994f;
+}
 
 int main(int argc, char **argv)
 {
@@ -39,7 +63,8 @@ int main(int argc, char **argv)
 	struct timeval t1, t2;
 	
 	cl_float4 *host_sig;
-	cl_float4 *host_att;
+    cl_float4 *host_pos;
+	cl_float4 *host_aux;
 	cl_float4 *cpu_pulse;
 	
     cl_uint num_devices;
@@ -57,7 +82,7 @@ int main(int argc, char **argv)
     cl_mem vel;
     cl_mem ori;
     cl_mem tum;
-	cl_mem att;
+	cl_mem aux;
     cl_mem rnd;
 	cl_mem work;
 	cl_mem pulse;
@@ -66,6 +91,9 @@ int main(int argc, char **argv)
     
 	cl_mem range_weight;
     cl_float4 range_weight_desc;
+    
+    cl_mem angular_weight;
+    cl_float4 angular_weight_desc;
     
     cl_mem les;
     cl_float16 les_desc;
@@ -79,19 +107,20 @@ int main(int argc, char **argv)
     cl_float16 rcs_desc;
 	
     cl_kernel kernel_pop;
+    cl_kernel kernel_scat_wa;
     cl_kernel kernel_db_atts;
 	cl_kernel kernel_make_pulse_pass_1;
 	cl_kernel kernel_make_pulse_pass_2;
 	cl_command_queue queue;
 	
-	size_t size = 0;
+	size_t global_size = 0;
 	size_t max_workgroup_size = 0;
 	
-    cl_event events[2];
+    cl_event events[3];
     
     unsigned int num_elem = NUM_ELEM;
 
-	while ((c = getopt(argc, argv, "ac12dgvn:p:h?")) != -1) {
+	while ((c = getopt(argc, argv, "ac12dwgvn:p:h?")) != -1) {
 		switch (c) {
 			case 'a':
 				test = TEST_ALL;
@@ -104,6 +133,9 @@ int main(int argc, char **argv)
 				break;
             case 'd':
                 test |= TEST_GPU_DB_ATTS;
+                break;
+            case 'w':
+                test |= TEST_GPU_WA;
                 break;
 			case 'g':
 				test |= TEST_GPU;
@@ -129,6 +161,7 @@ int main(int argc, char **argv)
 					   "    -1     GPU Pass 1 test\n"
 					   "    -2     GPU Pass 2 test\n"
                        "    -d     GPU db_atts test\n"
+                       "    -w     GPU wa test\n"
 					   "    -g     All GPU Tests\n"
 					   "    -v     increases verbosity\n"
 					   "    -n N   speed test using N iterations\n"
@@ -141,7 +174,13 @@ int main(int argc, char **argv)
 		}
 	}
 	
-	if (test & TEST_ALL && speed_test_iterations == 0) {
+    // Some basic simulation parameters
+    sim_desc.s[RSSimulationDescriptionBeamUnitX] = 0.0f;
+    sim_desc.s[RSSimulationDescriptionBeamUnitY] = 1.0f;
+    sim_desc.s[RSSimulationDescriptionBeamUnitZ] = 0.0f;
+    sim_desc.s[RSSimulationDescriptionWaveNumber] = 4.0f * M_PI / 0.1f;
+
+    if (test & TEST_ALL && speed_test_iterations == 0) {
 		speed_test_iterations = 500;
 	}
 	
@@ -149,7 +188,7 @@ int main(int argc, char **argv)
     get_device_info(CL_DEVICE_TYPE_GPU, &num_devices, devices, num_cus, vendors, verb);
     
 	// Get the OpenCL devices
-	ret = clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &max_workgroup_size, &size);
+	ret = clGetDeviceInfo(devices[0], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &max_workgroup_size, &global_size);
 	if (ret != CL_SUCCESS) {
 		fprintf(stderr, "%s : Unable to obtain CL_DEVICE_MAX_WORK_GROUP_SIZE.\n", now());
 		exit(EXIT_FAILURE);
@@ -198,15 +237,20 @@ int main(int argc, char **argv)
     } else {
         printf("Number of points = %d\n", num_elem);
     }
-	
+
+    global_size = num_elem;
+
 	// CPU memory
 	host_sig = (cl_float4 *)malloc(MAX(num_elem, RANGE_GATES * GROUP_ITEMS) * sizeof(cl_float4));
-	host_att = (cl_float4 *)malloc(MAX(num_elem, RANGE_GATES * GROUP_ITEMS) * sizeof(cl_float4));
+    host_pos = (cl_float4 *)malloc(MAX(num_elem, RANGE_GATES * GROUP_ITEMS) * sizeof(cl_float4));
+	host_aux = (cl_float4 *)malloc(MAX(num_elem, RANGE_GATES * GROUP_ITEMS) * sizeof(cl_float4));
 	cpu_pulse = (cl_float4 *)malloc(RANGE_GATES * sizeof(cl_float4));
 
 	float table_range_start = -25.0f;
 	float table_range_delta = 25.0f;
-	float range_weight_cpu[3] = {0.0f, 1.0f, 0.0f};
+	float range_weight_cpu[] = {0.0f, 1.0f, 0.0f};
+    float angular_weight_cpu[] = {0.0f, 0.7f, 1.0f, 0.7f, 0.0f};
+    //float angular_weight_cpu[] = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
 	
 	// GPU memory
 	sig = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_float4), NULL, &ret);
@@ -214,160 +258,203 @@ int main(int argc, char **argv)
     vel = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_float4), NULL, &ret);
     ori = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_float4), NULL, &ret);
     tum = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_float4), NULL, &ret);
-	att = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_float4), NULL, &ret);
+	aux = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_float4), NULL, &ret);
     rnd = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_uint4), NULL, &ret);
 	work = clCreateBuffer(context, CL_MEM_READ_WRITE, RANGE_GATES * GROUP_ITEMS * sizeof(cl_float4), NULL, &ret);
 	pulse = clCreateBuffer(context, CL_MEM_READ_WRITE, RANGE_GATES * sizeof(cl_float4), NULL, &ret);
 	range_weight = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 3 * sizeof(cl_float), range_weight_cpu, &ret);
+    angular_weight = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 5 * sizeof(cl_float), angular_weight_cpu, &ret);
 
-	// Populate the input data
+    // Range weight table parameters
+    const float range_weight_table_dx = 1.0f / table_range_delta;
+    const float range_weight_table_x0 = -table_range_start * range_weight_table_dx;
+    const float range_weight_table_xm = 2.0;  // Table only has 3 entries
+    range_weight_desc = (cl_float4){{range_weight_table_dx, range_weight_table_x0, range_weight_table_xm, 0.0f}};
+    printf("Range weight:  dx = %.2f  x0 = %.2f  xm = %.0f\n", range_weight_table_dx, range_weight_table_x0, range_weight_table_xm);
+    
+    // Angular weight table parameters
+    angular_weight_desc = (cl_float4){{1.0f / deg2rad(10.0f), -(deg2rad(-20.0f)) * 1.0f / deg2rad(10.0f), 4.0f}};
+    printf("Angular weight:  dx = %.2f  x0 = %.2f  xm = %.0f\n", angular_weight_desc.s0, angular_weight_desc.s1, angular_weight_desc.s2);
+    
+    // Global / local parameterization for CL kernels
+    RSMakePulseParams R = RS_make_pulse_params(num_elem, GROUP_ITEMS, GROUP_COUNTS, 1.0f, 0.25f, RANGE_GATES);
+    
+	// -----------------------------------------
+    
+    // Populate kernel setup
 	kernel_pop = clCreateKernel(program, "pop", &ret);
 	if (ret != CL_SUCCESS) {
 		fprintf(stderr, "Error\n");
 		exit(EXIT_FAILURE);
 	}
-	clSetKernelArg(kernel_pop, 0, sizeof(cl_mem), &sig);
-	clSetKernelArg(kernel_pop, 1, sizeof(cl_mem), &att);
-	
-	size = num_elem;
-	clEnqueueNDRangeKernel(queue, kernel_pop, 1, NULL, &size, NULL, 0, NULL, NULL);
-	clEnqueueReadBuffer(queue, sig, CL_TRUE, 0, num_elem * sizeof(cl_float4), host_sig, 0, NULL, NULL);
-	clEnqueueReadBuffer(queue, att, CL_TRUE, 0, num_elem * sizeof(cl_float4), host_att, 0, NULL, NULL);
+    clSetKernelArg(kernel_pop, 0, sizeof(cl_mem), &sig);
+	clSetKernelArg(kernel_pop, 1, sizeof(cl_mem), &aux);
+	clSetKernelArg(kernel_pop, 2, sizeof(cl_mem), &pos);
+	clSetKernelArg(kernel_pop, 3, sizeof(cl_float16), &sim_desc);
+    
+    // Weight and attenuate setup
+    kernel_scat_wa = clCreateKernel(program, "scat_wa", &ret);
+    if (ret != CL_SUCCESS) {
+        fprintf(stderr, "Error\n");
+        exit(EXIT_FAILURE);
+    }
+    clSetKernelArg(kernel_scat_wa, 0, sizeof(cl_mem), &sig);
+    clSetKernelArg(kernel_scat_wa, 1, sizeof(cl_mem), &aux);
+    clSetKernelArg(kernel_scat_wa, 2, sizeof(cl_mem), &pos);
+    clSetKernelArg(kernel_scat_wa, 3, sizeof(cl_mem), &angular_weight);
+    clSetKernelArg(kernel_scat_wa, 4, sizeof(cl_float4), &angular_weight_desc);
+    clSetKernelArg(kernel_scat_wa, 5, sizeof(cl_float16), &sim_desc);
 
+    // Pass 1 setup
+    printf("Pass 1   global=%5d   local=%3d   groups=%3d   entries=%7d  local_mem=%5zu (%2d x %d cl_float4)\n",
+           (int)R.global[0],
+           (int)R.local[0],
+           R.group_counts[0],
+           R.entry_counts[0],
+           R.local_mem_size[0],
+           R.range_count,
+           (int)R.local[0]);
+    
+    kernel_make_pulse_pass_1 = clCreateKernel(program, "make_pulse_pass_1", &ret);
+    if (ret != CL_SUCCESS) {
+        fprintf(stderr, "Error: Failed to compile kernel.\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    err = CL_SUCCESS;
+    err |= clSetKernelArg(kernel_make_pulse_pass_1, 0, sizeof(cl_mem), &work);
+    err |= clSetKernelArg(kernel_make_pulse_pass_1, 1, sizeof(cl_mem), &sig);
+    err |= clSetKernelArg(kernel_make_pulse_pass_1, 2, sizeof(cl_mem), &aux);
+    err |= clSetKernelArg(kernel_make_pulse_pass_1, 3, R.local_mem_size[0], NULL);
+    err |= clSetKernelArg(kernel_make_pulse_pass_1, 4, sizeof(cl_mem), &range_weight);
+    err |= clSetKernelArg(kernel_make_pulse_pass_1, 5, sizeof(cl_float4), &range_weight_desc);
+    err |= clSetKernelArg(kernel_make_pulse_pass_1, 6, sizeof(float), &R.range_start);
+    err |= clSetKernelArg(kernel_make_pulse_pass_1, 7, sizeof(float), &R.range_delta);
+    err |= clSetKernelArg(kernel_make_pulse_pass_1, 8, sizeof(unsigned int), &R.range_count);
+    err |= clSetKernelArg(kernel_make_pulse_pass_1, 9, sizeof(unsigned int), &R.group_counts[0]);
+    err |= clSetKernelArg(kernel_make_pulse_pass_1, 10, sizeof(unsigned int), &R.entry_counts[0]);
+    if (err != CL_SUCCESS) {
+        fprintf(stderr, "Error: Failed to set kernel arguments.\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    // Should check against hardware limits
+    //	ret = clGetKernelWorkGroupInfo(kernel_make_pulse_pass_1, devices[0], CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &work_group_size, NULL);
+    //	printf("%s : CL_KERNEL_WORK_GROUP_SIZE = %zu\n", now(), work_group_size);
+    
+    // Pass 2 setup
+    printf("Pass 2   global=%5d   local=%3d   groups=%3d   entries=%7d  local_mem=%5zu ( 1 x %2lu cl_float4)  [%s]\n",
+           (int)R.global[1],
+           (int)R.local[1],
+           R.group_counts[1],
+           R.entry_counts[1],
+           R.local_mem_size[1], R.local_mem_size[1] / sizeof(cl_float4),
+           R.cl_pass_2_method == RS_CL_PASS_2_IN_RANGE ? "Range" :
+           (R.cl_pass_2_method == RS_CL_PASS_2_IN_LOCAL ? "Local" : "Universal"));
+    
+    if (R.cl_pass_2_method == RS_CL_PASS_2_IN_RANGE) {
+        kernel_make_pulse_pass_2 = clCreateKernel(program, "make_pulse_pass_2_range", &ret);
+    } else if (R.cl_pass_2_method == RS_CL_PASS_2_IN_LOCAL) {
+        kernel_make_pulse_pass_2 = clCreateKernel(program, "make_pulse_pass_2_local", &ret);
+    } else {
+        kernel_make_pulse_pass_2 = clCreateKernel(program, "make_pulse_pass_2_group", &ret);
+    }
+    if (ret != CL_SUCCESS) {
+        fprintf(stderr, "Error: Failed to compile kernel.\n");
+        exit(EXIT_FAILURE);
+    }
+    err = CL_SUCCESS;
+    err |= clSetKernelArg(kernel_make_pulse_pass_2, 0, sizeof(cl_mem), &pulse);
+    err |= clSetKernelArg(kernel_make_pulse_pass_2, 1, sizeof(cl_mem), &work);
+    err |= clSetKernelArg(kernel_make_pulse_pass_2, 2, R.local_mem_size[1], NULL);
+    err |= clSetKernelArg(kernel_make_pulse_pass_2, 3, sizeof(unsigned int), &R.range_count);
+    err |= clSetKernelArg(kernel_make_pulse_pass_2, 4, sizeof(unsigned int), &R.entry_counts[1]);
+    if (err != CL_SUCCESS) {
+        fprintf(stderr, "Error: Failed to set kernel arguments.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // -----------------------------------------
+    
+    // Run populate
+    clEnqueueNDRangeKernel(queue, kernel_pop, 1, NULL, &global_size, NULL, 0, NULL, NULL);
+
+    // Read the data back
+    clEnqueueReadBuffer(queue, sig, CL_TRUE, 0, global_size * sizeof(cl_float4), host_sig, 0, NULL, NULL);
+    clEnqueueReadBuffer(queue, aux, CL_TRUE, 0, global_size * sizeof(cl_float4), host_aux, 0, NULL, NULL);
+    clEnqueueReadBuffer(queue, pos, CL_TRUE, 0, global_size * sizeof(cl_float4), host_pos, 0, NULL, NULL);
+    
     err = clFinish(queue);
     if (err != CL_SUCCESS) {
         fprintf(stderr, "Error: Failed in clFinish().\n");
         exit(EXIT_FAILURE);
     }
+    
 
-    // Table parameters
-	const float range_weight_table_dx = 1.0f / table_range_delta;
-	const float range_weight_table_x0 = -table_range_start * range_weight_table_dx;
-	const float range_weight_table_xm = 2.0;  // Table only has 3 entries
-	printf("Table set.  dx = %.2f  x0 = %.2f  xm = %.0f\n", range_weight_table_dx, range_weight_table_x0, range_weight_table_xm);
-
-	// Global / local parameterization for CL kernels
-	RSMakePulseParams R = RS_make_pulse_params(num_elem, GROUP_ITEMS, GROUP_COUNTS, 1.0f, 0.25f, RANGE_GATES);
-	
-	//
+    //
 	// CPU calculation
 	//
-
+    
 	for (int ir=0; ir<RANGE_GATES; ir++) {
 		cpu_pulse[ir] = zero;
 		float r = (float)ir * R.range_delta + R.range_start;
 
 		for (int i=0; i<num_elem; i++) {
-			float r_a = host_att[i].s0;
-            float w_a = host_att[i].s3;
+			float r_a = host_aux[i].s0;
+            //float w_a = host_att[i].s3;
+            float angle = acosf((sim_desc.s0 * host_pos[i].x + sim_desc.s1 * host_pos[i].y + sim_desc.s2 * host_pos[i].z) / r_a);
             float w_r = read_table(range_weight_cpu, range_weight_table_xm, (r_a - r) * range_weight_table_dx + range_weight_table_x0);
+            float w_a = read_table(angular_weight_cpu, angular_weight_desc.s2, angle * angular_weight_desc.s0 + angular_weight_desc.s1);
+            
+//            if (i < 100 && ir == 0) {
+//                printf("angle = %.4f ==? %.4f   wa = %.4f ==? %.4f   r = %.4f ==? %.4f   sig = %.4f\n",
+//                       angle, host_aux[i].s2,
+//                       w_a, host_aux[i].s3,
+//                       r_a, host_aux[i].s0,
+//                       host_sig[i].s0);
+//            }
+
 //			if (ir < 2) {
 //				float fidx = (r_a - r) * range_weight_table_dx + range_weight_table_x0;
 //				printf("ir=%2u  r=%5.2f  i=%2u  r_a=%.3f  dr=%.3f  w_r=%.3f  %.2f -> %.0f/%.0f/%.2f\n",
 //					   ir, r, i, r_a, r_a-r, w_r, fidx, floorf(fidx), ceilf(fidx), fidx-floorf(fidx));
 //			}
-			cpu_pulse[ir].s0 += host_sig[i].s0 * w_r * w_a;
-			cpu_pulse[ir].s1 += host_sig[i].s1 * w_r * w_a;
-			cpu_pulse[ir].s2 += host_sig[i].s2 * w_r * w_a;
-			cpu_pulse[ir].s3 += host_sig[i].s3 * w_r * w_a;
+            cl_float4 sig = host_sig[i];
+            sig = two_way_effects(sig, r_a, sim_desc.s[RSSimulationDescriptionWaveNumber]);
+			cpu_pulse[ir].s0 += sig.s0 * w_r * w_a;
+			cpu_pulse[ir].s1 += sig.s1 * w_r * w_a;
+			cpu_pulse[ir].s2 += sig.s2 * w_r * w_a;
+			cpu_pulse[ir].s3 += sig.s3 * w_r * w_a;
 		}
 	}
 	
-	if (verb > 3) {
+	if (verb > 2) {
 		int i;
 		cl_float4 v, a;
 		printf("Input:\n");
 		for (i=0; i<MIN(10, num_elem); i++) {
 			clEnqueueReadBuffer(queue, sig, CL_TRUE, i * sizeof(cl_float4), sizeof(cl_float4), &v, 0, NULL, NULL);
-            clEnqueueReadBuffer(queue, att, CL_TRUE, i * sizeof(cl_float4), sizeof(cl_float4), &a, 0, NULL, NULL);
+            clEnqueueReadBuffer(queue, aux, CL_TRUE, i * sizeof(cl_float4), sizeof(cl_float4), &a, 0, NULL, NULL);
 			printf("%7d :  %9.1f  %9.1f  %9.1f  %9.1f    |   %9.1f  %9.1f  %9.1f  %9.1f\n", i, v.x, v.y, v.z, v.w, a.x, a.y, a.z, a.w);
 		}
-        printf("        :      :          :          :          :        |       :          :          :          :\n");
+        printf("        :         :          :          :          :     |          :          :          :          :\n");
 		for (i=MAX(i, num_elem-3); i<num_elem; i++) {
 			clEnqueueReadBuffer(queue, sig, CL_TRUE, i * sizeof(cl_float4), sizeof(cl_float4), &v, 0, NULL, NULL);
-            clEnqueueReadBuffer(queue, att, CL_TRUE, i * sizeof(cl_float4), sizeof(cl_float4), &a, 0, NULL, NULL);
+            clEnqueueReadBuffer(queue, aux, CL_TRUE, i * sizeof(cl_float4), sizeof(cl_float4), &a, 0, NULL, NULL);
             printf("%7d :  %9.1f  %9.1f  %9.1f  %9.1f    |   %9.1f  %9.1f  %9.1f  %9.1f\n", i, v.x, v.y, v.z, v.w, a.x, a.y, a.z, a.w);
 		}
 		printf("\n");
 	}
 
-	// Pass 1
-	printf("Pass 1   global=%5d   local=%3d   groups=%3d   entries=%7d  local_mem=%5zu (%2d x %d cl_float4)\n",
-		   (int)R.global[0],
-		   (int)R.local[0],
-		   R.group_counts[0],
-		   R.entry_counts[0],
-		   R.local_mem_size[0],
-		   R.range_count,
-		   (int)R.local[0]);
-
-	kernel_make_pulse_pass_1 = clCreateKernel(program, "make_pulse_pass_1", &ret);
-	if (ret != CL_SUCCESS) {
-		fprintf(stderr, "Error: Failed to compile kernel.\n");
-		exit(EXIT_FAILURE);
-	}
-
-    range_weight_desc = (cl_float4){{range_weight_table_dx, range_weight_table_x0, range_weight_table_xm, 0.0f}};
     
+    
+    // Run the kernels to populate, weight and attenuate, make pulse and read back
 	err = CL_SUCCESS;
-	err |= clSetKernelArg(kernel_make_pulse_pass_1, 0, sizeof(cl_mem), &work);
-	err |= clSetKernelArg(kernel_make_pulse_pass_1, 1, sizeof(cl_mem), &sig);
-	err |= clSetKernelArg(kernel_make_pulse_pass_1, 2, sizeof(cl_mem), &att);
-	err |= clSetKernelArg(kernel_make_pulse_pass_1, 3, R.local_mem_size[0], NULL);
-	err |= clSetKernelArg(kernel_make_pulse_pass_1, 4, sizeof(cl_mem), &range_weight);
-	err |= clSetKernelArg(kernel_make_pulse_pass_1, 5, sizeof(cl_float4), &range_weight_desc);
-	err |= clSetKernelArg(kernel_make_pulse_pass_1, 6, sizeof(float), &R.range_start);
-	err |= clSetKernelArg(kernel_make_pulse_pass_1, 7, sizeof(float), &R.range_delta);
-	err |= clSetKernelArg(kernel_make_pulse_pass_1, 8, sizeof(unsigned int), &R.range_count);
-	err |= clSetKernelArg(kernel_make_pulse_pass_1, 9, sizeof(unsigned int), &R.group_counts[0]);
-	err |= clSetKernelArg(kernel_make_pulse_pass_1, 10, sizeof(unsigned int), &R.entry_counts[0]);
-	if (err != CL_SUCCESS) {
-		fprintf(stderr, "Error: Failed to set kernel arguments.\n");
-		exit(EXIT_FAILURE);
-	}
-	
-	// Should check against hardware limits
-//	ret = clGetKernelWorkGroupInfo(kernel_make_pulse_pass_1, devices[0], CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &work_group_size, NULL);
-//	printf("%s : CL_KERNEL_WORK_GROUP_SIZE = %zu\n", now(), work_group_size);
-
-	
-
-	// Pass 2
-	printf("Pass 2   global=%5d   local=%3d   groups=%3d   entries=%7d  local_mem=%5zu ( 1 x %2lu cl_float4)  [%s]\n",
-		   (int)R.global[1],
-		   (int)R.local[1],
-		   R.group_counts[1],
-		   R.entry_counts[1],
-		   R.local_mem_size[1], R.local_mem_size[1] / sizeof(cl_float4),
-		   R.cl_pass_2_method == RS_CL_PASS_2_IN_RANGE ? "Range" :
-		   (R.cl_pass_2_method == RS_CL_PASS_2_IN_LOCAL ? "Local" : "Universal"));
-
-	if (R.cl_pass_2_method == RS_CL_PASS_2_IN_RANGE) {
-		kernel_make_pulse_pass_2 = clCreateKernel(program, "make_pulse_pass_2_range", &ret);
-	} else if (R.cl_pass_2_method == RS_CL_PASS_2_IN_LOCAL) {
-		kernel_make_pulse_pass_2 = clCreateKernel(program, "make_pulse_pass_2_local", &ret);
-	} else {
-		kernel_make_pulse_pass_2 = clCreateKernel(program, "make_pulse_pass_2_group", &ret);
-	}
-	if (ret != CL_SUCCESS) {
-		fprintf(stderr, "Error: Failed to compile kernel.\n");
-		exit(EXIT_FAILURE);
-	}
-	err = CL_SUCCESS;
-	err |= clSetKernelArg(kernel_make_pulse_pass_2, 0, sizeof(cl_mem), &pulse);
-	err |= clSetKernelArg(kernel_make_pulse_pass_2, 1, sizeof(cl_mem), &work);
-	err |= clSetKernelArg(kernel_make_pulse_pass_2, 2, R.local_mem_size[1], NULL);
-	err |= clSetKernelArg(kernel_make_pulse_pass_2, 3, sizeof(unsigned int), &R.range_count);
-	err |= clSetKernelArg(kernel_make_pulse_pass_2, 4, sizeof(unsigned int), &R.entry_counts[1]);
-	if (err != CL_SUCCESS) {
-		fprintf(stderr, "Error: Failed to set kernel arguments.\n");
-		exit(EXIT_FAILURE);
-	}
-
-	err = CL_SUCCESS;
-	err |= clEnqueueNDRangeKernel(queue, kernel_make_pulse_pass_1, 1, NULL, &R.global[0], &R.local[0], 0, NULL, &events[0]);
-	err |= clEnqueueNDRangeKernel(queue, kernel_make_pulse_pass_2, 1, NULL, &R.global[1], &R.local[1], 1, &events[0], &events[1]);
-    err |= clEnqueueReadBuffer(queue, pulse, CL_TRUE, 0, R.range_count * sizeof(cl_float4), host_sig, 1, &events[1], NULL);
+    err |= clEnqueueNDRangeKernel(queue, kernel_pop, 1, NULL, &global_size, NULL, 0, NULL, NULL);
+    err |= clEnqueueNDRangeKernel(queue, kernel_scat_wa, 1, NULL, &global_size, NULL, 0, NULL, &events[0]);
+	err |= clEnqueueNDRangeKernel(queue, kernel_make_pulse_pass_1, 1, NULL, &R.global[0], &R.local[0], 1, &events[0], &events[1]);
+	err |= clEnqueueNDRangeKernel(queue, kernel_make_pulse_pass_2, 1, NULL, &R.global[1], &R.local[1], 1, &events[1], &events[2]);
+    err |= clEnqueueReadBuffer(queue, pulse, CL_TRUE, 0, R.range_count * sizeof(cl_float4), host_sig, 1, &events[2], NULL);
 	if (err != CL_SUCCESS) {
 		fprintf(stderr, "Error: Failed in clEnqueueNDRangeKernel() and/or clEnqueueReadBuffer().\n");
 		exit(EXIT_FAILURE);
@@ -381,13 +468,13 @@ int main(int argc, char **argv)
 
 	printf("CPU Pulse :");
 	for (int j=0; j<RANGE_GATES; j++) {
-		printf(" %.1f", cpu_pulse[j].s0);
+		printf(" %.3e", cpu_pulse[j].s0);
 	}
 	printf("\n");
 
 	printf("GPU Pulse :");
 	for (int j=0; j<R.range_count; j++) {
-		printf(" %.1f", host_sig[j].s0);
+		printf(" %.3e", host_sig[j].s0);
 	}
 	printf("\n");
 
@@ -498,7 +585,6 @@ int main(int argc, char **argv)
     ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentOrientation,                   sizeof(cl_mem),     &ori);
     ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &vel);
     ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentTumble,                        sizeof(cl_mem),     &tum);
-    ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentExtras,                        sizeof(cl_mem),     &att);
     ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentSignal,                        sizeof(cl_mem),     &sig);
     ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &rnd);
     ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &les);
@@ -515,8 +601,7 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    size = num_elem;
-    err = clEnqueueNDRangeKernel(queue, kernel_db_atts, 1, NULL, &size, NULL, 0, NULL, NULL);
+    err = clEnqueueNDRangeKernel(queue, kernel_db_atts, 1, NULL, &global_size, NULL, 0, NULL, NULL);
     if (err != CL_SUCCESS) {
         fprintf(stderr, "Error: Failed in clEnqueueNDRangeKernel() for kernel_db_atts.\n");
         exit(EXIT_FAILURE);
@@ -543,8 +628,8 @@ int main(int argc, char **argv)
 					float r = (float)ir * R.range_delta + R.range_start;
 					
 					for (int k=0; k<num_elem; k++) {
-						float r_a = host_att[k].s0;
-                        float w_a = host_att[k].s3;
+						float r_a = host_aux[k].s0;
+                        float w_a = host_aux[k].s3;
 						float w_r = read_table(range_weight_cpu, range_weight_table_xm, (r_a - r) * range_weight_table_dx + range_weight_table_x0);
 
 						cpu_pulse[ir].s0 += host_sig[k].s0 * w_r * w_a;
@@ -589,7 +674,7 @@ int main(int argc, char **argv)
         if (test & TEST_GPU_DB_ATTS) {
             gettimeofday(&t1, NULL);
             for (k=0; k<speed_test_iterations; k++) {
-                err = clEnqueueNDRangeKernel(queue, kernel_db_atts, 1, NULL, &size, NULL, 0, NULL, NULL);
+                err = clEnqueueNDRangeKernel(queue, kernel_db_atts, 1, NULL, &global_size, NULL, 0, NULL, NULL);
             }
             clFinish(queue);
             gettimeofday(&t2, NULL);
@@ -598,13 +683,27 @@ int main(int argc, char **argv)
                    t / speed_test_iterations * 1000.0f,
                    1e-9 * num_elem * 7 * sizeof(cl_float4) * speed_test_iterations / t);
         }
+        
+        if (test & TEST_GPU_WA) {
+            gettimeofday(&t1, NULL);
+            for (k=0; k<speed_test_iterations; k++) {
+                err = clEnqueueNDRangeKernel(queue, kernel_scat_wa, 1, NULL, &global_size, NULL, 0, NULL, NULL);
+            }
+            clFinish(queue);
+            gettimeofday(&t2, NULL);
+            t = DTIME(t1, t2);
+            printf("GPU Exec Time = %6.2f ms   Throughput = %5.2f GB/s  (wa)\n",
+                   t / speed_test_iterations * 1000.0f,
+                   1e-9 * num_elem * 3 * sizeof(cl_float4) * speed_test_iterations / t);
+        }
 	}
 
 	free(cpu_pulse);
 
 	free(host_sig);
-	free(host_att);
-	
+    free(host_pos);
+	free(host_aux);
+
     clReleaseCommandQueue(queue);
 
 	clReleaseKernel(kernel_pop);
@@ -615,7 +714,7 @@ int main(int argc, char **argv)
     clReleaseMemObject(vel);
     clReleaseMemObject(ori);
     clReleaseMemObject(tum);
-    clReleaseMemObject(att);
+    clReleaseMemObject(aux);
     clReleaseMemObject(rnd);
     clReleaseMemObject(work);
 	clReleaseMemObject(pulse);

@@ -358,7 +358,6 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentOrientation,                   sizeof(cl_mem),     &C->scat_ori);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentTumble,                        sizeof(cl_mem),     &C->scat_tum);
-    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentExtras,                        sizeof(cl_mem),     &C->scat_att);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSignal,                        sizeof(cl_mem),     &C->scat_sig);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
@@ -376,11 +375,12 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     }
 
     ret = CL_SUCCESS;
-    ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentAttribute,              sizeof(cl_mem),    &C->scat_att);
-    ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentPosition,               sizeof(cl_mem),    &C->scat_pos);
-    ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentWeightTable,            sizeof(cl_mem),    &C->angular_weight);
-    ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentWeightTableDescription, sizeof(cl_float4), &C->angular_weight_desc);
-    ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentSimulationDescription,  sizeof(cl_mem),    &H->sim_desc);
+    ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentSignal,                 sizeof(cl_mem),     &C->scat_sig);
+    ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentAttribute,              sizeof(cl_mem),     &C->scat_att);
+    ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentPosition,               sizeof(cl_mem),     &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentWeightTable,            sizeof(cl_mem),     &C->angular_weight);
+    ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentWeightTableDescription, sizeof(cl_float4),  &C->angular_weight_desc);
+    ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentSimulationDescription,  sizeof(cl_float16), &H->sim_desc);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_wa().\n", now());
         exit(EXIT_FAILURE);
@@ -1331,6 +1331,11 @@ void RS_init_scat_pos(RSHandle *H) {
     H->sim_desc.s[RSSimulationDescriptionTimeIncrement] = H->params.prt;
     H->sim_desc.s[RSSimulationDescriptionTotalParticles] = H->num_scats;
     H->sim_desc.s[RSSimulationDescriptionDebrisAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTable3DDescriptionRefreshTime];
+    
+    // Propagate / duplicate some constants to other places for efficient kernel execution
+    for (i = 0; i < H->num_workers; i++) {
+        H->worker[i].range_weight_desc.s[RSTable1DDescriptionUserConstant] = H->sim_desc.s[RSSimulationDescriptionWaveNumber];
+    }
 }
 
 #pragma mark -
@@ -2097,7 +2102,6 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
         H->worker[i].range_weight_desc.s[RSTable1DDescriptionScale] = table.dx;
         H->worker[i].range_weight_desc.s[RSTable1DDescriptionOrigin] = table.x0;
         H->worker[i].range_weight_desc.s[RSTable1DDescriptionMaximum] = table.xm;
-        H->worker[i].range_weight_desc.s3 = 0.0f;
         H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
     }
     
@@ -2176,7 +2180,6 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
         H->worker[i].angular_weight_desc.s[RSTable1DDescriptionScale] = table.dx;
         H->worker[i].angular_weight_desc.s[RSTable1DDescriptionOrigin] = table.x0;
         H->worker[i].angular_weight_desc.s[RSTable1DDescriptionMaximum] = table.xm;
-        H->worker[i].angular_weight_desc.s3 = 0.0f;
         H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
     }
 
@@ -3608,7 +3611,6 @@ void RS_advance_time(RSHandle *H) {
                                    (cl_float4 *)H->worker[i].scat_ori,
                                    (cl_float4 *)H->worker[i].scat_vel,
                                    (cl_float4 *)H->worker[i].scat_tum,
-                                   (cl_float4 *)H->worker[i].scat_att,
                                    (cl_float4 *)H->worker[i].scat_sig,
                                    (cl_uint4 *)H->worker[i].scat_rnd,
                                    (cl_image)H->worker[i].vel[v],
@@ -3739,6 +3741,7 @@ void RS_make_pulse(RSHandle *H) {
     for (i = 0; i < H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
             scat_wa_kernel(&H->worker[i].ndrange_scat_all,
+                           (cl_float4 *)H->worker[i].scat_sig,
                            (cl_float4 *)H->worker[i].scat_att,
                            (cl_float4 *)H->worker[i].scat_pos,
                            (cl_float *)H->worker[i].angular_weight,
