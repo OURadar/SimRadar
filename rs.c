@@ -255,7 +255,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     
     C->scat_vel = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
     C->scat_tum = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
-    C->scat_att = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
+    C->scat_aux = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
     C->scat_sig = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
     C->work = gcl_malloc(work_numel * sizeof(cl_float4), NULL, 0);
     C->pulse = gcl_malloc(H->params.range_count * sizeof(cl_float4), NULL, 0);
@@ -300,7 +300,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 
     C->scat_vel = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
     C->scat_tum = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
-	C->scat_att = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
+	C->scat_aux = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
 	C->scat_sig = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
     C->scat_rnd = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_int4), NULL, &ret);                         CHECK_CL_CREATE_BUFFER
     C->work     = clCreateBuffer(C->context, CL_MEM_READ_WRITE, work_numel * sizeof(cl_float4), NULL, &ret);                         CHECK_CL_CREATE_BUFFER
@@ -313,7 +313,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	//
     ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_io, 0, sizeof(cl_mem), &C->scat_pos);
-    ret |= clSetKernelArg(C->kern_io, 1, sizeof(cl_mem), &C->scat_att);
+    ret |= clSetKernelArg(C->kern_io, 1, sizeof(cl_mem), &C->scat_aux);
     if (ret != CL_SUCCESS) {
 		fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel io().\n", now());
 		exit(EXIT_FAILURE);
@@ -329,7 +329,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
-    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentExtras,                        sizeof(cl_mem),     &C->scat_att);
+    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentExtras,                        sizeof(cl_mem),     &C->scat_aux);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
@@ -342,7 +342,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
-    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentExtras,                        sizeof(cl_mem),     &C->scat_att);
+    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentExtras,                        sizeof(cl_mem),     &C->scat_aux);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSignal,                        sizeof(cl_mem),     &C->scat_sig);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
@@ -376,7 +376,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 
     ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentSignal,                 sizeof(cl_mem),     &C->scat_sig);
-    ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentAttribute,              sizeof(cl_mem),     &C->scat_att);
+    ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentAttribute,              sizeof(cl_mem),     &C->scat_aux);
     ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentPosition,               sizeof(cl_mem),     &C->scat_pos);
     ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentWeightTable,            sizeof(cl_mem),     &C->angular_weight);
     ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentWeightTableDescription, sizeof(cl_float4),  &C->angular_weight_desc);
@@ -389,7 +389,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentColor,     sizeof(cl_mem),   &C->scat_clr);
     ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentPosition,  sizeof(cl_mem),   &C->scat_pos);
-    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentAttribute, sizeof(cl_mem),   &C->scat_att);
+    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentAttribute, sizeof(cl_mem),   &C->scat_aux);
     ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentDrawMode,  sizeof(cl_uint4), &H->draw_mode);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_clr().\n", now());
@@ -399,7 +399,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentSignal,    sizeof(cl_mem), &C->scat_sig);
     ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentPosition,  sizeof(cl_mem), &C->scat_pos);
-    ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentAttribute, sizeof(cl_mem), &C->scat_att);
+    ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentAttribute, sizeof(cl_mem), &C->scat_aux);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_sig_dsd().\n", now());
         exit(EXIT_FAILURE);
@@ -418,7 +418,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	ret = CL_SUCCESS;
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 0, sizeof(cl_mem),                         &C->work);
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 1, sizeof(cl_mem),                         &C->scat_sig);
-	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 2, sizeof(cl_mem),                         &C->scat_att);
+	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 2, sizeof(cl_mem),                         &C->scat_aux);
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 3, C->make_pulse_params.local_mem_size[0], NULL);
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 4, sizeof(cl_mem),                         &C->range_weight);
 	ret |= clSetKernelArg(C->kern_make_pulse_pass_1, 5, sizeof(cl_float4),                      &C->range_weight_desc);
@@ -1024,7 +1024,7 @@ void RS_free_scat_memory(RSHandle *H) {
 		gcl_free(H->worker[i].scat_vel);
 		gcl_free(H->worker[i].scat_ori);
         gcl_free(H->worker[i].scat_tum);
-		gcl_free(H->worker[i].scat_att);
+		gcl_free(H->worker[i].scat_aux);
 		gcl_free(H->worker[i].scat_sig);
 		gcl_free(H->worker[i].work);
 		gcl_free(H->worker[i].pulse);
@@ -1039,7 +1039,7 @@ void RS_free_scat_memory(RSHandle *H) {
 		clReleaseMemObject(H->worker[i].scat_vel);
 		clReleaseMemObject(H->worker[i].scat_ori);
         clReleaseMemObject(H->worker[i].scat_tum);
-		clReleaseMemObject(H->worker[i].scat_att);
+		clReleaseMemObject(H->worker[i].scat_aux);
 		clReleaseMemObject(H->worker[i].scat_sig);
 		clReleaseMemObject(H->worker[i].work);
 		clReleaseMemObject(H->worker[i].pulse);
@@ -1056,7 +1056,7 @@ void RS_free_scat_memory(RSHandle *H) {
 	free(H->scat_vel);
 	free(H->scat_ori);
     free(H->scat_tum);
-	free(H->scat_att);
+	free(H->scat_aux);
 	free(H->scat_sig);
     free(H->scat_rnd);
 
@@ -1216,10 +1216,10 @@ void RS_init_scat_pos(RSHandle *H) {
 		H->scat_pos[i].z = (float)rand() / RAND_MAX * domain.size.z + domain.origin.z;
         H->scat_pos[i].w = 0.0f;                       // Use this to store drop radius
         
-		H->scat_att[i].s0 = 0.0f;                      // Use this to store range
-        H->scat_att[i].s1 = (float)rand() / RAND_MAX;  // Use this to store age
-		H->scat_att[i].s2 = 0.0f;
-		H->scat_att[i].s3 = 1.0f;                      // Use this to store angular weight
+		H->scat_aux[i].s0 = 0.0f;                      // Use this to store range
+        H->scat_aux[i].s1 = (float)rand() / RAND_MAX;  // Use this to store age
+		H->scat_aux[i].s2 = 0.0f;
+		H->scat_aux[i].s3 = 1.0f;                      // Use this to store angular weight
 		
 		H->scat_vel[i].x = 0.0f;
 		H->scat_vel[i].y = 0.0f;
@@ -1287,7 +1287,7 @@ void RS_init_scat_pos(RSHandle *H) {
             }
             counts[bin]++;
             H->scat_pos[i].w = H->dsd_r[bin];
-            H->scat_att[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // temporary use this to store normalized bin index
+            H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // temporary use this to store normalized bin index
         }
         
         if (H->verb > 1) {
@@ -1317,7 +1317,7 @@ void RS_init_scat_pos(RSHandle *H) {
         H->scat_pos[k].y = H->params.range_start + floorf(H->params.range_count * 0.5f) * H->params.range_delta;
         H->scat_pos[k].z = 0.0f;
         
-        H->scat_att[k].s0 = H->params.range_start + floorf(H->params.range_count * 0.5f) * H->params.range_delta;
+        H->scat_aux[k].s0 = H->params.range_start + floorf(H->params.range_count * 0.5f) * H->params.range_delta;
     }
 	
 	// Restore simulation time, default beam position at unit vector (0, 1, 0)
@@ -2989,7 +2989,7 @@ void RS_update_colors(RSHandle *H) {
             scat_clr_kernel(&H->worker[i].ndrange_scat[0],
                             (cl_float4 *)H->worker[i].scat_clr,
                             (cl_float4 *)H->worker[i].scat_pos,
-                            (cl_float4 *)H->worker[i].scat_att,
+                            (cl_float4 *)H->worker[i].scat_aux,
                             H->draw_mode);
             
             dispatch_semaphore_signal(H->worker[i].sem);
@@ -3074,7 +3074,7 @@ void RS_io_test(RSHandle *H) {
 		dispatch_async(H->worker[i].que, ^{
 			io_kernel(&H->worker[i].ndrange_scat[0],
                       (cl_float4 *)H->worker[i].scat_pos,
-                      (cl_float4 *)H->worker[i].scat_att);
+                      (cl_float4 *)H->worker[i].scat_aux);
 			dispatch_semaphore_signal(H->worker[i].sem);
 		});
 	}
@@ -3176,7 +3176,7 @@ void RS_populate(RSHandle *H) {
 	posix_memalign((void **)&H->scat_vel, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
 	posix_memalign((void **)&H->scat_ori, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
     posix_memalign((void **)&H->scat_tum, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
-	posix_memalign((void **)&H->scat_att, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
+	posix_memalign((void **)&H->scat_aux, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
 	posix_memalign((void **)&H->scat_sig, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
     posix_memalign((void **)&H->scat_rnd, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_uint4));
 
@@ -3186,7 +3186,7 @@ void RS_populate(RSHandle *H) {
 		H->scat_vel == NULL ||
 		H->scat_ori == NULL ||
         H->scat_tum == NULL ||
-		H->scat_att == NULL ||
+		H->scat_aux == NULL ||
 		H->scat_sig == NULL ||
         H->scat_rnd == NULL ||
 		H->pulse == NULL) {
@@ -3304,7 +3304,7 @@ void RS_download(RSHandle *H) {
 			gcl_memcpy(H->scat_pos + H->offset[i], H->worker[i].scat_pos, H->worker[i].num_scats * sizeof(cl_float4));
             gcl_memcpy(H->scat_vel + H->offset[i], H->worker[i].scat_vel, H->worker[i].num_scats * sizeof(cl_float4));
             gcl_memcpy(H->scat_ori + H->offset[i], H->worker[i].scat_ori, H->worker[i].num_scats * sizeof(cl_float4));
-			gcl_memcpy(H->scat_att + H->offset[i], H->worker[i].scat_att, H->worker[i].num_scats * sizeof(cl_float4));
+			gcl_memcpy(H->scat_aux + H->offset[i], H->worker[i].scat_aux, H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->scat_sig + H->offset[i], H->worker[i].scat_sig, H->worker[i].num_scats * sizeof(cl_float4));
             gcl_memcpy(H->pulse_tmp[i], H->worker[i].pulse, H->params.range_count * sizeof(cl_float4));
             dispatch_semaphore_signal(H->worker[i].sem);
@@ -3323,7 +3323,7 @@ void RS_download(RSHandle *H) {
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, &events[i][0]);
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_vel, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, &events[i][1]);
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, &events[i][2]);
-		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_att, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_att + H->offset[i], 0, NULL, &events[i][3]);
+		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_aux, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_aux + H->offset[i], 0, NULL, &events[i][3]);
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_sig, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, &events[i][4]);
         clEnqueueReadBuffer(H->worker[i].que, H->worker[i].pulse, CL_FALSE, 0, H->params.range_count * sizeof(cl_float4), H->pulse_tmp[i], 0, NULL, &events[i][5]);
 	}
@@ -3455,7 +3455,7 @@ void RS_upload(RSHandle *H) {
 			gcl_memcpy(H->worker[i].scat_vel, H->scat_vel + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->worker[i].scat_ori, H->scat_ori + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
             gcl_memcpy(H->worker[i].scat_tum, H->scat_tum + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
-			gcl_memcpy(H->worker[i].scat_att, H->scat_att + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
+			gcl_memcpy(H->worker[i].scat_aux, H->scat_aux + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->worker[i].scat_sig, H->scat_sig + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->worker[i].scat_rnd, H->scat_rnd + H->offset[i], H->worker[i].num_scats * sizeof(cl_uint4));
             
@@ -3463,7 +3463,7 @@ void RS_upload(RSHandle *H) {
             scat_clr_kernel(&H->worker[i].ndrange_scat[0],
                             (cl_float4 *)H->worker[i].scat_clr,
                             (cl_float4 *)H->worker[i].scat_pos,
-                            (cl_float4 *)H->worker[i].scat_att,
+                            (cl_float4 *)H->worker[i].scat_aux,
                             H->draw_mode);
 
             dispatch_semaphore_signal(H->worker[i].sem);
@@ -3479,7 +3479,7 @@ void RS_upload(RSHandle *H) {
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_vel, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, NULL);
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, NULL);
         clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_tum, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_tum + H->offset[i], 0, NULL, NULL);
-		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_att, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_att + H->offset[i], 0, NULL, NULL);
+		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_aux, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_aux + H->offset[i], 0, NULL, NULL);
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_sig, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, NULL);
         clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_rnd, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_uint4),  H->scat_rnd + H->offset[i], 0, NULL, NULL);
 	}
@@ -3518,7 +3518,7 @@ void RS_sig_from_dsd(RSHandle *H) {
             scat_sig_dsd_kernel(&H->worker[i].ndrange_scat[0],
                                 (cl_float4 *)H->worker[i].scat_sig,
                                 (cl_float4 *)H->worker[i].scat_pos,
-                                (cl_float4 *)H->worker[i].scat_att);
+                                (cl_float4 *)H->worker[i].scat_aux);
             
             dispatch_semaphore_signal(H->worker[i].sem);
         });
@@ -3577,7 +3577,7 @@ void RS_advance_time(RSHandle *H) {
                 el_atts_kernel(&H->worker[i].ndrange_scat[0],
                                (cl_float4 *)H->worker[i].scat_pos,
                                (cl_float4 *)H->worker[i].scat_vel,
-                               (cl_float4 *)H->worker[i].scat_att,
+                               (cl_float4 *)H->worker[i].scat_aux,
                                (cl_float4 *)H->worker[i].scat_sig,
                                (cl_uint4 *)H->worker[i].scat_rnd,
                                (cl_image)H->worker[i].vel[v],
@@ -3587,7 +3587,7 @@ void RS_advance_time(RSHandle *H) {
                 bg_atts_kernel(&H->worker[i].ndrange_scat[0],
                                (cl_float4 *)H->worker[i].scat_pos,
                                (cl_float4 *)H->worker[i].scat_vel,
-                               (cl_float4 *)H->worker[i].scat_att,
+                               (cl_float4 *)H->worker[i].scat_aux,
                                (cl_uint4 *)H->worker[i].scat_rnd,
                                (cl_image)H->worker[i].vel[v],
                                H->worker[i].vel_desc,
@@ -3595,7 +3595,7 @@ void RS_advance_time(RSHandle *H) {
             }
 //            scat_clr_kernel(&H->worker[i].ndrange_scat[0],
 //							(cl_float4 *)H->worker[i].scat_clr,
-//							(cl_float4 *)H->worker[i].scat_att,
+//							(cl_float4 *)H->worker[i].scat_aux,
 //							(unsigned int)H->worker[i].num_scats);
 //
             dispatch_semaphore_signal(H->worker[i].sem);
@@ -3742,7 +3742,7 @@ void RS_make_pulse(RSHandle *H) {
         dispatch_async(H->worker[i].que, ^{
             scat_wa_kernel(&H->worker[i].ndrange_scat_all,
                            (cl_float4 *)H->worker[i].scat_sig,
-                           (cl_float4 *)H->worker[i].scat_att,
+                           (cl_float4 *)H->worker[i].scat_aux,
                            (cl_float4 *)H->worker[i].scat_pos,
                            (cl_float *)H->worker[i].angular_weight,
                            H->worker[i].angular_weight_desc,
@@ -3750,7 +3750,7 @@ void RS_make_pulse(RSHandle *H) {
             make_pulse_pass_1_kernel(&H->worker[i].ndrange_pulse_pass_1,
                                      (cl_float4 *)H->worker[i].work,
                                      (cl_float4 *)H->worker[i].scat_sig,
-                                     (cl_float4 *)H->worker[i].scat_att,
+                                     (cl_float4 *)H->worker[i].scat_aux,
                                      H->worker[i].make_pulse_params.local_mem_size[0],
                                      (cl_float *)H->worker[i].range_weight,
                                      H->worker[i].range_weight_desc,
@@ -3908,7 +3908,7 @@ static void RS_show_rcs_i(RSHandle *H, const size_t i) {
            H->scat_pos[i].x, H->scat_pos[i].y, H->scat_pos[i].z,
            H->scat_ori[i].x, H->scat_ori[i].y, H->scat_ori[i].z, H->scat_ori[i].w,
            H->scat_sig[i].x, H->scat_sig[i].y, H->scat_sig[i].z, H->scat_sig[i].w,
-           H->scat_att[i].s0);
+           H->scat_aux[i].s0);
 }
 
 

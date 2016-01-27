@@ -489,8 +489,9 @@ __kernel void dummy(__global float4 *i)
     //    + (float4)(-0.5f, -0.5f, -0.5f, 0.5f) * sin(0.5f * (az4 - el4));   
 }
 
-
-// background
+//
+// background attributes
+//
 __kernel void bg_atts(__global float4 *p,
                       __global float4 *v,
                       __global float4 *a,
@@ -564,8 +565,9 @@ __kernel void bg_atts(__global float4 *p,
     a[i] = aux;
 }
 
-
-// ellipsoid
+//
+// ellipsoid attributes
+//
 __kernel void el_atts(__global float4 *p,                  // position (x, y, z) and size (radius)
                       __global float4 *v,                  // velocity (u, v, w) and a vacant float
                       __global float4 *a,                  // auxiliary info: range, ange, ____, angular weight
@@ -706,8 +708,9 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
     x[i] = sig;
 }
 
-
-// debris
+//
+// debris attributes
+//
 __kernel void db_atts(__global float4 *p,
                       __global float4 *o,
                       __global float4 *v,
@@ -824,6 +827,9 @@ __kernel void scat_sig_dsd(__global float4 *x,
 }
 
 
+//
+// scatterer color
+//
 __kernel void scat_clr(__global float4 *c,
                        __global float4 *p,
                        __global float4 *a,
@@ -842,6 +848,9 @@ __kernel void scat_clr(__global float4 *c,
     }
 }
 
+//
+// weight and attenuate - angular + range effects
+//
 __kernel void scat_wa(__global float4 *s,
                       __global float4 *a,
                       __global float4 *p,

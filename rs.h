@@ -302,7 +302,7 @@ typedef struct _rs_worker {
 	cl_mem                 scat_vel;   // u, v, w wind components
 	cl_mem                 scat_ori;   // alpha, beta, gamma angles
     cl_mem                 scat_tum;   // alpha, beta, gamma tumbling
-	cl_mem                 scat_att;   // type, dot products, range, etc.
+	cl_mem                 scat_aux;   // type, dot products, range, etc.
 	cl_mem                 scat_sig;   // signal: Ih Qh Iv Qv
 	cl_mem                 scat_rnd;   // random seed
     cl_mem                 scat_clr;   // color
@@ -414,7 +414,7 @@ typedef struct _rs_handle {
 	cl_float4              *scat_vel;       // velocity
 	cl_float4              *scat_ori;       // orientation
     cl_float4              *scat_tum;       // tumble
-	cl_float4              *scat_att;       // attributes
+	cl_float4              *scat_aux;       // auxiliary
 	cl_float4              *scat_sig;       // signal
     cl_uint4               *scat_rnd;       // random seed
 	cl_float4              *pulse;

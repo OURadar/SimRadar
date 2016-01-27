@@ -639,7 +639,7 @@ int main(int argc, char **argv)
 			clFinish(queue);
 			gettimeofday(&t2, NULL);
 			t = DTIME(t1, t2);
-			printf("GPU Exec Time = %6.2f ms   Throughput = %5.2f GB/s  (make_pulse_pass_1)\n",
+			printf("GPU Exec Time = %6.2f ms   Throughput = %6.2f GB/s  (make_pulse_pass_1)\n",
 				   t / speed_test_iterations * 1000.0f,
 				   1e-9 * R.entry_counts[0] * 2 * sizeof(cl_float4) * speed_test_iterations / t);
 		}
@@ -652,7 +652,7 @@ int main(int argc, char **argv)
 			clFinish(queue);
 			gettimeofday(&t2, NULL);
 			t = DTIME(t1, t2);
-			printf("GPU Exec Time = %6.2f ms   Throughput = %5.2f GB/s  (make_pulse_pass_2)\n",
+			printf("GPU Exec Time = %6.2f ms   Throughput = %6.2f GB/s  (make_pulse_pass_2)\n",
 				   t / speed_test_iterations * 1000.0f,
 				   1e-9 * R.entry_counts[1] * sizeof(cl_float4) * speed_test_iterations / t);
 		}
@@ -665,7 +665,7 @@ int main(int argc, char **argv)
             clFinish(queue);
             gettimeofday(&t2, NULL);
             t = DTIME(t1, t2);
-            printf("GPU Exec Time = %6.2f ms   Throughput = %5.2f GB/s  (scat_db_atts)\n",
+            printf("GPU Exec Time = %6.2f ms   Throughput = %6.2f GB/s  (scat_db_atts)\n",
                    t / speed_test_iterations * 1000.0f,
                    1e-9 * num_elem * 7 * sizeof(cl_float4) * speed_test_iterations / t);
         }
@@ -678,7 +678,7 @@ int main(int argc, char **argv)
             clFinish(queue);
             gettimeofday(&t2, NULL);
             t = DTIME(t1, t2);
-            printf("GPU Exec Time = %6.2f ms   Throughput = %5.2f GB/s  (scat_wa)\n",
+            printf("GPU Exec Time = %6.2f ms   Throughput = %6.2f GB/s  (scat_wa)\n",
                    t / speed_test_iterations * 1000.0f,
                    1e-9 * num_elem * 3 * sizeof(cl_float4) * speed_test_iterations / t);
         }
