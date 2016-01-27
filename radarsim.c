@@ -269,6 +269,8 @@ int main(int argc, char *argv[]) {
         fclose(fid);
     }
     
+    printf("%s : Session ended\n", now());
+
     RS_free(S);
     
     LES_free(L);
@@ -278,8 +280,6 @@ int main(int argc, char *argv[]) {
     RCS_free(R);
     
     //ARPS_free(O);
-    
-    printf("%s : Session ended\n", now());
     
     return EXIT_SUCCESS;
 }

@@ -119,13 +119,13 @@ float4 rand(uint4 *seed)
 //
 
 // Set colors
-float4 set_clr(float4 att)
+float4 set_clr(float4 aux)
 {
-    float g = clamp(fma(log10(att.s3), 0.3f, 1.5f), 0.05f, 0.3f);
+    float g = clamp(fma(log10(aux.s3), 0.3f, 1.5f), 0.05f, 0.3f);
     
     float4 c;
     
-    c.x = clamp(0.4f * att.s1, 0.0f, 1.0f) + 0.6f * g;
+    c.x = clamp(0.4f * aux.s1, 0.0f, 1.0f) + 0.6f * g;
     c.y = 0.9f * g;
     c.z = clamp(1.0f - c.x - 3.5f * g, 0.0f, 1.0f) + 0.2f * (g - 0.1f);
     c.w = 1.0f;
@@ -696,6 +696,10 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
     float4 DD = pown((float4)(D, D, D, D), (int4)(1, 2, 3, 4));
     float vv = 1.0048f + dot((float4)(5.7e-4f, -2.628e-2f, 3.682e-3f, -1.667e-4f), DD);
 
+    // H is 1.0 while V is the attenuated version as a function of aspect ratio
+    sig = (float4)(1.0f, 0.0f, vv, 0.0f);
+    
+
     p[i] = pos;
     v[i] = vel;
     a[i] = aux;
@@ -880,7 +884,7 @@ __kernel void scat_wa(__global float4 *s,
     aux.s3 = mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
     
     sig = two_way_effects(sig, aux.s0, sim_desc.s4);
-
+    
     s[i] = sig;
     a[i] = aux;
 }
@@ -888,7 +892,7 @@ __kernel void scat_wa(__global float4 *s,
 //
 // out - output
 // sig - signal
-// att - attributes
+// aux - auxiliary attributes
 // shared - local memory space __local space (64 kB max)
 // range_weight - range weighting function, __constant space (64 kB max)
 // range_weight_desc - scale, offset, and max to convert range to table index
@@ -900,7 +904,7 @@ __kernel void scat_wa(__global float4 *s,
 //
 __kernel void make_pulse_pass_1(__global float4 *out,
                                 __global float4 *sig,
-                                __global float4 *att,
+                                __global float4 *aux,
                                 __local float4 *shared,
                                 __constant float *range_weight,
                                 const float4 range_weight_desc,
@@ -919,8 +923,7 @@ __kernel void make_pulse_pass_1(__global float4 *out,
     
     const float4 table_xs_4 = (float4)range_weight_desc.s0;
     const float4 table_x0_4 = (float4)range_weight_desc.s1 + (float4)(0.0f, 1.0f, 0.0f, 1.0f);
-    //const float wav_num = range_weight_desc.s3;
-        
+    
     float r_a;
     float r_b;
     
@@ -947,8 +950,6 @@ __kernel void make_pulse_pass_1(__global float4 *out,
     float4 fidx_dec;
     uint4  iidx_int;
     
-    //float2 wa_ab;
-   
     // Will use:
     // Elements 0 & 1 for scatter body from the left group (a); use i indexing
     // Elements 2 & 3 for scatter body from the right group (b); use j indexing
@@ -961,13 +962,13 @@ __kernel void make_pulse_pass_1(__global float4 *out,
         
         s_a = sig[i];
         s_b = sig[j];
-        r_a = att[i].s0;
-        r_b = att[j].s0;
+        r_a = aux[i].s0;
+        r_b = aux[j].s0;
         r = (float4)range_start;
 
         // Angular weight
-        s_a *= att[i].s3;
-        s_b *= att[j].s3;
+        s_a *= aux[i].s3;
+        s_b *= aux[j].s3;
 
         for (k = 0; k < range_count; k++) {
             float4 dr_from_center = (float4)(r_a, r_a, r_b, r_b) - r;
