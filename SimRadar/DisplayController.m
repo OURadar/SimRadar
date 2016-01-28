@@ -340,7 +340,7 @@ NSWindow *standardWindow;
             break;
             
         case 'm':
-            mkey = mkey >= 3 ? 0 : mkey + 1;
+            mkey = mkey >= 5 ? 0 : mkey + 1;
             if (mkey % 2 == 0) {
                 [sim cycleScattererColorMode];
             }

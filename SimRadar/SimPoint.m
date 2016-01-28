@@ -254,7 +254,7 @@
 }
 
 - (void)cycleScattererColorMode {
-    S->draw_mode.s0 = !S->draw_mode.s0;
+    S->draw_mode.s0 = S->draw_mode.s0 >= 2 ? 0 : S->draw_mode.s0 + 1;
 }
 
 #pragma mark -

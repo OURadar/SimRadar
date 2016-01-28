@@ -329,7 +329,6 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
-    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentExtras,                        sizeof(cl_mem),     &C->scat_aux);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
@@ -342,8 +341,6 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
-    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentExtras,                        sizeof(cl_mem),     &C->scat_aux);
-    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSignal,                        sizeof(cl_mem),     &C->scat_sig);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
@@ -3282,12 +3279,12 @@ void RS_populate(RSHandle *H) {
 
 #endif
     
-//    if (H->dsd_name != RSDropSizeDistributionUndefined) {
-//        RS_sig_from_dsd(H);
-//        if (H->verb) {
-//            printf("%s : RS : Drop-size derived RCS computed.\n", now());
-//        }
-//    }
+    if (H->dsd_name != RSDropSizeDistributionUndefined) {
+        RS_sig_from_dsd(H);
+        if (H->verb) {
+            printf("%s : RS : Drop-size derived RCS computed.\n", now());
+        }
+    }
     
 	H->status = RS_STATUS_DOMAIN_POPULATED;
 	
@@ -3464,11 +3461,11 @@ void RS_upload(RSHandle *H) {
 			gcl_memcpy(H->worker[i].scat_rnd, H->scat_rnd + H->offset[i], H->worker[i].num_scats * sizeof(cl_uint4));
             
             // Set individual color
-            scat_clr_kernel(&H->worker[i].ndrange_scat[0],
-                            (cl_float4 *)H->worker[i].scat_clr,
-                            (cl_float4 *)H->worker[i].scat_pos,
-                            (cl_float4 *)H->worker[i].scat_aux,
-                            H->draw_mode);
+//            scat_clr_kernel(&H->worker[i].ndrange_scat[0],
+//                            (cl_float4 *)H->worker[i].scat_clr,
+//                            (cl_float4 *)H->worker[i].scat_pos,
+//                            (cl_float4 *)H->worker[i].scat_aux,
+//                            H->draw_mode);
 
             dispatch_semaphore_signal(H->worker[i].sem);
 		});
@@ -3487,23 +3484,6 @@ void RS_upload(RSHandle *H) {
 		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_sig, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, NULL);
         clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_rnd, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_uint4),  H->scat_rnd + H->offset[i], 0, NULL, NULL);
 	}
-    
-//    size_t local_item_size = 1;
-//
-//    cl_event events[RS_MAX_GPU_DEVICE];
-//
-//    for (i = 0; i < H->num_workers; i++) {
-//        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_clr, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i]);
-//    }
-//    
-//    for (i = 0; i < H->num_workers; i++) {
-//        clFlush(H->worker[i].que);
-//    }
-//    
-//    for (i = 0; i < H->num_workers; i++) {
-//        clWaitForEvents(1, &events[i]);
-//        clReleaseEvent(events[i]);
-//    }
 
 #endif
 	
@@ -3581,8 +3561,6 @@ void RS_advance_time(RSHandle *H) {
                 el_atts_kernel(&H->worker[i].ndrange_scat[0],
                                (cl_float4 *)H->worker[i].scat_pos,
                                (cl_float4 *)H->worker[i].scat_vel,
-                               (cl_float4 *)H->worker[i].scat_aux,
-                               (cl_float4 *)H->worker[i].scat_sig,
                                (cl_uint4 *)H->worker[i].scat_rnd,
                                (cl_image)H->worker[i].vel[v],
                                H->worker[i].vel_desc,
@@ -3591,7 +3569,6 @@ void RS_advance_time(RSHandle *H) {
                 bg_atts_kernel(&H->worker[i].ndrange_scat[0],
                                (cl_float4 *)H->worker[i].scat_pos,
                                (cl_float4 *)H->worker[i].scat_vel,
-                               (cl_float4 *)H->worker[i].scat_aux,
                                (cl_uint4 *)H->worker[i].scat_rnd,
                                (cl_image)H->worker[i].vel[v],
                                H->worker[i].vel_desc,

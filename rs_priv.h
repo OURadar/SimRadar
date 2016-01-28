@@ -11,7 +11,6 @@
 enum RSBackgroundAttributeKernelArgument {
     RSBackgroundAttributeKernelArgumentPosition,
     RSBackgroundAttributeKernelArgumentVelocity,
-    RSBackgroundAttributeKernelArgumentExtras,
     RSBackgroundAttributeKernelArgumentRandomSeed,
     RSBackgroundAttributeKernelArgumentBackgroundVelocity,
     RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription,
@@ -21,8 +20,6 @@ enum RSBackgroundAttributeKernelArgument {
 enum RSEllipsoidAttributeKernelArgument {
     RSEllipsoidAttributeKernelArgumentPosition,
     RSEllipsoidAttributeKernelArgumentVelocity,
-    RSEllipsoidAttributeKernelArgumentExtras,
-    RSEllipsoidAttributeKernelArgumentSignal,
     RSEllipsoidAttributeKernelArgumentRandomSeed,
     RSEllipsoidAttributeKernelArgumentBackgroundVelocity,
     RSEllipsoidAttributeKernelArgumentBackgroundVelocityDescription,

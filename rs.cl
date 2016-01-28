@@ -496,7 +496,6 @@ __kernel void dummy(__global float4 *i)
 //
 __kernel void bg_atts(__global float4 *p,
                       __global float4 *v,
-                      __global float4 *a,
                       __global uint4 *y,
                       __read_only image3d_t wind_uvw,
                       const float16 wind_desc,
@@ -507,7 +506,6 @@ __kernel void bg_atts(__global float4 *p,
     
     float4 pos = p[i];
     float4 vel = v[i];
-    float4 aux = a[i];
     
     const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
     
@@ -534,24 +532,18 @@ __kernel void bg_atts(__global float4 *p,
     
     int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
     
-    //if (is_outside | isgreater(aux.s1, 1.0f)) {
     if (is_outside) {
         uint4 seed = y[i];
         float4 r = rand(&seed);
         pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
         //pos.xyz = (float3)(fma(r.xy, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT); // This is kind of cool
         vel = FLOAT4_ZERO;
-        aux.s0 = length(pos.xyz);
-        aux.s1 = 0.0f;
 
         p[i] = pos;
         v[i] = vel;
-        a[i] = aux;
         y[i] = seed;
 
         return;
-    } else {
-        aux.s1 += sim_desc.sf;
     }
 
     //
@@ -559,12 +551,8 @@ __kernel void bg_atts(__global float4 *p,
     
     vel = read_imagef(wind_uvw, sampler, wind_coord);
     
-    // Range of the point
-    aux.s0 = length(pos.xyz);
-    
     p[i] = pos;
     v[i] = vel;
-    a[i] = aux;
 }
 
 //
@@ -572,8 +560,6 @@ __kernel void bg_atts(__global float4 *p,
 //
 __kernel void el_atts(__global float4 *p,                  // position (x, y, z) and size (radius)
                       __global float4 *v,                  // velocity (u, v, w) and a vacant float
-                      __global float4 *a,                  // auxiliary info: range, ange, ____, angular weight
-                      __global float4 *x,                  // signal (hh, hv, vh, vv)
                       __global uint4 *y,                   // 128-bit random seed (4 x 32-bit)
                       __read_only image3d_t wind_uvw,
                       const float16 wind_desc,
@@ -584,8 +570,7 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
     
     float4 pos = p[i];  // position
     float4 vel = v[i];  // velocity
-    float4 aux = a[i];  // auxiliary
-    float4 sig = x[i];  // signal
+//    float4 sig = x[i];  // signal
 
     const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
 
@@ -621,13 +606,11 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
         //pos.xyz = (float3)(fma(r.xyz, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT);   // Feed from the bottom
         pos.xyz = fma(r.xyz, sim_desc.hi.s456, sim_desc.hi.s012);
         vel = FLOAT4_ZERO;
-        aux.s0 = length(pos.xyz);
-        sig = FLOAT4_ZERO;
+//        sig = FLOAT4_ZERO;
         
         p[i] = pos;
         v[i] = vel;
-        a[i] = aux;
-        x[i] = sig;
+//        x[i] = sig;
         y[i] = seed;
 
         return;
@@ -672,26 +655,20 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
 
     }
 
-    // Range of the point
-    aux.s0 = length(pos.xyz);
-    //aux.s1 = aux.s1 + sim_desc.sf;
-
     // Ratio is usually in ( semi-major : semi-minor ) = ( H : V );
     // Use (1.0, 0.0) for H and (v, 0.0) for V
     // v = 1.0048 + 5.7e-4 * D - 2.628e-2 * D ^ 2 + 3.682e-3 * D ^ 3 - 1.667e-4 * D ^ 4
     // Reminder: pos.w = drop radius in m; equation below uses D in mm
-    float D = 2000.0f * pos.w;
-    float4 DD = pown((float4)(D, D, D, D), (int4)(1, 2, 3, 4));
-    float vv = 1.0048f + dot((float4)(5.7e-4f, -2.628e-2f, 3.682e-3f, -1.667e-4f), DD);
+//    float D = 2000.0f * pos.w;
+//    float4 DD = pown((float4)(D, D, D, D), (int4)(1, 2, 3, 4));
+//    float vv = 1.0048f + dot((float4)(5.7e-4f, -2.628e-2f, 3.682e-3f, -1.667e-4f), DD);
 
     // H is 1.0 while V is the attenuated version as a function of aspect ratio
-    sig = (float4)(1.0f, 0.0f, vv, 0.0f);
-    
+//    sig = (float4)(1.0f, 0.0f, vv, 0.0f);
 
     p[i] = pos;
     v[i] = vel;
-    a[i] = aux;
-    x[i] = sig;
+//    x[i] = sig;
 }
 
 //
@@ -801,7 +778,22 @@ __kernel void scat_sig_dsd(__global float4 *x,
                            __global float4 *a)
 {
     unsigned int i = get_global_id(0);
-    x[i] = (float4)(1.0f, 0.0f, 1.0f, 0.0f);
+    //x[i] = (float4)(1.0f, 0.0f, 1.0f, 0.0f);
+    
+    float4 pos = p[i];
+    
+    //
+    // Ratio is usually in ( semi-major : semi-minor ) = ( H : V );
+    // Use (1.0, 0.0) for H and (v, 0.0) for V
+    // v = 1.0048 + 5.7e-4 * D - 2.628e-2 * D ^ 2 + 3.682e-3 * D ^ 3 - 1.667e-4 * D ^ 4
+    // Reminder: pos.w = drop radius in m; equation below uses D in mm
+    //
+    float D = 2000.0f * pos.w;
+    float4 DD = pown((float4)D, (int4)(1, 2, 3, 4));
+    float vv = 1.0048f + dot((float4)(5.7e-4f, -2.628e-2f, 3.682e-3f, -1.667e-4f), DD);
+    
+    // H is 1.0 while V is the attenuated version as a function of aspect ratio
+    x[i] = (float4)(1.0f, 0.0f, vv, 0.0f);
 }
 
 
@@ -817,6 +809,9 @@ __kernel void scat_clr(__global float4 *c,
     
     if (mode.s0 == 0) {
         c[i].x = clamp(a[i].s2, 0.0f, 1.0f);
+    } else if (mode.s0 == 1) {
+        //c[i].x = clamp(p[i].w * 500.0f, 0.0f, 1.0f);
+        c[i].x = clamp((a[i].s0 - 2000.0f) * 0.0005f, 0.0f, 1.0f);
     } else {
         c[i].x = clamp(fma(log10(100.0f * a[i].s3), 0.1f, 0.8f), 0.0f, 1.0f);
         //    if (i < 20) {
