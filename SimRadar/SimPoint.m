@@ -161,6 +161,8 @@
             
             RS_set_vel_data_to_uniform(S, vel);
         }
+
+        S->draw_mode.s1 = 2800;
     }
 	return self;
 }
@@ -187,6 +189,7 @@
 	S->sim_tic = 0;
 	S->sim_toc = 0;
 	S->sim_time = 0.0f;
+    S->draw_mode.s1 = 2800;
 }
 
 - (void)populate
@@ -394,6 +397,16 @@
 {
     RSVolume v = RS_get_domain(S);
     return 1.2f * v.size.z;
+}
+
+- (void)increaseDemoRange
+{
+    S->draw_mode.s1 += 5;
+}
+
+- (void)decreaseDemoRange
+{
+    S->draw_mode.s1 -= 5;
 }
 
 @end

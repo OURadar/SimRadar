@@ -975,9 +975,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
 					15.0e3f, 20.0e3f, 250.0f,                   // Range
 					-12.0f, 12.0f, 1.0f,                        // Azimuth
 					0.0f, 8.0f, 1.0f);                          // Elevation
-	
-	RS_set_range_weight_to_triangle(H, 250.0f);
-	
+		
 	RS_set_angular_weight_to_standard(H, 1.0f / 180.0f * M_PI);
 	//RS_set_angular_weight_to_double_cone(H, 2.0f / 180.0f * M_PI);
 	
@@ -1385,6 +1383,7 @@ void RS_set_tx_params(RSHandle *H, RSfloat pulsewidth, RSfloat tx_power_watt) {
 	H->params.tau = pulsewidth;
 	H->params.dr = H->params.c * H->params.tau * 0.5f;
 	H->params.tx_power_watt = tx_power_watt;
+    RS_set_range_weight_to_triangle(H, H->params.dr);
 }
 
 

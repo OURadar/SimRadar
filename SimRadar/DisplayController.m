@@ -84,7 +84,6 @@ NSWindow *standardWindow;
     GLKMatrix4 modelRotate = GLKMatrix4MakeRotation(0.25f, 1.0f, 0.0f, 0.0f);
     modelRotate = GLKMatrix4RotateY(modelRotate, -0.3f);
     
-    
     [glView.renderer setResetModelRotate:modelRotate];
     
     [glView.renderer stopSpinModel];
@@ -114,6 +113,8 @@ NSWindow *standardWindow;
 	[glView.renderer setDelegate:rootSender];
     
     mkey = 0;
+    
+    [self becomeFirstResponder];
 }
 
 
@@ -197,6 +198,40 @@ NSWindow *standardWindow;
     [glView setBoundsSize:size];
     [glView.renderer setSize:size];
 }
+
+#pragma mark -
+#pragma NSResponder
+
+//- (void)mouseDown:(NSEvent *)theEvent
+//{
+//}
+
+- (void)mouseDragged:(NSEvent *)event
+{
+    [glView.renderer panX:event.locationInWindow.x Y:event.locationInWindow.y dx:event.deltaX dy:event.deltaY];
+}
+
+- (void)mouseUp:(NSEvent *)event
+{
+    if (event.clickCount == 2) {
+        [glView.renderer resetViewParameters];
+    }
+}
+
+- (void)magnifyWithEvent:(NSEvent *)event
+{
+    // NSLog(@"mag = %.3f", event.magnification);
+    [glView.renderer magnify:1.5f * event.magnification];
+}
+
+- (void)rotateWithEvent:(NSEvent *)event
+{
+    //NSLog(@"rotate %.2f", event.rotation);
+    [glView.renderer rotate:event.rotation / 180.0f * M_PI];
+    //	CGPoint location = [event locationInWindow];
+    //	[renderer rotate:event.rotation X:location.x Y:location.y];
+}
+
 
 - (void)keyDown:(NSEvent *)event
 {
@@ -351,6 +386,51 @@ NSWindow *standardWindow;
 			// Allow other character to be handled by how the superclass defined it
 			[super keyDown:event];
 			break;
+	}
+}
+
+- (void)scrollWheel:(NSEvent *)event
+{
+    if ([event modifierFlags] & NSShiftKeyMask) {
+//        GLfloat deltaX = [event scrollingDeltaX];
+        GLfloat deltaY = [event scrollingDeltaY];
+
+        if (deltaY > 0.0f) {
+            [sim increaseDemoRange];
+        } else {
+            [sim decreaseDemoRange];
+        }
+        return;
+    }
+
+    // No shift key is held
+    GLfloat deltaX = [event scrollingDeltaX];
+	GLfloat deltaY = [event scrollingDeltaY];
+
+	if (ABS(deltaY) < ABS(deltaX)) {
+		return;
+	}
+
+	if ([event isDirectionInvertedFromDevice]) {
+		deltaY *= -1.0f;
+	}
+
+	if (deltaY > 0.0f) {
+		if (deltaY >= 6.0f) {
+			[glView.renderer magnify:0.10f];
+		} else if (deltaY >= 3.0f) {
+			[glView.renderer magnify:0.05f];
+		} else {
+			[glView.renderer magnify:0.02f];
+		}
+	} else {
+		if (deltaY <= -6.0f) {
+			[glView.renderer magnify:-0.10f];
+		} else if (deltaY <= -3.0f) {
+			[glView.renderer magnify:-0.05f];
+		} else {
+			[glView.renderer magnify:-0.02f];
+		}
 	}
 }
 

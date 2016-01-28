@@ -86,4 +86,7 @@
 
 - (GLfloat)recommendedViewRange;
 
+- (void)increaseDemoRange;
+- (void)decreaseDemoRange;
+
 @end
