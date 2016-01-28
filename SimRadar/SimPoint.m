@@ -100,14 +100,14 @@
 		
         RS_set_tx_params(S, 30.0f * 2.0f / 3.0e8f, 10.0e3);   // Resolution in m, power in W
 
-        NSLog(@"S->preferred_multiple = %d", (int)S->preferred_multiple);
-        RS_set_debris_count(S, 1, 256);
-        RS_set_debris_count(S, 2, 256);
-        RS_revise_debris_counts_to_gpu_preference(S);
+//        NSLog(@"S->preferred_multiple = %d", (int)S->preferred_multiple);
+//        RS_set_debris_count(S, 1, 256);
+//        RS_set_debris_count(S, 2, 256);
+//        RS_revise_debris_counts_to_gpu_preference(S);
         
         RS_set_prt(S, 1.0f / 60.0f);
         
-        BOOL useLES = FALSE;
+        BOOL useLES = TRUE;
         
         RSBox box;
         if (useLES) {

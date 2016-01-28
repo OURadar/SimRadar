@@ -937,6 +937,8 @@ __kernel void make_pulse_pass_1(__global float4 *out,
     float4 fidx_dec;
     uint4  iidx_int;
     
+    float2 wa_ab;
+    
     // Will use:
     // Elements 0 & 1 for scatter body from the left group (a); use i indexing
     // Elements 2 & 3 for scatter body from the right group (b); use j indexing
@@ -954,8 +956,10 @@ __kernel void make_pulse_pass_1(__global float4 *out,
         r = (float4)range_start;
 
         // Angular weight
-        s_a *= aux[i].s3;
-        s_b *= aux[j].s3;
+        //s_a *= aux[i].s3;
+        //s_b *= aux[j].s3;
+        
+        wa_ab = (float2)(aux[i].s3, aux[j].s3);
 
         for (k = 0; k < range_count; k++) {
             float4 dr_from_center = (float4)(r_a, r_a, r_b, r_b) - r;
@@ -969,6 +973,8 @@ __kernel void make_pulse_pass_1(__global float4 *out,
             float2 w2 = mix((float2)(range_weight[iidx_int.s0], range_weight[iidx_int.s2]),
                             (float2)(range_weight[iidx_int.s1], range_weight[iidx_int.s3]),
                             fidx_dec.s02);
+            
+            w2 *= wa_ab;
             
             // Vectorized range * angular weights
             w_a = (float4)w2.s0;
