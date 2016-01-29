@@ -151,23 +151,30 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 
 - (void)drawRect:(NSRect)dirtyRect
 {
-	[self drawView];
+    //NSLog(@"drawRect: %d", animating);
+    // Don't have to draw anything since this is the very first view.
+    [self.openGLContext makeCurrentContext];
+    CGLLockContext([self.openGLContext CGLContextObj]);
+    glViewport(self.bounds.origin.x, self.bounds.origin.y, self.bounds.size.width, self.bounds.size.height);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    CGLFlushDrawable([self.openGLContext CGLContextObj]);
+    CGLUnlockContext([self.openGLContext CGLContextObj]);
 }
 
 - (void)drawView
 {
 	// Drawing code here.
-	[[self openGLContext] makeCurrentContext];
+    [self.openGLContext makeCurrentContext];
 	
 	// We draw on a secondary thread through the display link
 	// When resizing the view, -reshape is called automatically on the main
 	// thread. Add a mutex around to avoid the threads accessing the context
 	// simultaneously when resizing
-	CGLLockContext([[self openGLContext] CGLContextObj]);
+    CGLLockContext([self.openGLContext CGLContextObj]);
 	
 	[renderer render];
 	
-	CGLFlushDrawable([[self openGLContext] CGLContextObj]);
+    CGLFlushDrawable([self.openGLContext CGLContextObj]);
     
     if (recorder) {
 //        [recorder addFrame:<#(NSView *)#>];
@@ -183,7 +190,7 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
     }
 #endif
 
-    CGLUnlockContext([[self openGLContext] CGLContextObj]);
+    CGLUnlockContext([self.openGLContext CGLContextObj]);
 
     tic++;
     

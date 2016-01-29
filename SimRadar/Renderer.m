@@ -787,8 +787,7 @@
     frameRenderer  = [self createRenderResourceFromProgram:meshRenderer.program];
     blurRenderer   = [self createRenderResourceFromVertexShader:@"mesh.vsh" fragmentShader:@"blur.fsh"];
     
-    NSLog(@"Each renderer uses %zu bytes", sizeof(RenderResource));
-    
+    //NSLog(@"Each renderer uses %zu bytes", sizeof(RenderResource));
     //NSLog(@"meshRenderer's drawColor @ %d / %d / %d", meshRenderer.colorUI, meshRenderer.positionAI, meshRenderer.textureCoordAI);
 
     textRenderer = [GLText new];

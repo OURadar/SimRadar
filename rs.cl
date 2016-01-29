@@ -810,9 +810,15 @@ __kernel void scat_clr(__global float4 *c,
     if (mode.s0 == 0) {
         c[i].x = clamp(a[i].s2, 0.0f, 1.0f);
     } else if (mode.s0 == 1) {
+        c[i].x = clamp(fma(log10(100.0f * a[i].s3), 0.1f, 0.8f), 0.0f, 1.0f);
+        //    if (i < 20) {
+        //        printf("i=%d  w=%.4f\n", i, c[i].x);
+        //        //printf("i=%d  d=%.1fmm  c=%.3f\n", i, p[i].w * 1000.0f, c[i].x);
+        //    }
+    } else {
         //c[i].x = clamp(p[i].w * 500.0f, 0.0f, 1.0f);
         c[i].x = clamp((a[i].s0 - 2000.0f) * 0.0005f, 0.0f, 1.0f);
-
+        
         float dr = 60.0f;
         float4 range_weight_desc = (float4)(1.0f / dr, 1.0, 2.0f, 0.0f);
         float range_weight[3] = {0.0f, 1.0f, 0.0f};
@@ -820,20 +826,13 @@ __kernel void scat_clr(__global float4 *c,
         float2 dr_from_center = (float2)(a[i].s0 - (float)mode.s1);
         const float2 s = (float2)range_weight_desc.s0;
         const float2 o = (float2)range_weight_desc.s1 + (float2)(0.0f, 1.0f);
-
+        
         float2 fidx_raw = clamp(fma(dr_from_center, s, o), 0.0f, range_weight_desc.s2);     // Index [0 ... xm] in float
         float2 fidx_int, fidx_dec = fract(fidx_raw, &fidx_int);                             // The integer and decimal fraction
         uint2 iidx_int = convert_uint2(fidx_int);
-
+        
         // Range weight
         c[i].x = mix(range_weight[iidx_int.s0], range_weight[iidx_int.s1], fidx_dec.s0);
-
-    } else {
-        c[i].x = clamp(fma(log10(100.0f * a[i].s3), 0.1f, 0.8f), 0.0f, 1.0f);
-        //    if (i < 20) {
-        //        printf("i=%d  w=%.4f\n", i, c[i].x);
-        //        //printf("i=%d  d=%.1fmm  c=%.3f\n", i, p[i].w * 1000.0f, c[i].x);
-        //    }
     }
 }
 

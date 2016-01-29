@@ -181,6 +181,11 @@
 #pragma mark -
 #pragma mark Simulation State
 
+- (BOOL)isPopulated
+{
+    return S->status & RS_STATUS_DOMAIN_POPULATED;
+}
+
 - (void)shareVBOsWithGL:(GLuint [][8])vbos
 {
     RS_share_mem_with_vbo(S, 8, vbos);

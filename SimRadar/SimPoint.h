@@ -54,6 +54,8 @@
 
 - (id)initWithDelegate:(id<SimPointDelegate>)newDelegate;
 
+- (BOOL)isPopulated;
+
 - (void)shareVBOsWithGL:(GLuint [][8])vbos;
 - (void)upload;
 - (void)populate;

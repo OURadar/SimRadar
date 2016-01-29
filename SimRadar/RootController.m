@@ -50,7 +50,6 @@
 {
 	if (dc == nil) {
 		dc = [[DisplayController alloc] initWithWindowNibName:@"LiveDisplay" viewDelegate:self];
-        NSLog(@"Setting window level to %d", -1);
         [dc.window setLevel:-1];
         [dc showWindow:self];
     } else {
@@ -162,14 +161,13 @@
 
 - (void)createSimulation {
     @autoreleasepool {
-        SimPoint *newSim = [[SimPoint alloc] initWithDelegate:self];
-        if (newSim) {
+        sim = [[SimPoint alloc] initWithDelegate:self];
+        if (sim) {
             NSLog(@"New simulation domain initiated.");
             // Wire the simulator to the controller.
             // The displayController will tell the renderer how many scatter body
-            // the simulator is using and pass the anchor points from RS API to
-            // the renderer
-            sim = newSim;
+            // the simulator is using and pass the anchor points from RS framework to
+            // the Renderer object.
             [dc setSim:sim];
             [dc.glView startAnimation];
         } else {
@@ -180,6 +178,9 @@
         }
     }
 }
+
+#pragma mark -
+#pragma mark RendererDelegate
 
 - (void)glContextVAOPrepared
 {
@@ -207,7 +208,7 @@
             [dc.glView.renderer setPopulationTo:pop forSpecies:k forDevice:0];
         }
     } else {
-        NSLog(@"No simulation");
+        NSLog(@"No simulation yet.");
     }
     [dc.glView.renderer setDebrisCountsHaveChanged:true];
 }
@@ -216,6 +217,10 @@
 - (void)willDrawScatterBody
 {
     if (sim == nil) {
+        return;
+    }
+    if (!sim.isPopulated) {
+        NSLog(@"Simulation not ready.");
         return;
     }
 	switch (state) {
