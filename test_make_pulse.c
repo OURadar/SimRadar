@@ -62,7 +62,7 @@ int main(int argc, char **argv)
 	
 	struct timeval t1, t2;
 	
-	cl_float4 *host_sig;
+	cl_float4 *host_rcs;
     cl_float4 *host_pos;
 	cl_float4 *host_aux;
 	cl_float4 *cpu_pulse;
@@ -83,6 +83,7 @@ int main(int argc, char **argv)
     cl_mem vel;
     cl_mem tum;
 	cl_mem aux;
+    cl_mem rcs;
     cl_mem rnd;
 	cl_mem work;
 	cl_mem pulse;
@@ -241,7 +242,7 @@ int main(int argc, char **argv)
     global_size = num_elem;
 
 	// CPU memory
-	host_sig = (cl_float4 *)malloc(MAX(num_elem, RANGE_GATES * GROUP_ITEMS) * sizeof(cl_float4));
+	host_rcs = (cl_float4 *)malloc(MAX(num_elem, RANGE_GATES * GROUP_ITEMS) * sizeof(cl_float4));
     host_pos = (cl_float4 *)malloc(MAX(num_elem, RANGE_GATES * GROUP_ITEMS) * sizeof(cl_float4));
 	host_aux = (cl_float4 *)malloc(MAX(num_elem, RANGE_GATES * GROUP_ITEMS) * sizeof(cl_float4));
 	cpu_pulse = (cl_float4 *)malloc(RANGE_GATES * sizeof(cl_float4));
@@ -267,6 +268,7 @@ int main(int argc, char **argv)
     vel = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_float4), NULL, &ret);
     tum = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_float4), NULL, &ret);
 	aux = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_float4), NULL, &ret);
+    rcs = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_float4), NULL, &ret);
     rnd = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elem * sizeof(cl_uint4), NULL, &ret);
 	work = clCreateBuffer(context, CL_MEM_READ_WRITE, RANGE_GATES * GROUP_ITEMS * sizeof(cl_float4), NULL, &ret);
 	pulse = clCreateBuffer(context, CL_MEM_READ_WRITE, RANGE_GATES * sizeof(cl_float4), NULL, &ret);
@@ -364,7 +366,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error\n");
 		exit(EXIT_FAILURE);
 	}
-    clSetKernelArg(kernel_pop, 0, sizeof(cl_mem), &sig);
+    clSetKernelArg(kernel_pop, 0, sizeof(cl_mem), &rcs);
 	clSetKernelArg(kernel_pop, 1, sizeof(cl_mem), &aux);
 	clSetKernelArg(kernel_pop, 2, sizeof(cl_mem), &pos);
 	clSetKernelArg(kernel_pop, 3, sizeof(cl_float16), &sim_desc);
@@ -375,12 +377,13 @@ int main(int argc, char **argv)
         fprintf(stderr, "Error\n");
         exit(EXIT_FAILURE);
     }
-    clSetKernelArg(kernel_scat_wa, 0, sizeof(cl_mem), &sig);
-    clSetKernelArg(kernel_scat_wa, 1, sizeof(cl_mem), &aux);
-    clSetKernelArg(kernel_scat_wa, 2, sizeof(cl_mem), &pos);
-    clSetKernelArg(kernel_scat_wa, 3, sizeof(cl_mem), &angular_weight);
-    clSetKernelArg(kernel_scat_wa, 4, sizeof(cl_float4), &angular_weight_desc);
-    clSetKernelArg(kernel_scat_wa, 5, sizeof(cl_float16), &sim_desc);
+    clSetKernelArg(kernel_scat_wa, RSScattererAngularWeightKernalArgumentSignal, sizeof(cl_mem),                    &sig);
+    clSetKernelArg(kernel_scat_wa, RSScattererAngularWeightKernalArgumentAuxiliary, sizeof(cl_mem),                 &aux);
+    clSetKernelArg(kernel_scat_wa, RSScattererAngularWeightKernalArgumentPosition, sizeof(cl_mem),                  &pos);
+    clSetKernelArg(kernel_scat_wa, RSScattererAngularWeightKernalArgumentRadarCrossSection, sizeof(cl_mem),         &rcs);
+    clSetKernelArg(kernel_scat_wa, RSScattererAngularWeightKernalArgumentWeightTable, sizeof(cl_mem),               &angular_weight);
+    clSetKernelArg(kernel_scat_wa, RSScattererAngularWeightKernalArgumentWeightTableDescription, sizeof(cl_float4), &angular_weight_desc);
+    clSetKernelArg(kernel_scat_wa, RSScattererAngularWeightKernalArgumentSimulationDescription, sizeof(cl_float16), &sim_desc);
     
     // Debris attributes
     kernel_db_atts = clCreateKernel(program, "db_atts", &ret);
@@ -484,7 +487,7 @@ int main(int argc, char **argv)
     clEnqueueNDRangeKernel(queue, kernel_pop, 1, NULL, &global_size, NULL, 0, NULL, NULL);
 
     // Queue reading data back
-    clEnqueueReadBuffer(queue, sig, CL_TRUE, 0, global_size * sizeof(cl_float4), host_sig, 0, NULL, NULL);
+    clEnqueueReadBuffer(queue, rcs, CL_TRUE, 0, global_size * sizeof(cl_float4), host_rcs, 0, NULL, NULL);
     clEnqueueReadBuffer(queue, aux, CL_TRUE, 0, global_size * sizeof(cl_float4), host_aux, 0, NULL, NULL);
     clEnqueueReadBuffer(queue, pos, CL_TRUE, 0, global_size * sizeof(cl_float4), host_pos, 0, NULL, NULL);
     
@@ -521,7 +524,7 @@ int main(int argc, char **argv)
 //				printf("ir=%2u  r=%5.2f  i=%2u  r_a=%.3f  dr=%.3f  w_r=%.3f  %.2f -> %.0f/%.0f/%.2f\n",
 //					   ir, r, i, r_a, r_a-r, w_r, fidx, floorf(fidx), ceilf(fidx), fidx-floorf(fidx));
 //			}
-            cl_float4 sig = host_sig[i];
+            cl_float4 sig = host_rcs[i];
             sig = two_way_effects(sig, r_a, sim_desc.s[RSSimulationDescriptionWaveNumber]);
 			cpu_pulse[ir].s0 += sig.s0 * w_r * w_a;
 			cpu_pulse[ir].s1 += sig.s1 * w_r * w_a;
@@ -554,7 +557,7 @@ int main(int argc, char **argv)
     err |= clEnqueueNDRangeKernel(queue, kernel_scat_wa, 1, NULL, &global_size, NULL, 0, NULL, &events[0]);
 	err |= clEnqueueNDRangeKernel(queue, kernel_make_pulse_pass_1, 1, NULL, &R.global[0], &R.local[0], 1, &events[0], &events[1]);
 	err |= clEnqueueNDRangeKernel(queue, kernel_make_pulse_pass_2, 1, NULL, &R.global[1], &R.local[1], 1, &events[1], &events[2]);
-    err |= clEnqueueReadBuffer(queue, pulse, CL_TRUE, 0, R.range_count * sizeof(cl_float4), host_sig, 1, &events[2], NULL);
+    err |= clEnqueueReadBuffer(queue, pulse, CL_TRUE, 0, R.range_count * sizeof(cl_float4), host_rcs, 1, &events[2], NULL);
 	if (err != CL_SUCCESS) {
 		fprintf(stderr, "Error: Failed in clEnqueueNDRangeKernel() and/or clEnqueueReadBuffer().\n");
 		exit(EXIT_FAILURE);
@@ -573,13 +576,13 @@ int main(int argc, char **argv)
 	printf("\n");
 	printf("GPU Pulse :");
 	for (int j=0; j<R.range_count; j++) {
-		printf(" %.3e", host_sig[j].s0);
+		printf(" %.3e", host_rcs[j].s0);
 	}
 	printf("\n");
 	printf("Deltas    :");
 	float delta = 0.0f, avg_delta = 0.0f;
 	for (int j=0; j<R.range_count; j++) {
-		delta = (cpu_pulse[j].s0 - host_sig[j].s0) / MAX(1.0f, host_sig[j].s0);
+		delta = (cpu_pulse[j].s0 - host_rcs[j].s0) / MAX(1.0f, host_rcs[j].s0);
 		avg_delta += delta;
 		printf(" %.1e", delta);
 	}
@@ -608,7 +611,7 @@ int main(int argc, char **argv)
                         float w_r = read_table(range_weight_cpu, xm, (r_a - r) * xs + xo);
                         float w_a = read_table(angular_weight_cpu, angular_weight_desc.s2, angle * angular_weight_desc.s0 + angular_weight_desc.s1);
 
-                        cl_float4 sig = host_sig[i];
+                        cl_float4 sig = host_rcs[i];
                         sig = two_way_effects(sig, r_a, sim_desc.s[RSSimulationDescriptionWaveNumber]);
                         cpu_pulse[ir].s0 += sig.s0 * w_r * w_a;
                         cpu_pulse[ir].s1 += sig.s1 * w_r * w_a;
@@ -672,13 +675,13 @@ int main(int argc, char **argv)
             t = DTIME(t1, t2);
             printf("GPU Exec Time = %6.2f ms   Throughput = %6.2f GB/s  (scat_wa)\n",
                    t / speed_test_iterations * 1000.0f,
-                   1e-9 * num_elem * 3 * sizeof(cl_float4) * speed_test_iterations / t);
+                   1e-9 * num_elem * 4 * sizeof(cl_float4) * speed_test_iterations / t);
         }
 	}
 
 	free(cpu_pulse);
 
-	free(host_sig);
+	free(host_rcs);
     free(host_pos);
 	free(host_aux);
 
@@ -693,6 +696,7 @@ int main(int argc, char **argv)
     clReleaseMemObject(vel);
     clReleaseMemObject(tum);
     clReleaseMemObject(aux);
+    clReleaseMemObject(rcs);
     clReleaseMemObject(rnd);
     clReleaseMemObject(work);
 	clReleaseMemObject(pulse);

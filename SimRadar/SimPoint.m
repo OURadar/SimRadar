@@ -94,7 +94,7 @@
             [delegate progressUpdated:10.0 message:[NSString stringWithFormat:@"Configuring radar parameters ..."]];
         }
         
-        //RS_set_concept(S, RSSimulationConceptDraggedBackground | RSSimulationConceptBoundedParticleVelocity);
+        RS_set_concept(S, RSSimulationConceptDraggedBackground | RSSimulationConceptBoundedParticleVelocity);
 
 		RS_set_antenna_params(S, 1.0f, 44.5f);                // 1.0-deg beamwidth, 44.5-dBi gain
 		
@@ -225,6 +225,9 @@
 	RS_advance_time(S);
     RS_make_pulse(S);
     RS_update_colors(S);
+    
+    RS_download_pulse_only(S);
+//    NSLog(@"%.2f%+.2fi %.2f%+.2fi ...", S->pulse[0].s0, S->pulse[0].s1, S->pulse[1].s0, S->pulse[1].s1);
 }
 
 - (void)advanceBeamPosition

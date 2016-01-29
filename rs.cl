@@ -212,6 +212,15 @@ float4 complex_multiply(const float4 a, const float4 b)
 
 float4 two_way_effects(const float4 sig_in, const float range, const float wav_num)
 {
+    //        float atten = pown(aux.s0, -4);
+    //        float phase = aux.s0 * sim_desc.s4;
+    //
+    //        // cosine & sine to represent exp(j phase)
+    //        float c, s = sincos(phase, &c);
+    //
+    //        float4 sig_out = complex_multiply(sig, (float4)(c, s, c, s)) * atten;
+    //        printf("atten = %.4e  %.4v4e\n", atten, sig_out);
+
     // Range attenuation R ^ -4
     float atten = pown(range, -4);
 
@@ -570,7 +579,6 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
     
     float4 pos = p[i];  // position
     float4 vel = v[i];  // velocity
-//    float4 sig = x[i];  // signal
 
     const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
 
@@ -610,7 +618,6 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
         
         p[i] = pos;
         v[i] = vel;
-//        x[i] = sig;
         y[i] = seed;
 
         return;
@@ -668,7 +675,6 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
 
     p[i] = pos;
     v[i] = vel;
-//    x[i] = sig;
 }
 
 //
@@ -841,7 +847,8 @@ __kernel void scat_clr(__global float4 *c,
 //
 __kernel void scat_wa(__global float4 *s,
                       __global float4 *a,
-                      __global float4 *p,
+                      __global __read_only float4 *p,
+                      __global __read_only float4 *r,
                       __constant float *angular_weight,
                       const float4 angular_weight_desc,
                       const float16 sim_desc)
@@ -850,12 +857,11 @@ __kernel void scat_wa(__global float4 *s,
 
     float4 sig = s[i];
     float4 aux = a[i];
-    float4 pos = p[i];
     
     //    RSSimulationDescriptionBeamUnitX     =  0,
     //    RSSimulationDescriptionBeamUnitY     =  1,
     //    RSSimulationDescriptionBeamUnitZ     =  2,
-    float angle = acos(dot(sim_desc.s012, normalize(pos.xyz)));
+    float angle = acos(dot(sim_desc.s012, normalize(p[i].xyz)));
     
     float2 table_s = (float2)(angular_weight_desc.s0, angular_weight_desc.s0);
     float2 table_o = (float2)(angular_weight_desc.s1, angular_weight_desc.s1) + (float2)(0.0f, 1.0f);
@@ -876,11 +882,22 @@ __kernel void scat_wa(__global float4 *s,
     // - s2 =
     // - s3 = angular weight (make_pulse_pass_1)
     //
-    aux.s0 = length(pos.xyz);
+    aux.s0 = length(p[i].xyz);
     aux.s1 = aux.s1 + sim_desc.sf;
     aux.s3 = mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
     
-    sig = two_way_effects(sig, aux.s0, sim_desc.s4);
+    //sig = two_way_effects(sig, aux.s0, sim_desc.s4);
+    float atten = pown(aux.s0, -4);
+    float phase = aux.s0 * sim_desc.s4;
+    
+    // cosine & sine to represent exp(j phase)
+    float cc, ss = sincos(phase, &cc);
+
+    sig = complex_multiply(r[i], (float4)(cc, ss, cc, ss)) * atten;
+
+//    if (i == 0) {
+//        printf("atten = %.4e  %.4v4e\n", atten, sig);
+//    }
     
     s[i] = sig;
     a[i] = aux;
@@ -900,8 +917,8 @@ __kernel void scat_wa(__global float4 *s,
 // n - total number of elements (for this GPU device)
 //
 __kernel void make_pulse_pass_1(__global float4 *out,
-                                __global float4 *sig,
-                                __global float4 *aux,
+                                __global __read_only float4 *sig,
+                                __global __read_only float4 *aux,
                                 __local float4 *shared,
                                 __constant float *range_weight,
                                 const float4 range_weight_desc,
@@ -947,7 +964,7 @@ __kernel void make_pulse_pass_1(__global float4 *out,
     float4 fidx_dec;
     uint4  iidx_int;
     
-    float2 wa_ab;
+//    float2 wa_ab;
     
     // Will use:
     // Elements 0 & 1 for scatter body from the left group (a); use i indexing
@@ -966,10 +983,10 @@ __kernel void make_pulse_pass_1(__global float4 *out,
         r = (float4)range_start;
 
         // Angular weight
-        //s_a *= aux[i].s3;
-        //s_b *= aux[j].s3;
+        s_a *= aux[i].s3;
+        s_b *= aux[j].s3;
         
-        wa_ab = (float2)(aux[i].s3, aux[j].s3);
+        //wa_ab = (float2)(aux[i].s3, aux[j].s3);
 
         for (k = 0; k < range_count; k++) {
             float4 dr_from_center = (float4)(r_a, r_a, r_b, r_b) - r;
@@ -984,7 +1001,7 @@ __kernel void make_pulse_pass_1(__global float4 *out,
                             (float2)(range_weight[iidx_int.s1], range_weight[iidx_int.s3]),
                             fidx_dec.s02);
             
-            w2 *= wa_ab;
+            //w2 *= wa_ab;
             
             // Vectorized range * angular weights
             w_a = (float4)w2.s0;
@@ -1222,13 +1239,13 @@ __kernel void make_pulse_pass_2_group(__global float4 *out,
 }
 
 // Generate some random data
-__kernel void pop(__global float4 *sig, __global float4 *aux, __global float4 *pos, const float16 sim_desc)
+__kernel void pop(__global float4 *rcs, __global float4 *aux, __global float4 *pos, const float16 sim_desc)
 {
     unsigned int k = get_global_id(0);
     
     float4 p = (float4)((float)(k % 9) - 4.0f, (float)k / 90000.0f + 1.0f, 0.1f, 1.0f);
 
-    sig[k] = (float4)(1.0f, 0.5f, 1.0f, 0.5f);
+    rcs[k] = (float4)(1.0f, 0.5f, 1.0f, 0.5f);
     aux[k] = (float4)(length(p.xyz), 1.0f, acos(dot(sim_desc.s012, normalize(p.xyz))), 1.0f);
     pos[k] = p;
 }

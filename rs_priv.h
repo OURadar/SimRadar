@@ -47,20 +47,21 @@ enum RSDebrisAttributeKernelArgument {
 enum RSScattererColorKernelArgument {
     RSScattererColorKernelArgumentColor,
     RSScattererColorKernelArgumentPosition,
-    RSScattererColorKernelArgumentAttribute,
+    RSScattererColorKernelArgumentAuxiliary,
     RSScattererColorKernelArgumentDrawMode
 };
 
 enum RSScattererSignalDropSizeDistributionKernalArgument {
     RSScattererSignalDropSizeDistributionKernalArgumentSignal,
     RSScattererSignalDropSizeDistributionKernalArgumentPosition,
-    RSScattererSignalDropSizeDistributionKernalArgumentAttribute
+    RSScattererSignalDropSizeDistributionKernalArgumentAuxiliary
 };
 
 enum RSScattererAngularWeightKernalArgument {
     RSScattererAngularWeightKernalArgumentSignal,
-    RSScattererAngularWeightKernalArgumentAttribute,
+    RSScattererAngularWeightKernalArgumentAuxiliary,
     RSScattererAngularWeightKernalArgumentPosition,
+    RSScattererAngularWeightKernalArgumentRadarCrossSection,
     RSScattererAngularWeightKernalArgumentWeightTable,
     RSScattererAngularWeightKernalArgumentWeightTableDescription,
     RSScattererAngularWeightKernalArgumentSimulationDescription
