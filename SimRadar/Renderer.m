@@ -827,8 +827,6 @@
 	#ifdef DEBUG
 	NSLog(@"Allocating (%d, %d) particles on GPU ...", bodyRenderer[0].count, bodyRenderer[1].count);
 	#endif
-
-    NSLog(@"total = %u", lineRenderer.segmentNextOrigin);
     
     // Grid lines
 	glBindVertexArray(lineRenderer.vao);

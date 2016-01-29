@@ -396,9 +396,9 @@ NSWindow *standardWindow;
         GLfloat deltaY = [event scrollingDeltaY];
 
         if (deltaY > 0.0f) {
-            [sim increaseDemoRange];
-        } else {
             [sim decreaseDemoRange];
+        } else {
+            [sim increaseDemoRange];
         }
         return;
     }

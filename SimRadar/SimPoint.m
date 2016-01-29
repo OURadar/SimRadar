@@ -65,8 +65,8 @@
         nearest_thousand = (size_t)ceilf(1000.0f / S->preferred_multiple) * S->preferred_multiple;
         nearest_hundred = (size_t)ceilf(100.0f / S->preferred_multiple) * S->preferred_multiple;
         
-//		L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
-        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, NULL);
+		L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
+//        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, NULL);
 
         A = ADM_init_with_config_path(ADMConfigSquarePlate, NULL);
 
@@ -151,6 +151,8 @@
                             box.origin.r, box.origin.r + box.size.r, 30.0f,   // Range
                             box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
                             box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
+
+            S->draw_mode.s1 = (cl_uint)(box.origin.r + 0.5 * box.size.r);
         } else {
             RS_set_scan_box(S,
                             3.42e3, 4.18e3, 30.0f,                // Range
@@ -160,9 +162,10 @@
             cl_float4 vel = (cl_float4){20.0f, 0.0f, 0.0f, 0.0f};
             
             RS_set_vel_data_to_uniform(S, vel);
+
+            S->draw_mode.s1 = 5500;
         }
 
-        S->draw_mode.s1 = 2800;
     }
 	return self;
 }

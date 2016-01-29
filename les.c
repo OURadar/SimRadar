@@ -445,7 +445,10 @@ LESTable *LES_get_frame(const LESHandle *i, const int n) {
 		printf("LES DEBUG : Ingest from file %s ...\n", h->files[file_id]);
         #endif
 
-		// Derive filename to ingest a set of LESTables
+        // To do: spin a separate thread to read in this entire file so that the requested
+        // block can be available as soon as it is read
+
+        // Derive filename to ingest a set of LESTables
         FILE *fid = fopen(h->files[file_id], "r");
 		if (fid == NULL) {
 			return NULL;

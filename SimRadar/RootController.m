@@ -162,13 +162,14 @@
 
 - (void)createSimulation {
     @autoreleasepool {
-        sim = [[SimPoint alloc] initWithDelegate:self];
-        if (sim) {
+        SimPoint *newSim = [[SimPoint alloc] initWithDelegate:self];
+        if (newSim) {
             NSLog(@"New simulation domain initiated.");
             // Wire the simulator to the controller.
             // The displayController will tell the renderer how many scatter body
             // the simulator is using and pass the anchor points from RS API to
             // the renderer
+            sim = newSim;
             [dc setSim:sim];
             [dc.glView startAnimation];
         } else {
