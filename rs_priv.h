@@ -52,7 +52,7 @@ enum RSScattererColorKernelArgument {
 };
 
 enum RSScattererSignalDropSizeDistributionKernalArgument {
-    RSScattererSignalDropSizeDistributionKernalArgumentSignal,
+    RSScattererSignalDropSizeDistributionKernalArgumentRadarCrossSection,
     RSScattererSignalDropSizeDistributionKernalArgumentPosition,
     RSScattererSignalDropSizeDistributionKernalArgumentAuxiliary
 };

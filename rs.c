@@ -397,9 +397,9 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     }
     
     ret = CL_SUCCESS;
-    ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentSignal,    sizeof(cl_mem), &C->scat_sig);
-    ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentPosition,  sizeof(cl_mem), &C->scat_pos);
-    ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentAuxiliary, sizeof(cl_mem), &C->scat_aux);
+    ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentRadarCrossSection, sizeof(cl_mem), &C->scat_rcs);
+    ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentPosition,          sizeof(cl_mem), &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentAuxiliary,         sizeof(cl_mem), &C->scat_aux);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_sig_dsd().\n", now());
         exit(EXIT_FAILURE);
@@ -3504,7 +3504,7 @@ void RS_sig_from_dsd(RSHandle *H) {
     for (i = 0; i < H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
             scat_sig_dsd_kernel(&H->worker[i].ndrange_scat[0],
-                                (cl_float4 *)H->worker[i].scat_sig,
+                                (cl_float4 *)H->worker[i].scat_rcs,
                                 (cl_float4 *)H->worker[i].scat_pos,
                                 (cl_float4 *)H->worker[i].scat_aux);
             

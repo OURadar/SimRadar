@@ -223,10 +223,10 @@
 - (void)advanceTime
 {
 	RS_advance_time(S);
-    RS_make_pulse(S);
+//    RS_make_pulse(S);
     RS_update_colors(S);
-    
-    RS_download_pulse_only(S);
+//
+//    RS_download_pulse_only(S);
 //    NSLog(@"%.2f%+.2fi %.2f%+.2fi ...", S->pulse[0].s0, S->pulse[0].s1, S->pulse[1].s0, S->pulse[1].s1);
 }
 
