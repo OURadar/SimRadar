@@ -1373,6 +1373,8 @@ void RS_set_antenna_params(RSHandle *H, RSfloat beamwidth_deg, RSfloat gain_dbi)
     }
 	H->params.antenna_bw_deg = beamwidth_deg;
 	H->params.antenna_bw_rad = M_PI * H->params.antenna_bw_deg / 180.0f;
+    
+    RS_set_angular_weight_to_standard(H, H->params.antenna_bw_rad);
 }
 
 
@@ -2054,7 +2056,7 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
 	table.xm = (float)table_size - 1.0f;
     memcpy(table.data, weights, table_size * sizeof(float));
     if (H->verb > 1) {
-        printf("%s : RS : Host range weight table received.  dx = %.4f   x0 = %.1f   xm = %.0f  n = %d\n", now(),
+        rsprint("Host range weight table received.  dx = %.4f   x0 = %.1f   xm = %.0f  n = %d\n",
                table.dx, table.x0, table.xm, table_size);
     }
 		
@@ -2132,7 +2134,7 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
 	table.xm = (float)table_size - 1.0f;
 	memcpy(table.data, weights, table_size * sizeof(float));
     if (H->verb > 1) {
-        printf("%s : RS : Host angular weight table received.  dx = %.4f   x0 = %.1f   xm = %.0f  n = %d\n", now(),
+        rsprint("Host angular weight table received.  dx = %.4f   x0 = %.1f   xm = %.0f  n = %d\n",
                table.dx, table.x0, table.xm, table_size);
     }
 
@@ -3428,7 +3430,7 @@ void RS_download_pulse_only(RSHandle *H) {
 	
 #endif
 	RS_merge_pulse_tmp(H);
-    printf("pulse %zu [ %.4e %.4e %.4e ... ]\n", H->sim_tic, H->pulse[0].s0, H->pulse[0].s1, H->pulse[0].s2);
+    //printf("pulse %zu [ %.4e %.4e %.4e ... ]\n", H->sim_tic, H->pulse[0].s0, H->pulse[0].s1, H->pulse[0].s2);
 }
 
 
