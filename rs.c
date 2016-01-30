@@ -2164,7 +2164,7 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
             }
             clReleaseMemObject(H->worker[i].angular_weight);
         }
-        if (H->verb > 1) {
+        if (H->verb > 2) {
             printf("%s : RS : worker[%d] creating angular weight (cl_mem) & copying data from %p.\n", now(), i, table.data);
         }
         H->worker[i].angular_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), table.data, &ret);
@@ -2172,7 +2172,7 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
             fprintf(stderr, "%s : RS : Error creating angular weight table on CL device.\n", now());
             return;
         }
-        if (H->verb > 1) {
+        if (H->verb > 2) {
             printf("%s : RS : worker[%d] created angular weight.\n", now(), i);
         }
     }
