@@ -763,7 +763,7 @@ __kernel void db_atts(__global float4 *p,
     tum = normalize(tum);
 
     // bound the velocity
-    if (concept & RSSimulationConceptBoundedParticleVelocity && length(vel.xy + dudt.xy * dt.xy) > 3.0 * length(vel_bg.xy)) {
+    if (concept & RSSimulationConceptBoundedParticleVelocity && length(vel.xy + dudt.xy * dt.xy) > 3.0f * length(vel_bg.xy)) {
         //printf("vel = [%5.2v4f]  vel_bg = [%5.2v4f]\n", vel, vel_bg);
         vel.xy = vel_bg.xy;
     }
@@ -826,7 +826,7 @@ __kernel void scat_clr(__global float4 *c,
         c[i].x = clamp((a[i].s0 - 2000.0f) * 0.0005f, 0.0f, 1.0f);
         
         float dr = 60.0f;
-        float4 range_weight_desc = (float4)(1.0f / dr, 1.0, 2.0f, 0.0f);
+        float4 range_weight_desc = (float4)(1.0f / dr, 1.0f, 2.0f, 0.0f);
         float range_weight[3] = {0.0f, 1.0f, 0.0f};
         
         float2 dr_from_center = (float2)(a[i].s0 - (float)mode.s1);
