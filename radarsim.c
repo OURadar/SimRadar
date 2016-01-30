@@ -143,7 +143,7 @@ int main(int argc, char *argv[]) {
                     -10.0f, 10.0f, 1.0f,                        // Azimuth
                     0.0f, 8.0f, 1.0f);                          // Elevation
     
-    RS_set_range_weight_to_triangle(S, 250.0f);
+    //RS_set_range_weight_to_triangle(S, 250.0f);
     
     RS_set_debris_count(S, 1, 10);
     

@@ -881,22 +881,12 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
         H->species_population[i] = 0;
     }
 	
-	// Set up some basic parameters to default values, H->verb is still 0 so no API message output
-	RS_set_antenna_params(H, 1.0f, 50.0f);
-	
-	RS_set_tx_params(H, 1.0e-6f, 50.0e3f);
-	
-	RS_set_beam_pos(H, 5.0f, 1.0f);
-	
-	// Now, we are ready to set the verbose flag
-	H->verb = verb;
-	
 	if (H->method == RS_METHOD_GPU) {
 		if (verb) {
 			rsprint("Getting CL devices ...");
 		}
 		// Get and show some device info
-		get_device_info(CL_DEVICE_TYPE_GPU, &H->num_devs, H->devs, H->num_cus, H->vendors, H->verb);
+		get_device_info(CL_DEVICE_TYPE_GPU, &H->num_devs, H->devs, H->num_cus, H->vendors, verb);
 	} else if (H->method == RS_METHOD_CPU) {
 		// Run this to get the num_cus to the same values.
 		get_device_info(CL_DEVICE_TYPE_CPU, &H->num_devs, H->devs, H->num_cus, H->vendors, 0);
@@ -922,12 +912,12 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
     H->num_workers = 1;
     
     for (i = 0; i < H->num_workers; i++) {
-        if (H->verb > 2) {
-            printf("%s : RS : Initializing worker %d using %p\n", now(), i, H->devs[i]);
+        if (verb > 2) {
+            rsprint("Initializing worker %d using %p\n", i, H->devs[i]);
         }
-        RS_worker_init(&H->worker[i], H->devs[i], 0, NULL, H->verb);
+        RS_worker_init(&H->worker[i], H->devs[i], 0, NULL, verb);
     }
-		
+
 #else
 
     cl_uint count;
@@ -969,11 +959,16 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
 		
 #endif
 		
-	// More parameters that need the CL context initialized
-	char user_verb = H->verb;
-	
+    // Temporary supress the verbose output for setting default values
 	H->verb = 0;
 	
+    // Set up some basic parameters to default values, H->verb is still 0 so no API message output
+    RS_set_antenna_params(H, 1.0f, 50.0f);
+    
+    RS_set_tx_params(H, 1.0e-6f, 50.0e3f);
+    
+    RS_set_beam_pos(H, 5.0f, 1.0f);
+    
 	RS_set_scan_box(H,
 					15.0e3f, 20.0e3f, 250.0f,                   // Range
 					-12.0f, 12.0f, 1.0f,                        // Azimuth
@@ -982,7 +977,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
 	RS_set_angular_weight_to_standard(H, 1.0f / 180.0f * M_PI);
 	//RS_set_angular_weight_to_double_cone(H, 2.0f / 180.0f * M_PI);
 	
-	H->verb = user_verb;
+	H->verb = verb;
 	
 	return H;
 }
@@ -1389,6 +1384,7 @@ void RS_set_tx_params(RSHandle *H, RSfloat pulsewidth, RSfloat tx_power_watt) {
 	H->params.tau = pulsewidth;
 	H->params.dr = H->params.c * H->params.tau * 0.5f;
 	H->params.tx_power_watt = tx_power_watt;
+
     RS_set_range_weight_to_triangle(H, H->params.dr);
 }
 
