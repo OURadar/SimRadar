@@ -1100,7 +1100,7 @@ __kernel void make_pulse_pass_1(__global float4 *out,
 
 
 __kernel void make_pulse_pass_2_local(__global float4 *out,
-                                      __global float4 *in,
+                                      __global __read_only float4 *in,
                                       __local float4 *shared,
                                       const unsigned int range_count,
                                       const unsigned int n)
@@ -1137,7 +1137,7 @@ __kernel void make_pulse_pass_2_local(__global float4 *out,
 
 
 __kernel void make_pulse_pass_2_range(__global float4 *out,
-                                      __global float4 *in,
+                                      __global __read_only float4 *in,
                                       __local float4 *shared,
                                       const unsigned int range_count,
                                       const unsigned int n)
@@ -1158,7 +1158,7 @@ __kernel void make_pulse_pass_2_range(__global float4 *out,
 
 
 __kernel void make_pulse_pass_2_group(__global float4 *out,
-                                      __global float4 *in,
+                                      __global __read_only float4 *in,
                                       __local float4 *shared,
                                       const unsigned int range_count,
                                       const unsigned int n)

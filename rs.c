@@ -54,25 +54,26 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
 	
     cl_int ret;
 
-    #if defined (GUI)
+#if defined (GUI)
 
     CGLContextObj context = CGLGetCurrentContext();
     CGLShareGroupObj obj = CGLGetShareGroup(context);
     
+    rsprint("context = %p  obj = %p\n", context, obj);
     cl_context_properties prop[] = {
-        CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE,
-        (cl_context_properties)obj, 0
+        CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE, (cl_context_properties)obj,
+        0
     };
     
     // Create a context from a CGL share group
     C->context = clCreateContext(prop, 1, &C->dev, &pfn_notify, NULL, &ret);
 
-    #else
+#else
 
     // Create an independent OpenCL context
     C->context = clCreateContext(NULL, 1, &C->dev, &pfn_notify, NULL, &ret);
 
-    #endif
+#endif
 
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error creating OpenCL context.  ret = %d\n", now(), ret);
@@ -901,8 +902,11 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
         case RS_GPU_VENDOR_INTEL:
             H->preferred_multiple = H->num_cus[0] * 16;
             break;
+        case RS_GPU_VENDOR_NVIDIA:
+            H->preferred_multiple = H->num_cus[0] * 64;
+            break;
         default:
-            H->preferred_multiple = H->num_cus[0] * 16;
+            H->preferred_multiple = H->num_cus[0] * 256;
             break;
     }
 
@@ -1349,6 +1353,8 @@ void RS_set_concept(RSHandle *H, RSSimulationConcept c) {
 void RS_set_prt(RSHandle *H, const float prt) {
 	H->params.prt = prt;
 	H->params.prf = 1.0f / prt;
+    
+    H->sim_desc.s[RSSimulationDescriptionTimeIncrement] = H->params.prt;
 }
 
 
@@ -2981,12 +2987,63 @@ void RS_clear_rcs_data(RSHandle *H) {
 #pragma mark -
 #pragma mark GUI Specific Functions
 
-#if defined (GUI) || defined (_SHARE_OBJ_)
+void RS_update_auxiliary_attributes(RSHandle *H) {
+    
+    int i;
+    
+    if (!(H->status & RS_STATUS_DOMAIN_POPULATED)) {
+        fprintf(stderr, "%s : RS : Simulation domain not populated.\n", now());
+        return;
+    }
+    
+#if defined(__APPLE__) &&  defined (_SHARE_OBJ_)
+
+    for (i = 0; i < H->num_workers; i++) {
+        dispatch_async(H->worker[i].que, ^{
+            scat_wa_kernel(&H->worker[i].ndrange_scat_all,
+                           (cl_float4 *)H->worker[i].scat_sig,
+                           (cl_float4 *)H->worker[i].scat_aux,
+                           (cl_float4 *)H->worker[i].scat_pos,
+                           (cl_float4 *)H->worker[i].scat_rcs,
+                           (cl_float *)H->worker[i].angular_weight,
+                           H->worker[i].angular_weight_desc,
+                           H->sim_desc);
+            dispatch_semaphore_signal(H->worker[i].sem);
+        });
+    }
+    
+    for (i = 0; i < H->num_workers; i++) {
+        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+    }
+    
+#else
+    
+    cl_event events[RS_MAX_GPU_DEVICE];
+    memset(events, 0, sizeof(events));
+    
+    for (i = 0; i < H->num_workers; i++) {
+        clSetKernelArg(H->worker[i].kern_scat_wa, RSScattererAngularWeightKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
+    }
+    
+    for (i = 0; i < H->num_workers; i++) {
+        clFlush(H->worker[i].que);
+    }
+
+    for (i = 0; i < H->num_workers; i++) {
+        clWaitForEvents(1, events);
+        clReleaseEvent(events[i]);
+    }
+    
+#endif
+    
+}
 
 void RS_update_colors(RSHandle *H) {
 
     int i;
     
+#if defined(__APPLE__) &&  defined (_SHARE_OBJ_)
+
     for (i = 0; i < H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
             // Set individual color based on draw mode
@@ -2999,8 +3056,30 @@ void RS_update_colors(RSHandle *H) {
         });
         dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
     }
+    
+#else
+    
+    cl_event events[RS_MAX_GPU_DEVICE];
+    memset(events, 0, sizeof(events));
+    
+    for (i = 0; i < H->num_workers; i++) {
+        clSetKernelArg(H->worker[i].kern_scat_clr, RSScattererColorKernelArgumentDrawMode, sizeof(cl_uint4), &H->draw_mode);
+    }
+    
+    for (i = 0; i < H->num_workers; i++) {
+        clFlush(H->worker[i].que);
+    }
+    
+    for (i = 0; i < H->num_workers; i++) {
+        clWaitForEvents(1, events);
+        clReleaseEvent(events[i]);
+    }
+    
+#endif
+    
 }
 
+//#if defined(__APPLE__) &&  defined (_SHARE_OBJ_)
 
 void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[][n]) {
     if (H->verb) {
@@ -3021,7 +3100,7 @@ void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[][n]) {
     H->has_vbo_from_gl = 1;
 }
 
-#endif
+//#endif
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 
@@ -3678,6 +3757,7 @@ void RS_advance_time(RSHandle *H) {
    
     for (i = 0; i < H->num_workers; i++) {
         clWaitForEvents(1, events[i]);
+        clReleaseEvent(events[i][0]);
         for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
             if (H->worker[i].species_population[k]) {
                 clWaitForEvents(1, &events[i][k]);

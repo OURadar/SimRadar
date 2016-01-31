@@ -197,7 +197,7 @@
 	S->sim_tic = 0;
 	S->sim_toc = 0;
 	S->sim_time = 0.0f;
-    S->draw_mode.s1 = 2800;
+    S->draw_mode.s1 = S->sim_desc.s[RSSimulationDescriptionBoundOriginY] + 0.5f * S->sim_desc.s[RSSimulationDescriptionBoundSizeY];
 }
 
 - (void)populate
@@ -224,6 +224,7 @@
 {
 	RS_advance_time(S);
 //    RS_make_pulse(S);
+    RS_update_auxiliary_attributes(S);
     RS_update_colors(S);
 //
 //    RS_download_pulse_only(S);

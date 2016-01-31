@@ -61,6 +61,8 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 
 	[self setOpenGLContext:context];
 	
+    NSLog(@"OpenGL context prepared %p %p", CGLGetCurrentContext(), CGLGetShareGroup(CGLGetCurrentContext()));
+    
 	[context release];
 	[pf release];
 
