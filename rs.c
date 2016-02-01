@@ -905,10 +905,12 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
             break;
     }
 
-#if defined (__APPLE__) && defined (_SHARE_OBJ_)
-    
+#if defined (__APPLE__)
     // Force to one GPU at the moment. Seems like OpenGL context can be shared with only one OpenCL context
     H->num_workers = 1;
+#endif
+
+#if defined (__APPLE__) && defined (_SHARE_OBJ_)
     
     for (i = 0; i < H->num_workers; i++) {
         if (verb > 2) {
@@ -946,6 +948,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
     }
     
     if (count == 0) {
+        rsprint("Empty kernel source.");
         return NULL;
     }
     
