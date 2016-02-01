@@ -70,7 +70,8 @@
 		L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
 //        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, NULL);
 
-        A = ADM_init_with_config_path(ADMConfigSquarePlate, NULL);
+        //A = ADM_init_with_config_path(ADMConfigSquarePlate, NULL);
+        A = ADM_init_with_config_path(ADMConfigModelPlate, NULL);
 
         R = RCS_init_with_config_path(RCSConfigLeaf, NULL);
 
@@ -109,7 +110,7 @@
         
         RS_set_prt(S, 1.0f / 60.0f);
         
-        BOOL useLES = TRUE;
+        BOOL useLES = FALSE;
         
         RSBox box;
         if (useLES) {

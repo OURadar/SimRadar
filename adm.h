@@ -17,6 +17,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#define ADMConfigModelPlate        "plate"
 #define ADMConfigSquarePlate       "square_plate"
 #define ADMConfigRoofTile          "roof_tile"
 

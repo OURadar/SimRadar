@@ -327,7 +327,7 @@ float4 compute_dudt_dwdt(float4 *dwdt, const float4 vel, const float4 vel_bg, co
         
         u_hat = quat_rotate(u_hat, quat_conj(ori));
         
-        beta = acos(u_hat.x);
+        beta = -acos(u_hat.x);
         alpha = atan2(u_hat.z, u_hat.y);
         
         if (alpha < 0.0f) {

@@ -1231,11 +1231,10 @@ void RS_init_scat_pos(RSHandle *H) {
 //        H->scat_ori[i].w = 1.0f;
         
         // Facing the sky
-        H->scat_ori[i].x =  0.0f;
-        H->scat_ori[i].y = -0.707106781186547f;
-        H->scat_ori[i].z =  0.0f;
-        H->scat_ori[i].w =  0.707106781186548f;
-
+//        H->scat_ori[i].x =  0.0f;
+//        H->scat_ori[i].y = -0.707106781186547f;
+//        H->scat_ori[i].z =  0.0f;
+//        H->scat_ori[i].w =  0.707106781186548f;
 
         // Facing the beam
 //        H->scat_ori[i].x =  0.5f;
@@ -1249,6 +1248,14 @@ void RS_init_scat_pos(RSHandle *H) {
 //        H->scat_ori[i].z = -0.5f;
 //        H->scat_ori[i].w =  0.5f;
 
+        // Rotate by theta
+        float theta = 1.0f;
+        H->scat_ori[i].x = 0.0f;
+        H->scat_ori[i].y = sin(0.5f * theta);
+        H->scat_ori[i].z = 0.0f;
+        H->scat_ori[i].w = cos(0.5f * theta);
+        
+        
         // Tumbling vector for orientation update
         H->scat_tum[i].x = 0.0f;
         H->scat_tum[i].y = 0.0f;
@@ -2996,7 +3003,7 @@ void RS_update_auxiliary_attributes(RSHandle *H) {
     
     int i;
     
-    if (H->status ^ RSStatusDomainPopulated) {
+    if (!(H->status & RSStatusDomainPopulated)) {
         fprintf(stderr, "%s : RS : Simulation domain not populated.\n", now());
         return;
     }
@@ -3656,7 +3663,7 @@ void RS_advance_time(RSHandle *H) {
 	int i, k;
     int r, a;
 
-	if (H->status ^ RSStatusDomainPopulated) {
+    if (!(H->status & RSStatusDomainPopulated)) {
 		fprintf(stderr, "%s : RS : Simulation domain not populated.\n", now());
 		return;
 	}
@@ -3813,7 +3820,7 @@ void RS_make_pulse(RSHandle *H) {
 	
 	int i;
 	
-	if (H->status ^ RSStatusDomainPopulated) {
+	if (!(H->status & RSStatusDomainPopulated)) {
 		fprintf(stderr, "%s : RS : Simulation domain not populated.\n", now());
 		return;
 	}
