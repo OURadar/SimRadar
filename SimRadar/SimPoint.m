@@ -110,7 +110,7 @@
         
         RS_set_prt(S, 1.0f / 60.0f);
         
-        BOOL useLES = FALSE;
+        BOOL useLES = TRUE;
         
         RSBox box;
         if (useLES) {
