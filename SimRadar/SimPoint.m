@@ -50,7 +50,7 @@
 
         cl_context_properties property = (cl_context_properties)shareGroup;
         
-        S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, property, 1);
+        S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, property, 2);
         if (S == NULL) {
             return nil;
         }
@@ -70,8 +70,8 @@
 		L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
 //        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, NULL);
 
-        //A = ADM_init_with_config_path(ADMConfigSquarePlate, NULL);
-        A = ADM_init_with_config_path(ADMConfigModelPlate, NULL);
+        A = ADM_init_with_config_path(ADMConfigSquarePlate, NULL);
+//        A = ADM_init_with_config_path(ADMConfigModelPlate, NULL);
 
         R = RCS_init_with_config_path(RCSConfigLeaf, NULL);
 
@@ -97,16 +97,16 @@
             [delegate progressUpdated:10.0 message:[NSString stringWithFormat:@"Configuring radar parameters ..."]];
         }
         
-        RS_set_concept(S, RSSimulationConceptDraggedBackground | RSSimulationConceptBoundedParticleVelocity);
+        //RS_set_concept(S, RSSimulationConceptDraggedBackground | RSSimulationConceptBoundedParticleVelocity);
 
 		RS_set_antenna_params(S, 1.0f, 44.5f);                // 1.0-deg beamwidth, 44.5-dBi gain
 		
         RS_set_tx_params(S, 30.0f * 2.0f / 3.0e8f, 10.0e3);   // Resolution in m, power in W
 
 //        NSLog(@"S->preferred_multiple = %d", (int)S->preferred_multiple);
-//        RS_set_debris_count(S, 1, 256);
+        RS_set_debris_count(S, 1, 256);
 //        RS_set_debris_count(S, 2, 256);
-//        RS_revise_debris_counts_to_gpu_preference(S);
+        RS_revise_debris_counts_to_gpu_preference(S);
         
         RS_set_prt(S, 1.0f / 60.0f);
         

@@ -339,14 +339,40 @@ float4 compute_dudt_dwdt(float4 *dwdt, const float4 vel, const float4 vel_bg, co
         beta = 0.0f;
     }
     
+    unsigned int i = get_global_id(0);
+    
+//    if (i <= 10) {
+//        //        float alpha, beta;
+//        //
+//        //        float4 ur = vel_bg - vel;
+//        //
+//        //        if (length(ur.xyz) > 1.0e-3f) {
+//        //            float4 u_hat = normalize(ur);
+//        //
+//        //            u_hat = quat_rotate(u_hat, quat_conj(ori));
+//        //
+//        //            beta = acos(u_hat.x);
+//        //            alpha = atan2(u_hat.z, u_hat.y);
+//        //
+//        //            if (alpha < 0.0f) {
+//        //                alpha = M_PI_F + alpha;
+//        //                beta = -beta;
+//        //            }
+//        //        } else {
+//        //            alpha = M_PI_2_F;
+//        //            beta = 0.0f;
+//        //        }
+//        printf("=====================  i = %uz\n", i);
+//    }
+
     // ADM values are stored as cd(x, y, z, _) + cm(x, y, z, _)
     float2 adm_coord = fma((float2)(beta, alpha), adm_desc.s01, adm_desc.s45);
     float4 cd = read_imagef(adm_cd, sampler, adm_coord);
     float4 cm = read_imagef(adm_cm, sampler, adm_coord);
     
-    //    if (i == 0) {
-    //        printf("adm_coord = %5.2f\n", adm_coord.x);
-    //    }
+//    if (i == 0) {
+//        printf("adm_coord = %5.2f\n", adm_coord.x);
+//    }
     
     //
     //    RSTable3DDescriptionRecipInLnX  = 12,
@@ -515,7 +541,7 @@ __kernel void bg_atts(__global float4 *p,
     
     float4 pos = p[i];
     float4 vel = v[i];
-    
+
     const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
     
     //    RSSimulationDescriptionBeamUnitX     =  0,
@@ -698,6 +724,10 @@ __kernel void db_atts(__global float4 *p,
 {
     const unsigned int i = get_global_id(0);
     
+//    if (i == 32000) {
+//        printf("i = %d\n", i);
+//    }
+
     float4 pos = p[i];  // position
     float4 ori = o[i];  // orientation
     float4 vel = v[i];  // velocity
