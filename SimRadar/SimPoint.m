@@ -185,7 +185,7 @@
 
 - (BOOL)isPopulated
 {
-    return S->status & RS_STATUS_DOMAIN_POPULATED;
+    return S->status & RSStatusDomainPopulated;
 }
 
 - (void)shareVBOsWithGL:(GLuint [][8])vbos
@@ -225,12 +225,10 @@
 - (void)advanceTime
 {
 	RS_advance_time(S);
-//    RS_update_auxiliary_attributes(S);
     RS_update_colors(S);
 
-    // RS_update_auxiliary_attributes(S) or RS_update_colors(S) must be called prior to this
     RS_make_pulse(S);
-//
+
 //    RS_download_pulse_only(S);
 //    NSLog(@"%.2f%+.2fi %.2f%+.2fi ...", S->pulse[0].s0, S->pulse[0].s1, S->pulse[1].s0, S->pulse[1].s1);
 }
@@ -238,9 +236,9 @@
 - (void)advanceBeamPosition
 {
 	az_deg = fmodf(az_deg + 0.05f + 15.0f, 30.0f) - 15.0f;
-//    az_deg = fmodf(az_deg + 0.2f + 45.0f, 90.0f) - 45.0f;
+
 	RS_set_beam_pos(S, az_deg, el_deg);
-    RS_make_pulse(S);
+//    RS_make_pulse(S);
     RS_update_colors(S);
 }
 

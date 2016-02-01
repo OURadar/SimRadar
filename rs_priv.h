@@ -67,6 +67,9 @@ enum RSScattererAngularWeightKernalArgument {
     RSScattererAngularWeightKernalArgumentSimulationDescription
 };
 
+#pragma mark -
+#pragma mark General Methods
+
 void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device_id *devices, cl_uint *num_cus, cl_uint *vendors, cl_int detail_level);
 void rsprint(const char *format, ...);
 void pfn_prog_notify(cl_program program, void *user_data);
@@ -76,17 +79,20 @@ ReductionParams *make_reduction_params(cl_uint count, cl_uint user_max_groups, c
 void free_reduction_params(ReductionParams *params);
 float read_table(const float *table, const float index_last, const float index);
 
+#pragma mark -
+
 void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char **src_ptr, cl_context_properties sharegroup, const char verb);
-//void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char **src_ptr, const char verb);
 void RS_worker_free(RSWorker *C);
 void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_scats, const size_t offset);
 
 void RS_init_scat_pos(RSHandle *H);
 void RS_merge_pulse_tmp(RSHandle *H);
 void RS_update_debris_count(RSHandle *H);
+void RS_update_auxiliary_attributes(RSHandle *H);
 
 void RS_set_vel_data(RSHandle *H, const RSTable3D table);
 void RS_set_adm_data(RSHandle *H, const RSTable2D table_cd, const RSTable2D table_cm);
 void RS_set_rcs_data(RSHandle *H, const RSTable2D table_real, const RSTable2D table_imag);
+
 
 #endif

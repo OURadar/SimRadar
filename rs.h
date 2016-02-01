@@ -62,10 +62,10 @@
 
 #define DTIME(T_begin, T_end)  ((double)(T_end.tv_sec - T_begin.tv_sec) + 1.0e-6 * (double)(T_end.tv_usec - T_begin.tv_usec))
 
-enum RS_STATUS {
-	RS_STATUS_DOMAIN_NULL        = 0,
-	RS_STATUS_DOMAIN_POPULATED   = 1,
-    RS_STATUS_ATTRIBUTED         = 1 << 1
+enum RSStatus {
+	RSStatusDomainNull                   = 0,
+	RSStatusDomainPopulated              = 1,
+    RSStatusScattererSignalsNeedsUpdate  = 1 << 1
 };
 
 enum RS_CL_PASS_2 {
@@ -463,13 +463,11 @@ typedef struct _rs_handle {
 
 
 #pragma mark -
-#pragma mark General Methods
+#pragma mark Convenient functions
 
 char *commaint(long long num);
 char *now();
 char *nowlong();
-
-#pragma mark -
 
 cl_uint RS_gpu_count(void);
 
@@ -535,7 +533,6 @@ void RS_clear_rcs_data(RSHandle *H);
 #pragma mark -
 
 #if defined (GUI) || defined (_SHARE_OBJ_)
-void RS_update_auxiliary_attributes(RSHandle *H);
 void RS_update_colors(RSHandle *H);
 void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[][n]);
 #endif
@@ -572,7 +569,7 @@ void RS_advance_time(RSHandle *H);
 void RS_make_pulse(RSHandle *H);
 
 #pragma mark -
-#pragma mark Genera Table Allocation
+#pragma mark General Table Allocation
 
 RSTable RS_table_init(size_t numel);
 void RS_table_free(RSTable T);

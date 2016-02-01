@@ -185,19 +185,31 @@ Multiple arrays of type `cl_float` are used to keep track of a set of attributes
     cl_mem                 scat_ori;   // orientation descbried by a quaternion
     cl_mem                 scat_tum;   // tumbling motion = change of orientation derived from ADM
     cl_mem                 scat_att;   // scatterer type, dot products, range, etc.
+    cl_mem                 scat_rcs;   // radar cross section: Ih Qh Iv Qv
     cl_mem                 scat_sig;   // signal: Ih Qh Iv Qv
     cl_mem                 scat_rnd;   // random seed
 
-### Main Functions to Set Up the Simulator ###
+### Functions to Set Up the Simulator ###
 
     RS_set_prt()
+    RS_set_lambda()
     RS_set_density()
     RS_set_antenna_params()
     RS_set_tx_params()
     RS_set_scan_box()
     RS_set_beam_pos()
-    RS_set_verbosity()
     RS_set_debris_count()
+
+### Functions for Simulation Time Evolution ###
+
+    RS_set_beam_pos()
+    RS_advance_time()
+    RS_make_pulse()
+
+### Convenient Functions for Simulation Setup ###
+
+    RS_suggest_scan_doamin()
+    RS_revise_debris_counts_to_gpu_preference()
 
 ### Functions to Interact Directly with GPUs (Private API) ###
 

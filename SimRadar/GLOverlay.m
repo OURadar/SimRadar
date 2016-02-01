@@ -40,8 +40,8 @@
     NSAutoreleasePool *pool = [NSAutoreleasePool new];
 
     // Create a bitmap canvas, draw all the symbols
-    const float w = (float)bitmapWidth / devicePixelRatio;
-    const float h = (float)bitmapHeight / devicePixelRatio;
+    //const float w = (float)bitmapWidth / devicePixelRatio;
+    //const float h = (float)bitmapHeight / devicePixelRatio;
     
     // Use Core Graphics to draw a texture atlas
     CGRect rect = CGRectMake(0.0f, 0.0f, (CGFloat)bitmapWidth, (CGFloat)bitmapHeight);

@@ -22,7 +22,6 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     C->dev = dev;
     C->verb = verb;
     C->mem_size = 0;
-    C->sharegroup = sharegroup;
     
     clGetDeviceInfo(C->dev, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &C->num_cus, NULL);
 
@@ -66,6 +65,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
         
         // Create a context from a CGL share group
         C->context = clCreateContext(prop, 1, &C->dev, &pfn_notify, NULL, &ret);
+        C->sharegroup = sharegroup;
     } else {
         // Create an independent OpenCL context
         C->context = clCreateContext(NULL, 1, &C->dev, &pfn_notify, NULL, &ret);
@@ -100,7 +100,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
         clReleaseContext(C->context);
         return;
     } else if (verb) {
-        printf("%s : RS : OpenCL program[%d] created (program @ %p).\n", now(), (int)C->name, C->prog);
+        rsprint("OpenCL program[%d] created (program @ %p).\n", (int)C->name, C->prog);
     }
 	
 #define CHECK_CL_CREATE_KERNEL                                                               \
@@ -127,33 +127,33 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     C->kern_make_pulse_pass_2 = C->kern_make_pulse_pass_2_group;
     
     if (verb) {
-        printf("%s : RS : Kernels for program[%d] created.\n", now(), (int)C->name);
+        rsprint("Kernels for program[%d] created.\n", (int)C->name);
         if (verb > 2) {
             size_t pref_size;
             CL_CHECK(clGetKernelWorkGroupInfo(C->kern_db_atts, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
-            printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   db_atts()\n", now(), pref_size);
+            rsprint("KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   db_atts()\n", pref_size);
             
             CL_CHECK(clGetKernelWorkGroupInfo(C->kern_el_atts, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
-            printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   el_atts()\n", now(), pref_size);
+            rsprint("KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   el_atts()\n", pref_size);
             
             CL_CHECK(clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_1, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
-            printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_1()\n", now(), pref_size);
+            rsprint("KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_1()\n", pref_size);
             
             CL_CHECK(clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_2_group, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
-            printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_2_group()\n", now(), pref_size);
+            rsprint("KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_2_group()\n", pref_size);
             
             CL_CHECK(clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_2_local, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
-            printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_2_local()\n", now(), pref_size);
+            rsprint("KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_2_local()\n", pref_size);
             
             CL_CHECK(clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_2_range, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(pref_size), &pref_size, NULL));
-            printf("%s : RS : KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_2_range()\n", now(), pref_size);
+            rsprint("KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %ld   make_pulse_pass_2_range()\n", pref_size);
         }
     }
 
     // A queue for the CL work of each device
     C->que = clCreateCommandQueue(C->context, C->dev, 0, &ret);
     if (ret != CL_SUCCESS) {
-        printf("%s : RS : Creating command queue[%d] failed  (ret = %d).\n", now(), C->name, ret);
+        rsprint("Creating command queue[%d] failed  (ret = %d).\n", C->name, ret);
     }
     
 #endif
@@ -199,7 +199,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     RSWorker *C = &H->worker[worker_id];
     
     if (C == NULL) {
-        printf("%s : RS : Worker[%d] has not been initialized?\n", now(), worker_id);
+        rsprint("Worker[%d] has not been initialized?\n", worker_id);
         return;
     }
     
@@ -216,7 +216,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 #endif
 
     if (work_items > RS_CL_GROUP_ITEMS) {
-        printf("%s : RS : Potential memory leak. work_items(%d) > RS_CL_GROUP_ITEMS(%d).\n", now(), (int)work_items, RS_CL_GROUP_ITEMS);
+        rsprint("Potential memory leak. work_items(%d) > RS_CL_GROUP_ITEMS(%d).\n", now(), (int)work_items, RS_CL_GROUP_ITEMS);
         return;
     }
     
@@ -404,8 +404,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     }
     
     if (C->verb > 1) {
-		printf("%s : RS : Pass 1   global =%7s   local = %3zu x %2d = %6s B   groups = %4d   N = %9s\n",
-			   now(),
+		rsprint("Pass 1   global =%7s   local = %3zu x %2d = %6s B   groups = %4d   N = %9s\n",
 			   commaint(C->make_pulse_params.global[0]),
 			   C->make_pulse_params.local[0],
 			   C->make_pulse_params.range_count,
@@ -439,8 +438,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	}
 	
 	if (C->verb > 1) {
-		printf("%s : RS : Pass 2   global =%7s   local = %3zu x %2lu = %6s B   groups = %3d%s   N = %9s\n",
-			   now(),
+		rsprint("Pass 2   global =%7s   local = %3zu x %2lu = %6s B   groups = %3d%s   N = %9s\n",
 			   commaint(C->make_pulse_params.global[1]),
 			   C->make_pulse_params.local[1],
 			   C->make_pulse_params.local_mem_size[1] / C->make_pulse_params.local[1] / sizeof(cl_float4),
@@ -465,7 +463,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 #endif
 	
     if (C->verb) {
-        printf("%s : RS : worker[%d] memory usage = %s B\n", now(), C->name, commaint(C->mem_size));
+        rsprint("worker[%d] memory usage = %s B\n", C->name, commaint(C->mem_size));
     }
 }
 
@@ -696,7 +694,7 @@ cl_uint read_kernel_source_from_files(char *src_ptr[], ...) {
 	while (filename != NULL && strlen(filename) > 0) {
 
 #ifdef DEBUG_KERNEL_READ
-		printf("%s : RS : src '%s' (%d)\n", now(), filename, (int)strlen(filename));
+		rsprint("src '%s' (%d)\n", filename, (int)strlen(filename));
 #endif
 
         // Read in the kernel source
@@ -861,7 +859,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 	
 	// Default non-zero parameters
     H->sim_tic = 0;
-	H->status = RS_STATUS_DOMAIN_NULL;
+	H->status = RSStatusDomainNull;
 	H->params.c = 3.0e8f;
 	H->params.body_per_cell = RS_BODY_PER_CELL;
 	H->params.domain_pad_factor = RS_DOMAIN_PAD;
@@ -916,7 +914,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
         if (verb > 2) {
             rsprint("Initializing worker %d using %p\n", i, H->devs[i]);
         }
-        RS_worker_init(&H->worker[i], H->devs[i], 0, NULL, NULL, verb);
+        RS_worker_init(&H->worker[i], H->devs[i], 0, NULL, 0, verb);
     }
 
 #else
@@ -1003,7 +1001,7 @@ void RS_free_scat_memory(RSHandle *H) {
 	int i;
 	
 	if (H->verb > 2) {
-		printf("%s : RS : Freeing GPU memories ...\n", now());
+		rsprint("Freeing GPU memories ...");
 	}
 	
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
@@ -1045,7 +1043,7 @@ void RS_free_scat_memory(RSHandle *H) {
 #endif
 	
 	if (H->verb > 2) {
-		printf("%s : RS : Freeing CPU memories ...\n", now());
+		rsprint("Freeing CPU memories ...");
 	}
 	
 	free(H->scat_pos);
@@ -1111,7 +1109,7 @@ void RS_free(RSHandle *H) {
     free(H);
     
     if (v) {
-        printf("%s : RS : Resources released.\n", now());
+        rsprint("Resources released.");
     }
 }
 
@@ -1288,7 +1286,7 @@ void RS_init_scat_pos(RSHandle *H) {
         }
         
         if (H->verb > 1) {
-            printf("%s : RS : Actual DSD Specifications:\n", now());
+            rsprint("Actual DSD Specifications:");
             for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
                 printf("                 o %.2f mm - PDF %.5f / %.5f / %d particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)counts[i] / (float)H->num_scats, counts[i]);
             }
@@ -1361,7 +1359,7 @@ void RS_set_lambda(RSHandle *H, const float lambda) {
 
 
 void RS_set_density(RSHandle *H, const float density) {
-    if (H->status & RS_STATUS_DOMAIN_POPULATED) {
+    if (H->status & RSStatusDomainPopulated) {
         fprintf(stderr, "%s : RS : Simulation domain has been populated. Density cannot be changed.", now());
         return;
     }
@@ -1370,7 +1368,7 @@ void RS_set_density(RSHandle *H, const float density) {
 
 
 void RS_set_antenna_params(RSHandle *H, RSfloat beamwidth_deg, RSfloat gain_dbi) {
-    if (H->status & RS_STATUS_DOMAIN_POPULATED) {
+    if (H->status & RSStatusDomainPopulated) {
         fprintf(stderr, "%s : RS : Simulation domain has been populated. Radar antenna parameters cannot be changed.", now());
         return;
     }
@@ -1382,7 +1380,7 @@ void RS_set_antenna_params(RSHandle *H, RSfloat beamwidth_deg, RSfloat gain_dbi)
 
 
 void RS_set_tx_params(RSHandle *H, RSfloat pulsewidth, RSfloat tx_power_watt) {
-    if (H->status & RS_STATUS_DOMAIN_POPULATED) {
+    if (H->status & RSStatusDomainPopulated) {
         fprintf(stderr, "%s : RS : Simulation domain has been populated. Radar parameters cannot be changed.", now());
         return;
     }
@@ -1399,12 +1397,12 @@ void RS_set_scan_box(RSHandle *H,
 					 RSfloat azimuth_start, RSfloat azimuth_end, RSfloat azimuth_delta,
 					 RSfloat elevation_start, RSfloat elevation_end, RSfloat elevation_delta) {
 	
-    if (H->status & RS_STATUS_DOMAIN_POPULATED) {
+    if (H->status & RSStatusDomainPopulated) {
         fprintf(stderr, "%s : RS : Simulation domain has been populated. Scan box cannot be changed.", now());
         return;
     }
 
-    //	H->status &= !RS_STATUS_DOMAIN_POPULATED;
+    //	H->status &= !RSStatusDomainPopulated;
 	H->params.range_start = range_start;
 	H->params.range_end = range_end;
 	H->params.range_delta = range_delta;
@@ -1457,14 +1455,14 @@ void RS_set_scan_box(RSHandle *H,
     }
     // Zero volume
     if (naz == 0 || nel == 0) {
-        printf("%s : RS : NEL = %d and/or NAZ = %d resulted in a zero volumne.\n", now(), naz, nel);
+        rsprint("NEL = %d and/or NAZ = %d resulted in a zero volumne.\n", naz, nel);
         return;
     }
 	H->num_anchors  = 2 * naz * nel + 1;  // Save one for radar origin
 	// printf("%s : RS : Number of anchors needed = %d  (naz = %d  nel = %d)\n", now(), (int)H->num_anchors, naz, nel);
 	if (H->anchor_pos) {
 		if (H->verb > 2) {
-			printf("%s : RS : Freeing existing anchor memory.\n", now());
+			rsprint("Freeing existing anchor memory.");
 		}
 		free(H->anchor_pos);
 	}
@@ -1786,6 +1784,8 @@ void RS_set_beam_pos(RSHandle *H, RSfloat az_deg, RSfloat el_deg) {
     H->sim_desc.s[RSSimulationDescriptionBeamUnitX] = cosf(el_deg / 180.0f * M_PI) * sinf(az_deg / 180.0f * M_PI);
     H->sim_desc.s[RSSimulationDescriptionBeamUnitY] = cosf(el_deg / 180.0f * M_PI) * cosf(az_deg / 180.0f * M_PI);
     H->sim_desc.s[RSSimulationDescriptionBeamUnitZ] = sinf(el_deg / 180.0f * M_PI);
+
+    H->status |= RSStatusScattererSignalsNeedsUpdate;
 }
 
 
@@ -1873,7 +1873,7 @@ RSVolume RS_get_domain(RSHandle *H) {
     return v;
 }
 
-
+// Users should not call this directly
 void RS_update_debris_count(RSHandle *H) {
     
     int i, k;
@@ -1949,7 +1949,7 @@ void RS_update_debris_count(RSHandle *H) {
 
 void RS_set_dsd(RSHandle *H, const float *pdf, const float *diameters, const int count, const char name) {
     
-    if (H->status & RS_STATUS_DOMAIN_POPULATED) {
+    if (H->status & RSStatusDomainPopulated) {
         fprintf(stderr, "%s : RS : Simulation domain has been populated. DSD cannot be changed.", now());
         return;
     }
@@ -2986,11 +2986,14 @@ void RS_clear_rcs_data(RSHandle *H) {
 
 #if defined (GUI) || defined (_SHARE_OBJ_)
 
+// Compute auxiliary attributes: range, angular weight, etc.
+// Users should not need to call this directly. It's either RS_make_pulse() or RS_update_colors()
+// The framework will check the status to avoid redundant compuations.
 void RS_update_auxiliary_attributes(RSHandle *H) {
     
     int i;
     
-    if (!(H->status & RS_STATUS_DOMAIN_POPULATED)) {
+    if (H->status ^ RSStatusDomainPopulated) {
         fprintf(stderr, "%s : RS : Simulation domain not populated.\n", now());
         return;
     }
@@ -3035,6 +3038,8 @@ void RS_update_auxiliary_attributes(RSHandle *H) {
         clReleaseEvent(events[i]);
     }
     
+    H->status &= ~RSStatusScattererSignalsNeedsUpdate;
+    
 #endif
     
 }
@@ -3047,15 +3052,17 @@ void RS_update_colors(RSHandle *H) {
 
     for (i = 0; i < H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
-            // Compute the attributes
-            scat_sig_aux_kernel(&H->worker[i].ndrange_scat_all,
-                                (cl_float4 *)H->worker[i].scat_sig,
-                                (cl_float4 *)H->worker[i].scat_aux,
-                                (cl_float4 *)H->worker[i].scat_pos,
-                                (cl_float4 *)H->worker[i].scat_rcs,
-                                (cl_float *)H->worker[i].angular_weight,
-                                H->worker[i].angular_weight_desc,
-                                H->sim_desc);
+            if (H->status & RSStatusScattererSignalsNeedsUpdate) {
+                // Compute the attributes
+                scat_sig_aux_kernel(&H->worker[i].ndrange_scat_all,
+                                    (cl_float4 *)H->worker[i].scat_sig,
+                                    (cl_float4 *)H->worker[i].scat_aux,
+                                    (cl_float4 *)H->worker[i].scat_pos,
+                                    (cl_float4 *)H->worker[i].scat_rcs,
+                                    (cl_float *)H->worker[i].angular_weight,
+                                    H->worker[i].angular_weight_desc,
+                                    H->sim_desc);
+            }
             // Set individual color based on draw mode
             scat_clr_kernel(&H->worker[i].ndrange_scat[0],
                             (cl_float4 *)H->worker[i].scat_clr,
@@ -3074,11 +3081,16 @@ void RS_update_colors(RSHandle *H) {
     
     for (i = 0; i < H->num_workers; i++) {
         RSWorker *C = &H->worker[i];
-        clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-        clEnqueueNDRangeKernel(C->que, C->kern_scat_sig_aux, 1, NULL, &C->num_scats, NULL, 0, NULL, &events[i][0]);
+        if (H->status & RSStatusScattererSignalsNeedsUpdate) {
+            clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
+            clEnqueueNDRangeKernel(C->que, C->kern_scat_sig_aux, 1, NULL, &C->num_scats, NULL, 0, NULL, &events[i][0]);
 
-        clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentDrawMode, sizeof(cl_uint4), &H->draw_mode);
-        clEnqueueNDRangeKernel(C->que, C->kern_scat_clr, 1, NULL, &C->num_scats, NULL, 1, &events[i][0], &events[i][1]);
+            clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentDrawMode, sizeof(cl_uint4), &H->draw_mode);
+            clEnqueueNDRangeKernel(C->que, C->kern_scat_clr, 1, NULL, &C->num_scats, NULL, 1, &events[i][0], &events[i][1]);
+        } else {
+            clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentDrawMode, sizeof(cl_uint4), &H->draw_mode);
+            clEnqueueNDRangeKernel(C->que, C->kern_scat_clr, 1, NULL, &C->num_scats, NULL, 0, NULL, &events[i][1]);
+        }
     }
     
     for (i = 0; i < H->num_workers; i++) {
@@ -3086,13 +3098,14 @@ void RS_update_colors(RSHandle *H) {
     }
     
     for (i = 0; i < H->num_workers; i++) {
-        clWaitForEvents(2, &events[i][0]);
+        clWaitForEvents(1, &events[i][1]);
         clReleaseEvent(events[i][0]);
         clReleaseEvent(events[i][1]);
     }
     
 #endif
     
+    H->status &= ~RSStatusScattererSignalsNeedsUpdate;
 }
 
 void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[][n]) {
@@ -3239,15 +3252,15 @@ void RS_dummy_test(RSHandle *H) {
 
 void RS_populate(RSHandle *H) {
 	if (H->num_scats > RS_MAX_NUM_SCATS) {
-		printf("%s : RS : Exceed the maximum allowed. (%ld > %d).\n", now(), (unsigned long)H->num_scats, RS_MAX_NUM_SCATS);
+		rsprint("Exceed the maximum allowed. (%ld > %d).\n", (unsigned long)H->num_scats, RS_MAX_NUM_SCATS);
 	}
 	
     if (H->verb) {
-        printf("%s : RS : RS_populate()\n", now());
+        rsprint("RS_populate()");
     }
     
     if (H->adm_count != H->rcs_count) {
-        printf("%s : RS : ADM & RCS are not consistent. Unexpected behavior may happen.\n", now());
+        rsprint("ADM & RCS are not consistent. Unexpected behavior may happen.");
     }
     
     // Use some default tables if there isn't any set
@@ -3261,6 +3274,10 @@ void RS_populate(RSHandle *H) {
         RS_set_rcs_data_to_unity(H);
     }
 
+    if (H->status & RSStatusDomainPopulated) {
+        rsprint("Simulation was populated.");
+    }
+
     //
 	// CPU memory allocation
 	//
@@ -3268,7 +3285,9 @@ void RS_populate(RSHandle *H) {
 		RS_free_scat_memory(H);
 	}
 
-	posix_memalign((void **)&H->scat_pos, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
+    H->status = RSStatusDomainNull;
+
+    posix_memalign((void **)&H->scat_pos, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
 	posix_memalign((void **)&H->scat_vel, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
 	posix_memalign((void **)&H->scat_ori, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
     posix_memalign((void **)&H->scat_tum, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
@@ -3381,8 +3400,8 @@ void RS_populate(RSHandle *H) {
         }
     }
     
-	H->status = RS_STATUS_DOMAIN_POPULATED;
-	
+	H->status |= RSStatusDomainPopulated | RSStatusScattererSignalsNeedsUpdate;
+
 	return;
 }
 
@@ -3595,10 +3614,10 @@ void RS_rcs_from_dsd(RSHandle *H) {
 
     for (i = 0; i < H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
-            scat_sig_dsd_kernel(&H->worker[i].ndrange_scat[0],
-                                (cl_float4 *)H->worker[i].scat_rcs,
-                                (cl_float4 *)H->worker[i].scat_pos,
-                                (cl_float4 *)H->worker[i].scat_aux);
+            scat_rcs_kernel(&H->worker[i].ndrange_scat[0],
+                            (cl_float4 *)H->worker[i].scat_rcs,
+                            (cl_float4 *)H->worker[i].scat_pos,
+                            (cl_float4 *)H->worker[i].scat_aux);
             
             dispatch_semaphore_signal(H->worker[i].sem);
         });
@@ -3634,7 +3653,7 @@ void RS_advance_time(RSHandle *H) {
 	int i, k;
     int r, a;
 
-	if (!(H->status & RS_STATUS_DOMAIN_POPULATED)) {
+	if (!(H->status & RSStatusDomainPopulated)) {
 		fprintf(stderr, "%s : RS : Simulation domain not populated.\n", now());
 		return;
 	}
@@ -3647,7 +3666,7 @@ void RS_advance_time(RSHandle *H) {
 		H->sim_toc = H->sim_tic + (size_t)(5.0f / H->params.prt);
         H->vel_idx = H->vel_idx == H->vel_count - 1 ? 0 : H->vel_idx + 1;
         if (H->verb > 2) {
-            printf("%s : RS : Wind table advanced. vel_idx = %d\n", now(), H->vel_idx);
+            rsprint("Wind table advanced. vel_idx = %d", H->vel_idx);
         }
     }
 
@@ -3781,8 +3800,9 @@ void RS_advance_time(RSHandle *H) {
 	
 #endif
 	
+    H->sim_time += H->params.prt;
     H->sim_desc.s[RSSimulationDescriptionSimTic] = ++H->sim_tic;
-    H->sim_time = H->sim_tic * H->params.prt;
+    H->status |= RSStatusScattererSignalsNeedsUpdate;
 }
 
 
@@ -3790,7 +3810,7 @@ void RS_make_pulse(RSHandle *H) {
 	
 	int i;
 	
-	if (!(H->status & RS_STATUS_DOMAIN_POPULATED)) {
+	if (!(H->status & RSStatusDomainPopulated)) {
 		fprintf(stderr, "%s : RS : Simulation domain not populated.\n", now());
 		return;
 	}
@@ -3799,14 +3819,17 @@ void RS_make_pulse(RSHandle *H) {
 
     for (i = 0; i < H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
-            scat_sig_aux_kernel(&H->worker[i].ndrange_scat_all,
-                                (cl_float4 *)H->worker[i].scat_sig,
-                                (cl_float4 *)H->worker[i].scat_aux,
-                                (cl_float4 *)H->worker[i].scat_pos,
-                                (cl_float4 *)H->worker[i].scat_rcs,
-                                (cl_float *)H->worker[i].angular_weight,
-                                H->worker[i].angular_weight_desc,
-                                H->sim_desc);
+            if (H->status & RSStatusScattererSignalsNeedsUpdate) {
+                printf("RS_make_pulse: kern_scat_sig_aux\n");
+                scat_sig_aux_kernel(&H->worker[i].ndrange_scat_all,
+                                    (cl_float4 *)H->worker[i].scat_sig,
+                                    (cl_float4 *)H->worker[i].scat_aux,
+                                    (cl_float4 *)H->worker[i].scat_pos,
+                                    (cl_float4 *)H->worker[i].scat_rcs,
+                                    (cl_float *)H->worker[i].angular_weight,
+                                    H->worker[i].angular_weight_desc,
+                                    H->sim_desc);
+            }
             make_pulse_pass_1_kernel(&H->worker[i].ndrange_pulse_pass_1,
                                      (cl_float4 *)H->worker[i].work,
                                      (cl_float4 *)H->worker[i].scat_sig,
@@ -3854,30 +3877,34 @@ void RS_make_pulse(RSHandle *H) {
 	}
 	
 #else
-	
-    cl_event wa_events[H->num_workers];
-    cl_event pass_1_events[H->num_workers];
-	cl_event pass_2_events[H->num_workers];
+
+    cl_event events[H->num_workers][3];
+    memset(events, 0, sizeof(events));
 
     // In this implementation, kern_make_pulse_pass_2 should point to kern_make_pulse_pass_2_group, kern_make_pulse_pass_2_local or kern_make_pulse_pass_2_range,
     // which had been selected based on the group size in RS_make_pulse_params()
     for (i = 0; i < H->num_workers; i++) {
-		RSWorker *C = &H->worker[i];
-        clEnqueueNDRangeKernel(C->que, C->kern_scat_sig_aux, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, &wa_events[i]);
-		clEnqueueNDRangeKernel(C->que, C->kern_make_pulse_pass_1, 1, NULL, &C->make_pulse_params.global[0], &C->make_pulse_params.local[0], 1, &wa_events[i], &pass_1_events[i]);
-		clEnqueueNDRangeKernel(C->que, C->kern_make_pulse_pass_2, 1, NULL, &C->make_pulse_params.global[1], &C->make_pulse_params.local[1], 1, &pass_1_events[i], &pass_2_events[i]);
+        RSWorker *C = &H->worker[i];
+        if (H->status & RSStatusScattererSignalsNeedsUpdate) {
+            //printf("RS_make_pulse: kern_scat_sig_aux\n");
+            clEnqueueNDRangeKernel(C->que, C->kern_scat_sig_aux, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, &events[i][0]);
+            clEnqueueNDRangeKernel(C->que, C->kern_make_pulse_pass_1, 1, NULL, &C->make_pulse_params.global[0], &C->make_pulse_params.local[0], 1, &events[i][0], &events[i][1]);
+        } else {
+            clEnqueueNDRangeKernel(C->que, C->kern_make_pulse_pass_1, 1, NULL, &C->make_pulse_params.global[0], &C->make_pulse_params.local[0], 0, NULL, &events[i][1]);
+        }
+        clEnqueueNDRangeKernel(C->que, C->kern_make_pulse_pass_2, 1, NULL, &C->make_pulse_params.global[1], &C->make_pulse_params.local[1], 1, &events[i][1], &events[i][2]);
         clFlush(C->que);
-	}
-	
+    }
     for (i = 0; i < H->num_workers; i++) {
-        clWaitForEvents(1, &pass_2_events[i]);
-        clReleaseEvent(wa_events[i]);
-		clReleaseEvent(pass_1_events[i]);
-		clReleaseEvent(pass_2_events[i]);
+        clWaitForEvents(1, &events[i][2]);
+        clReleaseEvent(events[i][0]);
+        clReleaseEvent(events[i][1]);
+        clReleaseEvent(events[i][2]);
     }
 	
 #endif
 	
+    H->status &= ~RSStatusScattererSignalsNeedsUpdate;
 }
 
 
