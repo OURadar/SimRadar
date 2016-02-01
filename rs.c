@@ -1360,7 +1360,7 @@ void RS_set_lambda(RSHandle *H, const float lambda) {
 
 void RS_set_density(RSHandle *H, const float density) {
     if (H->status & RSStatusDomainPopulated) {
-        fprintf(stderr, "%s : RS : Simulation domain has been populated. Density cannot be changed.", now());
+        rsprint("Simulation domain has been populated. Density cannot be changed.");
         return;
     }
 	H->params.body_per_cell = density;
@@ -1369,7 +1369,7 @@ void RS_set_density(RSHandle *H, const float density) {
 
 void RS_set_antenna_params(RSHandle *H, RSfloat beamwidth_deg, RSfloat gain_dbi) {
     if (H->status & RSStatusDomainPopulated) {
-        fprintf(stderr, "%s : RS : Simulation domain has been populated. Radar antenna parameters cannot be changed.", now());
+        rsprint("RS : Simulation domain has been populated. Radar antenna parameters cannot be changed.");
         return;
     }
 	H->params.antenna_bw_deg = beamwidth_deg;
@@ -1381,7 +1381,7 @@ void RS_set_antenna_params(RSHandle *H, RSfloat beamwidth_deg, RSfloat gain_dbi)
 
 void RS_set_tx_params(RSHandle *H, RSfloat pulsewidth, RSfloat tx_power_watt) {
     if (H->status & RSStatusDomainPopulated) {
-        fprintf(stderr, "%s : RS : Simulation domain has been populated. Radar parameters cannot be changed.", now());
+        rsprint("Simulation domain has been populated. Radar parameters cannot be changed.");
         return;
     }
 	H->params.tau = pulsewidth;
@@ -1398,7 +1398,7 @@ void RS_set_scan_box(RSHandle *H,
 					 RSfloat elevation_start, RSfloat elevation_end, RSfloat elevation_delta) {
 	
     if (H->status & RSStatusDomainPopulated) {
-        fprintf(stderr, "%s : RS : Simulation domain has been populated. Scan box cannot be changed.", now());
+        rsprint("Simulation domain has been populated. Scan box cannot be changed.");
         return;
     }
 
@@ -1873,7 +1873,7 @@ RSVolume RS_get_domain(RSHandle *H) {
     return v;
 }
 
-// Users should not call this directly
+
 void RS_update_debris_count(RSHandle *H) {
     
     int i, k;
@@ -3653,7 +3653,7 @@ void RS_advance_time(RSHandle *H) {
 	int i, k;
     int r, a;
 
-	if (!(H->status & RSStatusDomainPopulated)) {
+	if (H->status ^ RSStatusDomainPopulated) {
 		fprintf(stderr, "%s : RS : Simulation domain not populated.\n", now());
 		return;
 	}
@@ -3810,7 +3810,7 @@ void RS_make_pulse(RSHandle *H) {
 	
 	int i;
 	
-	if (!(H->status & RSStatusDomainPopulated)) {
+	if (H->status ^ RSStatusDomainPopulated) {
 		fprintf(stderr, "%s : RS : Simulation domain not populated.\n", now());
 		return;
 	}
