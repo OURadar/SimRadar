@@ -23,14 +23,31 @@
 
 @end
 
+// Gray code <--> decimal conversion
+unsigned int binaryToGray(unsigned int num)
+{
+    return num ^ (num >> 1);
+}
+
+unsigned int grayToBinary(unsigned int num)
+{
+    unsigned int mask;
+    for (mask = num >> 1; mask != 0; mask = mask >> 1)
+    {
+        num = num ^ mask;
+    }
+    return num;
+}
+
+
 @implementation Renderer
 
+@synthesize titleString;
 @synthesize delegate;
 @synthesize resetRange;
 @synthesize resetModelRotate;
 @synthesize width, height;
 @synthesize beamAzimuth, beamElevation;
-@synthesize showHUD;
 
 #pragma mark -
 #pragma mark Properties
@@ -685,7 +702,7 @@
         resetModelRotate = GLKMatrix4Identity;
         //resetModelRotate = GLKMatrix4MakeRotation(1.0, 0.0f, 1.0f, 1.0f);
         
-        //showHUD = true;
+        hudConfigGray = hudConfigShowAnchors | hudConfigShowGrid;
         
         hudModelViewProjection = GLKMatrix4Identity;
         beamModelViewProjection = GLKMatrix4Identity;
@@ -694,6 +711,8 @@
         // Add device pixel ratio here
         devicePixelRatio = pixelRatio;
         NSLog(@"Renderer initialized with pixel ratio = %.1f", devicePixelRatio);
+        
+        self.titleString = @"Renderer";
         
         // View parameters
         [self resetViewParameters];
@@ -803,7 +822,7 @@
 	glEnable(GL_BLEND);
 //    glEnable(GL_DEPTH_TEST);
     glEnable(GL_TEXTURE_2D);
-//    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
 	// Always use this clear color: I use 16-bit internal FBO texture format, so minimum can only be sqrt ( 1 / 65536 ) = 1 / 256
 	//glClearColor(0.0f, 0.2f, 0.25f, 1.0f);
@@ -1132,18 +1151,20 @@
         glBindTexture(GL_TEXTURE_2D, bodyRenderer[i].colormapID);
         glDrawArrays(GL_POINTS, 0, debrisRenderer[0].count); // Yes, debrisRenderer[0].count is used for the background.
     }
-    glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
+    //glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
-    // Simulation Grid
-    glBindVertexArray(lineRenderer.vao);
-    glUseProgram(lineRenderer.program);
-    glUniformMatrix4fv(lineRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
-    glUniform4f(lineRenderer.colorUI, 0.4f, 1.0f, 1.0f, phase);
-    glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[RendererLineSegmentSimulationGrid], lineRenderer.segmentLengths[RendererLineSegmentSimulationGrid]);
-    glUniform4f(lineRenderer.colorUI, 1.0f, 1.0f, 0.0f, 1.0f);
-    glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[RendererLineSegmentAnchorLines], lineRenderer.segmentLengths[RendererLineSegmentAnchorLines]);
+    if (hudConfigGray & hudConfigShowGrid) {
+        // Simulation Grid
+        glBindVertexArray(lineRenderer.vao);
+        glUseProgram(lineRenderer.program);
+        glUniformMatrix4fv(lineRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
+        glUniform4f(lineRenderer.colorUI, 0.4f, 1.0f, 1.0f, phase);
+        glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[RendererLineSegmentSimulationGrid], lineRenderer.segmentLengths[RendererLineSegmentSimulationGrid]);
+        glUniform4f(lineRenderer.colorUI, 1.0f, 1.0f, 0.0f, 1.0f);
+        glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[RendererLineSegmentAnchorLines], lineRenderer.segmentLengths[RendererLineSegmentAnchorLines]);
+    }
     
     if (applyVFX == 4) {
         glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[2]);
@@ -1175,7 +1196,7 @@
         }
     }
     
-    if (showHUD) {
+    if (hudConfigGray & hudConfigShowRadarView) {
         // HUD Background & Outline
         if (lineRenderer.segmentNextOrigin) {
             glBindVertexArray(lineRenderer.vao);
@@ -1383,17 +1404,20 @@
 
     glClear(GL_DEPTH_BUFFER_BIT);
 
-    // Anchors
-    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glBindVertexArray(anchorRenderer.vao);
-    glUseProgram(anchorRenderer.program);
-    glUniform4f(anchorRenderer.colorUI, 0.4f, 1.0f, 1.0f, phase);
-    //glUniformMatrix4fv(anchorRenderer.mvUI, 1, GL_FALSE, modelView.m);
-    glUniformMatrix4fv(anchorRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, anchorRenderer.textureID);
-    glDrawArrays(GL_POINTS, 0, anchorRenderer.count);
+    //glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+
+    if (hudConfigGray & hudConfigShowAnchors) {
+        // Anchors
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBindVertexArray(anchorRenderer.vao);
+        glUseProgram(anchorRenderer.program);
+        glUniform4f(anchorRenderer.colorUI, 0.4f, 1.0f, 1.0f, phase);
+        //glUniformMatrix4fv(anchorRenderer.mvUI, 1, GL_FALSE, modelView.m);
+        glUniformMatrix4fv(anchorRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, anchorRenderer.textureID);
+        glDrawArrays(GL_POINTS, 0, anchorRenderer.count);
+    }
     
 #ifdef DEBUG_GL
     [textRenderer showTextureMap];
@@ -1404,7 +1428,8 @@
     // Text
     snprintf(statusMessage[2], 256, "FBO %u   VFX %u  Frame %d", ifbo, applyVFX, iframe);
     
-    [textRenderer drawText:"SimRadar" origin:NSMakePoint(25.0f, height - 60.0f) scale:0.5f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
+    if (titleString)
+        [textRenderer drawText:[titleString UTF8String] origin:NSMakePoint(25.0f, height - 60.0f) scale:0.5f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
     [textRenderer drawText:statusMessage[0] origin:NSMakePoint(25.0f, height - 90.0f) scale:0.3f];
     [textRenderer drawText:statusMessage[1] origin:NSMakePoint(25.0f, height - 120.0f) scale:0.3f];
     [textRenderer drawText:statusMessage[2] origin:NSMakePoint(25.0f, height - 150.0f) scale:0.3f];
@@ -1413,7 +1438,7 @@
     [textRenderer drawText:fpsString origin:NSMakePoint(width - 30.0f, 20.0f) scale:0.333f red:1.0f green:0.9f blue:0.2f alpha:1.0f align:GLTextAlignmentRight];
 #endif
     
-    if (showHUD) {
+    if (hudConfigGray & hudConfigShowRadarView) {
         snprintf(statusMessage[3], 128, "EL %.2f   AZ %.2f", beamElevation / M_PI * 180.0f, beamAzimuth / M_PI * 180.0f);
         [textRenderer drawText:statusMessage[3] origin:NSMakePoint(hudOrigin.x + 15.0f, hudOrigin.y + 15.0f) scale:0.25f];
     }
@@ -1581,7 +1606,21 @@
 
 - (void)toggleHUDVisibility
 {
-    showHUD = !showHUD;
+    hudConfigGray = !hudConfigGray;
+}
+
+
+- (void)cycleForwardHUDConfig
+{
+    hudConfigDecimal = hudConfigDecimal == hudConfigLast ? 0 : hudConfigDecimal + 1;
+    hudConfigGray = binaryToGray(hudConfigDecimal);
+}
+
+
+- (void)cycleReverseHUDConfig
+{
+    hudConfigDecimal = hudConfigDecimal == 0 ? hudConfigLast : hudConfigDecimal - 1;
+    hudConfigGray = binaryToGray(hudConfigDecimal);
 }
 
 

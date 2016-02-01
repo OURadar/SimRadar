@@ -19,6 +19,14 @@
 #define RENDERER_DEFAULT_BODY_OPACITY       0.3
 #define RENDERER_FBO_COUNT                  5
 
+enum hudConfig {
+    hudConfigShowNothing          = 0,
+    hudConfigShowAnchors          = 1,
+    hudConfigShowGrid             = 1 << 1,
+    hudConfigShowRadarView        = 1 << 2,
+    hudConfigLast                 = 7        // (1 << 3) - 1
+};
+
 typedef struct _draw_resource {
     GLchar        vShaderName[64];
     GLchar        fShaderName[64];
@@ -96,6 +104,8 @@ enum RendererLineSegment {
 
 @interface Renderer : NSObject {
 	
+    NSString *titleString;
+    
 	float GLSLVersion;
 	
     GLfloat resetRange;
@@ -124,7 +134,8 @@ enum RendererLineSegment {
     
 	id<RendererDelegate> delegate;
     
-    BOOL showHUD;
+    unsigned int hudConfigDecimal, hudConfigGray;
+    
     BOOL applyVFX;
     BOOL colorbarNeedsUpdate;
     BOOL blurSmallScatterers;
@@ -169,12 +180,12 @@ enum RendererLineSegment {
     GLuint ifbo;
 }
 
+@property (nonatomic, copy) NSString *titleString;
 @property (nonatomic) GLfloat resetRange;
 @property (nonatomic) GLKMatrix4 resetModelRotate;
 @property (nonatomic, retain) id<RendererDelegate> delegate;
 @property (nonatomic, readonly) GLsizei width, height;
 @property (nonatomic) GLfloat beamAzimuth, beamElevation;
-@property (nonatomic) BOOL showHUD;
 @property (nonatomic) BOOL debrisCountsHaveChanged;
 
 - (id)initWithDevicePixelRatio:(GLfloat)pixelRatio;
@@ -214,6 +225,9 @@ enum RendererLineSegment {
 
 - (void)cycleFBO;
 - (void)cycleFBOReverse;
+
+- (void)cycleForwardHUDConfig;
+- (void)cycleReverseHUDConfig;
 
 - (void)cycleVFX;
 

@@ -66,6 +66,9 @@ NSWindow *standardWindow;
 	RSVolume domain = [sim simulationDomain];
     
     //NSLog(@"sim.anchorCount = %d", sim.anchorCount);
+    
+    NSString *name = [[NSRunningApplication currentApplication] localizedName];
+    [glView.renderer setTitleString:name];
 
 	[glView.renderer setBodyCount:(GLuint)sim.pointCount forDevice:0];
 	[glView.renderer setGridAtOrigin:(GLfloat *)&domain.origin size:(GLfloat *)&domain.size];
@@ -271,7 +274,12 @@ NSWindow *standardWindow;
 			
         case 'h':
             // Toggle HUD
-            [glView.renderer toggleHUDVisibility];
+            //[glView.renderer toggleHUDVisibility];
+            [glView.renderer cycleForwardHUDConfig];
+            break;
+            
+        case 'H':
+            [glView.renderer cycleReverseHUDConfig];
             break;
         
 		case '+':
