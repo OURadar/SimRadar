@@ -3047,6 +3047,15 @@ void RS_update_colors(RSHandle *H) {
 
     for (i = 0; i < H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
+            // Compute the attributes
+            scat_sig_aux_kernel(&H->worker[i].ndrange_scat_all,
+                                (cl_float4 *)H->worker[i].scat_sig,
+                                (cl_float4 *)H->worker[i].scat_aux,
+                                (cl_float4 *)H->worker[i].scat_pos,
+                                (cl_float4 *)H->worker[i].scat_rcs,
+                                (cl_float *)H->worker[i].angular_weight,
+                                H->worker[i].angular_weight_desc,
+                                H->sim_desc);
             // Set individual color based on draw mode
             scat_clr_kernel(&H->worker[i].ndrange_scat[0],
                             (cl_float4 *)H->worker[i].scat_clr,
@@ -3060,13 +3069,16 @@ void RS_update_colors(RSHandle *H) {
     
 #else
     
-    cl_event events[RS_MAX_GPU_DEVICE];
+    cl_event events[RS_MAX_GPU_DEVICE][2];
     memset(events, 0, sizeof(events));
     
     for (i = 0; i < H->num_workers; i++) {
         RSWorker *C = &H->worker[i];
+        clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
+        clEnqueueNDRangeKernel(C->que, C->kern_scat_sig_aux, 1, NULL, &C->num_scats, NULL, 0, NULL, &events[i][0]);
+
         clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentDrawMode, sizeof(cl_uint4), &H->draw_mode);
-        clEnqueueNDRangeKernel(C->que, C->kern_scat_clr, 1, NULL, &C->num_scats, NULL, 0, NULL, &events[i]);
+        clEnqueueNDRangeKernel(C->que, C->kern_scat_clr, 1, NULL, &C->num_scats, NULL, 1, &events[i][0], &events[i][1]);
     }
     
     for (i = 0; i < H->num_workers; i++) {
@@ -3074,8 +3086,9 @@ void RS_update_colors(RSHandle *H) {
     }
     
     for (i = 0; i < H->num_workers; i++) {
-        clWaitForEvents(1, events);
-        clReleaseEvent(events[i]);
+        clWaitForEvents(2, &events[i][0]);
+        clReleaseEvent(events[i][0]);
+        clReleaseEvent(events[i][1]);
     }
     
 #endif
@@ -3806,38 +3819,32 @@ void RS_make_pulse(RSHandle *H) {
                                      H->worker[i].make_pulse_params.range_count,
                                      H->worker[i].make_pulse_params.group_counts[0],
                                      H->worker[i].make_pulse_params.entry_counts[0]);
-            make_pulse_pass_2_local_kernel(&H->worker[i].ndrange_pulse_pass_2,
-                                           (cl_float4 *)H->worker[i].pulse,
-                                           (cl_float4 *)H->worker[i].work,
-                                           H->worker[i].make_pulse_params.local_mem_size[1],
-                                           H->worker[i].make_pulse_params.range_count,
-                                           H->worker[i].make_pulse_params.entry_counts[1]);
-//            switch (H->worker[i].make_pulse_params.cl_pass_2_method) {
-//				case RS_CL_PASS_2_IN_LOCAL:
-//					make_pulse_pass_2_local_kernel(&H->worker[i].ndrange_pulse_pass_2,
-//												   (cl_float4 *)H->worker[i].pulse,
-//												   (cl_float4 *)H->worker[i].work,
-//												   H->worker[i].make_pulse_params.local_mem_size[1],
-//												   H->worker[i].make_pulse_params.range_count,
-//												   H->worker[i].make_pulse_params.entry_counts[1]);
-//					break;
-//				case RS_CL_PASS_2_IN_RANGE:
-//					make_pulse_pass_2_range_kernel(&H->worker[i].ndrange_pulse_pass_2,
-//												   (cl_float4 *)H->worker[i].pulse,
-//												   (cl_float4 *)H->worker[i].work,
-//												   H->worker[i].make_pulse_params.local_mem_size[1],
-//												   H->worker[i].make_pulse_params.range_count,
-//												   H->worker[i].make_pulse_params.entry_counts[1]);
-//					break;
-//				default:
-//					make_pulse_pass_2_group_kernel(&H->worker[i].ndrange_pulse_pass_2,
-//												   (cl_float4 *)H->worker[i].pulse,
-//												   (cl_float4 *)H->worker[i].work,
-//												   H->worker[i].make_pulse_params.local_mem_size[1],
-//												   H->worker[i].make_pulse_params.range_count,
-//												   H->worker[i].make_pulse_params.entry_counts[1]);
-//					break;
-//			}
+            switch (H->worker[i].make_pulse_params.cl_pass_2_method) {
+				case RS_CL_PASS_2_IN_LOCAL:
+					make_pulse_pass_2_local_kernel(&H->worker[i].ndrange_pulse_pass_2,
+												   (cl_float4 *)H->worker[i].pulse,
+												   (cl_float4 *)H->worker[i].work,
+												   H->worker[i].make_pulse_params.local_mem_size[1],
+												   H->worker[i].make_pulse_params.range_count,
+												   H->worker[i].make_pulse_params.entry_counts[1]);
+					break;
+				case RS_CL_PASS_2_IN_RANGE:
+					make_pulse_pass_2_range_kernel(&H->worker[i].ndrange_pulse_pass_2,
+												   (cl_float4 *)H->worker[i].pulse,
+												   (cl_float4 *)H->worker[i].work,
+												   H->worker[i].make_pulse_params.local_mem_size[1],
+												   H->worker[i].make_pulse_params.range_count,
+												   H->worker[i].make_pulse_params.entry_counts[1]);
+					break;
+				default:
+					make_pulse_pass_2_group_kernel(&H->worker[i].ndrange_pulse_pass_2,
+												   (cl_float4 *)H->worker[i].pulse,
+												   (cl_float4 *)H->worker[i].work,
+												   H->worker[i].make_pulse_params.local_mem_size[1],
+												   H->worker[i].make_pulse_params.range_count,
+												   H->worker[i].make_pulse_params.entry_counts[1]);
+					break;
+			}
 			dispatch_semaphore_signal(H->worker[i].sem);
 		});
 	}
@@ -3852,6 +3859,8 @@ void RS_make_pulse(RSHandle *H) {
     cl_event pass_1_events[H->num_workers];
 	cl_event pass_2_events[H->num_workers];
 
+    // In this implementation, kern_make_pulse_pass_2 should point to kern_make_pulse_pass_2_group, kern_make_pulse_pass_2_local or kern_make_pulse_pass_2_range,
+    // which had been selected based on the group size in RS_make_pulse_params()
     for (i = 0; i < H->num_workers; i++) {
 		RSWorker *C = &H->worker[i];
         clEnqueueNDRangeKernel(C->que, C->kern_scat_sig_aux, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, &wa_events[i]);

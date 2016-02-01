@@ -62,9 +62,10 @@
 
 #define DTIME(T_begin, T_end)  ((double)(T_end.tv_sec - T_begin.tv_sec) + 1.0e-6 * (double)(T_end.tv_usec - T_begin.tv_usec))
 
-enum {
-	RS_STATUS_DOMAIN_NULL        = 0x00,
-	RS_STATUS_DOMAIN_POPULATED   = 0x01
+enum RS_STATUS {
+	RS_STATUS_DOMAIN_NULL        = 0,
+	RS_STATUS_DOMAIN_POPULATED   = 1,
+    RS_STATUS_ATTRIBUTED         = 1 << 1
 };
 
 enum RS_CL_PASS_2 {

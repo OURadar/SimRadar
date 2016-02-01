@@ -225,9 +225,11 @@
 - (void)advanceTime
 {
 	RS_advance_time(S);
-//    RS_make_pulse(S);
-    RS_update_auxiliary_attributes(S);
+//    RS_update_auxiliary_attributes(S);
     RS_update_colors(S);
+
+    // RS_update_auxiliary_attributes(S) or RS_update_colors(S) must be called prior to this
+    RS_make_pulse(S);
 //
 //    RS_download_pulse_only(S);
 //    NSLog(@"%.2f%+.2fi %.2f%+.2fi ...", S->pulse[0].s0, S->pulse[0].s1, S->pulse[1].s0, S->pulse[1].s1);
@@ -246,7 +248,7 @@
 {
     az_deg = fmodf(az_deg + 0.05f + 12.0f, 24.0f) - 12.0f;
 	RS_set_beam_pos(S, az_deg, el_deg);
-    RS_make_pulse(S);
+    //RS_make_pulse(S);
     RS_update_colors(S);
 	RS_advance_time(S);
 }
