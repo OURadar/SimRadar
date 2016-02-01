@@ -807,8 +807,8 @@ __kernel void scat_rcs(__global float4 *x,
 // scatterer color
 //
 __kernel void scat_clr(__global float4 *c,
-                       __global float4 *p,
-                       __global float4 *a,
+                       __global __read_only float4 *p,
+                       __global __read_only float4 *a,
                        const uint4 mode)
 {
     unsigned int i = get_global_id(0);

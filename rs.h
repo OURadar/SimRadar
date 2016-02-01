@@ -531,6 +531,8 @@ void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *table);
 void RS_set_rcs_data_to_unity(RSHandle *H);
 void RS_clear_rcs_data(RSHandle *H);
 
+#pragma mark -
+
 #if defined (GUI) || defined (_SHARE_OBJ_)
 void RS_update_auxiliary_attributes(RSHandle *H);
 void RS_update_colors(RSHandle *H);
@@ -538,11 +540,10 @@ void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[][n]);
 #endif
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
-#pragma mark -
-
 void RS_derive_ndranges(RSHandle *H);
-
 #endif
+
+#pragma mark -
 
 void RS_io_test(RSHandle *H);
 void RS_dummy_test(RSHandle *H);

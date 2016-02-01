@@ -2984,6 +2984,8 @@ void RS_clear_rcs_data(RSHandle *H) {
 #pragma mark -
 #pragma mark GUI Specific Functions
 
+#if defined (GUI) || defined (_SHARE_OBJ_)
+
 void RS_update_auxiliary_attributes(RSHandle *H) {
     
     int i;
@@ -3080,8 +3082,6 @@ void RS_update_colors(RSHandle *H) {
     
 }
 
-//#if defined(__APPLE__) &&  defined (_SHARE_OBJ_)
-
 void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[][n]) {
     if (H->verb) {
         if (H->num_workers == 1) {
@@ -3101,7 +3101,7 @@ void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[][n]) {
     H->has_vbo_from_gl = 1;
 }
 
-//#endif
+#endif
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 
