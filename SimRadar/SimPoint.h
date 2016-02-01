@@ -52,7 +52,7 @@
 @property (nonatomic, readonly, getter=azimuthInDegrees) float az_deg;
 @property (nonatomic, readonly, getter=elevationInDegrees) float el_deg;
 
-- (id)initWithDelegate:(id<SimPointDelegate>)newDelegate;
+- (id)initWithDelegate:(id<SimPointDelegate>)newDelegate cglContext:(CGLContextObj)context;
 
 - (BOOL)isPopulated;
 

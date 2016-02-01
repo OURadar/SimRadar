@@ -159,9 +159,11 @@
 #define DNSLog(_expr) {}
 #endif
 
-- (void)createSimulation {
+- (void)createSimulation:(NSNumber *)number {
     @autoreleasepool {
-        sim = [[SimPoint alloc] initWithDelegate:self];
+        CGLContextObj context = (CGLContextObj)[number longValue];
+        NSLog(@"context = %p", context);
+        sim = [[SimPoint alloc] initWithDelegate:self cglContext:context];
         if (sim) {
             NSLog(@"New simulation domain initiated.");
             // Wire the simulator to the controller.
@@ -189,7 +191,9 @@
 	if (sim) {
 		NSLog(@"There is a simulation session running. It will be re-activated. The muti-session version has not been implemented.");
 	} else {
-        [self performSelectorInBackground:@selector(createSimulation) withObject:nil];
+        CGLContextObj context = CGLGetCurrentContext();
+        NSNumber *number = [NSNumber numberWithLong:(long)context];
+        [self performSelectorInBackground:@selector(createSimulation:) withObject:number];
 	}
 }
 

@@ -17,11 +17,12 @@
 #pragma mark -
 #pragma mark Private Functions
 
-void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char **src_ptr, const char verb) {
+void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char **src_ptr, CGLContextObj context, const char verb) {
 	
     C->dev = dev;
     C->verb = verb;
     C->mem_size = 0;
+    C->cgl_context = context;
     
     clGetDeviceInfo(C->dev, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &C->num_cus, NULL);
 
@@ -54,32 +55,28 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
 	
     cl_int ret;
 
-#if defined (GUI)
-
-    CGLContextObj context = CGLGetCurrentContext();
-    CGLShareGroupObj obj = CGLGetShareGroup(context);
-    
-    rsprint("context = %p  obj = %p\n", context, obj);
-    cl_context_properties prop[] = {
-        CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE, (cl_context_properties)obj,
-        0
-    };
-    
-    // Create a context from a CGL share group
-    C->context = clCreateContext(prop, 1, &C->dev, &pfn_notify, NULL, &ret);
-
-#else
-
-    // Create an independent OpenCL context
-    C->context = clCreateContext(NULL, 1, &C->dev, &pfn_notify, NULL, &ret);
-
-#endif
+    if (context != NULL) {
+        CGLShareGroupObj obj = CGLGetShareGroup(context);
+        
+        rsprint("cglContext = %p  shareGroup = %p   verb = %d\n", context, obj, verb);
+        
+        cl_context_properties prop[] = {
+            CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE, (cl_context_properties)obj,
+            0
+        };
+        
+        // Create a context from a CGL share group
+        C->context = clCreateContext(prop, 1, &C->dev, &pfn_notify, NULL, &ret);
+    } else {
+        // Create an independent OpenCL context
+        C->context = clCreateContext(NULL, 1, &C->dev, &pfn_notify, NULL, &ret);
+    }
 
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error creating OpenCL context.  ret = %d\n", now(), ret);
         exit(EXIT_FAILURE);
     } else if (verb) {
-        printf("%s : RS : OpenCL context[%d] created (context @ %p, device_id @ %p).\n", now(), (int)C->name, C->context, dev);
+        rsprint("OpenCL context[%d] created (context @ %p, device_id @ %p).\n", (int)C->name, C->context, dev);
     }
     
 
@@ -849,7 +846,7 @@ cl_uint RS_gpu_count(void) {
 #pragma mark RS Initialization and Deallocation
 
 
-RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char verb) {
+RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, CGLContextObj cgl_context, const char verb) {
 	
     int i;
     
@@ -910,7 +907,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
             break;
     }
 
-#if defined (GUI) || defined (_SHARE_OBJ_)
+#if defined (__APPLE__) && defined (_SHARE_OBJ_)
     
     // Force to one GPU at the moment. Seems like OpenGL context can be shared with only one OpenCL context
     H->num_workers = 1;
@@ -919,7 +916,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
         if (verb > 2) {
             rsprint("Initializing worker %d using %p\n", i, H->devs[i]);
         }
-        RS_worker_init(&H->worker[i], H->devs[i], 0, NULL, verb);
+        RS_worker_init(&H->worker[i], H->devs[i], 0, NULL, NULL, verb);
     }
 
 #else
@@ -955,12 +952,12 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
     }
     
     for (i = 0; i < H->num_workers; i++) {
-        if (H->verb > 2) {
-            printf("%s : RS : Initializing worker %d using %p\n", now(), i, H->devs[i]);
+        if (verb > 2) {
+            rsprint("Initializing worker %d using %p\n", i, H->devs[i]);
         }
-        RS_worker_init(&H->worker[i], H->devs[i], count, (const char **)src_ptr, H->verb);
+        RS_worker_init(&H->worker[i], H->devs[i], count, (const char **)src_ptr, cgl_context, verb);
     }
-		
+	
 #endif
 		
     // Temporary supress the verbose output for setting default values
@@ -988,17 +985,17 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char
 
 
 RSHandle *RS_init_for_cpu_verbose(const char verb) {
-	return RS_init_with_path(".", RS_METHOD_CPU, verb);
+	return RS_init_with_path(".", RS_METHOD_CPU, NULL, verb);
 }
 
 
 RSHandle *RS_init_verbose(const char verb) {
-    return RS_init_with_path(".", RS_METHOD_GPU, verb);
+    return RS_init_with_path(".", RS_METHOD_GPU, NULL, verb);
 }
 
 
 RSHandle *RS_init() {
-    return RS_init_with_path(".", RS_METHOD_GPU, 0);
+    return RS_init_with_path(".", RS_METHOD_GPU, NULL, 0);
 }
 
 
@@ -3734,7 +3731,7 @@ void RS_advance_time(RSHandle *H) {
         for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
             if (C->species_population[k]) {
                 if (H->verb > 2) {
-                    printf("%s : RS : RCS[%d]  ADM[%d]\n", now(), r, a);
+                    printf("%s : RS : RCS[%d]  ADM[%d]  %d\n", now(), r, a, H->verb);
                     //printf("H->worker[%d].species_population[%d] = %d from %d --> debris\n", i, k, (int)H->worker[i].species_population[k], (int)H->worker[i].species_origin[k]);
                 }
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &C->adm_cd[a]);

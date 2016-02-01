@@ -31,10 +31,10 @@
 
 - (id)init
 {
-    return [self initWithDelegate:nil];
+    return [self initWithDelegate:nil cglContext:nil];
 }
 
-- (id)initWithDelegate:(id<SimPointDelegate>)newDelegate
+- (id)initWithDelegate:(id<SimPointDelegate>)newDelegate cglContext:(CGLContextObj)context
 {
 	self = [super init];
 	if (self) {
@@ -48,7 +48,9 @@
             [delegate progressUpdated:2.0 message:@"Initializing ..."];
         }
         
-        S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, 2);
+        //NSLog(@"cglContext = %p", context);
+        
+        S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, context, 1);
         if (S == NULL) {
             return nil;
         }
@@ -86,9 +88,9 @@
             [delegate progressUpdated:3.0 message:[NSString stringWithFormat:@"LES @ %s", LES_data_path(L)]];
         }
 
-		#ifdef DEBUG
-		RS_set_verbosity(S, 3);
-		#endif
+//		#ifdef DEBUG
+//		RS_set_verbosity(S, 3);
+//		#endif
 
         if (reportProgress) {
             [delegate progressUpdated:10.0 message:[NSString stringWithFormat:@"Configuring radar parameters ..."]];

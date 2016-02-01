@@ -351,6 +351,7 @@ typedef struct _rs_worker {
     
 #else
 	
+    CGLContextObj          cgl_context;
 	cl_context             context;
 	
 	cl_program             prog;
@@ -475,7 +476,8 @@ cl_uint RS_gpu_count(void);
 #pragma mark Initialization and Deallocation
 
 // Initializes a simulation space
-RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char verb);
+RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, CGLContextObj cgl_context, const char verb);
+//RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char verb);
 RSHandle *RS_init_for_cpu_verbose(const char verb);
 RSHandle *RS_init_verbose(const char verb);
 RSHandle *RS_init();
