@@ -779,13 +779,13 @@ __kernel void db_atts(__global float4 *p,
 }
 
 
-__kernel void scat_sig_dsd(__global float4 *x,
-                           __global float4 *p,
-                           __global float4 *a)
+__kernel void scat_rcs(__global float4 *x,
+                       __global float4 *p,
+                       __global float4 *a)
 {
     unsigned int i = get_global_id(0);
     //x[i] = (float4)(1.0f, 0.0f, 1.0f, 0.0f);
-    
+
     float4 pos = p[i];
     
     //
@@ -845,13 +845,13 @@ __kernel void scat_clr(__global float4 *c,
 //
 // weight and attenuate - angular + range effects
 //
-__kernel void scat_wa(__global float4 *s,
-                      __global float4 *a,
-                      __global __read_only float4 *p,
-                      __global __read_only float4 *r,
-                      __constant float *angular_weight,
-                      const float4 angular_weight_desc,
-                      const float16 sim_desc)
+__kernel void scat_sig_aux(__global float4 *s,
+                           __global float4 *a,
+                           __global __read_only float4 *p,
+                           __global __read_only float4 *r,
+                           __constant float *angular_weight,
+                           const float4 angular_weight_desc,
+                           const float16 sim_desc)
 {
     unsigned int i = get_global_id(0);
 

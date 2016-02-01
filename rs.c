@@ -17,12 +17,12 @@
 #pragma mark -
 #pragma mark Private Functions
 
-void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char **src_ptr, CGLContextObj context, const char verb) {
+void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char **src_ptr, cl_context_properties sharegroup, const char verb) {
 	
     C->dev = dev;
     C->verb = verb;
     C->mem_size = 0;
-    C->cgl_context = context;
+    C->sharegroup = sharegroup;
     
     clGetDeviceInfo(C->dev, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &C->num_cus, NULL);
 
@@ -55,13 +55,12 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
 	
     cl_int ret;
 
-    if (context != NULL) {
-        CGLShareGroupObj obj = CGLGetShareGroup(context);
+    if (sharegroup) {
         
-        rsprint("cglContext = %p  shareGroup = %p   verb = %d\n", context, obj, verb);
+        rsprint("shareGroup = %p   verb = %d\n", sharegroup, verb);
         
         cl_context_properties prop[] = {
-            CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE, (cl_context_properties)obj,
+            CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE, (cl_context_properties)sharegroup,
             0
         };
         
@@ -118,9 +117,9 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     C->kern_bg_atts = clCreateKernel(C->prog, "bg_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
     C->kern_el_atts = clCreateKernel(C->prog, "el_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
     C->kern_db_atts = clCreateKernel(C->prog, "db_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
-    C->kern_scat_wa = clCreateKernel(C->prog, "scat_wa", &ret);                                   CHECK_CL_CREATE_KERNEL
     C->kern_scat_clr = clCreateKernel(C->prog, "scat_clr", &ret);                                 CHECK_CL_CREATE_KERNEL
-    C->kern_scat_sig_dsd = clCreateKernel(C->prog, "scat_sig_dsd", &ret);                         CHECK_CL_CREATE_KERNEL
+    C->kern_scat_rcs = clCreateKernel(C->prog, "scat_rcs", &ret);                                 CHECK_CL_CREATE_KERNEL
+    C->kern_scat_sig_aux = clCreateKernel(C->prog, "scat_sig_aux", &ret);                         CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_1 = clCreateKernel(C->prog, "make_pulse_pass_1", &ret);               CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_2_group = clCreateKernel(C->prog, "make_pulse_pass_2_group", &ret);   CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_2_local = clCreateKernel(C->prog, "make_pulse_pass_2_range", &ret);   CHECK_CL_CREATE_KERNEL
@@ -179,7 +178,8 @@ void RS_worker_free(RSWorker *C) {
     clReleaseKernel(C->kern_el_atts);
     clReleaseKernel(C->kern_db_atts);
     clReleaseKernel(C->kern_scat_clr);
-    clReleaseKernel(C->kern_scat_sig_dsd);
+    clReleaseKernel(C->kern_scat_rcs);
+    clReleaseKernel(C->kern_scat_sig_aux);
     clReleaseKernel(C->kern_make_pulse_pass_1);
     clReleaseKernel(C->kern_make_pulse_pass_2_group);
     clReleaseKernel(C->kern_make_pulse_pass_2_local);
@@ -372,15 +372,11 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     }
 
     ret = CL_SUCCESS;
-    ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentSignal,                 sizeof(cl_mem),     &C->scat_sig);
-    ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentAuxiliary,              sizeof(cl_mem),     &C->scat_aux);
-    ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentPosition,               sizeof(cl_mem),     &C->scat_pos);
-    ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentRadarCrossSection,      sizeof(cl_mem),     &C->scat_rcs);
-    ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentWeightTable,            sizeof(cl_mem),     &C->angular_weight);
-    ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentWeightTableDescription, sizeof(cl_float4),  &C->angular_weight_desc);
-    ret |= clSetKernelArg(C->kern_scat_wa, RSScattererAngularWeightKernalArgumentSimulationDescription,  sizeof(cl_float16), &H->sim_desc);
+    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentRadarCrossSection, sizeof(cl_mem), &C->scat_rcs);
+    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentPosition,          sizeof(cl_mem), &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentAuxiliary,         sizeof(cl_mem), &C->scat_aux);
     if (ret != CL_SUCCESS) {
-        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_wa().\n", now());
+        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_rcs().\n", now());
         exit(EXIT_FAILURE);
     }
     
@@ -395,14 +391,18 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     }
     
     ret = CL_SUCCESS;
-    ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentRadarCrossSection, sizeof(cl_mem), &C->scat_rcs);
-    ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentPosition,          sizeof(cl_mem), &C->scat_pos);
-    ret |= clSetKernelArg(C->kern_scat_sig_dsd, RSScattererSignalDropSizeDistributionKernalArgumentAuxiliary,         sizeof(cl_mem), &C->scat_aux);
+    ret |= clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentSignal,                 sizeof(cl_mem),     &C->scat_sig);
+    ret |= clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentAuxiliary,              sizeof(cl_mem),     &C->scat_aux);
+    ret |= clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentPosition,               sizeof(cl_mem),     &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentRadarCrossSection,      sizeof(cl_mem),     &C->scat_rcs);
+    ret |= clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentWeightTable,            sizeof(cl_mem),     &C->angular_weight);
+    ret |= clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentWeightTableDescription, sizeof(cl_float4),  &C->angular_weight_desc);
+    ret |= clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentSimulationDescription,  sizeof(cl_float16), &H->sim_desc);
     if (ret != CL_SUCCESS) {
-        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_sig_dsd().\n", now());
+        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_sig_aux().\n", now());
         exit(EXIT_FAILURE);
     }
-
+    
     if (C->verb > 1) {
 		printf("%s : RS : Pass 1   global =%7s   local = %3zu x %2d = %6s B   groups = %4d   N = %9s\n",
 			   now(),
@@ -846,7 +846,7 @@ cl_uint RS_gpu_count(void) {
 #pragma mark RS Initialization and Deallocation
 
 
-RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, CGLContextObj cgl_context, const char verb) {
+RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context_properties sharegroup, const char verb) {
 	
     int i;
     
@@ -955,7 +955,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, CGLContext
         if (verb > 2) {
             rsprint("Initializing worker %d using %p\n", i, H->devs[i]);
         }
-        RS_worker_init(&H->worker[i], H->devs[i], count, (const char **)src_ptr, cgl_context, verb);
+        RS_worker_init(&H->worker[i], H->devs[i], count, (const char **)src_ptr, sharegroup, verb);
     }
 	
 #endif
@@ -985,17 +985,17 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, CGLContext
 
 
 RSHandle *RS_init_for_cpu_verbose(const char verb) {
-	return RS_init_with_path(".", RS_METHOD_CPU, NULL, verb);
+	return RS_init_with_path(".", RS_METHOD_CPU, 0, verb);
 }
 
 
 RSHandle *RS_init_verbose(const char verb) {
-    return RS_init_with_path(".", RS_METHOD_GPU, NULL, verb);
+    return RS_init_with_path(".", RS_METHOD_GPU, 0, verb);
 }
 
 
 RSHandle *RS_init() {
-    return RS_init_with_path(".", RS_METHOD_GPU, NULL, 0);
+    return RS_init_with_path(".", RS_METHOD_GPU, 0, 0);
 }
 
 
@@ -2997,14 +2997,14 @@ void RS_update_auxiliary_attributes(RSHandle *H) {
 
     for (i = 0; i < H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
-            scat_wa_kernel(&H->worker[i].ndrange_scat_all,
-                           (cl_float4 *)H->worker[i].scat_sig,
-                           (cl_float4 *)H->worker[i].scat_aux,
-                           (cl_float4 *)H->worker[i].scat_pos,
-                           (cl_float4 *)H->worker[i].scat_rcs,
-                           (cl_float *)H->worker[i].angular_weight,
-                           H->worker[i].angular_weight_desc,
-                           H->sim_desc);
+            scat_sig_aux_kernel(&H->worker[i].ndrange_scat_all,
+                                (cl_float4 *)H->worker[i].scat_sig,
+                                (cl_float4 *)H->worker[i].scat_aux,
+                                (cl_float4 *)H->worker[i].scat_pos,
+                                (cl_float4 *)H->worker[i].scat_rcs,
+                                (cl_float *)H->worker[i].angular_weight,
+                                H->worker[i].angular_weight_desc,
+                                H->sim_desc);
             dispatch_semaphore_signal(H->worker[i].sem);
         });
     }
@@ -3019,7 +3019,9 @@ void RS_update_auxiliary_attributes(RSHandle *H) {
     memset(events, 0, sizeof(events));
     
     for (i = 0; i < H->num_workers; i++) {
-        clSetKernelArg(H->worker[i].kern_scat_wa, RSScattererAngularWeightKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
+        RSWorker *C = &H->worker[i];
+        clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
+        clEnqueueNDRangeKernel(C->que, C->kern_scat_sig_aux, 1, NULL, &C->num_scats, NULL, 0, NULL, &events[i]);
     }
     
     for (i = 0; i < H->num_workers; i++) {
@@ -3060,7 +3062,9 @@ void RS_update_colors(RSHandle *H) {
     memset(events, 0, sizeof(events));
     
     for (i = 0; i < H->num_workers; i++) {
-        clSetKernelArg(H->worker[i].kern_scat_clr, RSScattererColorKernelArgumentDrawMode, sizeof(cl_uint4), &H->draw_mode);
+        RSWorker *C = &H->worker[i];
+        clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentDrawMode, sizeof(cl_uint4), &H->draw_mode);
+        clEnqueueNDRangeKernel(C->que, C->kern_scat_clr, 1, NULL, &C->num_scats, NULL, 0, NULL, &events[i]);
     }
     
     for (i = 0; i < H->num_workers; i++) {
@@ -3321,18 +3325,8 @@ void RS_populate(RSHandle *H) {
     
     RS_derive_ndranges(H);
 
-#endif
-
-    // Upload the particle parameters to the GPU
-    RS_upload(H);
-
-    if (H->verb) {
-        printf("%s : RS : VEL / ADM / RCS count = %d / %d / %d\n", now(), H->vel_count, H->adm_count, H->rcs_count);
-        printf("%s : RS : CL domain synchronized.\n", now());
-    }
-
-#if !(defined (__APPLE__) && defined (_SHARE_OBJ_))
-
+#else
+    
     // Update kernel arguments
     cl_int ret = CL_SUCCESS;
     const int a = 0;
@@ -3350,7 +3344,7 @@ void RS_populate(RSHandle *H) {
         ret |= clSetKernelArg(H->worker[i].kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription,             sizeof(cl_float16), &H->sim_desc);
         
         // Need to add DSD kernel? No, not really
-//        ret |= clSetKernelArg(H->worker[i].kern_scat_sig, ...)
+        //        ret |= clSetKernelArg(H->worker[i].kern_scat_sig, ...)
     }
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to update kernel arguments in RS_populate().\n", now());
@@ -3358,9 +3352,17 @@ void RS_populate(RSHandle *H) {
     }
 
 #endif
+
+    // Upload the particle parameters to the GPU
+    RS_upload(H);
+
+    if (H->verb) {
+        printf("%s : RS : VEL / ADM / RCS count = %d / %d / %d\n", now(), H->vel_count, H->adm_count, H->rcs_count);
+        printf("%s : RS : CL domain synchronized.\n", now());
+    }
     
     if (H->dsd_name != RSDropSizeDistributionUndefined) {
-        RS_sig_from_dsd(H);
+        RS_rcs_from_dsd(H);
         if (H->verb) {
             printf("%s : RS : Drop-size derived RCS computed.\n", now());
         }
@@ -3505,6 +3507,7 @@ void RS_download_pulse_only(RSHandle *H) {
 	}
 	
 #endif
+    
 	RS_merge_pulse_tmp(H);
     //printf("pulse %zu [ %.4e %.4e %.4e ... ]\n", H->sim_tic, H->pulse[0].s0, H->pulse[0].s1, H->pulse[0].s2);
 }
@@ -3571,7 +3574,7 @@ void RS_upload(RSHandle *H) {
 
 
 // Signal strength as a function of drop size
-void RS_sig_from_dsd(RSHandle *H) {
+void RS_rcs_from_dsd(RSHandle *H) {
     
     int i;
     
@@ -3596,7 +3599,7 @@ void RS_sig_from_dsd(RSHandle *H) {
     cl_event events[RS_MAX_GPU_DEVICE];
     
     for (i = 0; i < H->num_workers; i++) {
-        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_sig_dsd, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i]);
+        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_rcs, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i]);
     }
     
     for (i = 0; i < H->num_workers; i++) {
@@ -3783,14 +3786,14 @@ void RS_make_pulse(RSHandle *H) {
 
     for (i = 0; i < H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
-            scat_wa_kernel(&H->worker[i].ndrange_scat_all,
-                           (cl_float4 *)H->worker[i].scat_sig,
-                           (cl_float4 *)H->worker[i].scat_aux,
-                           (cl_float4 *)H->worker[i].scat_pos,
-                           (cl_float4 *)H->worker[i].scat_rcs,
-                           (cl_float *)H->worker[i].angular_weight,
-                           H->worker[i].angular_weight_desc,
-                           H->sim_desc);
+            scat_sig_aux_kernel(&H->worker[i].ndrange_scat_all,
+                                (cl_float4 *)H->worker[i].scat_sig,
+                                (cl_float4 *)H->worker[i].scat_aux,
+                                (cl_float4 *)H->worker[i].scat_pos,
+                                (cl_float4 *)H->worker[i].scat_rcs,
+                                (cl_float *)H->worker[i].angular_weight,
+                                H->worker[i].angular_weight_desc,
+                                H->sim_desc);
             make_pulse_pass_1_kernel(&H->worker[i].ndrange_pulse_pass_1,
                                      (cl_float4 *)H->worker[i].work,
                                      (cl_float4 *)H->worker[i].scat_sig,
@@ -3803,32 +3806,38 @@ void RS_make_pulse(RSHandle *H) {
                                      H->worker[i].make_pulse_params.range_count,
                                      H->worker[i].make_pulse_params.group_counts[0],
                                      H->worker[i].make_pulse_params.entry_counts[0]);
-            switch (H->worker[i].make_pulse_params.cl_pass_2_method) {
-				case RS_CL_PASS_2_IN_LOCAL:
-					make_pulse_pass_2_local_kernel(&H->worker[i].ndrange_pulse_pass_2,
-												   (cl_float4 *)H->worker[i].pulse,
-												   (cl_float4 *)H->worker[i].work,
-												   H->worker[i].make_pulse_params.local_mem_size[1],
-												   H->worker[i].make_pulse_params.range_count,
-												   H->worker[i].make_pulse_params.entry_counts[1]);
-					break;
-				case RS_CL_PASS_2_IN_RANGE:
-					make_pulse_pass_2_range_kernel(&H->worker[i].ndrange_pulse_pass_2,
-												   (cl_float4 *)H->worker[i].pulse,
-												   (cl_float4 *)H->worker[i].work,
-												   H->worker[i].make_pulse_params.local_mem_size[1],
-												   H->worker[i].make_pulse_params.range_count,
-												   H->worker[i].make_pulse_params.entry_counts[1]);
-					break;
-				default:
-					make_pulse_pass_2_group_kernel(&H->worker[i].ndrange_pulse_pass_2,
-												   (cl_float4 *)H->worker[i].pulse,
-												   (cl_float4 *)H->worker[i].work,
-												   H->worker[i].make_pulse_params.local_mem_size[1],
-												   H->worker[i].make_pulse_params.range_count,
-												   H->worker[i].make_pulse_params.entry_counts[1]);
-					break;
-			}
+            make_pulse_pass_2_local_kernel(&H->worker[i].ndrange_pulse_pass_2,
+                                           (cl_float4 *)H->worker[i].pulse,
+                                           (cl_float4 *)H->worker[i].work,
+                                           H->worker[i].make_pulse_params.local_mem_size[1],
+                                           H->worker[i].make_pulse_params.range_count,
+                                           H->worker[i].make_pulse_params.entry_counts[1]);
+//            switch (H->worker[i].make_pulse_params.cl_pass_2_method) {
+//				case RS_CL_PASS_2_IN_LOCAL:
+//					make_pulse_pass_2_local_kernel(&H->worker[i].ndrange_pulse_pass_2,
+//												   (cl_float4 *)H->worker[i].pulse,
+//												   (cl_float4 *)H->worker[i].work,
+//												   H->worker[i].make_pulse_params.local_mem_size[1],
+//												   H->worker[i].make_pulse_params.range_count,
+//												   H->worker[i].make_pulse_params.entry_counts[1]);
+//					break;
+//				case RS_CL_PASS_2_IN_RANGE:
+//					make_pulse_pass_2_range_kernel(&H->worker[i].ndrange_pulse_pass_2,
+//												   (cl_float4 *)H->worker[i].pulse,
+//												   (cl_float4 *)H->worker[i].work,
+//												   H->worker[i].make_pulse_params.local_mem_size[1],
+//												   H->worker[i].make_pulse_params.range_count,
+//												   H->worker[i].make_pulse_params.entry_counts[1]);
+//					break;
+//				default:
+//					make_pulse_pass_2_group_kernel(&H->worker[i].ndrange_pulse_pass_2,
+//												   (cl_float4 *)H->worker[i].pulse,
+//												   (cl_float4 *)H->worker[i].work,
+//												   H->worker[i].make_pulse_params.local_mem_size[1],
+//												   H->worker[i].make_pulse_params.range_count,
+//												   H->worker[i].make_pulse_params.entry_counts[1]);
+//					break;
+//			}
 			dispatch_semaphore_signal(H->worker[i].sem);
 		});
 	}
@@ -3845,7 +3854,7 @@ void RS_make_pulse(RSHandle *H) {
 
     for (i = 0; i < H->num_workers; i++) {
 		RSWorker *C = &H->worker[i];
-        clEnqueueNDRangeKernel(C->que, C->kern_scat_wa, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, &wa_events[i]);
+        clEnqueueNDRangeKernel(C->que, C->kern_scat_sig_aux, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, &wa_events[i]);
 		clEnqueueNDRangeKernel(C->que, C->kern_make_pulse_pass_1, 1, NULL, &C->make_pulse_params.global[0], &C->make_pulse_params.local[0], 1, &wa_events[i], &pass_1_events[i]);
 		clEnqueueNDRangeKernel(C->que, C->kern_make_pulse_pass_2, 1, NULL, &C->make_pulse_params.global[1], &C->make_pulse_params.local[1], 1, &pass_1_events[i], &pass_2_events[i]);
         clFlush(C->que);

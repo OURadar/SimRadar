@@ -108,7 +108,7 @@ int main(int argc, char **argv)
     cl_float16 rcs_desc;
 	
     cl_kernel kernel_pop;
-    cl_kernel kernel_scat_wa;
+    cl_kernel kernel_scat_sig_aux;
     cl_kernel kernel_db_atts;
 	cl_kernel kernel_make_pulse_pass_1;
 	cl_kernel kernel_make_pulse_pass_2;
@@ -162,7 +162,7 @@ int main(int argc, char **argv)
 					   "    -1     GPU test: make_pulse_pass_1\n"
 					   "    -2     GPU test: make_pulse_pass_2\n"
                        "    -d     GPU test: scat_db_atts\n"
-                       "    -w     GPU test: scat_wa\n"
+                       "    -w     GPU test: scat_sig_aux\n"
 					   "    -g     All GPU Tests\n"
 					   "    -v     increases verbosity\n"
 					   "    -n N   speed test using N iterations\n"
@@ -372,18 +372,18 @@ int main(int argc, char **argv)
 	clSetKernelArg(kernel_pop, 3, sizeof(cl_float16), &sim_desc);
     
     // Weight and attenuate setup
-    kernel_scat_wa = clCreateKernel(program, "scat_wa", &ret);
+    kernel_scat_sig_aux = clCreateKernel(program, "scat_sig_aux", &ret);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "Error\n");
         exit(EXIT_FAILURE);
     }
-    clSetKernelArg(kernel_scat_wa, RSScattererAngularWeightKernalArgumentSignal, sizeof(cl_mem),                    &sig);
-    clSetKernelArg(kernel_scat_wa, RSScattererAngularWeightKernalArgumentAuxiliary, sizeof(cl_mem),                 &aux);
-    clSetKernelArg(kernel_scat_wa, RSScattererAngularWeightKernalArgumentPosition, sizeof(cl_mem),                  &pos);
-    clSetKernelArg(kernel_scat_wa, RSScattererAngularWeightKernalArgumentRadarCrossSection, sizeof(cl_mem),         &rcs);
-    clSetKernelArg(kernel_scat_wa, RSScattererAngularWeightKernalArgumentWeightTable, sizeof(cl_mem),               &angular_weight);
-    clSetKernelArg(kernel_scat_wa, RSScattererAngularWeightKernalArgumentWeightTableDescription, sizeof(cl_float4), &angular_weight_desc);
-    clSetKernelArg(kernel_scat_wa, RSScattererAngularWeightKernalArgumentSimulationDescription, sizeof(cl_float16), &sim_desc);
+    clSetKernelArg(kernel_scat_sig_aux, RSScattererAngularWeightKernalArgumentSignal, sizeof(cl_mem),                    &sig);
+    clSetKernelArg(kernel_scat_sig_aux, RSScattererAngularWeightKernalArgumentAuxiliary, sizeof(cl_mem),                 &aux);
+    clSetKernelArg(kernel_scat_sig_aux, RSScattererAngularWeightKernalArgumentPosition, sizeof(cl_mem),                  &pos);
+    clSetKernelArg(kernel_scat_sig_aux, RSScattererAngularWeightKernalArgumentRadarCrossSection, sizeof(cl_mem),         &rcs);
+    clSetKernelArg(kernel_scat_sig_aux, RSScattererAngularWeightKernalArgumentWeightTable, sizeof(cl_mem),               &angular_weight);
+    clSetKernelArg(kernel_scat_sig_aux, RSScattererAngularWeightKernalArgumentWeightTableDescription, sizeof(cl_float4), &angular_weight_desc);
+    clSetKernelArg(kernel_scat_sig_aux, RSScattererAngularWeightKernalArgumentSimulationDescription, sizeof(cl_float16), &sim_desc);
     
     // Debris attributes
     kernel_db_atts = clCreateKernel(program, "db_atts", &ret);
@@ -554,7 +554,7 @@ int main(int argc, char **argv)
     // Run the kernels to populate, weight and attenuate, make pulse and read back
 	err = CL_SUCCESS;
     err |= clEnqueueNDRangeKernel(queue, kernel_pop, 1, NULL, &global_size, NULL, 0, NULL, NULL);
-    err |= clEnqueueNDRangeKernel(queue, kernel_scat_wa, 1, NULL, &global_size, NULL, 0, NULL, &events[0]);
+    err |= clEnqueueNDRangeKernel(queue, kernel_scat_sig_aux, 1, NULL, &global_size, NULL, 0, NULL, &events[0]);
 	err |= clEnqueueNDRangeKernel(queue, kernel_make_pulse_pass_1, 1, NULL, &R.global[0], &R.local[0], 1, &events[0], &events[1]);
 	err |= clEnqueueNDRangeKernel(queue, kernel_make_pulse_pass_2, 1, NULL, &R.global[1], &R.local[1], 1, &events[1], &events[2]);
     err |= clEnqueueReadBuffer(queue, pulse, CL_TRUE, 0, R.range_count * sizeof(cl_float4), host_rcs, 1, &events[2], NULL);
@@ -668,12 +668,12 @@ int main(int argc, char **argv)
         if (test & TEST_GPU_WA) {
             gettimeofday(&t1, NULL);
             for (k=0; k<speed_test_iterations; k++) {
-                err = clEnqueueNDRangeKernel(queue, kernel_scat_wa, 1, NULL, &global_size, NULL, 0, NULL, NULL);
+                err = clEnqueueNDRangeKernel(queue, kernel_scat_sig_aux, 1, NULL, &global_size, NULL, 0, NULL, NULL);
             }
             clFinish(queue);
             gettimeofday(&t2, NULL);
             t = DTIME(t1, t2);
-            printf("GPU Exec Time = %6.2f ms   Throughput = %6.2f GB/s  (scat_wa)\n",
+            printf("GPU Exec Time = %6.2f ms   Throughput = %6.2f GB/s  (scat_sig_aux)\n",
                    t / speed_test_iterations * 1000.0f,
                    1e-9 * num_elem * 4 * sizeof(cl_float4) * speed_test_iterations / t);
         }

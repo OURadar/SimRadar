@@ -31,10 +31,10 @@
 
 - (id)init
 {
-    return [self initWithDelegate:nil cglContext:nil];
+    return [self initWithDelegate:nil cglShareGroup:nil];
 }
 
-- (id)initWithDelegate:(id<SimPointDelegate>)newDelegate cglContext:(CGLContextObj)context
+- (id)initWithDelegate:(id<SimPointDelegate>)newDelegate cglShareGroup:(CGLShareGroupObj)shareGroup
 {
 	self = [super init];
 	if (self) {
@@ -47,10 +47,10 @@
         if (reportProgress) {
             [delegate progressUpdated:2.0 message:@"Initializing ..."];
         }
+
+        cl_context_properties property = (cl_context_properties)shareGroup;
         
-        //NSLog(@"cglContext = %p", context);
-        
-        S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, context, 1);
+        S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, property, 1);
         if (S == NULL) {
             return nil;
         }

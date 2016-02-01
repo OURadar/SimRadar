@@ -76,7 +76,7 @@ ReductionParams *make_reduction_params(cl_uint count, cl_uint user_max_groups, c
 void free_reduction_params(ReductionParams *params);
 float read_table(const float *table, const float index_last, const float index);
 
-void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char **src_ptr, CGLContextObj context, const char verb);
+void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char **src_ptr, cl_context_properties sharegroup, const char verb);
 //void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char **src_ptr, const char verb);
 void RS_worker_free(RSWorker *C);
 void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_scats, const size_t offset);

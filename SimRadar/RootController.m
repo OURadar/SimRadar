@@ -161,9 +161,8 @@
 
 - (void)createSimulation:(NSNumber *)number {
     @autoreleasepool {
-        CGLContextObj context = (CGLContextObj)[number longValue];
-        NSLog(@"context = %p", context);
-        sim = [[SimPoint alloc] initWithDelegate:self cglContext:context];
+        CGLShareGroupObj sharegroup = (CGLShareGroupObj)[number longValue];
+        sim = [[SimPoint alloc] initWithDelegate:self cglShareGroup:sharegroup];
         if (sim) {
             NSLog(@"New simulation domain initiated.");
             // Wire the simulator to the controller.
@@ -192,7 +191,9 @@
 		NSLog(@"There is a simulation session running. It will be re-activated. The muti-session version has not been implemented.");
 	} else {
         CGLContextObj context = CGLGetCurrentContext();
-        NSNumber *number = [NSNumber numberWithLong:(long)context];
+        CGLShareGroupObj sharegroup = CGLGetShareGroup(context);
+        NSLog(@"context = %p  sharegroup = %p", context, sharegroup);
+        NSNumber *number = [NSNumber numberWithLong:(long)sharegroup];
         [self performSelectorInBackground:@selector(createSimulation:) withObject:number];
 	}
 }

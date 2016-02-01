@@ -351,8 +351,8 @@ typedef struct _rs_worker {
     
 #else
 	
-    CGLContextObj          cgl_context;
 	cl_context             context;
+    cl_context_properties  sharegroup;
 	
 	cl_program             prog;
 	
@@ -361,9 +361,9 @@ typedef struct _rs_worker {
     cl_kernel              kern_bg_atts;
     cl_kernel              kern_el_atts;
     cl_kernel              kern_db_atts;
-    cl_kernel              kern_scat_wa;
     cl_kernel              kern_scat_clr;
-    cl_kernel              kern_scat_sig_dsd;
+    cl_kernel              kern_scat_rcs;
+    cl_kernel              kern_scat_sig_aux;
 	cl_kernel              kern_make_pulse_pass_1;
 	cl_kernel              kern_make_pulse_pass_2;
 	cl_kernel              kern_make_pulse_pass_2_group;
@@ -476,7 +476,7 @@ cl_uint RS_gpu_count(void);
 #pragma mark Initialization and Deallocation
 
 // Initializes a simulation space
-RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, CGLContextObj cgl_context, const char verb);
+RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context_properties sharegroup, const char verb);
 //RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char verb);
 RSHandle *RS_init_for_cpu_verbose(const char verb);
 RSHandle *RS_init_verbose(const char verb);
@@ -561,7 +561,7 @@ void RS_download_position_only(RSHandle *H);
 void RS_download_orientation_only(RSHandle *H);
 void RS_download_pulse_only(RSHandle *H);
 
-void RS_sig_from_dsd(RSHandle *H);
+void RS_rcs_from_dsd(RSHandle *H);
 
 #pragma mark -
 #pragma mark Simulation Time Evolution
