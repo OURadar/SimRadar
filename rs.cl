@@ -317,9 +317,9 @@ float4 compute_dudt_dwdt(float4 *dwdt, const float4 vel, const float4 vel_bg, co
 
     const unsigned int i = get_global_id(0);
 
-//    if (i == 1073152) {
-//        printf("i = %d\n", i);
-//    }
+    if (i == 1073152) {
+        printf("i = %d\n", i);
+    }
     //
     // derive alpha & beta for ADM table lookup ---------------------------------
     //
