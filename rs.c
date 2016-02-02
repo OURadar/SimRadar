@@ -3781,7 +3781,6 @@ void RS_advance_time(RSHandle *H) {
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &C->rcs_real[r]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[r]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[r]);
-
                 clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->species_origin[k], &C->species_population[k], &local_item_size, 0, NULL, &events[i][k]);
             }
             r = r == H->rcs_count - 1 ? 0 : r + 1;
@@ -3826,7 +3825,7 @@ void RS_make_pulse(RSHandle *H) {
     for (i = 0; i < H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
             if (H->status & RSStatusScattererSignalsNeedsUpdate) {
-                printf("RS_make_pulse: kern_scat_sig_aux\n");
+                //printf("RS_make_pulse: kern_scat_sig_aux\n");
                 scat_sig_aux_kernel(&H->worker[i].ndrange_scat_all,
                                     (cl_float4 *)H->worker[i].scat_sig,
                                     (cl_float4 *)H->worker[i].scat_aux,
@@ -3893,6 +3892,7 @@ void RS_make_pulse(RSHandle *H) {
         RSWorker *C = &H->worker[i];
         if (H->status & RSStatusScattererSignalsNeedsUpdate) {
             //printf("RS_make_pulse: kern_scat_sig_aux\n");
+            clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
             clEnqueueNDRangeKernel(C->que, C->kern_scat_sig_aux, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, &events[i][0]);
             clEnqueueNDRangeKernel(C->que, C->kern_make_pulse_pass_1, 1, NULL, &C->make_pulse_params.global[0], &C->make_pulse_params.local[0], 1, &events[i][0], &events[i][1]);
         } else {
