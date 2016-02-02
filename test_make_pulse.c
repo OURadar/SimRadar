@@ -397,7 +397,7 @@ int main(int argc, char **argv)
     ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentOrientation,                   sizeof(cl_mem),     &ori);
     ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &vel);
     ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentTumble,                        sizeof(cl_mem),     &tum);
-    ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentSignal,                        sizeof(cl_mem),     &sig);
+    ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &rcs);
     ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &rnd);
     ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &les);
     ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &les_desc);

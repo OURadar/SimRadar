@@ -97,7 +97,7 @@
             [delegate progressUpdated:10.0 message:[NSString stringWithFormat:@"Configuring radar parameters ..."]];
         }
         
-        RS_set_concept(S, RSSimulationConceptDraggedBackground | RSSimulationConceptBoundedParticleVelocity);
+        //RS_set_concept(S, RSSimulationConceptDraggedBackground | RSSimulationConceptBoundedParticleVelocity);
 
 		RS_set_antenna_params(S, 1.0f, 44.5f);                // 1.0-deg beamwidth, 44.5-dBi gain
 		
@@ -110,7 +110,7 @@
         
         RS_set_prt(S, 1.0f / 60.0f);
         
-        BOOL useLES = FALSE;
+        BOOL useLES = TRUE;
         
         RSBox box;
         if (useLES) {
@@ -162,7 +162,7 @@
                             -7.0f, 7.0f, 1.0f,                    // Azimuth
                             0.0f, 12.0f, 1.0f);                   // Elevation
 
-            cl_float4 vel = (cl_float4){10.0f, 0.0f, 0.0f, 0.0f};
+            cl_float4 vel = (cl_float4){20.0f, 0.0f, 0.0f, 0.0f};
             
             RS_set_vel_data_to_uniform(S, vel);
 
