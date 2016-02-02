@@ -355,7 +355,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentOrientation,                   sizeof(cl_mem),     &C->scat_ori);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentTumble,                        sizeof(cl_mem),     &C->scat_tum);
-    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSignal,                        sizeof(cl_mem),     &C->scat_sig);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &C->scat_rcs);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
@@ -1248,11 +1248,11 @@ void RS_init_scat_pos(RSHandle *H) {
 //        H->scat_ori[i].w =  0.5f;
 
         // Rotate by theta
-        float theta = 1.0f;
+        float theta = -0.9f * M_PI_2;
         H->scat_ori[i].x = 0.0f;
-        H->scat_ori[i].y = sin(0.5f * theta);
+        H->scat_ori[i].y = sinf(0.5f * theta);
         H->scat_ori[i].z = 0.0f;
-        H->scat_ori[i].w = cos(0.5f * theta);
+        H->scat_ori[i].w = cosf(0.5f * theta);
         
         
         // Tumbling vector for orientation update
@@ -1311,15 +1311,16 @@ void RS_init_scat_pos(RSHandle *H) {
     }
 	
 	// Replace a few points for debugging purpose.
-//	H->scat_pos[0].x = domain.origin.x + 0.5f * domain.size.x;
-//	H->scat_pos[0].y = domain.origin.y + 0.5f * domain.size.y;
-//	H->scat_pos[0].z = domain.origin.z + 0.5f * domain.size.z;
+	H->scat_pos[0].x = domain.origin.x + 0.5f * domain.size.x;
+	H->scat_pos[0].y = domain.origin.y + 0.5f * domain.size.y;
+	H->scat_pos[0].z = domain.origin.z + 0.5f * domain.size.z;
 	
-    if (H->species_population[1]) {
+    // Replace the very first debris particle
+    if (H->species_population[1] > 0) {
         k = (int)H->species_population[0] / H->num_workers;
         H->scat_pos[k].x = 0.0f;
         H->scat_pos[k].y = H->params.range_start + floorf(H->params.range_count * 0.5f) * H->params.range_delta;
-        H->scat_pos[k].z = 0.0f;
+        H->scat_pos[k].z = 0.5f * domain.size.z;
         
         H->scat_aux[k].s0 = H->params.range_start + floorf(H->params.range_count * 0.5f) * H->params.range_delta;
     }
@@ -1553,25 +1554,26 @@ void RS_set_scan_box(RSHandle *H,
 	}
 	
 	if (H->verb) {
-        printf("%s : RS : User domain @ R:[ %5.2f ~ %5.2f ] km   E:[ %5.2f ~ %5.2f ] deg   A:[ %+6.2f ~ %+6.2f ] deg\n", now(),
-               1e-3*H->params.range_start, 1e-3*H->params.range_end,
+        rsprint("User domain @ R:[ %5.2f ~ %5.2f ] km   E:[ %5.2f ~ %5.2f ] deg   A:[ %+6.2f ~ %+6.2f ] deg\n",
+               1.0e-3*H->params.range_start, 1e-3*H->params.range_end,
                H->params.elevation_start_deg, H->params.elevation_end_deg,
                H->params.azimuth_start_deg, H->params.azimuth_end_deg);
-        printf("%s : RS : Work domain @ R:[ %5.2f ~ %5.2f ] km   E:[ %5.2f ~ %5.2f ] deg   A:[ %+6.2f ~ %+6.2f ] deg\n", now(),
-               1e-3*r_lo, 1e-3*r_hi,
+        rsprint("Work domain @ R:[ %5.2f ~ %5.2f ] km   E:[ %5.2f ~ %5.2f ] deg   A:[ %+6.2f ~ %+6.2f ] deg\n",
+               1.0e-3*r_lo, 1.0e-3*r_hi,
                el_lo, el_hi,
                az_lo, az_hi);
-		printf("%s : RS :             @ X:[ %.2f ~ %.2f ] m   Y:[ %.2f ~ %.2f ] m   Z:[ %.2f ~ %.2f ] m\n", now(),
+		rsprint("            @ X:[ %.2f ~ %.2f ] m   Y:[ %.2f ~ %.2f ] m   Z:[ %.2f ~ %.2f ] m\n",
 			   xmin, xmax,
 			   ymin, ymax,
                zmin, zmax);
-        printf("%s : RS :               = ( %.2f m x %.2f m x %.2f m )\n", now(),
+        rsprint("              = ( %.2f m x %.2f m x %.2f m )\n",
                xmax - xmin, ymax - ymin, zmax - zmin);
-        printf("%s : RS : nvol = %s.%02d\n", now(), commaint(floor(nvol)), (int)(100 * (nvol - floor(nvol))));
-		printf("%s : RS : Suggested %s bodies\n", now(), commaint(preferred_n));
-		printf("%s : RS : Set to GPU preferred %s (%.2f bodies / resolution cell)\n", now(), commaint(preferred_n), (float)preferred_n / nvol);
+        rsprint("nvol = %s.%02d\n", commaint(floor(nvol)), (int)(100 * (nvol - floor(nvol))));
+		rsprint("Suggested %s bodies\n", commaint(preferred_n));
+		rsprint("Set to GPU preferred %s (%.2f bodies / resolution cell)\n", commaint(preferred_n), (float)preferred_n / nvol);
 	}
 	
+    // Now, we actually set it to suggested debris count
 	H->num_scats = preferred_n;
 	
 	// Anchor lines to show the volume of interest, which was set by the user. The number is well more than enough
@@ -2710,11 +2712,11 @@ void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *adam) {
 
     // Set up the mapping coefficients
     // Assumptions: maps are always in beta in [-180deg, +180deg] and alpha in [0, +180deg]
-    cd.x_ = adam->nb;    cd.xm = (float)(cd.x_ - 1);    cd.xs = (float)adam->nb / (2.0f * M_PI);    cd.xo = -(-M_PI) * cd.xs;
-    cd.y_ = adam->na;    cd.ym = (float)(cd.y_ - 1);    cd.ys = (float)adam->na / M_PI;             cd.yo = 0.0f;
-
-    cm.x_ = adam->nb;    cm.xm = (float)(cm.x_ - 1);    cm.xs = (float)adam->nb / (2.0f * M_PI);    cm.xo = -(-M_PI) * cd.xs;
-    cm.y_ = adam->na;    cm.ym = (float)(cm.y_ - 1);    cm.ys = (float)adam->na / M_PI;             cm.yo = 0.0f;
+    cd.x_ = adam->nb;    cd.xm = (float)(cd.x_ - 1);    cd.xs = (float)(adam->nb - 1) / (2.0f * M_PI);    cd.xo = -(-M_PI) * cd.xs + 0.5f;
+    cd.y_ = adam->na;    cd.ym = (float)(cd.y_ - 1);    cd.ys = (float)(adam->na - 1) / M_PI;             cd.yo = 0.5f;
+    
+    cm.x_ = adam->nb;    cm.xm = (float)(cm.x_ - 1);    cm.xs = (float)(adam->nb - 1) / (2.0f * M_PI);    cm.xo = -(-M_PI) * cm.xs + 0.5f;
+    cm.y_ = adam->na;    cm.ym = (float)(cm.y_ - 1);    cm.ys = (float)(adam->na - 1) / M_PI;             cm.yo = 0.5f;
 
     // Arrange ADM values into float4, getting ready for GPU's global memory
     for (i = 0; i < adam->nn; i++) {
@@ -3372,32 +3374,6 @@ void RS_populate(RSHandle *H) {
     
     RS_derive_ndranges(H);
 
-#else
-    
-    // Update kernel arguments
-    cl_int ret = CL_SUCCESS;
-    const int a = 0;
-    const int r = 0;
-    for (i = 0; i < H->num_workers; i++) {
-        ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &H->worker[i].vel_desc);
-        ret |= clSetKernelArg(H->worker[i].kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
-        
-        ret |= clSetKernelArg(H->worker[i].kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocityDescription,  sizeof(cl_float16), &H->worker[i].vel_desc);
-        ret |= clSetKernelArg(H->worker[i].kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription,          sizeof(cl_float16), &H->sim_desc);
-        
-        ret |= clSetKernelArg(H->worker[i].kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocityDescription,     sizeof(cl_float16), &H->worker[i].vel_desc);
-        ret |= clSetKernelArg(H->worker[i].kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDescription,           sizeof(cl_float16), &H->worker[i].adm_desc[a]);
-        ret |= clSetKernelArg(H->worker[i].kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,      sizeof(cl_float16), &H->worker[i].rcs_desc[r]);
-        ret |= clSetKernelArg(H->worker[i].kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription,             sizeof(cl_float16), &H->sim_desc);
-        
-        // Need to add DSD kernel? No, not really
-        //        ret |= clSetKernelArg(H->worker[i].kern_scat_sig, ...)
-    }
-    if (ret != CL_SUCCESS) {
-        fprintf(stderr, "%s : RS : Error: Failed to update kernel arguments in RS_populate().\n", now());
-        exit(EXIT_FAILURE);
-    }
-
 #endif
 
     // Upload the particle parameters to the GPU
@@ -3746,24 +3722,28 @@ void RS_advance_time(RSHandle *H) {
 		H->sim_toc = H->sim_tic + (size_t)(1.0f / H->params.prt);
 	}
     
-    size_t local_item_size = 1;
+//    size_t local_item_size = 1;
     
 	for (i = 0; i < H->num_workers; i++) {
         r = 0;
         a = 0;
 
+        // Convenient pointer to reduce dereferencing
         RSWorker *C = &H->worker[i];
 
+//        clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->species_origin[0], &C->species_population[0], NULL, 0, NULL, &events[i][0]);
+        
         // Background: Need to refresh some parameters at each time update
-        //printf("H->worker[%d].species_population[0] = %d from %d --> background\n", i, (int)H->worker[i].species_population[0], (int)H->worker[i].species_origin[0]);
         if (H->sim_concept & RSSimulationConceptDraggedBackground) {
             clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
             clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-            clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->species_origin[0], &C->species_population[0], &local_item_size, 0, NULL, &events[i][0]);
+            //clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->species_origin[0], &C->species_population[0], &local_item_size, 0, NULL, &events[i][0]);
+            clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->species_origin[0], &C->species_population[0], NULL, 0, NULL, &events[i][0]);
         } else {
-            clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &H->worker[i].vel[v]);
+            clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
             clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-            clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_bg_atts, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i][0]);
+            //clEnqueueNDRangeKernel(C->que, C->kern_bg_atts, 1, &C->species_origin[0], &C->species_population[0], &local_item_size, 0, NULL, &events[i][0]);
+            clEnqueueNDRangeKernel(C->que, C->kern_bg_atts, 1, &C->species_origin[0], &C->species_population[0], NULL, 0, NULL, &events[i][0]);
         }
         
         // Debris particles
@@ -3771,18 +3751,14 @@ void RS_advance_time(RSHandle *H) {
         clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
         for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
             if (C->species_population[k]) {
-                //if (H->verb > 2) {
-                    //printf("%s : RS : RCS[%d]  ADM[%d]  %d\n", now(), r, a, H->verb);
-                    //printf("H->worker[%d].species_population[%d] = %d from %d --> debris\n", i, k, (int)H->worker[i].species_population[k], (int)H->worker[i].species_origin[k]);
-                //}
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &C->adm_cd[a]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelMomentum,          sizeof(cl_mem),     &C->adm_cm[a]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &C->adm_desc);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &C->rcs_real[r]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[r]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[r]);
-
-                clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->species_origin[k], &C->species_population[k], &local_item_size, 0, NULL, &events[i][k]);
+                //clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->species_origin[k], &C->species_population[k], &local_item_size, 0, NULL, &events[i][k]);
+                clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->species_origin[k], &C->species_population[k], NULL, 0, NULL, &events[i][k]);
             }
             r = r == H->rcs_count - 1 ? 0 : r + 1;
             a = a == H->adm_count - 1 ? 0 : a + 1;
@@ -3794,14 +3770,14 @@ void RS_advance_time(RSHandle *H) {
     }
    
     for (i = 0; i < H->num_workers; i++) {
-        clWaitForEvents(1, events[i]);
+        clWaitForEvents(1, &events[i][0]);
         clReleaseEvent(events[i][0]);
-        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
-            if (H->worker[i].species_population[k]) {
-                clWaitForEvents(1, &events[i][k]);
-                clReleaseEvent(events[i][k]);
-            }
-        }
+//        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
+//            if (H->worker[i].species_population[k]) {
+//                clWaitForEvents(1, &events[i][k]);
+//                clReleaseEvent(events[i][k]);
+//            }
+//        }
     }
 	
 #endif
@@ -4071,7 +4047,7 @@ RSBox RS_suggest_scan_doamin(RSHandle *H, const int nbeams) {
     float na = 0.5f * (float)nbeams + RS_DOMAIN_PAD + 0.5f;
     
     // Maximum number of beams in elevation
-    float ne = 24.0f;
+    float ne = 14.0f;
     
     // Maximum y of the emulation box: The range when the width is fully utilized; This is also rmax
     float rmax = w / sinf(na * H->params.antenna_bw_rad);

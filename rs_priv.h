@@ -31,7 +31,7 @@ enum RSDebrisAttributeKernelArgument {
     RSDebrisAttributeKernelArgumentOrientation,
     RSDebrisAttributeKernelArgumentVelocity,
     RSDebrisAttributeKernelArgumentTumble,
-    RSDebrisAttributeKernelArgumentSignal,
+    RSDebrisAttributeKernelArgumentRadarCrossSection,
     RSDebrisAttributeKernelArgumentRandomSeed,
     RSDebrisAttributeKernelArgumentBackgroundVelocity,
     RSDebrisAttributeKernelArgumentBackgroundVelocityDescription,
