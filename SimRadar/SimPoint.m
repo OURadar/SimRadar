@@ -90,7 +90,7 @@
         }
 
 //		#ifdef DEBUG
-//		RS_set_verbosity(S, 3);
+		RS_set_verbosity(S, 3);
 //		#endif
 
         if (reportProgress) {
@@ -272,7 +272,7 @@
 }
 
 - (void)cycleScattererColorMode {
-    S->draw_mode.s0 = S->draw_mode.s0 >= 2 ? 0 : S->draw_mode.s0 + 1;
+    S->draw_mode.s0 = S->draw_mode.s0 >= 3 ? 0 : S->draw_mode.s0 + 1;
 }
 
 #pragma mark -

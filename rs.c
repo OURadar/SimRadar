@@ -966,7 +966,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 	
     // Set up some basic parameters to default values, H->verb is still 0 so no API message output
     RS_set_antenna_params(H, 1.0f, 50.0f);
-    
+
     RS_set_tx_params(H, 1.0e-6f, 50.0e3f);
     
     RS_set_beam_pos(H, 5.0f, 1.0f);
@@ -976,7 +976,6 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 					-12.0f, 12.0f, 1.0f,                        // Azimuth
 					0.0f, 8.0f, 1.0f);                          // Elevation
 		
-	RS_set_angular_weight_to_standard(H, 1.0f / 180.0f * M_PI);
 	//RS_set_angular_weight_to_double_cone(H, 2.0f / 180.0f * M_PI);
 	
 	H->verb = verb;
@@ -1379,11 +1378,11 @@ void RS_set_density(RSHandle *H, const float density) {
 
 void RS_set_antenna_params(RSHandle *H, RSfloat beamwidth_deg, RSfloat gain_dbi) {
     if (H->status & RSStatusDomainPopulated) {
-        rsprint("RS : Simulation domain has been populated. Radar antenna parameters cannot be changed.");
+        rsprint("Simulation domain has been populated. Radar antenna parameters cannot be changed.");
         return;
     }
 	H->params.antenna_bw_deg = beamwidth_deg;
-	H->params.antenna_bw_rad = M_PI * H->params.antenna_bw_deg / 180.0f;
+	H->params.antenna_bw_rad = H->params.antenna_bw_deg * M_PI / 180.0f;
     
     RS_set_angular_weight_to_standard(H, H->params.antenna_bw_rad);
 }
@@ -2078,7 +2077,7 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
     for (i = 0; i < H->num_workers; i++) {
         if (H->worker[i].range_weight != NULL) {
             if (H->verb > 1) {
-                printf("%s : RS : worker[%d] setting range weight.\n", now(), i);
+                rsprint("worker[%d] setting range weight.", i);
             }
             gcl_free(H->worker[i].range_weight);
         }
@@ -2095,7 +2094,7 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
     for (i = 0; i < H->num_workers; i++) {
         if (H->worker[i].range_weight != NULL) {
             if (H->verb > 1) {
-                printf("%s : RS : worker[%d] setting range weight.\n", now(), i);
+                rsprint("worker[%d] setting range weight.", now(), i);
             }
             clReleaseMemObject(H->worker[i].range_weight);
         }
@@ -2147,7 +2146,7 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
 	table.xm = (float)table_size - 1.0f;
 	memcpy(table.data, weights, table_size * sizeof(float));
     if (H->verb > 1) {
-        rsprint("Host angular weight table received.  dx = %.4f   x0 = %.1f   xm = %.0f  n = %d\n",
+        rsprint("Host angular weight table received.  dx = %.4f   x0 = %.1f   xm = %.0f  n = %d",
                table.dx, table.x0, table.xm, table_size);
     }
 
@@ -2156,10 +2155,13 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
     for (i = 0; i < H->num_workers; i++) {
         if (H->worker[i].angular_weight != NULL) {
             if (H->verb > 1) {
-                printf("%s : RS : worker[%d] setting angular weight.\n", now(), i);
+                rsprint("worker[%d] setting angular weight.", i);
             }
             gcl_free(H->worker[i].angular_weight);
         }
+//        for (int k = 0; k < table_size; k++) {
+//            printf("k=%d  w = %.3f  %.2f\n", k, table.data[k], 10 * log10f(table.data[k]));
+//        }
         H->worker[i].angular_weight = gcl_malloc(table_size * sizeof(float), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
         if (H->worker[i].angular_weight == NULL) {
             fprintf(stderr, "%s : RS : Error creating angular weight table on CL device.\n", now());
@@ -2173,7 +2175,7 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
     for (i = 0; i < H->num_workers; i++) {
         if (H->worker[i].angular_weight != NULL) {
             if (H->verb > 1) {
-                printf("%s : RS : worker[%d] setting angular weight.\n", now(), i);
+                rsprint("worker[%d] setting angular weight.\n", i);
             }
             clReleaseMemObject(H->worker[i].angular_weight);
         }
@@ -2212,11 +2214,11 @@ void RS_set_angular_weight_to_double_cone(RSHandle *H, float beamwidth_rad) {
 
 
 void RS_set_angular_weight_to_standard(RSHandle *H, float beamwidth_rad) {
-	const unsigned int n = 40;
+	const unsigned int n = 32;
 	float a;
 	float b = 1.27f * M_PI / beamwidth_rad;
 	float c;
-	float w[n];
+	float *w = (float *)malloc(n * sizeof(float));
 	
     float delta = 1.0f / 360.0f * M_PI;
     
@@ -2233,7 +2235,10 @@ void RS_set_angular_weight_to_standard(RSHandle *H, float beamwidth_rad) {
 		}
 		//printf("angle=%.4f deg  w[%d] = %.4f dB\n", a / M_PI * 180.0f, i, 10.0f * log10f(w[i]));
 	}
-	RS_set_angular_weight(H, w, 0.0f, delta, n);
+	
+    RS_set_angular_weight(H, w, 0.0f, delta, n);
+
+    free(w);
 }
 
 
@@ -3775,10 +3780,10 @@ void RS_advance_time(RSHandle *H) {
         clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
         for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
             if (C->species_population[k]) {
-                if (H->verb > 2) {
-                    printf("%s : RS : RCS[%d]  ADM[%d]  %d\n", now(), r, a, H->verb);
+                //if (H->verb > 2) {
+                    //printf("%s : RS : RCS[%d]  ADM[%d]  %d\n", now(), r, a, H->verb);
                     //printf("H->worker[%d].species_population[%d] = %d from %d --> debris\n", i, k, (int)H->worker[i].species_population[k], (int)H->worker[i].species_origin[k]);
-                }
+                //}
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &C->adm_cd[a]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelMomentum,          sizeof(cl_mem),     &C->adm_cm[a]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &C->adm_desc);

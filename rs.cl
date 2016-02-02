@@ -640,7 +640,6 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
         //pos.xyz = (float3)(fma(r.xyz, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT);   // Feed from the bottom
         pos.xyz = fma(r.xyz, sim_desc.hi.s456, sim_desc.hi.s012);
         vel = FLOAT4_ZERO;
-//        sig = FLOAT4_ZERO;
         
         p[i] = pos;
         v[i] = vel;
@@ -843,23 +842,30 @@ __kernel void scat_clr(__global float4 *c,
 {
     unsigned int i = get_global_id(0);
     
-    if (mode.s0 == 0) {
-        c[i].x = clamp(a[i].s2, 0.0f, 1.0f);
-    } else if (mode.s0 == 1) {
-        c[i].x = clamp(fma(log10(100.0f * a[i].s3), 0.1f, 0.8f), 0.0f, 1.0f);
-        //    if (i < 20) {
-        //        printf("i=%d  w=%.4f\n", i, c[i].x);
-        //        //printf("i=%d  d=%.1fmm  c=%.3f\n", i, p[i].w * 1000.0f, c[i].x);
-        //    }
+    const uint draw_mode = mode.s0;
+    
+    float x = 0.0f;
+    float4 aux = a[i];
+    
+    if (draw_mode == 0) {
+        x = clamp(aux.s2, 0.0f, 1.0f);
+    } else if (draw_mode == 1) {
+        x = aux.s3;
+    } else if (draw_mode == 2) {
+        x = clamp(fma(log10(100.0f * aux.s3), 0.1f, 0.8f), 0.0f, 1.0f);
+//            if (i < 20) {
+//                printf("i=%d  w=%.4e  c=%.1f\n", i, a[i].s3, c[i].x);
+//                //printf("i=%d  d=%.1fmm  c=%.3f\n", i, p[i].w * 1000.0f, c[i].x);
+//            }
     } else {
         //c[i].x = clamp(p[i].w * 500.0f, 0.0f, 1.0f);
-        c[i].x = clamp((a[i].s0 - 2000.0f) * 0.0005f, 0.0f, 1.0f);
+        x = clamp((aux.s0 - 2000.0f) * 0.0005f, 0.0f, 1.0f);
         
         float dr = 60.0f;
         float4 range_weight_desc = (float4)(1.0f / dr, 1.0f, 2.0f, 0.0f);
         float range_weight[3] = {0.0f, 1.0f, 0.0f};
         
-        float2 dr_from_center = (float2)(a[i].s0 - (float)mode.s1);
+        float2 dr_from_center = (float2)(aux.s0 - (float)mode.s1);
         const float2 s = (float2)range_weight_desc.s0;
         const float2 o = (float2)range_weight_desc.s1 + (float2)(0.0f, 1.0f);
         
@@ -868,8 +874,10 @@ __kernel void scat_clr(__global float4 *c,
         uint2 iidx_int = convert_uint2(fidx_int);
         
         // Range weight
-        c[i].x = mix(range_weight[iidx_int.s0], range_weight[iidx_int.s1], fidx_dec.s0);
+        x = mix(range_weight[iidx_int.s0], range_weight[iidx_int.s1], fidx_dec.s0);
     }
+    
+    c[i].x = x;
 }
 
 //
@@ -905,6 +913,11 @@ __kernel void scat_sig_aux(__global float4 *s,
     
     iidx_int = convert_uint2(fidx_int);
     
+    
+//    if (i < 32) {
+//        float w = angular_weight[i];
+//        printf("w[%d] = %.6f = %.2f\n", i, w, 10.0f * log10(w));
+//    }
     //
     // Auxiliary info:
     // - s0 = range of the point
@@ -916,7 +929,6 @@ __kernel void scat_sig_aux(__global float4 *s,
     aux.s1 = aux.s1 + sim_desc.sf;
     aux.s3 = mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
     
-    //sig = two_way_effects(sig, aux.s0, sim_desc.s4);
     float atten = pown(aux.s0, -4);
     float phase = aux.s0 * sim_desc.s4;
     

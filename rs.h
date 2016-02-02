@@ -46,7 +46,7 @@
 #define RS_ALIGN_SIZE             128     // Align size. Be sure to have a least 16 for SSE, 32 for AVX, 64 for AVX-512
 #define RS_MAX_GATES              512
 #define RS_MAX_NUM_SCATS      4000000
-#define RS_BODY_PER_CELL           1.0
+#define RS_BODY_PER_CELL           10.0
 #define RS_CL_GROUP_ITEMS          64
 #define RS_MAX_VEL_TABLES          10
 #define RS_MAX_DEBRIS_TYPES         4
