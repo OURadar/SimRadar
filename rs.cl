@@ -315,6 +315,11 @@ float4 compute_bg_vel(const float4 pos, __read_only image3d_t wind_uvw, const fl
 float4 compute_dudt_dwdt(float4 *dwdt, const float4 vel, const float4 vel_bg, const float4 ori, __read_only image2d_t adm_cd, __read_only image2d_t adm_cm, const float16 adm_desc) {
     const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
 
+    const unsigned int i = get_global_id(0);
+
+//    if (i == 1073152) {
+//        printf("i = %d\n", i);
+//    }
     //
     // derive alpha & beta for ADM table lookup ---------------------------------
     //
@@ -338,8 +343,6 @@ float4 compute_dudt_dwdt(float4 *dwdt, const float4 vel, const float4 vel_bg, co
         alpha = M_PI_2_F;
         beta = 0.0f;
     }
-    
-    unsigned int i = get_global_id(0);
     
 //    if (i <= 10) {
 //        //        float alpha, beta;

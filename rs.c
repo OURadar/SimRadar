@@ -1568,7 +1568,7 @@ void RS_set_scan_box(RSHandle *H,
         printf("%s : RS :               = ( %.2f m x %.2f m x %.2f m )\n", now(),
                xmax - xmin, ymax - ymin, zmax - zmin);
         printf("%s : RS : nvol = %s.%02d\n", now(), commaint(floor(nvol)), (int)(100 * (nvol - floor(nvol))));
-		printf("%s : RS : Suggested %s bodies\n", now(), commaint(H->num_scats));
+		printf("%s : RS : Suggested %s bodies\n", now(), commaint(preferred_n));
 		printf("%s : RS : Set to GPU preferred %s (%.2f bodies / resolution cell)\n", now(), commaint(preferred_n), (float)preferred_n / nvol);
 	}
 	
@@ -3589,14 +3589,6 @@ void RS_upload(RSHandle *H) {
 			gcl_memcpy(H->worker[i].scat_aux, H->scat_aux + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->worker[i].scat_rcs, H->scat_rcs + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->worker[i].scat_rnd, H->scat_rnd + H->offset[i], H->worker[i].num_scats * sizeof(cl_uint4));
-            
-            // Set individual color
-//            scat_clr_kernel(&H->worker[i].ndrange_scat[0],
-//                            (cl_float4 *)H->worker[i].scat_clr,
-//                            (cl_float4 *)H->worker[i].scat_pos,
-//                            (cl_float4 *)H->worker[i].scat_aux,
-//                            H->draw_mode);
-
             dispatch_semaphore_signal(H->worker[i].sem);
 		});
 		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
@@ -3633,7 +3625,6 @@ void RS_rcs_from_dsd(RSHandle *H) {
                             (cl_float4 *)H->worker[i].scat_rcs,
                             (cl_float4 *)H->worker[i].scat_pos,
                             (cl_float4 *)H->worker[i].scat_aux);
-            
             dispatch_semaphore_signal(H->worker[i].sem);
         });
         dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
@@ -3685,6 +3676,7 @@ void RS_advance_time(RSHandle *H) {
         }
     }
 
+    // These kernels are actually independent, can be parallelized more.
     for (i = 0; i < H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
             if (H->sim_concept & RSSimulationConceptDraggedBackground) {
@@ -3728,7 +3720,6 @@ void RS_advance_time(RSHandle *H) {
                                    (cl_image)H->worker[i].rcs_imag[r],
                                    H->worker[i].rcs_desc[r],
                                    H->sim_desc);
-                    
                     dispatch_semaphore_signal(H->worker[i].sem);
                 });
             }
