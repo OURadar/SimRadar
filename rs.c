@@ -905,12 +905,14 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
             break;
     }
 
-#if defined (__APPLE__)
+#if defined (GUI)
     // Force to one GPU at the moment. Seems like OpenGL context can be shared with only one OpenCL context
     H->num_workers = 1;
 #endif
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
+    
+    H->num_workers = 1;
     
     for (i = 0; i < H->num_workers; i++) {
         if (verb > 2) {
@@ -3797,7 +3799,7 @@ void RS_make_pulse(RSHandle *H) {
     for (i = 0; i < H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
             if (H->status & RSStatusScattererSignalsNeedsUpdate) {
-                printf("RS_make_pulse: kern_scat_sig_aux\n");
+                //printf("RS_make_pulse: kern_scat_sig_aux\n");
                 scat_sig_aux_kernel(&H->worker[i].ndrange_scat_all,
                                     (cl_float4 *)H->worker[i].scat_sig,
                                     (cl_float4 *)H->worker[i].scat_aux,
