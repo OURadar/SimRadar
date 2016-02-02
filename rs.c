@@ -3866,6 +3866,7 @@ void RS_make_pulse(RSHandle *H) {
         RSWorker *C = &H->worker[i];
         if (H->status & RSStatusScattererSignalsNeedsUpdate) {
             //printf("RS_make_pulse: kern_scat_sig_aux\n");
+            clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
             clEnqueueNDRangeKernel(C->que, C->kern_scat_sig_aux, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, &events[i][0]);
             clEnqueueNDRangeKernel(C->que, C->kern_make_pulse_pass_1, 1, NULL, &C->make_pulse_params.global[0], &C->make_pulse_params.local[0], 1, &events[i][0], &events[i][1]);
         } else {
