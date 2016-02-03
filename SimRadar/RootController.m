@@ -12,6 +12,7 @@
 @interface RootController()
 - (void)setIcon:(NSInteger)index;
 - (void)showLiveDisplay:(id)sender;
+- (void)closeSplashWindow:(id)sender;
 @end
 
 @implementation RootController
@@ -50,11 +51,10 @@
 {
 	if (dc == nil) {
 		dc = [[DisplayController alloc] initWithWindowNibName:@"LiveDisplay" viewDelegate:self];
-        [dc.window setLevel:-1];
+        //[dc.window setLevel:-1];
         [dc showWindow:self];
     } else {
         [self showLiveDisplay:self];
-        [dc.glView startAnimation];
     }
 }
 
@@ -108,9 +108,8 @@
 {
     sc = [[SplashController alloc] initWithWindowNibName:@"Splash"];
     [sc setDelegate:self];
-    //[sc.window makeKeyAndOrderFront:self];
+    [sc.window makeKeyAndOrderFront:nil];
     [sc showWindow:self];
-    
     
 	iconFolder = [[[NSBundle mainBundle] pathForResource:@"Minion-Icons" ofType:nil] retain];
 	icons = [[[NSFileManager defaultManager] contentsOfDirectoryAtPath:iconFolder error:nil] retain];
@@ -176,6 +175,11 @@
             //[self performSelectorOnMainThread:@selector(alertMissingResources) withObject:nil waitUntilDone:true];
             //[[NSApplication sharedApplication] terminate:self];
             [dc emptyDomain];
+            [dc.glView startAnimation];
+
+            sleep(2);
+            
+            [self performSelectorOnMainThread:@selector(closeSplashWindow:) withObject:nil waitUntilDone:NO];
         }
     }
 }
@@ -255,6 +259,15 @@
 - (void)splashWindowDidLoad:(id)sender
 {
     [self newLiveDisplay:self];
+}
+
+#pragma mark -
+#pragma mark Dismiss SplashController
+
+- (void)closeSplashWindow:(id)sender {
+    [sc close];
+    [sc release];
+    sc = nil;
 }
 
 #pragma mark -

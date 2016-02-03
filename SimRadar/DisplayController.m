@@ -564,6 +564,11 @@ NSWindow *standardWindow;
                                        y:orig[1] + 0.5f * size[1]
                                        z:orig[2] + 0.5f * size[2]];
     [glView.renderer setAnchorLines:sampleAnchorLines number:sizeof(anchorLines) / sizeof(cl_float4)];
+
+    NSSize newSize = NSMakeSize(1280.0f, 720.0f);
+    CGFloat xPos = (self.window.screen.frame.size.width - newSize.width) * 0.5f;
+    CGFloat yPos = (self.window.screen.frame.size.height - newSize.height) * 0.5f;
+    [self.window setFrame:NSMakeRect(xPos, yPos, newSize.width, newSize.height) display:YES];
 }
 
 @end
