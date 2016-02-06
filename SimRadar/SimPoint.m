@@ -70,8 +70,8 @@
 		L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
 //        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, NULL);
 
-//        A = ADM_init_with_config_path(ADMConfigSquarePlate, NULL);
-        A = ADM_init_with_config_path(ADMConfigModelPlate, NULL);
+        A = ADM_init_with_config_path(ADMConfigSquarePlate, NULL);
+//        A = ADM_init_with_config_path(ADMConfigModelPlate, NULL);
 
         R = RCS_init_with_config_path(RCSConfigLeaf, NULL);
 
