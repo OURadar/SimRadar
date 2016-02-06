@@ -632,6 +632,9 @@ unsigned int grayToBinary(unsigned int num)
              debrisRenderer[3].count,
              bodyRenderer[0].colormapIndex,
              backgroundOpacity);
+    snprintf(statusMessage[2],
+             sizeof(statusMessage[2]),
+             "HUD %d%d%d", (hudConfigGray & 0x04) >> 2, (hudConfigGray & 0x02) >> 1, hudConfigGray & 0x01);
 }
 
 
@@ -1426,21 +1429,22 @@ unsigned int grayToBinary(unsigned int num)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Text
-    snprintf(statusMessage[2], 256, "FBO %u   VFX %u  Frame %d", ifbo, applyVFX, iframe);
+    snprintf(statusMessage[3], 256, "FBO %u   VFX %u  Frame %d", ifbo, applyVFX, iframe);
     
     if (titleString)
         [textRenderer drawText:[titleString UTF8String] origin:NSMakePoint(25.0f, height - 60.0f) scale:0.5f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
     [textRenderer drawText:statusMessage[0] origin:NSMakePoint(25.0f, height - 90.0f) scale:0.3f];
     [textRenderer drawText:statusMessage[1] origin:NSMakePoint(25.0f, height - 120.0f) scale:0.3f];
     [textRenderer drawText:statusMessage[2] origin:NSMakePoint(25.0f, height - 150.0f) scale:0.3f];
+    [textRenderer drawText:statusMessage[3] origin:NSMakePoint(25.0f, height - 180.0f) scale:0.3f];
 
 #ifndef GEN_IMG
     [textRenderer drawText:fpsString origin:NSMakePoint(width - 30.0f, 20.0f) scale:0.333f red:1.0f green:0.9f blue:0.2f alpha:1.0f align:GLTextAlignmentRight];
 #endif
     
     if (hudConfigGray & hudConfigShowRadarView) {
-        snprintf(statusMessage[3], 128, "EL %.2f   AZ %.2f", beamElevation / M_PI * 180.0f, beamAzimuth / M_PI * 180.0f);
-        [textRenderer drawText:statusMessage[3] origin:NSMakePoint(hudOrigin.x + 15.0f, hudOrigin.y + 15.0f) scale:0.25f];
+        snprintf(statusMessage[4], 128, "EL %.2f   AZ %.2f", beamElevation / M_PI * 180.0f, beamAzimuth / M_PI * 180.0f);
+        [textRenderer drawText:statusMessage[4] origin:NSMakePoint(hudOrigin.x + 15.0f, hudOrigin.y + 15.0f) scale:0.25f];
     }
 
     // Colorbar
@@ -1614,6 +1618,7 @@ unsigned int grayToBinary(unsigned int num)
 {
     hudConfigDecimal = hudConfigDecimal == hudConfigLast ? 0 : hudConfigDecimal + 1;
     hudConfigGray = binaryToGray(hudConfigDecimal);
+    statusMessageNeedsUpdate = true;
 }
 
 
@@ -1621,6 +1626,7 @@ unsigned int grayToBinary(unsigned int num)
 {
     hudConfigDecimal = hudConfigDecimal == 0 ? hudConfigLast : hudConfigDecimal - 1;
     hudConfigGray = binaryToGray(hudConfigDecimal);
+    statusMessageNeedsUpdate = true;
 }
 
 
