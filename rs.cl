@@ -332,7 +332,7 @@ float4 compute_dudt_dwdt(float4 *dwdt,
     float4 ur = vel_bg - vel;
     float4 u_hat = quat_rotate(normalize(ur), quat_conj(ori));
 
-    if (length(u_hat.yz) > 1.0e-3f * u_hat.x) {
+    if (length(u_hat.yz) > 1.0e-3f * fabs(u_hat.x)) {
 
 //        beta = atan2(u_hat.y, u_hat.x);
         beta = atan2(-u_hat.y, u_hat.x);
@@ -362,10 +362,10 @@ float4 compute_dudt_dwdt(float4 *dwdt,
     float4 cd = read_imagef(adm_cd, sampler, adm_coord);
     float4 cm = read_imagef(adm_cm, sampler, adm_coord);
     
-    if (get_global_id(0) == 0) {
-//        printf("ori = %10.7v4f   u_hat = %+10.7v4f   ba%+10.7v2f   coord = %5.2v2f - (%+10.7v4f ; %+10.7v4f)\n", ori, u_hat, beta_alpha, adm_coord, cd, cm);
-        printf("ori = %10.7v4f   u_hat = %+10.7v4f   ba%+10.7f%+10.7f   coord = %5.2v2f - (%+10.7v4f ; %+10.7v4f)\n", ori, u_hat, beta, alpha, adm_coord, cd, cm);
-    }
+//    if (get_global_id(0) == 0) {
+////        printf("ori = %10.7v4f   u_hat = %+10.7v4f   ba%+10.7v2f   coord = %5.2v2f - (%+10.7v4f ; %+10.7v4f)\n", ori, u_hat, beta_alpha, adm_coord, cd, cm);
+//        printf("ori = %10.7v4f   u_hat = %+10.7v4f   ba%+10.7f%+10.7f   coord = %5.2v2f - (%+10.7v4f ; %+10.7v4f)\n", ori, u_hat, beta, alpha, adm_coord, cd, cm);
+//    }
     
     //
     //    RSTable3DDescriptionRecipInLnX  = 12,
