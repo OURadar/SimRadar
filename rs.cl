@@ -362,10 +362,10 @@ float4 compute_dudt_dwdt(float4 *dwdt,
     float4 cd = read_imagef(adm_cd, sampler, adm_coord);
     float4 cm = read_imagef(adm_cm, sampler, adm_coord);
     
-    if (get_global_id(0) == 0) {
-//        printf("ori = %10.7v4f   u_hat = %+10.7v4f   ba%+10.7v2f   coord = %5.2v2f - (%+10.7v4f ; %+10.7v4f)\n", ori, u_hat, beta_alpha, adm_coord, cd, cm);
-        printf("ori = %10.7v4f   u_hat = %+10.7v4f   ba%+10.7f%+10.7f   coord = %5.2v2f - (%+10.7v4f ; %+10.7v4f)\n", ori, u_hat, beta, alpha, adm_coord, cd, cm);
-    }
+//    if (get_global_id(0) == 0) {
+////        printf("ori = %10.7v4f   u_hat = %+10.7v4f   ba%+10.7v2f   coord = %5.2v2f - (%+10.7v4f ; %+10.7v4f)\n", ori, u_hat, beta_alpha, adm_coord, cd, cm);
+//        printf("ori = %10.7v4f   u_hat = %+10.7v4f   ba%+10.7f%+10.7f   coord = %5.2v2f - (%+10.7v4f ; %+10.7v4f)\n", ori, u_hat, beta, alpha, adm_coord, cd, cm);
+//    }
     
     //
     //    RSTable3DDescriptionRecipInLnX  = 12,

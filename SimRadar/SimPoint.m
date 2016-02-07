@@ -97,7 +97,7 @@
             [delegate progressUpdated:10.0 message:[NSString stringWithFormat:@"Configuring radar parameters ..."]];
         }
         
-        //RS_set_concept(S, RSSimulationConceptDraggedBackground | RSSimulationConceptBoundedParticleVelocity);
+        RS_set_concept(S, RSSimulationConceptDraggedBackground | RSSimulationConceptBoundedParticleVelocity);
 
 		RS_set_antenna_params(S, 1.0f, 44.5f);                // 1.0-deg beamwidth, 44.5-dBi gain
 		
@@ -110,7 +110,7 @@
         
         RS_set_prt(S, 1.0f / 60.0f);
         
-        BOOL useLES = FALSE;
+        BOOL useLES = TRUE;
         
         RSBox box;
         if (useLES) {
