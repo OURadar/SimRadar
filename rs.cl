@@ -312,69 +312,58 @@ float4 compute_bg_vel(const float4 pos, __read_only image3d_t wind_uvw, const fl
 // Particle acceleration
 //
 
-float4 compute_dudt_dwdt(float4 *dwdt, const float4 vel, const float4 vel_bg, const float4 ori, __read_only image2d_t adm_cd, __read_only image2d_t adm_cm, const float16 adm_desc) {
+float4 compute_dudt_dwdt(float4 *dwdt,
+                         const float4 vel,
+                         const float4 vel_bg,
+                         const float4 ori,
+                         __read_only image2d_t adm_cd,
+                         __read_only image2d_t adm_cm,
+                         const float16 adm_desc) {
     const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
 
-    const unsigned int i = get_global_id(0);
+    //const unsigned int i = get_global_id(0);
 
-//    if (i == 1073152) {
-//        printf("i = %d\n", i);
-//    }
     //
     // derive alpha & beta for ADM table lookup ---------------------------------
     //
     float alpha, beta;
+    //float2 beta_alpha;
     
     float4 ur = vel_bg - vel;
-    
-    if (length(ur.xyz) > 1.0e-3f) {
-        float4 u_hat = normalize(ur);
-        
-        u_hat = quat_rotate(u_hat, quat_conj(ori));
-        
-        beta = acos(u_hat.x);
+    float4 u_hat = quat_rotate(normalize(ur), quat_conj(ori));
+
+    if (length(u_hat.yz) > 1.0e-3f * u_hat.x) {
+
+//        beta = atan2(u_hat.y, u_hat.x);
+        beta = atan2(-u_hat.y, u_hat.x);
         alpha = atan2(u_hat.z, u_hat.y);
-        
         if (alpha < 0.0f) {
             alpha = M_PI_F + alpha;
             beta = -beta;
         }
+
+        //float2 yy = (float2)(u_hat.y, u_hat.z);
+//        float2 yy = (float2)(-u_hat.y, u_hat.z);
+//        beta_alpha = atan2(yy, u_hat.xy);
+        
+//        if (beta_alpha.x < 0.0f) {
+//            //beta_alpha = beta_alpha * (float2)(-1.0f, 0.0f) + (float2)(0.0f, M_PI_F);
+//            beta_alpha = fma(beta_alpha, (float2)(-1.0f, 0.0f), (float2)(0.0f, M_PI_F));
+//        }
     } else {
         alpha = M_PI_2_F;
         beta = 0.0f;
+        //beta_alpha = (float2)(0.0f, M_PI_2_F);
     }
-    
-//    if (i <= 10) {
-//        //        float alpha, beta;
-//        //
-//        //        float4 ur = vel_bg - vel;
-//        //
-//        //        if (length(ur.xyz) > 1.0e-3f) {
-//        //            float4 u_hat = normalize(ur);
-//        //
-//        //            u_hat = quat_rotate(u_hat, quat_conj(ori));
-//        //
-//        //            beta = acos(u_hat.x);
-//        //            alpha = atan2(u_hat.z, u_hat.y);
-//        //
-//        //            if (alpha < 0.0f) {
-//        //                alpha = M_PI_F + alpha;
-//        //                beta = -beta;
-//        //            }
-//        //        } else {
-//        //            alpha = M_PI_2_F;
-//        //            beta = 0.0f;
-//        //        }
-//        printf("=====================  i = %uz\n", i);
-//    }
 
     // ADM values are stored as cd(x, y, z, _) + cm(x, y, z, _)
     float2 adm_coord = fma((float2)(beta, alpha), adm_desc.s01, adm_desc.s45);
+    //float2 adm_coord = fma(beta_alpha, adm_desc.s01, adm_desc.s45);
     float4 cd = read_imagef(adm_cd, sampler, adm_coord);
     float4 cm = read_imagef(adm_cm, sampler, adm_coord);
     
-//    if (i == 0) {
-//        printf("adm_coord = %5.2f\n", adm_coord.x);
+//    if (get_global_id(0) == 0) {
+//        printf("ori = %10.7v4f   u_hat = %+10.7v4f   ba%+10.7v2f   coord = %5.2v2f - (%+10.7v4f ; %+10.7v4f)\n", ori, u_hat, beta_alpha, adm_coord, cd, cm);
 //    }
     
     //
@@ -397,6 +386,7 @@ float4 compute_dudt_dwdt(float4 *dwdt, const float4 vel, const float4 vel_bg, co
     
     // Euler method: dudt is just a scaled version of drag coefficient
     float4 dudt = Ta * ur_norm_sq * cd + (float4)(0.0f, 0.0f, -9.8f, 0.0f);
+//    float4 dudt = Ta * ur_norm_sq * cd;
     *dwdt = radians((Ta * ur_norm_sq * inv_inln) * cm);
     
     // Runge-Kutta: dudt is a two-point average
@@ -726,15 +716,12 @@ __kernel void db_atts(__global float4 *p,
 {
     const unsigned int i = get_global_id(0);
     
-//    if (i == 32000) {
-//        printf("i = %d\n", i);
-//    }
-
     float4 pos = p[i];  // position
     float4 ori = o[i];  // orientation
     float4 vel = v[i];  // velocity
     float4 tum = t[i];  // tumbling (orientation change)
-    float4 sig = x[i];  // signal
+
+    float4 rcs;  // radar cross section
 
     const float s5 = sim_desc.s5;
     const uint concept = *(uint *)&s5;
@@ -766,13 +753,13 @@ __kernel void db_atts(__global float4 *p,
         ori = normalize(rand(&seed));
         vel = FLOAT4_ZERO;
         tum = QUAT_IDENTITY;
-        sig = FLOAT4_ZERO;
+        rcs = FLOAT4_ZERO;
 
         p[i] = pos;
         o[i] = ori;
         v[i] = vel;
         t[i] = tum;
-        x[i] = sig;
+        x[i] = rcs;
         y[i] = seed;
         
         return;
@@ -800,14 +787,14 @@ __kernel void db_atts(__global float4 *p,
         vel.xy = vel_bg.xy;
     }
     
-    sig = compute_rcs(ori, rcs_real, rcs_imag, rcs_desc, sim_desc);
+    rcs = compute_rcs(ori, rcs_real, rcs_imag, rcs_desc, sim_desc);
     
     // Copy back to global memory space
     p[i] = pos;
     o[i] = ori;
     v[i] = vel;
     t[i] = tum;
-    x[i] = sig;
+    x[i] = rcs;
 }
 
 
@@ -894,7 +881,7 @@ __kernel void scat_sig_aux(__global float4 *s,
                            const float4 angular_weight_desc,
                            const float16 sim_desc)
 {
-    unsigned int i = get_global_id(0);
+    const unsigned int i = get_global_id(0);
 
     float4 sig = s[i];
     float4 aux = a[i];

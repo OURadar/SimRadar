@@ -197,18 +197,20 @@ int main(int argc, char *argv[]) {
     int k = 0;
 
     // Some warm up
-//    const int ks = 100;
-//    for (k = 0; k < ks; k++) {
-//        RS_set_beam_pos(S, 15.0f, 10.0f);
-//        RS_make_pulse(S);
-//        RS_advance_time(S);
-//        
-//        if (verb > 2) {
-//            RS_download(S);
-//            printf("== k = %d ==============\n", k);
-//            RS_show_scat_pos(S);
-//        }
-//    }
+    if (num_frames > 500) {
+        const int ks = 100;
+        for (k = 0; k < ks; k++) {
+            RS_set_beam_pos(S, 15.0f, 10.0f);
+            RS_make_pulse(S);
+            RS_advance_time(S);
+            
+            if (verb > 2) {
+                RS_download(S);
+                printf("== k = %d ==============\n", k);
+                RS_show_scat_pos(S);
+            }
+        }
+    }
     
     //RS_sig_from_dsd(S);
     

@@ -20,9 +20,10 @@ enum {
 	TEST_CPU          = 1,
 	TEST_GPU_PASS_1   = 1 << 1,
 	TEST_GPU_PASS_2   = 1 << 2,
-    TEST_GPU_DB_ATTS  = 1 << 3,
-    TEST_GPU_WA       = 1 << 4,
-	TEST_GPU          = TEST_GPU_PASS_1 | TEST_GPU_PASS_2 | TEST_GPU_DB_ATTS | TEST_GPU_WA,
+    TEST_GPU_EL_ATTS  = 1 << 3,
+    TEST_GPU_DB_ATTS  = 1 << 4,
+    TEST_GPU_SIG_AUX  = 1 << 5,
+	TEST_GPU          = TEST_GPU_PASS_1 | TEST_GPU_PASS_2 | TEST_GPU_EL_ATTS | TEST_GPU_DB_ATTS | TEST_GPU_SIG_AUX,
 	TEST_ALL          = TEST_CPU | TEST_GPU
 };
 
@@ -109,6 +110,7 @@ int main(int argc, char **argv)
 	
     cl_kernel kernel_pop;
     cl_kernel kernel_scat_sig_aux;
+    cl_kernel kernel_el_atts;
     cl_kernel kernel_db_atts;
 	cl_kernel kernel_make_pulse_pass_1;
 	cl_kernel kernel_make_pulse_pass_2;
@@ -121,7 +123,7 @@ int main(int argc, char **argv)
     
     unsigned int num_elem = NUM_ELEM;
 
-	while ((c = getopt(argc, argv, "ac12dwgvn:p:h?")) != -1) {
+	while ((c = getopt(argc, argv, "ac12dewgvn:p:h?")) != -1) {
 		switch (c) {
 			case 'a':
 				test = TEST_ALL;
@@ -135,8 +137,11 @@ int main(int argc, char **argv)
             case 'd':
                 test |= TEST_GPU_DB_ATTS;
                 break;
+            case 'e':
+                test |= TEST_GPU_EL_ATTS;
+                break;
             case 'w':
-                test |= TEST_GPU_WA;
+                test |= TEST_GPU_SIG_AUX;
                 break;
 			case 'g':
 				test |= TEST_GPU;
@@ -161,6 +166,7 @@ int main(int argc, char **argv)
 					   "    -c     CPU test\n"
 					   "    -1     GPU test: make_pulse_pass_1\n"
 					   "    -2     GPU test: make_pulse_pass_2\n"
+                       "    -e     GPU test: scat_el_atts\n"
                        "    -d     GPU test: scat_db_atts\n"
                        "    -w     GPU test: scat_sig_aux\n"
 					   "    -g     All GPU Tests\n"
@@ -363,7 +369,7 @@ int main(int argc, char **argv)
     // Populate kernel setup
 	kernel_pop = clCreateKernel(program, "pop", &ret);
 	if (ret != CL_SUCCESS) {
-		fprintf(stderr, "Error\n");
+        fprintf(stderr, "Error: Failed to compile kernel pop().\n");
 		exit(EXIT_FAILURE);
 	}
     clSetKernelArg(kernel_pop, 0, sizeof(cl_mem), &rcs);
@@ -374,7 +380,7 @@ int main(int argc, char **argv)
     // Weight and attenuate setup
     kernel_scat_sig_aux = clCreateKernel(program, "scat_sig_aux", &ret);
     if (ret != CL_SUCCESS) {
-        fprintf(stderr, "Error\n");
+        fprintf(stderr, "Error: Failed to compile kernel scat_sig_aux().\n");
         exit(EXIT_FAILURE);
     }
     clSetKernelArg(kernel_scat_sig_aux, RSScattererAngularWeightKernalArgumentSignal, sizeof(cl_mem),                    &sig);
@@ -385,19 +391,36 @@ int main(int argc, char **argv)
     clSetKernelArg(kernel_scat_sig_aux, RSScattererAngularWeightKernalArgumentWeightTableDescription, sizeof(cl_float4), &angular_weight_desc);
     clSetKernelArg(kernel_scat_sig_aux, RSScattererAngularWeightKernalArgumentSimulationDescription, sizeof(cl_float16), &sim_desc);
     
+    // Ellipsoids attributes
+    kernel_el_atts = clCreateKernel(program, "el_atts", &ret);
+    if (ret != CL_SUCCESS) {
+        fprintf(stderr, "Error: Failed to compile kernel el_atts().\n");
+        exit(EXIT_FAILURE);
+    }
+    err = CL_SUCCESS;
+    ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &pos);
+    ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &vel);
+    ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &rnd);
+    ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &les);
+    ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_mem),     &les_desc);
+    ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
+    if (ret != CL_SUCCESS) {
+        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel el_atts().\n", now());
+        exit(EXIT_FAILURE);
+    }
+
     // Debris attributes
     kernel_db_atts = clCreateKernel(program, "db_atts", &ret);
     if (ret != CL_SUCCESS) {
-        fprintf(stderr, "Error: Failed to compile kernel.\n");
+        fprintf(stderr, "Error: Failed to compile kernel db_atts().\n");
         exit(EXIT_FAILURE);
     }
-    
     err = CL_SUCCESS;
     ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &pos);
     ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentOrientation,                   sizeof(cl_mem),     &ori);
     ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &vel);
     ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentTumble,                        sizeof(cl_mem),     &tum);
-    ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentSignal,                        sizeof(cl_mem),     &sig);
+    ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &rcs);
     ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &rnd);
     ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &les);
     ret |= clSetKernelArg(kernel_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &les_desc);
@@ -665,7 +688,20 @@ int main(int argc, char **argv)
                    1e-9 * num_elem * 7 * sizeof(cl_float4) * speed_test_iterations / t);
         }
         
-        if (test & TEST_GPU_WA) {
+        if (test & TEST_GPU_EL_ATTS) {
+            gettimeofday(&t1, NULL);
+            for (k=0; k<speed_test_iterations; k++) {
+                err = clEnqueueNDRangeKernel(queue, kernel_el_atts, 1, NULL, &global_size, NULL, 0, NULL, NULL);
+            }
+            clFinish(queue);
+            gettimeofday(&t2, NULL);
+            t = DTIME(t1, t2);
+            printf("GPU Exec Time = %6.2f ms   Throughput = %6.2f GB/s  (scat_el_atts)\n",
+                   t / speed_test_iterations * 1000.0f,
+                   1e-9 * num_elem * 3 * sizeof(cl_float4) * speed_test_iterations / t);
+        }
+
+        if (test & TEST_GPU_SIG_AUX) {
             gettimeofday(&t1, NULL);
             for (k=0; k<speed_test_iterations; k++) {
                 err = clEnqueueNDRangeKernel(queue, kernel_scat_sig_aux, 1, NULL, &global_size, NULL, 0, NULL, NULL);
@@ -688,7 +724,10 @@ int main(int argc, char **argv)
     clReleaseCommandQueue(queue);
 
 	clReleaseKernel(kernel_pop);
-	clReleaseKernel(kernel_make_pulse_pass_1);
+    clReleaseKernel(kernel_db_atts);
+    clReleaseKernel(kernel_el_atts);
+    clReleaseKernel(kernel_scat_sig_aux);
+    clReleaseKernel(kernel_make_pulse_pass_1);
 	clReleaseKernel(kernel_make_pulse_pass_2);
 	clReleaseMemObject(sig);
 	clReleaseMemObject(pos);
