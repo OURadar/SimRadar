@@ -1232,10 +1232,10 @@ void RS_init_scat_pos(RSHandle *H) {
 //        H->scat_ori[i].w = 1.0f;
         
         // Facing the sky
-//        H->scat_ori[i].x =  0.0f;
-//        H->scat_ori[i].y = -0.707106781186547f;
-//        H->scat_ori[i].z =  0.0f;
-//        H->scat_ori[i].w =  0.707106781186548f;
+        H->scat_ori[i].x =  0.0f;
+        H->scat_ori[i].y = -0.707106781186547f;
+        H->scat_ori[i].z =  0.0f;
+        H->scat_ori[i].w =  0.707106781186548f;
 
         // Facing the beam
 //        H->scat_ori[i].x =  0.5f;
@@ -1250,11 +1250,11 @@ void RS_init_scat_pos(RSHandle *H) {
 //        H->scat_ori[i].w =  0.5f;
 
         // Rotate by theta
-        float theta = 70.0f / 180.0f * M_PI_2;
-        H->scat_ori[i].x = 0.0f;
-        H->scat_ori[i].y = 0.0f;
-        H->scat_ori[i].z = sinf(0.5f * theta);
-        H->scat_ori[i].w = cosf(0.5f * theta);
+//        float theta = 70.0f / 180.0f * M_PI_2;
+//        H->scat_ori[i].x = 0.0f;
+//        H->scat_ori[i].y = 0.0f;
+//        H->scat_ori[i].z = sinf(0.5f * theta);
+//        H->scat_ori[i].w = cosf(0.5f * theta);
         
         
         // Tumbling vector for orientation update
@@ -3654,66 +3654,92 @@ void RS_advance_time(RSHandle *H) {
         }
     }
 
-    // These kernels are actually independent, can be parallelized more.
-    for (i = 0; i < H->num_workers; i++) {
-        dispatch_async(H->worker[i].que, ^{
-            if (H->sim_concept & RSSimulationConceptDraggedBackground) {
-                el_atts_kernel(&H->worker[i].ndrange_scat[0],
-                               (cl_float4 *)H->worker[i].scat_pos,
-                               (cl_float4 *)H->worker[i].scat_vel,
-                               (cl_uint4 *)H->worker[i].scat_rnd,
-                               (cl_image)H->worker[i].vel[v],
-                               H->worker[i].vel_desc,
-                               H->sim_desc);
-            } else {
-                bg_atts_kernel(&H->worker[i].ndrange_scat[0],
-                               (cl_float4 *)H->worker[i].scat_pos,
-                               (cl_float4 *)H->worker[i].scat_vel,
-                               (cl_uint4 *)H->worker[i].scat_rnd,
-                               (cl_image)H->worker[i].vel[v],
-                               H->worker[i].vel_desc,
-                               H->sim_desc);
-            }
-            dispatch_semaphore_signal(H->worker[i].sem);
-		});
+//    // These kernels are actually independent, can be parallelized more.
+//    for (i = 0; i < H->num_workers; i++) {
+//        dispatch_async(H->worker[i].que, ^{
+//            if (H->sim_concept & RSSimulationConceptDraggedBackground) {
+//                el_atts_kernel(&H->worker[i].ndrange_scat[0],
+//                               (cl_float4 *)H->worker[i].scat_pos,
+//                               (cl_float4 *)H->worker[i].scat_vel,
+//                               (cl_uint4 *)H->worker[i].scat_rnd,
+//                               (cl_image)H->worker[i].vel[v],
+//                               H->worker[i].vel_desc,
+//                               H->sim_desc);
+//            } else {
+//                bg_atts_kernel(&H->worker[i].ndrange_scat[0],
+//                               (cl_float4 *)H->worker[i].scat_pos,
+//                               (cl_float4 *)H->worker[i].scat_vel,
+//                               (cl_uint4 *)H->worker[i].scat_rnd,
+//                               (cl_image)H->worker[i].vel[v],
+//                               H->worker[i].vel_desc,
+//                               H->sim_desc);
+//            }
+//            dispatch_semaphore_signal(H->worker[i].sem);
+//		});
+//
+//        r = 0;
+//        a = 0;
+//        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
+//            if (H->worker[i].species_population[k]) {
+//                dispatch_async(H->worker[i].que, ^{
+//                    db_atts_kernel(&H->worker[i].ndrange_scat[k],
+//                                   (cl_float4 *)H->worker[i].scat_pos,
+//                                   (cl_float4 *)H->worker[i].scat_ori,
+//                                   (cl_float4 *)H->worker[i].scat_vel,
+//                                   (cl_float4 *)H->worker[i].scat_tum,
+//                                   (cl_float4 *)H->worker[i].scat_sig,
+//                                   (cl_uint4 *)H->worker[i].scat_rnd,
+//                                   (cl_image)H->worker[i].vel[v],
+//                                   H->worker[i].vel_desc,
+//                                   (cl_image)H->worker[i].adm_cd[a],
+//                                   (cl_image)H->worker[i].adm_cm[a],
+//                                   H->worker[i].adm_desc[a],
+//                                   (cl_image)H->worker[i].rcs_real[r],
+//                                   (cl_image)H->worker[i].rcs_imag[r],
+//                                   H->worker[i].rcs_desc[r],
+//                                   H->sim_desc);
+//                    dispatch_semaphore_signal(H->worker[i].sem);
+//                });
+//            }
+//            r = r == H->rcs_count - 1 ? 0 : r + 1;
+//            a = a == H->adm_count - 1 ? 0 : a + 1;
+//        }
+//	}
+//	
+//	for (i = 0; i < H->num_workers; i++) {
+//		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+//        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
+//            if (H->worker[i].species_population[k]) {
+//                dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+//            }
+//        }
+//    }
 
-        r = 0;
-        a = 0;
-        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
-            if (H->worker[i].species_population[k]) {
-                dispatch_async(H->worker[i].que, ^{
-                    db_atts_kernel(&H->worker[i].ndrange_scat[k],
-                                   (cl_float4 *)H->worker[i].scat_pos,
-                                   (cl_float4 *)H->worker[i].scat_ori,
-                                   (cl_float4 *)H->worker[i].scat_vel,
-                                   (cl_float4 *)H->worker[i].scat_tum,
-                                   (cl_float4 *)H->worker[i].scat_sig,
-                                   (cl_uint4 *)H->worker[i].scat_rnd,
-                                   (cl_image)H->worker[i].vel[v],
-                                   H->worker[i].vel_desc,
-                                   (cl_image)H->worker[i].adm_cd[a],
-                                   (cl_image)H->worker[i].adm_cm[a],
-                                   H->worker[i].adm_desc[a],
-                                   (cl_image)H->worker[i].rcs_real[r],
-                                   (cl_image)H->worker[i].rcs_imag[r],
-                                   H->worker[i].rcs_desc[r],
-                                   H->sim_desc);
-                    dispatch_semaphore_signal(H->worker[i].sem);
-                });
-            }
-            r = r == H->rcs_count - 1 ? 0 : r + 1;
-            a = a == H->adm_count - 1 ? 0 : a + 1;
-        }
-	}
-	
-	for (i = 0; i < H->num_workers; i++) {
-		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
-        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
-            if (H->worker[i].species_population[k]) {
-                dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
-            }
-        }
-	}
+    i = 0;
+    r = 0;
+    a = 0;
+    for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
+        dispatch_async(H->worker[i].que, ^{
+            db_atts_kernel(&H->worker[i].ndrange_scat_all,
+                           (cl_float4 *)H->worker[i].scat_pos,
+                           (cl_float4 *)H->worker[i].scat_ori,
+                           (cl_float4 *)H->worker[i].scat_vel,
+                           (cl_float4 *)H->worker[i].scat_tum,
+                           (cl_float4 *)H->worker[i].scat_sig,
+                           (cl_uint4 *)H->worker[i].scat_rnd,
+                           (cl_image)H->worker[i].vel[v],
+                           H->worker[i].vel_desc,
+                           (cl_image)H->worker[i].adm_cd[a],
+                           (cl_image)H->worker[i].adm_cm[a],
+                           H->worker[i].adm_desc[a],
+                           (cl_image)H->worker[i].rcs_real[r],
+                           (cl_image)H->worker[i].rcs_imag[r],
+                           H->worker[i].rcs_desc[r],
+                           H->sim_desc);
+            dispatch_semaphore_signal(H->worker[i].sem);
+        });
+    }
+    dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
 
 #else
 

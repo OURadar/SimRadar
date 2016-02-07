@@ -362,9 +362,10 @@ float4 compute_dudt_dwdt(float4 *dwdt,
     float4 cd = read_imagef(adm_cd, sampler, adm_coord);
     float4 cm = read_imagef(adm_cm, sampler, adm_coord);
     
-//    if (get_global_id(0) == 0) {
+    if (get_global_id(0) == 0) {
 //        printf("ori = %10.7v4f   u_hat = %+10.7v4f   ba%+10.7v2f   coord = %5.2v2f - (%+10.7v4f ; %+10.7v4f)\n", ori, u_hat, beta_alpha, adm_coord, cd, cm);
-//    }
+        printf("ori = %10.7v4f   u_hat = %+10.7v4f   ba%+10.7f%+10.7f   coord = %5.2v2f - (%+10.7v4f ; %+10.7v4f)\n", ori, u_hat, beta, alpha, adm_coord, cd, cm);
+    }
     
     //
     //    RSTable3DDescriptionRecipInLnX  = 12,
@@ -769,7 +770,14 @@ __kernel void db_atts(__global float4 *p,
 
     float4 dwdt, dudt = compute_dudt_dwdt(&dwdt, vel, vel_bg, ori, adm_cd, adm_cm, adm_desc);
     
-    vel += dudt * dt;
+    // bound the velocity
+    if (concept & RSSimulationConceptBoundedParticleVelocity && length(vel.xy + dudt.xy * dt.xy) > 3.0f * length(vel_bg.xy)) {
+        //printf("vel = [%5.2v4f]  vel_bg = [%5.2v4f]\n", vel, vel_bg);
+        vel.xy = vel_bg.xy;
+        vel.z += dudt.z * dt.z;
+    } else {
+        vel += dudt * dt;
+    }
 
     float4 dw = dwdt * dt;
    
@@ -781,12 +789,6 @@ __kernel void db_atts(__global float4 *p,
     
     tum = normalize(tum);
 
-    // bound the velocity
-    if (concept & RSSimulationConceptBoundedParticleVelocity && length(vel.xy + dudt.xy * dt.xy) > 3.0f * length(vel_bg.xy)) {
-        //printf("vel = [%5.2v4f]  vel_bg = [%5.2v4f]\n", vel, vel_bg);
-        vel.xy = vel_bg.xy;
-    }
-    
     rcs = compute_rcs(ori, rcs_real, rcs_imag, rcs_desc, sim_desc);
     
     // Copy back to global memory space
