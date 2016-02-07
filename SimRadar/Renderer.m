@@ -634,7 +634,7 @@ unsigned int grayToBinary(unsigned int num)
              backgroundOpacity);
     snprintf(statusMessage[2],
              sizeof(statusMessage[2]),
-             "HUD %d%d%d", (hudConfigGray & 0x04) >> 2, (hudConfigGray & 0x02) >> 1, hudConfigGray & 0x01);
+             "HUD %d%d%d / %d", (hudConfigGray & 0x04) >> 2, (hudConfigGray & 0x02) >> 1, hudConfigGray & 0x01, hudConfigDecimal);
 }
 
 
