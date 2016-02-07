@@ -332,7 +332,7 @@ float4 compute_dudt_dwdt(float4 *dwdt,
     float4 ur = vel_bg - vel;
     float4 u_hat = quat_rotate(normalize(ur), quat_conj(ori));
 
-    if (length(u_hat.yz) > 1.0e-3f * abs(u_hat.x)) {
+    if (length(u_hat.yz) > 1.0e-3f * fabs(u_hat.x)) {
 
 //        beta = atan2(u_hat.y, u_hat.x);
         beta = atan2(-u_hat.y, u_hat.x);
