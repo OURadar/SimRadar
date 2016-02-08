@@ -130,9 +130,9 @@ RCSHandle *RCS_init_with_path(const char *path) {
         //printf("testing %s (%d)  %s (%d)\n", dat_path, S_ISDIR(path_stat.st_mode), dat_file_path, S_ISREG(file_stat.st_mode));
         if (dir_ret == 0 && S_ISDIR(path_stat.st_mode) && S_ISREG(file_stat.st_mode)) {
             
-#ifdef DEBUG
+            #ifdef DEBUG
             printf("Found RCS folder @ %s\n", dat_path);
-#endif
+            #endif
             
             found_dir = 1;
             break;
@@ -177,12 +177,6 @@ void RCS_free(RCSHandle *i) {
 }
 
 
-RCSTable *RCS_get_frame(const RCSHandle *i) {
-    RCSMem *h = (RCSMem *)i;
-    return h->table;
-}
-
-
 RCSTable *RCS_get_table(const RCSHandle *in, const RCSConfig config) {
     RCSMem *h = (RCSMem *)in;
     
@@ -206,7 +200,7 @@ RCSTable *RCS_get_table(const RCSHandle *in, const RCSConfig config) {
     // Get the table pointer from the handler
     RCSTable *table = &h->table[h->count];
     
-    // Populate the details
+    // Populate the dimension details
     table->na = nbna[1];
     table->nb = nbna[0];
     table->nn = table->na * table->nb;
@@ -215,6 +209,8 @@ RCSTable *RCS_get_table(const RCSHandle *in, const RCSConfig config) {
         fclose(fid);
         return NULL;
     }
+
+    // Allocate the space needed
     table->data.a = (float *)malloc(table->na * sizeof(float));
     table->data.b = (float *)malloc(table->nb * sizeof(float));
     table->data.hh_real = (float *)malloc(table->nn * sizeof(float));
