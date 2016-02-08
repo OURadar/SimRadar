@@ -114,9 +114,9 @@ The simulation framework is written is plain C for performance and portability. 
 
         RS_set_vel_data_to_LES_table(S, LES_get_frame(L, 0));
 
-        RS_set_adm_data_to_ADM_table(S, ADM_get_frame(A));
+        RS_set_adm_data_to_ADM_table(S, ADM_get_table(A, ADMModelPlate));
 
-        RS_set_rcs_data_to_RCS_table(S, RCS_get_frame(R));
+        RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSLeaf));
 
         // Populate the domain with scatter bodies.
         // This is also the function that triggers kernel compilation, GPU memory allocation and

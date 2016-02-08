@@ -250,7 +250,7 @@ int main(int argc, char *argv[]) {
     
     gettimeofday(&t2, NULL);
     
-    if (num_frames >= 10) {
+    if (num_frames > 500) {
         float dt = DTIME(t1, t2);
         printf("%s : Finished.  Time elapsed = %.2f s  (%.2f FPS).\n", now(), dt, (num_frames - 10) / dt);
     } else {

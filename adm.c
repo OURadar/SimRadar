@@ -134,6 +134,7 @@ ADMHandle *ADM_init(void) {
 void ADM_free(ADMHandle *i) {
     ADMMem *h = (ADMMem *)i;
     for (int i = 0; i < h->count; i++) {
+        // Free each table that has been allocated previously
         ADMTable *table = &h->table[i];
         free(table->data.a);
         free(table->data.b);
