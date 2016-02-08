@@ -70,10 +70,9 @@
 		L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
 //        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, NULL);
 
-//        A = ADM_init_with_config_path(ADMConfigSquarePlate, NULL);
-        A = ADM_init_with_config_path(ADMConfigModelPlate, NULL);
+        A = ADM_init();
 
-        R = RCS_init_with_path(NULL);
+        R = RCS_init();
 
         NSLog(@"LES @ %s", LES_data_path(L));
         NSLog(@"ADM @ %s", ADM_data_path(A));
@@ -126,7 +125,7 @@
             box = RS_suggest_scan_doamin(S, 16);
         }
         
-        ADMTable *adm = ADM_get_frame(A);
+        ADMTable *adm = ADM_get_table(A, ADMConfigModelPlate);
 
         RS_set_adm_data_to_ADM_table(S, adm);
         

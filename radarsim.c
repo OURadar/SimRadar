@@ -149,7 +149,7 @@ int main(int argc, char *argv[]) {
         RS_set_vel_data_to_LES_table(S, LES_get_frame(L, k));
     }
     
-    RS_set_adm_data_to_ADM_table(S, ADM_get_frame(A));
+    RS_set_adm_data_to_ADM_table(S, ADM_get_table(A, ADMConfigModelPlate));
     
     RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigLeaf));
     

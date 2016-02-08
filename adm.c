@@ -11,15 +11,15 @@
 // Private structure
 typedef struct _adm_mem {
     char data_path[1024];
-    char file[1024];
-    ADMGrid grid;
-    ADMTable table;
+    ADMTable table[256];
+    int count;
 } ADMMem;
 
 // Private functions
 void ADM_show_blk(const char *prefix, const char *posfix);
 void ADM_show_row(const char *prefix, const char *posfix, const float *f, const int n);
 void ADM_show_slice(const float *values, const int nb, const int na);
+void ADM_compute_properties(ADMBase *);
 
 
 #define ADM_FMT   "%+9.4f"
@@ -53,7 +53,7 @@ void ADM_show_slice(const float *values, const int nb, const int na) {
 }
 
 
-ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path) {
+ADMHandle *ADM_init_with_path(const char *path) {
     
     char search_paths[10][1024] = {"./les"};
     
@@ -117,105 +117,110 @@ ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path) {
     }
     
     // Full path of the data file
-    snprintf(h->data_path, sizeof(h->data_path), "%s/%s.adm", dat_path, config);
-
-    FILE *fid = fopen(h->data_path, "r");
-    if (fid == NULL) {
-        fprintf(stderr, "Error opening file.\n");
-        return NULL;
-    }
+    snprintf(h->data_path, sizeof(h->data_path), "%s", dat_path);
     
-    // Data grid
-    h->grid.rev = 1;
-    uint16_t nbna[2];
-    fread(nbna, sizeof(uint16_t), 2, fid);
-    h->grid.nb = nbna[0];  // x-axis = beta
-    h->grid.na = nbna[1];  // y-axis = alpha
-    if (h->grid.nb == 0 || h->grid.na == 0) {
-        fprintf(stderr, "None of the grid elements can be zero.\n");
-        fclose(fid);
-        return NULL;
-    }
-    
-    #ifdef DEBUG
-    printf("%s    nb = %d    na = %d\n", h->data_path, h->grid.nb, h->grid.na);
-    #endif
-    
-    h->grid.b = (float *)malloc(h->grid.nb * sizeof(float));
-    h->grid.a = (float *)malloc(h->grid.na * sizeof(float));
-    
-    uint16_t i;
-    
-    for (i = 0; i < h->grid.nb; i++) {
-        h->grid.b[i] = (float)i / (float)(h->grid.nb - 1) * 360.0f - 180.0f;
-    }
-    for (i=0; i<h->grid.na; i++) {
-        h->grid.a[i] = (float)i / (float)(h->grid.na - 1) * 180.0f;
-    }
-
-    // Populate a to-be returned table
-    h->table.nb = h->grid.nb;
-    h->table.na = h->grid.na;
-    h->table.nn = h->grid.nb * h->grid.na;
-    h->table.data.b = h->grid.b;
-    h->table.data.a = h->grid.a;
-    if (h->table.nn == 0) {
-        fprintf(stderr, "Empty table (ADMTable)?\n");
-        fclose(fid);
-        return NULL;
-    }
-    h->table.data.cdx = (float *)malloc(h->table.nn * sizeof(float));
-    h->table.data.cdy = (float *)malloc(h->table.nn * sizeof(float));
-    h->table.data.cdz = (float *)malloc(h->table.nn * sizeof(float));
-    h->table.data.cmx = (float *)malloc(h->table.nn * sizeof(float));
-    h->table.data.cmy = (float *)malloc(h->table.nn * sizeof(float));
-    h->table.data.cmz = (float *)malloc(h->table.nn * sizeof(float));
-    
-    // Fill in the table
-    fread(h->table.data.cdx, sizeof(float), h->table.nn, fid);
-    fread(h->table.data.cdy, sizeof(float), h->table.nn, fid);
-    fread(h->table.data.cdz, sizeof(float), h->table.nn, fid);
-    fread(h->table.data.cmx, sizeof(float), h->table.nn, fid);
-    fread(h->table.data.cmy, sizeof(float), h->table.nn, fid);
-    fread(h->table.data.cmz, sizeof(float), h->table.nn, fid);
-
-    fclose(fid);
-    
-    // Physica description
-    h->table.phys.x = 0.002f;
-    h->table.phys.y = 0.040f;
-    h->table.phys.z = 0.040f;
-    h->table.phys.rho = 1120.0f;
-
-    // Derive other physical parameters
-    ADM_compute_properties(&h->table.phys);
+    // No table has been loaded yet
+    h->count = 0;
     
     return (ADMHandle *)h;
 }
 
 
 ADMHandle *ADM_init(void) {
-    return ADM_init_with_config_path(ADMConfigSquarePlate, "les");
+    return ADM_init_with_path(NULL);
 }
 
 
 void ADM_free(ADMHandle *i) {
     ADMMem *h = (ADMMem *)i;
-    free(h->table.data.cdx);
-    free(h->table.data.cdy);
-    free(h->table.data.cdz);
-    free(h->table.data.cmx);
-    free(h->table.data.cmy);
-    free(h->table.data.cmz);
-    free(h->grid.b);
-    free(h->grid.a);
+    for (int i = 0; i < h->count; i++) {
+        ADMTable *table = &h->table[i];
+        free(table->data.a);
+        free(table->data.b);
+        free(table->data.cdx);
+        free(table->data.cdy);
+        free(table->data.cdz);
+        free(table->data.cmx);
+        free(table->data.cmy);
+        free(table->data.cmz);
+    }
     free(h);
 }
 
 
-ADMTable *ADM_get_frame(const ADMHandle *i) {
-    ADMMem *h = (ADMMem *)i;
-    return &h->table;
+ADMTable *ADM_get_table(const ADMHandle *in, const ADMConfig config) {
+    ADMMem *h = (ADMMem *)in;
+    
+    int i;
+    
+    // Full path of the data
+    char fullpath[1024];
+    snprintf(fullpath, sizeof(fullpath), "%s/%s.adm", h->data_path, config);
+
+    // Now, we open the file
+    FILE *fid = fopen(fullpath, "r");
+    if (fid == NULL) {
+        fprintf(stderr, "Error opening file.\n");
+        return NULL;
+    }
+    
+    // The first two 16-bit numbers are the grid dimensions
+    uint16_t nbna[2];
+    fread(nbna, sizeof(uint16_t), 2, fid);
+    
+    // Get the table pointer from the handler
+    ADMTable *table = &h->table[h->count];
+    
+    // Populate the dimension details
+    table->nb = nbna[0];  // x-axis = beta
+    table->na = nbna[1];  // y-axis = alpha
+    table->nn = table->na * table->nb;
+    if (table->nn == 0) {
+        fprintf(stderr, "None of the grid elements can be zero.\n");
+        fclose(fid);
+        return NULL;
+    }
+    
+    // Allocate the space needed
+    table->data.b = (float *)malloc(table->nb * sizeof(float));
+    table->data.a = (float *)malloc(table->na * sizeof(float));
+    table->data.cdx = (float *)malloc(table->nn * sizeof(float));
+    table->data.cdy = (float *)malloc(table->nn * sizeof(float));
+    table->data.cdz = (float *)malloc(table->nn * sizeof(float));
+    table->data.cmx = (float *)malloc(table->nn * sizeof(float));
+    table->data.cmy = (float *)malloc(table->nn * sizeof(float));
+    table->data.cmz = (float *)malloc(table->nn * sizeof(float));
+
+    // Fill in with values
+    snprintf(table->name, 1024, "%s", config);
+    snprintf(table->path, 1024, "%s", fullpath);
+    for (i = 0; i < table->nb; i++) {
+        table->data.b[i] = (float)i / (float)(table->nb - 1) * 360.0f - 180.0f;
+    }
+    for (i = 0; i < table->na; i++) {
+        table->data.a[i] = (float)i / (float)(table->na - 1) * 180.0f;
+    }
+    fread(table->data.cdx, sizeof(float), table->nn, fid);
+    fread(table->data.cdy, sizeof(float), table->nn, fid);
+    fread(table->data.cdz, sizeof(float), table->nn, fid);
+    fread(table->data.cmx, sizeof(float), table->nn, fid);
+    fread(table->data.cmy, sizeof(float), table->nn, fid);
+    fread(table->data.cmz, sizeof(float), table->nn, fid);
+    
+    h->count++;
+    
+    fclose(fid);
+    
+    // Physical description
+    table->phys.x = 0.002f;
+    table->phys.y = 0.040f;
+    table->phys.z = 0.040f;
+    table->phys.rho = 1120.0f;
+    
+    // Derive other physical parameters
+    ADM_compute_properties(&table->phys);
+    
+    return table;
 }
 
 
