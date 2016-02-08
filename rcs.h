@@ -18,6 +18,9 @@
 #include <sys/types.h>
 
 #define RCSConfigLeaf              "leaf"
+#define RCSConfigBrick             "brick"
+#define RCSConfigWoodBoard         "woodboard"
+#define RCSConfigWoodBoardDish     "woodboardish"
 
 typedef void* RCSHandle;
 typedef char* RCSConfig;
@@ -46,14 +49,17 @@ typedef struct _rcs_table {
     uint32_t  nb;             // Number of cells in beta direction
     uint32_t  nn;             // Number of cells in all directions combined
     RCSData   data;
-    char      **name;
+    char      *name;
+    char      *path;
 } RCSTable;
 
 RCSHandle *RCS_init_with_config_path(const RCSConfig config, const char *path);
+RCSHandle *RCS_init_with_path(const char *path);
 RCSHandle *RCS_init(void);
 void RCS_free(RCSHandle *);
 
 RCSTable *RCS_get_frame(const RCSHandle *);
+RCSTable *RCS_get_table(const RCSHandle *, const RCSConfig config);
 char *RCS_data_path(const RCSHandle *);
 
 void RCS_show_table_summary(const RCSTable *);
