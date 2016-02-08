@@ -329,25 +329,12 @@ float4 compute_dudt_dwdt(float4 *dwdt,
     float4 ur = vel_bg - vel;
     float4 u_hat = quat_rotate(normalize(ur), quat_conj(ori));
         
-    //beta = atan2(-u_hat.y, u_hat.x);
-    beta = acos(normalize(u_hat).x);
+    beta = acos(u_hat.x);
     alpha = atan2(u_hat.z, u_hat.y);
     if (alpha < 0.0f) {
         alpha = M_PI_F + alpha;
         beta = -beta;
     }
-    
-//    if (length(u_hat.yz) > 1.0e-3f * fabs(u_hat.x)) {
-//        beta = atan2(-u_hat.y, u_hat.x);
-//        alpha = atan2(u_hat.z, u_hat.y);
-//        if (alpha < 0.0f) {
-//            alpha = M_PI_F + alpha;
-//            beta = -beta;
-//        }
-//    } else {
-//        alpha = M_PI_2_F;
-//        beta = 0.0f;
-//    }
 
     // ADM values are stored as cd(x, y, z, _) + cm(x, y, z, _)
     float2 adm_coord = fma((float2)(beta, alpha), adm_desc.s01, adm_desc.s45);

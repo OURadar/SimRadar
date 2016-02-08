@@ -3755,35 +3755,35 @@ void RS_advance_time(RSHandle *H) {
         // Convenient pointer to reduce dereferencing
         RSWorker *C = &H->worker[i];
 
-        clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->species_origin[0], &C->num_scats, NULL, 0, NULL, &events[i][0]);
+//        clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->species_origin[0], &C->num_scats, NULL, 0, NULL, &events[i][0]);
         
-//        // Background: Need to refresh some parameters at each time update
-//        if (H->sim_concept & RSSimulationConceptDraggedBackground) {
-//            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
-//            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-//            clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->species_origin[0], &C->species_population[0], NULL, 0, NULL, &events[i][0]);
-//        } else {
-//            clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
-//            clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-//            clEnqueueNDRangeKernel(C->que, C->kern_bg_atts, 1, &C->species_origin[0], &C->species_population[0], NULL, 0, NULL, &events[i][0]);
-//        }
-//        
-//        // Debris particles
-//        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
-//        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-//        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
-//            if (C->species_population[k]) {
-//                clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &C->adm_cd[a]);
-//                clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelMomentum,          sizeof(cl_mem),     &C->adm_cm[a]);
-//                clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &C->adm_desc);
-//                clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &C->rcs_real[r]);
-//                clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[r]);
-//                clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[r]);
-//                clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->species_origin[k], &C->species_population[k], NULL, 0, NULL, &events[i][k]);
-//            }
-//            r = r == H->rcs_count - 1 ? 0 : r + 1;
-//            a = a == H->adm_count - 1 ? 0 : a + 1;
-//        }
+        // Background: Need to refresh some parameters at each time update
+        if (H->sim_concept & RSSimulationConceptDraggedBackground) {
+            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
+            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
+            clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->species_origin[0], &C->species_population[0], NULL, 0, NULL, &events[i][0]);
+        } else {
+            clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
+            clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
+            clEnqueueNDRangeKernel(C->que, C->kern_bg_atts, 1, &C->species_origin[0], &C->species_population[0], NULL, 0, NULL, &events[i][0]);
+        }
+        
+        // Debris particles
+        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
+        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
+        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
+            if (C->species_population[k]) {
+                clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &C->adm_cd[a]);
+                clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelMomentum,          sizeof(cl_mem),     &C->adm_cm[a]);
+                clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &C->adm_desc);
+                clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &C->rcs_real[r]);
+                clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[r]);
+                clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[r]);
+                clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->species_origin[k], &C->species_population[k], NULL, 0, NULL, &events[i][k]);
+            }
+            r = r == H->rcs_count - 1 ? 0 : r + 1;
+            a = a == H->adm_count - 1 ? 0 : a + 1;
+        }
     }
 
     for (i = 0; i < H->num_workers; i++) {
@@ -3793,12 +3793,12 @@ void RS_advance_time(RSHandle *H) {
     for (i = 0; i < H->num_workers; i++) {
         clWaitForEvents(1, &events[i][0]);
         clReleaseEvent(events[i][0]);
-//        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
-//            if (H->worker[i].species_population[k]) {
-//                clWaitForEvents(1, &events[i][k]);
-//                clReleaseEvent(events[i][k]);
-//            }
-//        }
+        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
+            if (H->worker[i].species_population[k]) {
+                clWaitForEvents(1, &events[i][k]);
+                clReleaseEvent(events[i][k]);
+            }
+        }
     }
 	
 #endif
