@@ -201,8 +201,8 @@ RCSTable *RCS_get_table(const RCSHandle *in, const RCSConfig config) {
     RCSTable *table = &h->table[h->count];
     
     // Populate the dimension details
-    table->na = nbna[1];
-    table->nb = nbna[0];
+    table->na = nbna[0];  // x-axis = alpha
+    table->nb = nbna[1];  // y-axis = beta
     table->nn = table->na * table->nb;
     if (h->table->nn == 0) {
         fprintf(stderr, "Empty table (RCSTable)?\n");
