@@ -24,13 +24,13 @@
 typedef void* ADMHandle;
 typedef char* ADMConfig;
 
-typedef struct adm_grid {
-    uint32_t  rev;            // Revision number, perhaps?
-    uint32_t  nb;             // Number of cells in beta direction
-    uint32_t  na;             // Number of cells in alpha direction
-    float     *b;             // Beta values
-    float     *a;             // Alpha values
-} ADMGrid;
+//typedef struct adm_grid {
+//    uint32_t  rev;            // Revision number, perhaps?
+//    uint32_t  nb;             // Number of cells in beta direction
+//    uint32_t  na;             // Number of cells in alpha direction
+//    float     *b;             // Beta values
+//    float     *a;             // Alpha values
+//} ADMGrid;
 
 typedef struct _adm_base {
     float     x;              // Length in x (m) (local coordinate)
@@ -61,19 +61,19 @@ typedef struct _adm_table {
     uint32_t  nn;              // Number of cells in all directions combined
     ADMBase   phys;            // Physical description of the debris
     ADMData   data;
-    char      **name;
+    char      name[1024];
+    char      path[1024];
 } ADMTable;
 
-ADMHandle *ADM_init_with_config_path(const ADMConfig config, const char *path);
+ADMHandle *ADM_init_with_path(const char *path);
 ADMHandle *ADM_init(void);
 void ADM_free(ADMHandle *);
 
-ADMTable *ADM_get_frame(const ADMHandle *);
+ADMTable *ADM_get_table(const ADMHandle *, const ADMConfig config);
 char *ADM_data_path(const ADMHandle *);
 
 void ADM_show_table_summary(const ADMTable *);
 void ADM_transform_scale(ADMTable *T, const float x, const float y, const float z, const float r);
 void ADM_dimension_set(ADMTable *T, const float x, const float y, const float z, const float r);
-void ADM_compute_properties(ADMBase *);
 
 #endif
