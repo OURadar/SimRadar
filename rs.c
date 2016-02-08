@@ -894,6 +894,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 
     H->num_workers = H->num_devs;
     switch (H->vendors[0]) {
+        case RS_GPU_VENDOR_AMD:
         case RS_GPU_VENDOR_INTEL:
             H->preferred_multiple = H->num_cus[0] * 16;
             break;
@@ -1226,16 +1227,16 @@ void RS_init_scat_pos(RSHandle *H) {
 		H->scat_vel[i].w = 0.0f;
 
         // At the reference
-//        H->scat_ori[i].x = 0.0f;
-//        H->scat_ori[i].y = 0.0f;
-//        H->scat_ori[i].z = 0.0f;
-//        H->scat_ori[i].w = 1.0f;
+        H->scat_ori[i].x = 0.0f;
+        H->scat_ori[i].y = 0.0f;
+        H->scat_ori[i].z = 0.0f;
+        H->scat_ori[i].w = 1.0f;
         
         // Facing the sky
-        H->scat_ori[i].x =  0.0f;
-        H->scat_ori[i].y = -0.707106781186547f;
-        H->scat_ori[i].z =  0.0f;
-        H->scat_ori[i].w =  0.707106781186548f;
+//        H->scat_ori[i].x =  0.0f;
+//        H->scat_ori[i].y = -0.707106781186547f;
+//        H->scat_ori[i].z =  0.0f;
+//        H->scat_ori[i].w =  0.707106781186548f;
 
         // Facing the beam
 //        H->scat_ori[i].x =  0.5f;
@@ -1255,7 +1256,6 @@ void RS_init_scat_pos(RSHandle *H) {
 //        H->scat_ori[i].y = 0.0f;
 //        H->scat_ori[i].z = sinf(0.5f * theta);
 //        H->scat_ori[i].w = cosf(0.5f * theta);
-        
         
         // Tumbling vector for orientation update
         H->scat_tum[i].x = 0.0f;
@@ -3654,7 +3654,7 @@ void RS_advance_time(RSHandle *H) {
         }
     }
 
-    // These kernels are actually independent, can be parallelized more.
+    // These kernels are actually independent and, thus, can be parallelized.
     for (i = 0; i < H->num_workers; i++) {
         dispatch_async(H->worker[i].que, ^{
             if (H->sim_concept & RSSimulationConceptDraggedBackground) {
@@ -3715,6 +3715,30 @@ void RS_advance_time(RSHandle *H) {
         }
     }
 
+//    i = 0;
+//    r = 0;
+//    a = 0;
+//    dispatch_async(H->worker[i].que, ^{
+//        db_atts_kernel(&H->worker[i].ndrange_scat_all,
+//                       (cl_float4 *)H->worker[i].scat_pos,
+//                       (cl_float4 *)H->worker[i].scat_ori,
+//                       (cl_float4 *)H->worker[i].scat_vel,
+//                       (cl_float4 *)H->worker[i].scat_tum,
+//                       (cl_float4 *)H->worker[i].scat_sig,
+//                       (cl_uint4 *)H->worker[i].scat_rnd,
+//                       (cl_image)H->worker[i].vel[v],
+//                       H->worker[i].vel_desc,
+//                       (cl_image)H->worker[i].adm_cd[a],
+//                       (cl_image)H->worker[i].adm_cm[a],
+//                       H->worker[i].adm_desc[a],
+//                       (cl_image)H->worker[i].rcs_real[r],
+//                       (cl_image)H->worker[i].rcs_imag[r],
+//                       H->worker[i].rcs_desc[r],
+//                       H->sim_desc);
+//        dispatch_semaphore_signal(H->worker[i].sem);
+//    });
+//    dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+
 #else
 
     cl_event events[RS_MAX_GPU_DEVICE][RS_MAX_DEBRIS_TYPES];
@@ -3731,7 +3755,7 @@ void RS_advance_time(RSHandle *H) {
         // Convenient pointer to reduce dereferencing
         RSWorker *C = &H->worker[i];
 
-//        clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->species_origin[0], &C->species_population[0], NULL, 0, NULL, &events[i][0]);
+//        clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->species_origin[0], &C->num_scats, NULL, 0, NULL, &events[i][0]);
         
         // Background: Need to refresh some parameters at each time update
         if (H->sim_concept & RSSimulationConceptDraggedBackground) {

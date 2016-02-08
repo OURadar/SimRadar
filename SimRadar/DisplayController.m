@@ -354,6 +354,11 @@ NSWindow *standardWindow;
             [glView.renderer setBeamElevation:sim.elevationInDegrees azimuth:sim.azimuthInDegrees];
             break;
             
+        case 'B':
+            [sim randomBeamPosition];
+            [glView.renderer setBeamElevation:sim.elevationInDegrees azimuth:sim.azimuthInDegrees];
+            break;
+            
         case 'o':
             [glView.renderer decreaseBackgroundOpacity];
             break;

@@ -255,6 +255,7 @@
 - (void)randomBeamPosition
 {
 	az_deg = (float)rand() / RAND_MAX * 24.0f - 12.0f;
+    el_deg = (float)rand() / RAND_MAX * 24.0f;
 	RS_set_beam_pos(S, az_deg, el_deg);
 	RS_update_colors(S);
 }
