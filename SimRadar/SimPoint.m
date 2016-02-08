@@ -109,7 +109,7 @@
         
         RS_set_prt(S, 1.0f / 60.0f);
         
-        BOOL useLES = TRUE;
+        BOOL useLES = FALSE;
         
         RSBox box;
         if (useLES) {
@@ -162,7 +162,7 @@
                             -7.0f, 7.0f, 1.0f,                    // Azimuth
                             0.0f, 12.0f, 1.0f);                   // Elevation
 
-            cl_float4 vel = (cl_float4){20.0f, 0.0f, 0.0f, 0.0f};
+            cl_float4 vel = (cl_float4){50.0f, 0.0f, 0.0f, 0.0f};
             
             RS_set_vel_data_to_uniform(S, vel);
 

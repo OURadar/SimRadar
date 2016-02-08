@@ -324,17 +324,17 @@ float4 compute_dudt_dwdt(float4 *dwdt,
     const float4 inv_inln = (float4)(adm_desc.scde, 0.0f);
     
     cd = quat_rotate(cd, ori);
+    // NOTE: cm is concatenate on the right, which means rotation on local coordinate, there is no need for coordinate transformation at this point.
     
-    //    if (i == 0)
-    //        printf("ur = %5.2f %5.2f %5.2f %5.2f  cdr = %5.2f %5.2f %5.2f %5.2f\n",
-    //               ur.x, ur.y, ur.z, ur.w,
-    //               cd.x, cd.y, cd.z, cd.w);
-    
+//    if (get_global_id(0) == 0) {
+//        printf("ori = %10.7v4f   vel = %+10.7v4f   u_hat = %+10.7v4f   ba%+10.7f%+10.7f   coord = %5.2v2f - (%+10.7v4f ; %+10.7v4f)\n", ori, vel, u_hat, beta, alpha, adm_coord, cd, cm);
+//    }
+
     float ur_norm_sq = dot(ur.xyz, ur.xyz);
     
     // Euler method: dudt is just a scaled version of drag coefficient
     float4 dudt = Ta * ur_norm_sq * cd + (float4)(0.0f, 0.0f, -9.8f, 0.0f);
-//    float4 dudt = Ta * ur_norm_sq * cd;
+
     *dwdt = radians((Ta * ur_norm_sq * inv_inln) * cm);
     
     // Runge-Kutta: dudt is a two-point average
