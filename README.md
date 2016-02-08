@@ -110,13 +110,11 @@ The simulation framework is written is plain C for performance and portability. 
             -10.0f, 10.0f, 1.0f,     // Azimuth in between -10.0 and +10.0 deg, 1.0-deg spacing
             0.0f, 8.0f, 1.0f);       // Elevation in between 0.0 and 8.0 deg, 1.0-deg spacing
 
-        RS_set_range_weight_to_triangle(S, 120.0f);
-
         RS_set_vel_data_to_LES_table(S, LES_get_frame(L, 0));
 
-        RS_set_adm_data_to_ADM_table(S, ADM_get_frame(A));
+        RS_set_adm_data_to_ADM_table(S, ADM_get_table(A, ADMModelPlate));
 
-        RS_set_rcs_data_to_RCS_table(S, RCS_get_frame(R));
+        RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSLeaf));
 
         // Populate the domain with scatter bodies.
         // This is also the function that triggers kernel compilation, GPU memory allocation and
