@@ -21,7 +21,7 @@ int main(int argc, const char **argv) {
         return EXIT_FAILURE;
     }
     
-    table = RCS_get_frame(R);
+    table = RCS_get_table(R, RCSConfigLeaf);
     RCS_show_table_summary(table);
     
     RCS_free(R);

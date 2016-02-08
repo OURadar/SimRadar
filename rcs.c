@@ -11,9 +11,7 @@
 // Private structure
 typedef struct _rcs_mem {
     char data_path[1024];
-    //char file[1024];
-    RCSGrid *grid;
-    RCSTable *table[16];
+    RCSTable table[256];
     int count;
 } RCSMem;
 
@@ -87,149 +85,10 @@ void RCS_show_slice_complex(const float *values_real, const float *values_imag, 
 }
 
 
-RCSHandle *RCS_init_with_config_path(const RCSConfig config, const char *path) {
-    
-    char search_paths[10][1024] = {"./rcs"};
-    
-    if (path == NULL) {
-        char cwd[1024];
-        if (getcwd(cwd, sizeof(cwd)) == NULL) {
-            fprintf(stderr, "Error in getcwd()\n");
-            return NULL;
-        }
-        snprintf(search_paths[1], 1024, "%s/%s", cwd, "Contents/Resources/rcs");
-    } else {
-        snprintf(search_paths[1], 1024, "%s", path);
-    }
-    
-    char *ctmp = getenv("HOME");
-    if (ctmp != NULL) {
-        snprintf(search_paths[2], 1024, "%s/Downloads/tables", ctmp);
-    }
-    
-    struct stat path_stat;
-    struct stat file_stat;
-    char *dat_path = NULL;
-    char dat_file_path[1024];
-    int dir_ret;
-    int file_ret;
-    int found_dir = 0;
-    
-    for (int i=0; i<3; i++) {
-        dat_path = search_paths[i];
-        snprintf(dat_file_path, 1024, "%s/%s.rcs", dat_path, config);
-        dir_ret = stat(dat_path, &path_stat);
-        file_ret = stat(dat_file_path, &file_stat);
-        if (dir_ret < 0 || file_ret < 0) {
-            continue;
-        }
-        //printf("testing %s (%d)  %s (%d)\n", dat_path, S_ISDIR(path_stat.st_mode), dat_file_path, S_ISREG(file_stat.st_mode));
-        if (dir_ret == 0 && S_ISDIR(path_stat.st_mode) && S_ISREG(file_stat.st_mode)) {
-            
-            #ifdef DEBUG
-            printf("Found RCS folder @ %s\n", dat_path);
-            #endif
-            
-            found_dir = 1;
-            break;
-        }
-    }
-    if (found_dir == 0) {
-        fprintf(stderr, "Unable to find the RCS data folder.\n");
-        return NULL;
-    }
-    
-    // Initialize a memory location for the handler
-    RCSMem *h = (RCSMem *)malloc(sizeof(RCSMem));
-    if (h == NULL) {
-        fprintf(stderr, "Unable to allocate resources for RCS framework.\n");
-        return NULL;
-    }
-    
-    // Full path of the data file
-    snprintf(h->data_path, sizeof(h->data_path), "%s/%s.rcs", dat_path, config);
-    
-    FILE *fid = fopen(h->data_path, "r");
-    if (fid == NULL) {
-        fprintf(stderr, "Error opening file.\n");
-        return NULL;
-    }
-    
-    // Allocate the data grid
-    h->grid = (RCSGrid *)malloc(sizeof(RCSGrid));
-    if (h->grid == NULL) {
-        fprintf(stderr, "Error allocating table (RCSGrid).\n");
-        fclose(fid);
-        return NULL;
-    }
-    h->grid->rev = 1;
-    uint16_t nbna[2];
-    fread(nbna, sizeof(uint16_t), 2, fid);
-    h->grid->na = nbna[0];  // x-axis = alpha
-    h->grid->nb = nbna[1];  // y-axis = beta
-    if (h->grid->na == 0 || h->grid->nb == 0) {
-        fprintf(stderr, "None of the grid elements can be zero.\n");
-        fclose(fid);
-        return NULL;
-    }
-    
-    #ifdef DEBUG
-    printf("%s    na = %d    nb = %d\n", h->data_path, h->grid->na, h->grid->nb);
-    #endif
-    
-    h->grid->a = (float *)malloc(h->grid->na * sizeof(float));
-    h->grid->b = (float *)malloc(h->grid->nb * sizeof(float));
-    
-    uint16_t i;
-    
-    for (i=0; i<h->grid->na; i++) {
-        h->grid->a[i] = (float)i / (float)(h->grid->na - 1) * 360.0f - 180.0f;
-    }
-    for (i=0; i<h->grid->nb; i++) {
-        h->grid->b[i] = (float)i / (float)(h->grid->nb - 1) * 180.0f;
-    }
-    
-    // Allocate data table
-    h->table = (RCSTable *)malloc(sizeof(RCSTable));
-    if (h->table == NULL) {
-        fprintf(stderr, "Error allocating table (RCSTable).\n");
-        fclose(fid);
-        return NULL;
-    }
-    h->table->na = h->grid->na;
-    h->table->nb = h->grid->nb;
-    h->table->nn = h->grid->na * h->grid->nb;
-    h->table->data.a = h->grid->a;
-    h->table->data.b = h->grid->b;
-    if (h->table->nn == 0) {
-        fprintf(stderr, "Empty table (RCSTable)?\n");
-        fclose(fid);
-        return NULL;
-    }
-    h->table->data.hh_real = (float *)malloc(h->table->nn * sizeof(float));
-    h->table->data.vv_real = (float *)malloc(h->table->nn * sizeof(float));
-    h->table->data.hv_real = (float *)malloc(h->table->nn * sizeof(float));
-    h->table->data.hh_imag = (float *)malloc(h->table->nn * sizeof(float));
-    h->table->data.vv_imag = (float *)malloc(h->table->nn * sizeof(float));
-    h->table->data.hv_imag = (float *)malloc(h->table->nn * sizeof(float));
-    
-    // Fill in the table
-    fread(h->table->data.hh_real, sizeof(float), h->table->nn, fid);
-    fread(h->table->data.vv_real, sizeof(float), h->table->nn, fid);
-    fread(h->table->data.hv_real, sizeof(float), h->table->nn, fid);
-    fread(h->table->data.hh_imag, sizeof(float), h->table->nn, fid);
-    fread(h->table->data.vv_imag, sizeof(float), h->table->nn, fid);
-    fread(h->table->data.hv_imag, sizeof(float), h->table->nn, fid);
-    
-    fclose(fid);
-    
-    return (RCSHandle *)h;
-}
-
-
 RCSHandle *RCS_init(void) {
-    return RCS_init_with_config_path(RCSConfigLeaf, "rcs");
+    return RCS_init_with_path("rcs");
 }
+
 
 RCSHandle *RCS_init_with_path(const char *path) {
     char search_paths[10][1024] = {"./rcs"};
@@ -302,18 +161,17 @@ RCSHandle *RCS_init_with_path(const char *path) {
 
 void RCS_free(RCSHandle *i) {
     RCSMem *h = (RCSMem *)i;
-//    free(h->table->data.hh_real);
-//    free(h->table->data.vv_real);
-//    free(h->table->data.hv_real);
-//    free(h->table->data.hh_imag);
-//    free(h->table->data.vv_imag);
-//    free(h->table->data.hv_imag);
-//    free(h->table);
-//    free(h->grid->a);
-//    free(h->grid->b);
-//    free(h->grid);
     for (int i=0; i<h->count; i++) {
         // Free each table that has been allocated previously
+        RCSTable *table = &h->table[i];
+        free(table->data.a);
+        free(table->data.b);
+        free(table->data.hh_real);
+        free(table->data.vv_real);
+        free(table->data.hv_real);
+        free(table->data.hh_imag);
+        free(table->data.vv_imag);
+        free(table->data.hv_imag);
     }
     free(h);
 }
@@ -328,79 +186,35 @@ RCSTable *RCS_get_frame(const RCSHandle *i) {
 RCSTable *RCS_get_table(const RCSHandle *in, const RCSConfig config) {
     RCSMem *h = (RCSMem *)in;
     
+    int i;
+
     // Full path of the data file
     char fullpath[1024];
     snprintf(fullpath, sizeof(fullpath), "%s/%s.rcs", h->data_path, config);
     
+    // Now, we open the file for reading
     FILE *fid = fopen(fullpath, "r");
     if (fid == NULL) {
         fprintf(stderr, "Error opening file.\n");
         return NULL;
     }
-    
-    // Allocate the data grid
-//    h->grid = (RCSGrid *)malloc(sizeof(RCSGrid));
-//    if (h->grid == NULL) {
-//        fprintf(stderr, "Error allocating table (RCSGrid).\n");
-//        fclose(fid);
-//        return NULL;
-//    }
-//    
-//    h->grid->rev = 1;
 
+    // The first two 16-bit numbers are the grid dimensions
     uint16_t nbna[2];
     fread(nbna, sizeof(uint16_t), 2, fid);
-//    h->grid->na = nbna[0];  // x-axis = alpha
-//    h->grid->nb = nbna[1];  // y-axis = beta
-//    if (h->grid->na == 0 || h->grid->nb == 0) {
-//        fprintf(stderr, "None of the grid elements can be zero.\n");
-//        fclose(fid);
-//        return NULL;
-//    }
     
-#ifdef DEBUG
-    printf("%s    na = %d    nb = %d\n", h->data_path, h->grid->na, h->grid->nb);
-#endif
-    
-//    h->grid->a = (float *)malloc(h->grid->na * sizeof(float));
-//    h->grid->b = (float *)malloc(h->grid->nb * sizeof(float));
-//    
-//    uint16_t i;
-//    
-//    for (i=0; i<h->grid->na; i++) {
-//        h->grid->a[i] = (float)i / (float)(h->grid->na - 1) * 360.0f - 180.0f;
-//    }
-//    for (i=0; i<h->grid->nb; i++) {
-//        h->grid->b[i] = (float)i / (float)(h->grid->nb - 1) * 180.0f;
-//    }
-    
-    
-    // Allocate data table
-    RCS *table = (RCSTable *)malloc(sizeof(RCSTable));
-    if (table == NULL) {
-        fprintf(stderr, "Error allocating table (RCSTable).\n");
-        fclose(fid);
-        return NULL;
-    }
-    table->name = (char *)malloc(1024 * sizeof(char));
-    table->path = (char *)malloc(1024 * sizeof(char));
-    
-    // Keep a copy of the pointer for later release
-    h->table[h->count] = table;
+    // Get the table pointer from the handler
+    RCSTable *table = &h->table[h->count];
     
     // Populate the details
     table->na = nbna[1];
     table->nb = nbna[0];
     table->nn = table->na * table->nb;
-//    table->data.a = h->grid->a;
-//    table->data.b = h->grid->b;
     if (h->table->nn == 0) {
         fprintf(stderr, "Empty table (RCSTable)?\n");
         fclose(fid);
         return NULL;
     }
-    snprintf(table->name, 1024, config);
-    snprintf(table->path, 1024, fullpath);
     table->data.a = (float *)malloc(table->na * sizeof(float));
     table->data.b = (float *)malloc(table->nb * sizeof(float));
     table->data.hh_real = (float *)malloc(table->nn * sizeof(float));
@@ -411,6 +225,14 @@ RCSTable *RCS_get_table(const RCSHandle *in, const RCSConfig config) {
     table->data.hv_imag = (float *)malloc(table->nn * sizeof(float));
     
     // Fill in the table
+    snprintf(table->name, 1024, "%s", config);
+    snprintf(table->path, 1024, "%s", fullpath);
+    for (i=0; i<table->na; i++) {
+        table->data.a[i] = (float)i / (float)(table->na - 1) * 360.0f - 180.0f;
+    }
+    for (i=0; i<table->nb; i++) {
+        table->data.b[i] = (float)i / (float)(table->nb - 1) * 180.0f;
+    }
     fread(table->data.hh_real, sizeof(float), table->nn, fid);
     fread(table->data.vv_real, sizeof(float), table->nn, fid);
     fread(table->data.hv_real, sizeof(float), table->nn, fid);
@@ -421,6 +243,8 @@ RCSTable *RCS_get_table(const RCSHandle *in, const RCSConfig config) {
     h->count++;
 
     fclose(fid);
+    
+    return table;
 }
 
 

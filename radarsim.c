@@ -142,9 +142,7 @@ int main(int argc, char *argv[]) {
                     10.0e3, 15.0e3, 250.0f,                     // Range
                     -10.0f, 10.0f, 1.0f,                        // Azimuth
                     0.0f, 8.0f, 1.0f);                          // Elevation
-    
-    //RS_set_range_weight_to_triangle(S, 250.0f);
-    
+        
     RS_set_debris_count(S, 1, 10);
     
     for (int k=0; k<RS_MAX_VEL_TABLES; k++) {
@@ -153,7 +151,7 @@ int main(int argc, char *argv[]) {
     
     RS_set_adm_data_to_ADM_table(S, ADM_get_frame(A));
     
-    RS_set_rcs_data_to_RCS_table(S, RCS_get_frame(R));
+    RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigLeaf));
     
     RS_set_dsd_to_mp(S);
 

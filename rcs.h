@@ -25,14 +25,6 @@
 typedef void* RCSHandle;
 typedef char* RCSConfig;
 
-typedef struct rcs_grid {
-    uint32_t  rev;            // Revision number, perhaps?
-    uint32_t  na;             // Number of cells in alpha direction
-    uint32_t  nb;             // Number of cells in beta direction
-    float     *a;             // Alpha values
-    float     *b;             // Beta values
-} RCSGrid;
-
 typedef struct _rcs_data {
     float *a;
     float *b;
@@ -49,16 +41,14 @@ typedef struct _rcs_table {
     uint32_t  nb;             // Number of cells in beta direction
     uint32_t  nn;             // Number of cells in all directions combined
     RCSData   data;
-    char      *name;
-    char      *path;
+    char      name[1024];
+    char      path[1024];
 } RCSTable;
 
-RCSHandle *RCS_init_with_config_path(const RCSConfig config, const char *path);
 RCSHandle *RCS_init_with_path(const char *path);
 RCSHandle *RCS_init(void);
 void RCS_free(RCSHandle *);
 
-RCSTable *RCS_get_frame(const RCSHandle *);
 RCSTable *RCS_get_table(const RCSHandle *, const RCSConfig config);
 char *RCS_data_path(const RCSHandle *);
 

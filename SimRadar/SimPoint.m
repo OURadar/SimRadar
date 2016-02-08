@@ -73,7 +73,7 @@
 //        A = ADM_init_with_config_path(ADMConfigSquarePlate, NULL);
         A = ADM_init_with_config_path(ADMConfigModelPlate, NULL);
 
-        R = RCS_init_with_config_path(RCSConfigLeaf, NULL);
+        R = RCS_init_with_path(NULL);
 
         NSLog(@"LES @ %s", LES_data_path(L));
         NSLog(@"ADM @ %s", ADM_data_path(A));
@@ -139,7 +139,7 @@
             [delegate progressUpdated:90.0 message:@"ADM table"];
         }
         
-        RCSTable *rcs = RCS_get_frame(R);
+        RCSTable *rcs = RCS_get_table(R, RCSConfigLeaf);
 
         RS_set_rcs_data_to_RCS_table(S, rcs);
         RS_set_rcs_data_to_RCS_table(S, rcs);
