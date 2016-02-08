@@ -326,10 +326,6 @@ float4 compute_dudt_dwdt(float4 *dwdt,
     cd = quat_rotate(cd, ori);
     // NOTE: cm is concatenate on the right, which means rotation on local coordinate, there is no need for coordinate transformation at this point.
     
-//    if (get_global_id(0) == 0) {
-//        printf("ori = %10.7v4f   vel = %+10.7v4f   u_hat = %+10.7v4f   ba%+10.7f%+10.7f   coord = %5.2v2f - (%+10.7v4f ; %+10.7v4f)\n", ori, vel, u_hat, beta, alpha, adm_coord, cd, cm);
-//    }
-
     float ur_norm_sq = dot(ur.xyz, ur.xyz);
     
     // Euler method: dudt is just a scaled version of drag coefficient
