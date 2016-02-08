@@ -21,9 +21,18 @@ int main(int argc, const char **argv) {
         return EXIT_FAILURE;
     }
     
+    printf("\nLeaf:\n\n");
     table = RCS_get_table(R, RCSConfigLeaf);
     RCS_show_table_summary(table);
     
+    printf("\nWoodboard:\n\n");
+    table = RCS_get_table(R, RCSConfigWoodBoard);
+    RCS_show_table_summary(table);
+
+    printf("\nBrick:\n\n");
+    table = RCS_get_table(R, RCSConfigBrick);
+    RCS_show_table_summary(table);
+
     RCS_free(R);
     
     return EXIT_SUCCESS;
