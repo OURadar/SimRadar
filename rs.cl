@@ -95,7 +95,6 @@ float4 quat_rotate(float4 vector, float4 quat);
 #pragma mark -
 
 float4 complex_multiply(const float4 a, const float4 b);
-float4 two_way_effects(const float4 sig_in, const float range, const float wav_num);
 float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16 sim_desc);
 float4 compute_bg_vel(const float4 pos, __read_only image3d_t wind_uvw, const float16 wind_desc, const float16 sim_desc);
 float4 compute_dudt_dwdt(float4 *dwdt, const float4 vel, const float4 vel_bg, const float4 ori, __read_only image2d_t adm_cd, __read_only image2d_t adm_cm, const float16 adm_desc);
@@ -203,36 +202,6 @@ float4 complex_multiply(const float4 a, const float4 b)
                            a.s13 * b.s02 + a.s02 * b.s13);
     return shuffle(iiqq, (uint4)(0, 2, 1, 3));
 }
-
-
-/////////////////////////////////////////////////////////////////////////////////////////
-//
-// Two-way effects
-//
-
-float4 two_way_effects(const float4 sig_in, const float range, const float wav_num)
-{
-    //        float atten = pown(aux.s0, -4);
-    //        float phase = aux.s0 * sim_desc.s4;
-    //
-    //        // cosine & sine to represent exp(j phase)
-    //        float c, s = sincos(phase, &c);
-    //
-    //        float4 sig_out = complex_multiply(sig, (float4)(c, s, c, s)) * atten;
-    //        printf("atten = %.4e  %.4v4e\n", atten, sig_out);
-
-    // Range attenuation R ^ -4
-    float atten = pown(range, -4);
-
-    // Return phase due to two-way path
-    float phase = range * wav_num;
-
-    // cosine & sine to represent exp(j phase)
-    float c, s = sincos(phase, &c);
-    
-    return complex_multiply(sig_in, (float4)(c, s, c, s)) * atten;
-}
-
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -883,7 +852,6 @@ __kernel void scat_sig_aux(__global float4 *s,
     
     iidx_int = convert_uint2(fidx_int);
     
-    
 //    if (i < 32) {
 //        float w = angular_weight[i];
 //        printf("w[%d] = %.6f = %.2f\n", i, w, 10.0f * log10(w));
@@ -899,14 +867,15 @@ __kernel void scat_sig_aux(__global float4 *s,
     aux.s1 = aux.s1 + sim_desc.sf;
     aux.s3 = mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
     
-    float atten = pown(aux.s0, -4);
+    // Two-way power attenuation = 1.0 / R ^ 4 ==> amplitude attenuation = 1.0 / R ^ 2
+    float atten = pown(aux.s0, -2);
     float phase = aux.s0 * sim_desc.s4;
     
     // cosine & sine to represent exp(j phase)
     float cc, ss = sincos(phase, &cc);
 
     sig = complex_multiply(r[i], (float4)(cc, ss, cc, ss)) * atten;
-
+    
 //    if (i == 0) {
 //        printf("atten = %.4e  %.4v4e\n", atten, sig);
 //    }

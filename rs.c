@@ -828,6 +828,10 @@ float read_table(const float *table, const float index_last, const float index) 
 	return table[i] + alpha * (table[i + 1] - table[i]);
 }
 
+float zdr(cl_float4 x) {
+    return 10.0f * log10f((x.s0 * x.s0 + x.s1 * x.s1) / (x.s2 * x.s2 + x.s3 * x.s3));
+}
+
 #pragma mark -
 #pragma mark RS Convenient functions
 
@@ -3507,6 +3511,22 @@ void RS_merge_pulse_tmp(RSHandle *H) {
 			H->pulse[k].s3 += H->pulse_tmp[i][k].s3;
 		}
 	}
+    //
+    // Scale the amplitude by antenna gain, tx power
+    // Amplitude scaling, Ga = 10 ^ (Gt / 20) * 10 ^ (Gr / 20) * sqrt(Pt)
+    // For dish antennas: Gt = Gr
+    //                ==> Ga = 10 ^ (G / 20) * 10 ^ (G / 20) * sqrt(Pt)
+    //                       = 10 ^ (G / 10) * sqrt(Pt)
+    //
+    // Scale to 1-km referece: sqrt(R ^ 4) = R ^ 2 = 1.0e6
+    //
+    float g = powf(10.0f, 0.1f * H->params.antenna_gain_dbi) * sqrtf(H->params.tx_power_watt) / (4.0f * M_PI) * 1.0e6f;
+    for (int k = 0; k < H->params.range_count; k++) {
+        H->pulse[k].s0 *= g;
+        H->pulse[k].s1 *= g;
+        H->pulse[k].s2 *= g;
+        H->pulse[k].s3 *= g;
+    }
 }
 
 void RS_download_pulse_only(RSHandle *H) {
@@ -3534,7 +3554,9 @@ void RS_download_pulse_only(RSHandle *H) {
 #endif
     
 	RS_merge_pulse_tmp(H);
-    //printf("pulse %zu [ %.4e %.4e %.4e ... ]\n", H->sim_tic, H->pulse[0].s0, H->pulse[0].s1, H->pulse[0].s2);
+//    printf("pulse %zu [ %+11.4e%+11.4ei %+11.4e%+11.4ei (%+6.2f)   %+11.4e%+11.4ei %+11.4e%+11.4ei (%+6.2f)  ... ]\n", H->sim_tic,
+//           H->pulse[0].s0, H->pulse[0].s1, H->pulse[0].s2, H->pulse[0].s3, zdr(H->pulse[0]),
+//           H->pulse[1].s0, H->pulse[1].s1, H->pulse[1].s2, H->pulse[1].s3, zdr(H->pulse[1]));
 }
 
 
@@ -4069,7 +4091,7 @@ RSBox RS_suggest_scan_doamin(RSHandle *H, const int nbeams) {
     float na = 0.5f * (float)nbeams + RS_DOMAIN_PAD + 0.5f;
     
     // Maximum number of beams in elevation
-    float ne = 14.0f;
+    float ne = 23.0f;
     
     // Maximum y of the emulation box: The range when the width is fully utilized; This is also rmax
     float rmax = w / sinf(na * H->params.antenna_bw_rad);

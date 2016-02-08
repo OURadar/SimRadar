@@ -67,11 +67,11 @@
         nearest_thousand = (size_t)ceilf(1000.0f / S->preferred_multiple) * S->preferred_multiple;
         nearest_hundred = (size_t)ceilf(100.0f / S->preferred_multiple) * S->preferred_multiple;
         
-		L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
-//        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, NULL);
+//		L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
+        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, NULL);
 
-//        A = ADM_init_with_config_path(ADMConfigSquarePlate, NULL);
-        A = ADM_init_with_config_path(ADMConfigModelPlate, NULL);
+        A = ADM_init_with_config_path(ADMConfigSquarePlate, NULL);
+//        A = ADM_init_with_config_path(ADMConfigModelPlate, NULL);
 
         R = RCS_init_with_config_path(RCSConfigLeaf, NULL);
 
@@ -89,9 +89,9 @@
             [delegate progressUpdated:3.0 message:[NSString stringWithFormat:@"LES @ %s", LES_data_path(L)]];
         }
 
-//		#ifdef DEBUG
+		#ifdef DEBUG_HEAVY
 		RS_set_verbosity(S, 3);
-//		#endif
+		#endif
 
         if (reportProgress) {
             [delegate progressUpdated:10.0 message:[NSString stringWithFormat:@"Configuring radar parameters ..."]];
@@ -104,7 +104,7 @@
         RS_set_tx_params(S, 30.0f * 2.0f / 3.0e8f, 10.0e3);   // Resolution in m, power in W
 
 //        NSLog(@"S->preferred_multiple = %d", (int)S->preferred_multiple);
-        RS_set_debris_count(S, 1, 256);
+        RS_set_debris_count(S, 1, 10000);
 //        RS_set_debris_count(S, 2, 256);
         RS_revise_debris_counts_to_gpu_preference(S);
         
@@ -230,7 +230,7 @@
 
     RS_make_pulse(S);
 
-//    RS_download_pulse_only(S);
+    RS_download_pulse_only(S);
 //    NSLog(@"%.2f%+.2fi %.2f%+.2fi ...", S->pulse[0].s0, S->pulse[0].s1, S->pulse[1].s0, S->pulse[1].s1);
 }
 
