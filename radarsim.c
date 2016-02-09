@@ -134,16 +134,7 @@ int main(int argc, char *argv[]) {
     // Only use the setter functions to change the state.
     RS_set_antenna_params(S, 1.0f, 44.5f);
     
-    RS_set_tx_params(S, 1.0e-6, 50.0e3f);
-    
-    RS_set_prt(S, 0.05f);
-    
-    RS_set_scan_box(S,
-                    10.0e3, 15.0e3, 250.0f,                     // Range
-                    -10.0f, 10.0f, 1.0f,                        // Azimuth
-                    0.0f, 8.0f, 1.0f);                          // Elevation
-        
-    RS_set_debris_count(S, 1, 10);
+    RS_set_tx_params(S, 0.2e-6, 50.0e3f);
     
     for (int k=0; k<RS_MAX_VEL_TABLES; k++) {
         RS_set_vel_data_to_LES_table(S, LES_get_frame(L, k));
@@ -155,8 +146,23 @@ int main(int argc, char *argv[]) {
     RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigLeaf));
     RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigWoodBoard));
 
+    //RS_set_debris_count(S, 1, 10000);
+    RS_revise_debris_counts_to_gpu_preference(S);
+    
     RS_set_dsd_to_mp(S);
 
+    RSBox box = RS_suggest_scan_doamin(S, 16);
+    
+    RS_set_scan_box(S,
+                    box.origin.r, box.origin.r + box.size.r, 60.0f,   // Range
+                    box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
+                    box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
+    
+    //    RS_set_scan_box(S,
+    //                    10.0e3, 14.0e3, 150.0f,                     // Range
+    //                    -10.0f, 10.0f, 1.0f,                        // Azimuth
+    //                    0.0f, 8.0f, 1.0f);                          // Elevation
+    
     // Populate the domain with scatter bodies.
     // This is also the function that triggers kernel compilation, GPU memory allocation and
     // upload all the parameters to the GPU.
@@ -198,10 +204,12 @@ int main(int argc, char *argv[]) {
 
     // Some warm up
     if (num_frames > 500) {
-        const int ks = 100;
+        printf("Warming up ...\n");
+        const int ks = 2500;
+        RS_set_prt(S, 1.0f / 60.0f);
         for (k = 0; k < ks; k++) {
-            RS_set_beam_pos(S, 15.0f, 10.0f);
-            RS_make_pulse(S);
+            // RS_set_beam_pos(S, 15.0f, 10.0f);
+            // RS_make_pulse(S);
             RS_advance_time(S);
             
             if (verb > 2) {
@@ -209,21 +217,33 @@ int main(int argc, char *argv[]) {
                 printf("== k = %d ==============\n", k);
                 RS_show_scat_pos(S);
             }
+            
+            if (k % 1000 == 0) {
+                printf("t = %zu\n", S->sim_tic);
+            }
         }
     }
+
+    // Set PRT to the actual one
     
-    //RS_sig_from_dsd(S);
-    
-    float az_deg = 0.0f, el_deg = 0.0f;
+    RS_set_prt(S, 1.0e-3f);
+
+    float az_deg = -12.0f, el_deg = 3.0f;
     
     gettimeofday(&t1, NULL);
     
     for (; k<num_frames; k++) {
+
+        az_deg = fmodf(az_deg + 0.01f + 12.0f, 24.0f) - 12.0f;
+        
+        if (k % 100 == 0) {
+            printf("t = %zu  az_deg = %.2f  el_deg = %.2f\n", S->sim_tic, az_deg, el_deg);
+        }
         RS_set_beam_pos(S, az_deg, el_deg);
         RS_make_pulse(S);
         RS_advance_time(S);
 
-        if (verb > 1) {
+        if (verb > 2) {
             RS_download(S);
             RS_show_scat_sig(S);
             

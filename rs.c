@@ -1367,6 +1367,7 @@ void RS_set_prt(RSHandle *H, const float prt) {
 
 void RS_set_lambda(RSHandle *H, const float lambda) {
     H->params.lambda = lambda;
+    H->params.va = lambda * 0.25f * H->params.prf;
 }
 
 
@@ -3609,13 +3610,11 @@ void RS_rcs_from_dsd(RSHandle *H) {
     }
     
 #else
-
-    size_t local_item_size = 1;
     
     cl_event events[RS_MAX_GPU_DEVICE];
     
     for (i = 0; i < H->num_workers; i++) {
-        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_rcs, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i]);
+        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_rcs, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], NULL, 0, NULL, &events[i]);
     }
     
     for (i = 0; i < H->num_workers; i++) {
@@ -4077,9 +4076,14 @@ RSBox RS_suggest_scan_doamin(RSHandle *H, const int nbeams) {
     // Minimum y of the emulation box: The range when the height is fully utilized
     float rmin = (rmax - 2.0f * w) / cosf(na * H->params.antenna_bw_rad) / cosf(ne * H->params.antenna_bw_rad);
     
+    // If we cannot respect the padding on both sides
     // Maximum number of range cells minus the padding on both sides minus one radar cell
     float nr = (rmax - rmin) / H->params.dr - 2.0f * RS_DOMAIN_PAD - 1.0f;
-    
+    if (rmax - rmin < 8.0f * H->params.dr) {
+        rsprint("Range resolution of the radar is too coarse!");
+        rsprint("rmax = %.3f  rmin = %.3f   dr = %.2f", rmax, rmin, H->params.dr);
+    }
+
     box.origin.a = ceilf(-0.5f * (float)nbeams) * H->params.antenna_bw_rad * 180.0f / M_PI;
     box.size.a = nbeams * H->params.antenna_bw_deg;
 
