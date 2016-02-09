@@ -100,6 +100,7 @@ The simulation framework is written is plain C for performance and portability. 
         }
 
         // Set up the parameters: use the setter functions to change the state.
+        RS_set_prt(S, 0.05f);
 
         RS_set_antenna_params(S, 1.0f, 44.5f);                // 1.0-deg, 44.5 dBi gain
 

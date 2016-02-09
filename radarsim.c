@@ -150,9 +150,11 @@ int main(int argc, char *argv[]) {
     }
     
     RS_set_adm_data_to_ADM_table(S, ADM_get_table(A, ADMConfigModelPlate));
+    RS_set_adm_data_to_ADM_table(S, ADM_get_table(A, ADMConfigSquarePlate));
     
     RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigLeaf));
-    
+    RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigWoodBoard));
+
     RS_set_dsd_to_mp(S);
 
     // Populate the domain with scatter bodies.
