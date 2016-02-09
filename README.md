@@ -111,8 +111,6 @@ The simulation framework is written is plain C for performance and portability. 
             -10.0f, 10.0f, 1.0f,     // Azimuth in between -10.0 and +10.0 deg, 1.0-deg spacing
             0.0f, 8.0f, 1.0f);       // Elevation in between 0.0 and 8.0 deg, 1.0-deg spacing
 
-        RS_set_range_weight_to_triangle(S, 120.0f);
-
         RS_set_vel_data_to_LES_table(S, LES_get_frame(L, 0));
 
         RS_set_adm_data_to_ADM_table(S, ADM_get_table(A, ADMModelPlate));
@@ -181,11 +179,11 @@ Details on Scatterer Attributes
 
 Multiple arrays of type `cl_float` are used to keep track of a set of attributes associated with each scatterer. The following list provides a summary of the attriutes and the variables used on the C-level abstraction.
 
-    cl_mem                 scat_pos;   // x, y, z coordinates
+    cl_mem                 scat_pos;   // x, y, z coordinates; and w = drop radius in m
     cl_mem                 scat_vel;   // u, v, w wind components
     cl_mem                 scat_ori;   // orientation descbried by a quaternion
     cl_mem                 scat_tum;   // tumbling motion = change of orientation derived from ADM
-    cl_mem                 scat_att;   // scatterer type, dot products, range, etc.
+    cl_mem                 scat_aux;   // auxiliary attributes: s0 = range; s1 = age; s2 = DSD bin index; s3 = angular weight
     cl_mem                 scat_rcs;   // radar cross section: Ih Qh Iv Qv
     cl_mem                 scat_sig;   // signal: Ih Qh Iv Qv
     cl_mem                 scat_rnd;   // random seed

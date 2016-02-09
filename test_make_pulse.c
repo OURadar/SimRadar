@@ -37,7 +37,7 @@ cl_float4 complex_multiply(const cl_float4 a, const cl_float4 b) {
 }
 
 cl_float4 two_way_effects(const cl_float4 sig_in, const float range, const float wav_num) {
-    float atten = powf(range, -4.0f);
+    float atten = powf(range, -2.0f);
     float phase = range * wav_num;
     float c = cosf(phase), s = sinf(phase);
     cl_float4 tmp = complex_multiply(sig_in, (cl_float4){{c, s, c, s}});

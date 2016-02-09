@@ -828,6 +828,10 @@ float read_table(const float *table, const float index_last, const float index) 
 	return table[i] + alpha * (table[i + 1] - table[i]);
 }
 
+float zdr(cl_float4 x) {
+    return 10.0f * log10f((x.s0 * x.s0 + x.s1 * x.s1) / (x.s2 * x.s2 + x.s3 * x.s3));
+}
+
 #pragma mark -
 #pragma mark RS Convenient functions
 
@@ -1214,41 +1218,41 @@ void RS_init_scat_pos(RSHandle *H) {
 		H->scat_pos[i].x = (float)rand() / RAND_MAX * domain.size.x + domain.origin.x;
 		H->scat_pos[i].y = (float)rand() / RAND_MAX * domain.size.y + domain.origin.y;
 		H->scat_pos[i].z = (float)rand() / RAND_MAX * domain.size.z + domain.origin.z;
-        H->scat_pos[i].w = 0.0f;                       // Use this to store drop radius
+        H->scat_pos[i].w = 0.0f;                       // Use this to store drop radius in m
         
-		H->scat_aux[i].s0 = 0.0f;                      // Use this to store range
-        H->scat_aux[i].s1 = (float)rand() / RAND_MAX;  // Use this to store age
-		H->scat_aux[i].s2 = 0.0f;
-		H->scat_aux[i].s3 = 1.0f;                      // Use this to store angular weight
+		H->scat_aux[i].s0 = 0.0f;                      // range
+        H->scat_aux[i].s1 = (float)rand() / RAND_MAX;  // age
+		H->scat_aux[i].s2 = 0.0f;                      // dsd bin index
+		H->scat_aux[i].s3 = 1.0f;                      // angular weight [0.0, 1.0]
 		
-		H->scat_vel[i].x = 0.0f;
-		H->scat_vel[i].y = 0.0f;
-		H->scat_vel[i].z = 0.0f;
-		H->scat_vel[i].w = 0.0f;
+		H->scat_vel[i].x = 0.0f;                       // u component of velocity
+		H->scat_vel[i].y = 0.0f;                       // v component of velocity
+		H->scat_vel[i].z = 0.0f;                       // w component of velocity
+		H->scat_vel[i].w = 0.0f;                       // n/a
 
         // At the reference
-        H->scat_ori[i].x = 0.0f;
-        H->scat_ori[i].y = 0.0f;
-        H->scat_ori[i].z = 0.0f;
-        H->scat_ori[i].w = 1.0f;
+        H->scat_ori[i].x = 0.0f;                       // x of quaternion
+        H->scat_ori[i].y = 0.0f;                       // y of quaternion
+        H->scat_ori[i].z = 0.0f;                       // z of quaternion
+        H->scat_ori[i].w = 1.0f;                       // w of quaternion
         
         // Facing the sky
-//        H->scat_ori[i].x =  0.0f;
-//        H->scat_ori[i].y = -0.707106781186547f;
-//        H->scat_ori[i].z =  0.0f;
-//        H->scat_ori[i].w =  0.707106781186548f;
+//        H->scat_ori[i].x =  0.0f;                      // x of quaternion
+//        H->scat_ori[i].y = -0.707106781186547f;        // y of quaternion
+//        H->scat_ori[i].z =  0.0f;                      // z of quaternion
+//        H->scat_ori[i].w =  0.707106781186548f;        // w of quaternion
 
         // Facing the beam
-//        H->scat_ori[i].x =  0.5f;
-//        H->scat_ori[i].y = -0.5f;
-//        H->scat_ori[i].z = -0.5f;
-//        H->scat_ori[i].w =  0.5f;
+//        H->scat_ori[i].x =  0.5f;                      // x of quaternion
+//        H->scat_ori[i].y = -0.5f;                      // y of quaternion
+//        H->scat_ori[i].z = -0.5f;                      // z of quaternion
+//        H->scat_ori[i].w =  0.5f;                      // w of quaternion
         
         // Some other tests
-//        H->scat_ori[i].x =  0.5f;
-//        H->scat_ori[i].y =  0.5f;
-//        H->scat_ori[i].z = -0.5f;
-//        H->scat_ori[i].w =  0.5f;
+//        H->scat_ori[i].x =  0.5f;                      // x of quaternion
+//        H->scat_ori[i].y = -0.5f;                      // y of quaternion
+//        H->scat_ori[i].z =  0.5f;                      // z of quaternion
+//        H->scat_ori[i].w =  0.5f;                      // w of quaternion
 
         // Rotate by theta
 //        float theta = 70.0f / 180.0f * M_PI_2;
@@ -1258,22 +1262,22 @@ void RS_init_scat_pos(RSHandle *H) {
 //        H->scat_ori[i].w = cosf(0.5f * theta);
         
         // Tumbling vector for orientation update
-        H->scat_tum[i].x = 0.0f;
-        H->scat_tum[i].y = 0.0f;
-        H->scat_tum[i].z = 0.0f;
-        H->scat_tum[i].w = 1.0f;
+        H->scat_tum[i].x = 0.0f;                       // x of quaternion
+        H->scat_tum[i].y = 0.0f;                       // y of quaternion
+        H->scat_tum[i].z = 0.0f;                       // z of quaternion
+        H->scat_tum[i].w = 1.0f;                       // w of quaternion
 
         // Initial return from each point
-        H->scat_rcs[i].s0 = 1.0f;
-		H->scat_rcs[i].s1 = 0.0f;
-		H->scat_rcs[i].s2 = 1.0f;
-		H->scat_rcs[i].s3 = 0.0f;
+        H->scat_rcs[i].s0 = 1.0f;                      // sh_real of rcs
+		H->scat_rcs[i].s1 = 0.0f;                      // sh_imag of rcs
+		H->scat_rcs[i].s2 = 1.0f;                      // sv_real of rcs
+		H->scat_rcs[i].s3 = 0.0f;                      // sv_imag of rcs
         
         // Random seeds
-        H->scat_rnd[i].s0 = rand();
-        H->scat_rnd[i].s1 = rand();
-        H->scat_rnd[i].s2 = rand();
-        H->scat_rnd[i].s3 = rand();
+        H->scat_rnd[i].s0 = rand();                    // random seed
+        H->scat_rnd[i].s1 = rand();                    // random seed
+        H->scat_rnd[i].s2 = rand();                    // random seed
+        H->scat_rnd[i].s3 = rand();                    // random seed
 	}
     
     // Parameterized drop radius as scat_pos.w if DSD has been set
@@ -1292,8 +1296,8 @@ void RS_init_scat_pos(RSHandle *H) {
                 }
             }
             counts[bin]++;
-            H->scat_pos[i].w = H->dsd_r[bin];
-            H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // temporary use this to store normalized bin index
+            H->scat_pos[i].w = H->dsd_r[bin];                                  // set the drop radius
+            H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // set the dsd bin index
         }
         
         if (H->verb > 1) {
@@ -2028,8 +2032,8 @@ void RS_set_dsd_to_mp(RSHandle *H) {
     
     float d, sum = 0.0f;
     
-    //float ds[] = {0.0001f, 0.0002f, 0.0005f, 0.001f, 0.002f, 0.003f, 0.004f, 0.005f};
-    float ds[] = {0.001f, 0.003f};
+    float ds[] = {0.0001f, 0.0002f, 0.0005f, 0.001f, 0.002f, 0.003f, 0.004f, 0.005f};
+//    float ds[] = {0.001f, 0.003f, 0.005f};
     
     const int count = sizeof(ds) / sizeof(float);
     
@@ -3508,6 +3512,22 @@ void RS_merge_pulse_tmp(RSHandle *H) {
 			H->pulse[k].s3 += H->pulse_tmp[i][k].s3;
 		}
 	}
+    //
+    // Scale the amplitude by antenna gain, tx power
+    // Amplitude scaling, Ga = 10 ^ (Gt / 20) * 10 ^ (Gr / 20) * sqrt(Pt)
+    // For dish antennas: Gt = Gr
+    //                ==> Ga = 10 ^ (G / 20) * 10 ^ (G / 20) * sqrt(Pt)
+    //                       = 10 ^ (G / 10) * sqrt(Pt)
+    //
+    // Scale to 1-km referece: sqrt(R ^ 4) = R ^ 2 = 1.0e6
+    //
+    float g = powf(10.0f, 0.1f * H->params.antenna_gain_dbi) * sqrtf(H->params.tx_power_watt) / (4.0f * M_PI) * 1.0e6f;
+    for (int k = 0; k < H->params.range_count; k++) {
+        H->pulse[k].s0 *= g;
+        H->pulse[k].s1 *= g;
+        H->pulse[k].s2 *= g;
+        H->pulse[k].s3 *= g;
+    }
 }
 
 void RS_download_pulse_only(RSHandle *H) {
@@ -3535,7 +3555,9 @@ void RS_download_pulse_only(RSHandle *H) {
 #endif
     
 	RS_merge_pulse_tmp(H);
-    //printf("pulse %zu [ %.4e %.4e %.4e ... ]\n", H->sim_tic, H->pulse[0].s0, H->pulse[0].s1, H->pulse[0].s2);
+//    printf("pulse %zu [ %+11.4e%+11.4ei %+11.4e%+11.4ei (%+6.2f)   %+11.4e%+11.4ei %+11.4e%+11.4ei (%+6.2f)  ... ]\n", H->sim_tic,
+//           H->pulse[0].s0, H->pulse[0].s1, H->pulse[0].s2, H->pulse[0].s3, zdr(H->pulse[0]),
+//           H->pulse[1].s0, H->pulse[1].s1, H->pulse[1].s2, H->pulse[1].s3, zdr(H->pulse[1]));
 }
 
 
@@ -4068,7 +4090,7 @@ RSBox RS_suggest_scan_doamin(RSHandle *H, const int nbeams) {
     float na = 0.5f * (float)nbeams + RS_DOMAIN_PAD + 0.5f;
     
     // Maximum number of beams in elevation
-    float ne = 14.0f;
+    float ne = 23.0f;
     
     // Maximum y of the emulation box: The range when the width is fully utilized; This is also rmax
     float rmax = w / sinf(na * H->params.antenna_bw_rad);

@@ -81,7 +81,6 @@ enum RSTable3DStaggeredDescription {
 };
 
 float4 rand(uint4 *seed);
-float4 set_clr(float4 att);
 
 #pragma mark -
 
@@ -95,7 +94,6 @@ float4 quat_rotate(float4 vector, float4 quat);
 #pragma mark -
 
 float4 complex_multiply(const float4 a, const float4 b);
-float4 two_way_effects(const float4 sig_in, const float range, const float wav_num);
 float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16 sim_desc);
 float4 compute_bg_vel(const float4 pos, __read_only image3d_t wind_uvw, const float16 wind_desc, const float16 sim_desc);
 float4 compute_dudt_dwdt(float4 *dwdt, const float4 vel, const float4 vel_bg, const float4 ori, __read_only image2d_t adm_cd, __read_only image2d_t adm_cm, const float16 adm_desc);
@@ -117,26 +115,6 @@ float4 rand(uint4 *seed)
     *seed = (*seed * a) & m;
     
     return convert_float4(*seed) * n;
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////
-//
-// Convenient function(s)
-//
-
-// Set colors
-float4 set_clr(float4 aux)
-{
-    float g = clamp(fma(log10(aux.s3), 0.3f, 1.5f), 0.05f, 0.3f);
-    
-    float4 c;
-    
-    c.x = clamp(0.4f * aux.s1, 0.0f, 1.0f) + 0.6f * g;
-    c.y = 0.9f * g;
-    c.z = clamp(1.0f - c.x - 3.5f * g, 0.0f, 1.0f) + 0.2f * (g - 0.1f);
-    c.w = 1.0f;
-    
-    return c;
 }
 
 #pragma mark -
@@ -203,36 +181,6 @@ float4 complex_multiply(const float4 a, const float4 b)
                            a.s13 * b.s02 + a.s02 * b.s13);
     return shuffle(iiqq, (uint4)(0, 2, 1, 3));
 }
-
-
-/////////////////////////////////////////////////////////////////////////////////////////
-//
-// Two-way effects
-//
-
-float4 two_way_effects(const float4 sig_in, const float range, const float wav_num)
-{
-    //        float atten = pown(aux.s0, -4);
-    //        float phase = aux.s0 * sim_desc.s4;
-    //
-    //        // cosine & sine to represent exp(j phase)
-    //        float c, s = sincos(phase, &c);
-    //
-    //        float4 sig_out = complex_multiply(sig, (float4)(c, s, c, s)) * atten;
-    //        printf("atten = %.4e  %.4v4e\n", atten, sig_out);
-
-    // Range attenuation R ^ -4
-    float atten = pown(range, -4);
-
-    // Return phase due to two-way path
-    float phase = range * wav_num;
-
-    // cosine & sine to represent exp(j phase)
-    float c, s = sincos(phase, &c);
-    
-    return complex_multiply(sig_in, (float4)(c, s, c, s)) * atten;
-}
-
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -328,7 +276,7 @@ float4 compute_dudt_dwdt(float4 *dwdt,
     
     float4 ur = vel_bg - vel;
     float4 u_hat = quat_rotate(normalize(ur), quat_conj(ori));
-        
+    
     beta = acos(u_hat.x);
     alpha = atan2(u_hat.z, u_hat.y);
     if (alpha < 0.0f) {
@@ -453,7 +401,6 @@ float4 compute_rcs(float4 ori, __read_only image2d_t rcs_real, __read_only image
     return (float4)(hh_real, hh_imag, vv_real, vv_imag);
 }
 
-
 #pragma mark -
 #pragma mark OpenCL Kernel Functions
 
@@ -491,11 +438,11 @@ __kernel void dummy(__global float4 *i)
 
     quat_new_frame = quat_mult(quat_new_frame, quat_new_frame);
     
-    //    float4 az4 = (float4)( az,  az, az, az);
-    //    float4 el4 = (float4)(-el, -el, el, el);
-    //    float4 quat_new_frame
-    //    = (float4)(-0.5f,  0.5f,  0.5f, 0.5f) * cos(0.5f * (az4 + el4))
-    //    + (float4)(-0.5f, -0.5f, -0.5f, 0.5f) * sin(0.5f * (az4 - el4));   
+//    float4 az4 = (float4)( az,  az, az, az);
+//    float4 el4 = (float4)(-el, -el, el, el);
+//    float4 quat_new_frame
+//    = (float4)(-0.5f,  0.5f,  0.5f, 0.5f) * cos(0.5f * (az4 + el4))
+//    + (float4)(-0.5f, -0.5f, -0.5f, 0.5f) * sin(0.5f * (az4 - el4));   
 }
 
 //
@@ -553,9 +500,10 @@ __kernel void bg_atts(__global float4 *p,
         return;
     }
 
-    //
+    // Derive the lookup index
     float4 wind_coord = wind_table_index(pos, wind_desc, sim_desc);
     
+    // Look up the background velocity from the table
     vel = read_imagef(wind_uvw, sampler, wind_coord);
     
     p[i] = pos;
@@ -609,7 +557,7 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
         uint4 seed = y[i];
         float4 r = rand(&seed);
         y[i] = seed;
-        //pos.xyz = (float3)(fma(r.xyz, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT);   // Feed from the bottom
+        //pos.xyz = (float3)(fma(r.xy, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT);   // Feed from the bottom
         pos.xyz = fma(r.xyz, sim_desc.hi.s456, sim_desc.hi.s012);
         vel = FLOAT4_ZERO;
         
@@ -620,8 +568,10 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
         return;
     }
 
+    // Derive the lookup index
     float4 wind_coord = wind_table_index(pos, wind_desc, sim_desc);
 
+    // Look up the background velocity from the table
     float4 bg_vel = read_imagef(wind_uvw, sampler, wind_coord);
 
     // Particle velocity due to drag
@@ -883,7 +833,6 @@ __kernel void scat_sig_aux(__global float4 *s,
     
     iidx_int = convert_uint2(fidx_int);
     
-    
 //    if (i < 32) {
 //        float w = angular_weight[i];
 //        printf("w[%d] = %.6f = %.2f\n", i, w, 10.0f * log10(w));
@@ -892,21 +841,22 @@ __kernel void scat_sig_aux(__global float4 *s,
     // Auxiliary info:
     // - s0 = range of the point
     // - s1 = age
-    // - s2 =
+    // - s2 = dsd bin index
     // - s3 = angular weight (make_pulse_pass_1)
     //
     aux.s0 = length(p[i].xyz);
     aux.s1 = aux.s1 + sim_desc.sf;
     aux.s3 = mix(angular_weight[iidx_int.s0], angular_weight[iidx_int.s1], fidx_dec.s0);
     
-    float atten = pown(aux.s0, -4);
+    // Two-way power attenuation = 1.0 / R ^ 4 ==> amplitude attenuation = 1.0 / R ^ 2
+    float atten = pown(aux.s0, -2);
     float phase = aux.s0 * sim_desc.s4;
     
     // cosine & sine to represent exp(j phase)
     float cc, ss = sincos(phase, &cc);
 
     sig = complex_multiply(r[i], (float4)(cc, ss, cc, ss)) * atten;
-
+    
 //    if (i == 0) {
 //        printf("atten = %.4e  %.4v4e\n", atten, sig);
 //    }
