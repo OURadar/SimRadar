@@ -1218,41 +1218,41 @@ void RS_init_scat_pos(RSHandle *H) {
 		H->scat_pos[i].x = (float)rand() / RAND_MAX * domain.size.x + domain.origin.x;
 		H->scat_pos[i].y = (float)rand() / RAND_MAX * domain.size.y + domain.origin.y;
 		H->scat_pos[i].z = (float)rand() / RAND_MAX * domain.size.z + domain.origin.z;
-        H->scat_pos[i].w = 0.0f;                       // Use this to store drop radius
+        H->scat_pos[i].w = 0.0f;                       // Use this to store drop radius in m
         
-		H->scat_aux[i].s0 = 0.0f;                      // Use this to store range
-        H->scat_aux[i].s1 = (float)rand() / RAND_MAX;  // Use this to store age
-		H->scat_aux[i].s2 = 0.0f;
-		H->scat_aux[i].s3 = 1.0f;                      // Use this to store angular weight
+		H->scat_aux[i].s0 = 0.0f;                      // range
+        H->scat_aux[i].s1 = (float)rand() / RAND_MAX;  // age
+		H->scat_aux[i].s2 = 0.0f;                      // dsd bin index
+		H->scat_aux[i].s3 = 1.0f;                      // angular weight [0.0, 1.0]
 		
-		H->scat_vel[i].x = 0.0f;
-		H->scat_vel[i].y = 0.0f;
-		H->scat_vel[i].z = 0.0f;
-		H->scat_vel[i].w = 0.0f;
+		H->scat_vel[i].x = 0.0f;                       // u component of velocity
+		H->scat_vel[i].y = 0.0f;                       // v component of velocity
+		H->scat_vel[i].z = 0.0f;                       // w component of velocity
+		H->scat_vel[i].w = 0.0f;                       // n/a
 
         // At the reference
-        H->scat_ori[i].x = 0.0f;
-        H->scat_ori[i].y = 0.0f;
-        H->scat_ori[i].z = 0.0f;
-        H->scat_ori[i].w = 1.0f;
+        H->scat_ori[i].x = 0.0f;                       // x of quaternion
+        H->scat_ori[i].y = 0.0f;                       // y of quaternion
+        H->scat_ori[i].z = 0.0f;                       // z of quaternion
+        H->scat_ori[i].w = 1.0f;                       // w of quaternion
         
         // Facing the sky
-//        H->scat_ori[i].x =  0.0f;
-//        H->scat_ori[i].y = -0.707106781186547f;
-//        H->scat_ori[i].z =  0.0f;
-//        H->scat_ori[i].w =  0.707106781186548f;
+//        H->scat_ori[i].x =  0.0f;                      // x of quaternion
+//        H->scat_ori[i].y = -0.707106781186547f;        // y of quaternion
+//        H->scat_ori[i].z =  0.0f;                      // z of quaternion
+//        H->scat_ori[i].w =  0.707106781186548f;        // w of quaternion
 
         // Facing the beam
-//        H->scat_ori[i].x =  0.5f;
-//        H->scat_ori[i].y = -0.5f;
-//        H->scat_ori[i].z = -0.5f;
-//        H->scat_ori[i].w =  0.5f;
+//        H->scat_ori[i].x =  0.5f;                      // x of quaternion
+//        H->scat_ori[i].y = -0.5f;                      // y of quaternion
+//        H->scat_ori[i].z = -0.5f;                      // z of quaternion
+//        H->scat_ori[i].w =  0.5f;                      // w of quaternion
         
         // Some other tests
-//        H->scat_ori[i].x =  0.5f;
-//        H->scat_ori[i].y =  0.5f;
-//        H->scat_ori[i].z = -0.5f;
-//        H->scat_ori[i].w =  0.5f;
+//        H->scat_ori[i].x =  0.5f;                      // x of quaternion
+//        H->scat_ori[i].y = -0.5f;                      // y of quaternion
+//        H->scat_ori[i].z =  0.5f;                      // z of quaternion
+//        H->scat_ori[i].w =  0.5f;                      // w of quaternion
 
         // Rotate by theta
 //        float theta = 70.0f / 180.0f * M_PI_2;
@@ -1262,22 +1262,22 @@ void RS_init_scat_pos(RSHandle *H) {
 //        H->scat_ori[i].w = cosf(0.5f * theta);
         
         // Tumbling vector for orientation update
-        H->scat_tum[i].x = 0.0f;
-        H->scat_tum[i].y = 0.0f;
-        H->scat_tum[i].z = 0.0f;
-        H->scat_tum[i].w = 1.0f;
+        H->scat_tum[i].x = 0.0f;                       // x of quaternion
+        H->scat_tum[i].y = 0.0f;                       // y of quaternion
+        H->scat_tum[i].z = 0.0f;                       // z of quaternion
+        H->scat_tum[i].w = 1.0f;                       // w of quaternion
 
         // Initial return from each point
-        H->scat_rcs[i].s0 = 1.0f;
-		H->scat_rcs[i].s1 = 0.0f;
-		H->scat_rcs[i].s2 = 1.0f;
-		H->scat_rcs[i].s3 = 0.0f;
+        H->scat_rcs[i].s0 = 1.0f;                      // sh_real of rcs
+		H->scat_rcs[i].s1 = 0.0f;                      // sh_imag of rcs
+		H->scat_rcs[i].s2 = 1.0f;                      // sv_real of rcs
+		H->scat_rcs[i].s3 = 0.0f;                      // sv_imag of rcs
         
         // Random seeds
-        H->scat_rnd[i].s0 = rand();
-        H->scat_rnd[i].s1 = rand();
-        H->scat_rnd[i].s2 = rand();
-        H->scat_rnd[i].s3 = rand();
+        H->scat_rnd[i].s0 = rand();                    // random seed
+        H->scat_rnd[i].s1 = rand();                    // random seed
+        H->scat_rnd[i].s2 = rand();                    // random seed
+        H->scat_rnd[i].s3 = rand();                    // random seed
 	}
     
     // Parameterized drop radius as scat_pos.w if DSD has been set
@@ -1296,8 +1296,8 @@ void RS_init_scat_pos(RSHandle *H) {
                 }
             }
             counts[bin]++;
-            H->scat_pos[i].w = H->dsd_r[bin];
-            H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // temporary use this to store normalized bin index
+            H->scat_pos[i].w = H->dsd_r[bin];                                  // set the drop radius
+            H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // set the dsd bin index
         }
         
         if (H->verb > 1) {

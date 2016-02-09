@@ -81,7 +81,6 @@ enum RSTable3DStaggeredDescription {
 };
 
 float4 rand(uint4 *seed);
-float4 set_clr(float4 att);
 
 #pragma mark -
 
@@ -116,26 +115,6 @@ float4 rand(uint4 *seed)
     *seed = (*seed * a) & m;
     
     return convert_float4(*seed) * n;
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////
-//
-// Convenient function(s)
-//
-
-// Set colors
-float4 set_clr(float4 aux)
-{
-    float g = clamp(fma(log10(aux.s3), 0.3f, 1.5f), 0.05f, 0.3f);
-    
-    float4 c;
-    
-    c.x = clamp(0.4f * aux.s1, 0.0f, 1.0f) + 0.6f * g;
-    c.y = 0.9f * g;
-    c.z = clamp(1.0f - c.x - 3.5f * g, 0.0f, 1.0f) + 0.2f * (g - 0.1f);
-    c.w = 1.0f;
-    
-    return c;
 }
 
 #pragma mark -
@@ -422,7 +401,6 @@ float4 compute_rcs(float4 ori, __read_only image2d_t rcs_real, __read_only image
     return (float4)(hh_real, hh_imag, vv_real, vv_imag);
 }
 
-
 #pragma mark -
 #pragma mark OpenCL Kernel Functions
 
@@ -460,11 +438,11 @@ __kernel void dummy(__global float4 *i)
 
     quat_new_frame = quat_mult(quat_new_frame, quat_new_frame);
     
-    //    float4 az4 = (float4)( az,  az, az, az);
-    //    float4 el4 = (float4)(-el, -el, el, el);
-    //    float4 quat_new_frame
-    //    = (float4)(-0.5f,  0.5f,  0.5f, 0.5f) * cos(0.5f * (az4 + el4))
-    //    + (float4)(-0.5f, -0.5f, -0.5f, 0.5f) * sin(0.5f * (az4 - el4));   
+//    float4 az4 = (float4)( az,  az, az, az);
+//    float4 el4 = (float4)(-el, -el, el, el);
+//    float4 quat_new_frame
+//    = (float4)(-0.5f,  0.5f,  0.5f, 0.5f) * cos(0.5f * (az4 + el4))
+//    + (float4)(-0.5f, -0.5f, -0.5f, 0.5f) * sin(0.5f * (az4 - el4));   
 }
 
 //
@@ -522,9 +500,10 @@ __kernel void bg_atts(__global float4 *p,
         return;
     }
 
-    //
+    // Derive the lookup index
     float4 wind_coord = wind_table_index(pos, wind_desc, sim_desc);
     
+    // Look up the background velocity from the table
     vel = read_imagef(wind_uvw, sampler, wind_coord);
     
     p[i] = pos;
@@ -578,7 +557,7 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
         uint4 seed = y[i];
         float4 r = rand(&seed);
         y[i] = seed;
-        //pos.xyz = (float3)(fma(r.xyz, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT);   // Feed from the bottom
+        //pos.xyz = (float3)(fma(r.xy, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT);   // Feed from the bottom
         pos.xyz = fma(r.xyz, sim_desc.hi.s456, sim_desc.hi.s012);
         vel = FLOAT4_ZERO;
         
@@ -589,8 +568,10 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
         return;
     }
 
+    // Derive the lookup index
     float4 wind_coord = wind_table_index(pos, wind_desc, sim_desc);
 
+    // Look up the background velocity from the table
     float4 bg_vel = read_imagef(wind_uvw, sampler, wind_coord);
 
     // Particle velocity due to drag
@@ -860,7 +841,7 @@ __kernel void scat_sig_aux(__global float4 *s,
     // Auxiliary info:
     // - s0 = range of the point
     // - s1 = age
-    // - s2 =
+    // - s2 = dsd bin index
     // - s3 = angular weight (make_pulse_pass_1)
     //
     aux.s0 = length(p[i].xyz);

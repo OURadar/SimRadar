@@ -178,11 +178,11 @@ Details on Scatterer Attributes
 
 Multiple arrays of type `cl_float` are used to keep track of a set of attributes associated with each scatterer. The following list provides a summary of the attriutes and the variables used on the C-level abstraction.
 
-    cl_mem                 scat_pos;   // x, y, z coordinates
+    cl_mem                 scat_pos;   // x, y, z coordinates; and w = drop radius in m
     cl_mem                 scat_vel;   // u, v, w wind components
     cl_mem                 scat_ori;   // orientation descbried by a quaternion
     cl_mem                 scat_tum;   // tumbling motion = change of orientation derived from ADM
-    cl_mem                 scat_att;   // scatterer type, dot products, range, etc.
+    cl_mem                 scat_aux;   // auxiliary attributes: s0 = range; s1 = age; s2 = DSD bin index; s3 = angular weight
     cl_mem                 scat_rcs;   // radar cross section: Ih Qh Iv Qv
     cl_mem                 scat_sig;   // signal: Ih Qh Iv Qv
     cl_mem                 scat_rnd;   // random seed
