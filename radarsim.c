@@ -166,6 +166,9 @@ int main(int argc, char *argv[]) {
     }
     RS_revise_debris_counts_to_gpu_preference(S);
     
+    // No need to go all the way up if we are looking low
+    box.size.e = MIN(box.size.e, scan_el + RS_DOMAIN_PAD);
+    
     RS_set_scan_box(S,
                     box.origin.r, box.origin.r + box.size.r, 15.0f,   // Range
                     box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
@@ -268,8 +271,14 @@ int main(int argc, char *argv[]) {
         // Update scan angles for the next pulse
         az_deg = fmodf(az_deg + 0.01f + 12.0f, 24.0f) - 12.0f;
 
+        // Only download the necessary data
         if (verb > 2) {
             RS_download(S);
+        } else if (write_file) {
+            RS_download_pulse_only(S);
+        }
+
+        if (verb > 2) {
             RS_show_scat_sig(S);
             
             printf("signal:\n");
@@ -280,8 +289,6 @@ int main(int argc, char *argv[]) {
         }
         
         if (write_file) {
-            RS_download_pulse_only(S);
-
             // Gather information for the  pulse header
             pulse_header.time = S->sim_time;
             pulse_header.az_deg = az_deg;
@@ -299,7 +306,7 @@ int main(int argc, char *argv[]) {
     dt = DTIME(t0, t2);
     printf("%s : Finished.  Total time elapsed = %.2f s\n", now(), dt);
     
-    if (accel_type == ACCEL_TYPE_GPU && verb > 1) {
+    if (verb > 2) {
         RS_download(S);
         printf("Final scatter body positions, velocities and orientations:\n");
         RS_show_scat_pos(S);

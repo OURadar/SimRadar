@@ -1879,7 +1879,7 @@ void RS_set_debris_count(RSHandle *H, const int species_id, const size_t count) 
     }
     
     if (H->verb > 1) {
-        printf("%s : RS : Total number of species = %d\n", now(), (int)H->num_species);
+        rsprint("Total number of debris types = %d", (int)H->num_species);
     }
 
     if (H->sim_tic > 0) {
