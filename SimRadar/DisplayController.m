@@ -126,7 +126,7 @@ NSWindow *standardWindow;
 	self = [super initWithWindowNibName:windowNibName];
 	if (self) {
 		rootSender = sender;
-        speciesId = 1;
+        debrisId = 1;
         NSLog(@"Allocating recorder ...");
 	}
 	return self;
@@ -328,22 +328,22 @@ NSWindow *standardWindow;
 			break;
 
 		case ']':
-            ret = [sim increasePopulationForSpecies:speciesId returnCounts:counts];
+            ret = [sim increasePopulationForDebris:debrisId returnCounts:counts];
             if (ret >= 0) {
-//                [glView.renderer setPopulationTo:ret forSpecies:speciesId];
+//                [glView.renderer setPopulationTo:ret forDebris:debrisId];
                 for (int i = 0; i< sim.deviceCount; i++) {
-                    [glView.renderer setPopulationTo:counts[i] forSpecies:speciesId forDevice:i];
+                    [glView.renderer setPopulationTo:counts[i] forDebris:debrisId forDevice:i];
                 }
                 [glView.renderer setDebrisCountsHaveChanged:true];
             }
 			break;
             
 		case '[':
-            ret = [sim decreasePopulationForSpecies:speciesId returnCounts:counts];
+            ret = [sim decreasePopulationForDebris:debrisId returnCounts:counts];
             if (ret >= 0) {
-//                [glView.renderer setPopulationTo:ret forSpecies:speciesId];
+//                [glView.renderer setPopulationTo:ret forDebris:debrisId];
                 for (int i = 0; i< sim.deviceCount; i++) {
-                    [glView.renderer setPopulationTo:counts[i] forSpecies:speciesId forDevice:i];
+                    [glView.renderer setPopulationTo:counts[i] forDebris:debrisId forDevice:i];
                 }
                 [glView.renderer setDebrisCountsHaveChanged:true];
             }
@@ -371,8 +371,8 @@ NSWindow *standardWindow;
         case '2':
         case '3':
         case '4':
-            speciesId = c - '0';
-            NSLog(@"speciesId = %d", speciesId);
+            debrisId = c - '0';
+            NSLog(@"debrisId = %d", debrisId);
             break;
             
         case 'c':

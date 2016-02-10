@@ -205,7 +205,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     
     // Copy the necessary parameters from host to compute workers
     C->num_scats = sub_num_scats;
-    C->species_global_offset = offset;
+    C->debris_global_offset = offset;
     
     size_t group_size_multiple = RS_CL_GROUP_ITEMS;
 
@@ -892,7 +892,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
     H->params.lambda = 0.1f;
 	H->params.prt = 0.0f;
 	H->num_workers = 1;
-    H->num_species = 1;
+    H->num_debris = 1;
 	H->method = method;
 	
 	for (i = 0; i < RS_MAX_GPU_DEVICE; i++) {
@@ -900,7 +900,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 	}
     
     for (i = 0; i < RS_MAX_DEBRIS_TYPES; i++) {
-        H->species_population[i] = 0;
+        H->debris_population[i] = 0;
     }
 	
 	if (H->method == RS_METHOD_GPU) {
@@ -1363,8 +1363,8 @@ void RS_init_scat_pos(RSHandle *H) {
 	H->scat_pos[0].z = domain.origin.z + 0.5f * domain.size.z;
 	
     // Replace the very first debris particle
-    if (H->species_population[1] > 0) {
-        k = (int)H->species_population[0] / H->num_workers;
+    if (H->debris_population[1] > 0) {
+        k = (int)H->debris_population[0] / H->num_workers;
         H->scat_pos[k].x = 0.0f;
         H->scat_pos[k].y = H->params.range_start + floorf(H->params.range_count * 0.5f) * H->params.range_delta;
         H->scat_pos[k].z = 0.5f * domain.size.z;
@@ -1860,26 +1860,26 @@ void RS_set_verbosity(RSHandle *H, const char verb) {
 }
 
 
-void RS_set_debris_count(RSHandle *H, const int species_id, const size_t count) {
+void RS_set_debris_count(RSHandle *H, const int debris_id, const size_t count) {
     
     int i;
     
-    if (species_id == 0) {
-        printf("%s : RS : RS_set_debris_count() cannot have species = 0.\n", now());
+    if (debris_id == 0) {
+        printf("%s : RS : RS_set_debris_count() cannot have debris = 0.\n", now());
         return;
     }
 
-    H->species_population[species_id] = count;
+    H->debris_population[debris_id] = count;
 
-    H->num_species = 0;
+    H->num_debris = 0;
     for (i = 0; i < RS_MAX_DEBRIS_TYPES; i++) {
-        if (H->species_population[i] > 0) {
-            H->num_species++;
+        if (H->debris_population[i] > 0) {
+            H->num_debris++;
         }
     }
     
     if (H->verb > 1) {
-        rsprint("Total number of debris types = %d", (int)H->num_species);
+        rsprint("Total number of debris types = %d", (int)H->num_debris);
     }
 
     if (H->sim_tic > 0) {
@@ -1900,31 +1900,31 @@ void RS_revise_debris_counts_to_gpu_preference(RSHandle *H) {
     int i;
     
     for (i = 0; i < RS_MAX_DEBRIS_TYPES; i++) {
-        if (H->species_population[i]) {
-            H->species_population[i] = ((H->species_population[i] + H->preferred_multiple - 1) / H->preferred_multiple) * H->preferred_multiple;
+        if (H->debris_population[i]) {
+            H->debris_population[i] = ((H->debris_population[i] + H->preferred_multiple - 1) / H->preferred_multiple) * H->preferred_multiple;
         }
     }
 }
 
 
-size_t RS_get_debris_count(RSHandle *H, const int species_id) {
-    return H->species_population[species_id];
+size_t RS_get_debris_count(RSHandle *H, const int debris_id) {
+    return H->debris_population[debris_id];
 }
 
 
-size_t RS_get_worker_debris_count(RSHandle *H, const int species_id, const int worker_id) {
-    return H->worker[worker_id].species_population[species_id];
+size_t RS_get_worker_debris_count(RSHandle *H, const int debris_id, const int worker_id) {
+    return H->worker[worker_id].debris_population[debris_id];
 }
 
 
-size_t RS_get_all_worker_debris_counts(RSHandle *H, const int species_id, size_t counts[]) {
+size_t RS_get_all_worker_debris_counts(RSHandle *H, const int debris_id, size_t counts[]) {
     
     int i;
     
     for (i = 0; i < H->num_workers; i++) {
-        counts[i] = H->worker[i].species_population[species_id];
+        counts[i] = H->worker[i].debris_population[debris_id];
     }
-    return H->species_population[species_id];
+    return H->debris_population[debris_id];
 }
 
 
@@ -1954,36 +1954,36 @@ void RS_update_debris_count(RSHandle *H) {
     k = RS_MAX_DEBRIS_TYPES;
     while (k > 1) {
         k--;
-        count -= H->species_population[k];
+        count -= H->debris_population[k];
     }
-    H->species_population[0] = count;
+    H->debris_population[0] = count;
 
     if (H->verb > 1) {
         printf("%s : RS : Population details:\n", now());
         for (k = 0; k < RS_MAX_DEBRIS_TYPES; k++) {
-            printf("                 o Global species_population[%d] = %s\n", k, commaint(H->species_population[k]));
+            printf("                 o Global debris_population[%d] = %s\n", k, commaint(H->debris_population[k]));
         }
     }
     
     k = RS_MAX_DEBRIS_TYPES;
     while (k > 0) {
         k--;
-        size_t species_count_left = H->species_population[k];
-        if (species_count_left == 0) {
+        size_t debris_count_left = H->debris_population[k];
+        if (debris_count_left == 0) {
             for (i = 0; i < H->num_workers; i++) {
-                H->worker[i].species_population[k] = 0;
+                H->worker[i].debris_population[k] = 0;
             }
             continue;
         }
         // Groups of debris types
         size_t round_up_down_toggle = H->num_workers > 1 ? k % H->num_workers : k;
-        size_t sub_species_population = (H->species_population[k] + round_up_down_toggle) / H->num_workers;
+        size_t sub_debris_population = (H->debris_population[k] + round_up_down_toggle) / H->num_workers;
         for (i = 0; i < H->num_workers - 1; i++) {
-            H->worker[i].species_population[k] = sub_species_population;
-            species_count_left -= sub_species_population;
+            H->worker[i].debris_population[k] = sub_debris_population;
+            debris_count_left -= sub_debris_population;
         }
         // The last worker gets all the remainders
-        H->worker[i].species_population[k] = species_count_left;
+        H->worker[i].debris_population[k] = debris_count_left;
     }
     
     for (i = 0; i < H->num_workers; i++) {
@@ -1991,22 +1991,22 @@ void RS_update_debris_count(RSHandle *H) {
         size_t origin = H->worker[i].num_scats;
         while (k > 1) {
             k--;
-            if (H->worker[i].species_population[k] == 0) {
+            if (H->worker[i].debris_population[k] == 0) {
                 continue;
             }
-            origin -= H->worker[i].species_population[k];
-            H->worker[i].species_origin[k] = origin;
+            origin -= H->worker[i].debris_population[k];
+            H->worker[i].debris_origin[k] = origin;
         }
     }
     
     if (H->verb > 2) {
         for (i = 0; i < H->num_workers; i++) {
-            printf("%s : RS : worker[%d] with total population %s  offset %s\n", now(), i, commaint(H->worker[i].num_scats), commaint(H->worker[i].species_global_offset));
+            printf("%s : RS : worker[%d] with total population %s  offset %s\n", now(), i, commaint(H->worker[i].num_scats), commaint(H->worker[i].debris_global_offset));
             for (k = 0; k < RS_MAX_DEBRIS_TYPES; k++) {
-                printf("                 o species_population[%d] - [ %9s, %9s, %9s ]\n", k,
-                       commaint(H->worker[i].species_origin[k]),
-                       commaint(H->worker[i].species_population[k]),
-                       commaint(H->worker[i].species_origin[k] + H->worker[i].species_population[k]));
+                printf("                 o debris_population[%d] - [ %9s, %9s, %9s ]\n", k,
+                       commaint(H->worker[i].debris_origin[k]),
+                       commaint(H->worker[i].debris_population[k]),
+                       commaint(H->worker[i].debris_origin[k] + H->worker[i].debris_population[k]));
             }
         }
     }
@@ -3214,12 +3214,12 @@ void RS_derive_ndranges(RSHandle *H) {
         C->ndrange_scat_all.local_work_size[0] = 0;
         
         for (int k = 0; k < RS_MAX_DEBRIS_TYPES; k++) {
-            if (H->species_population[k] == 0) {
+            if (H->debris_population[k] == 0) {
                 continue;
             }
             C->ndrange_scat[k].work_dim = 1;
-            C->ndrange_scat[k].global_work_offset[0] = C->species_origin[k];
-            C->ndrange_scat[k].global_work_size[0] = C->species_population[k];
+            C->ndrange_scat[k].global_work_offset[0] = C->debris_origin[k];
+            C->ndrange_scat[k].global_work_size[0] = C->debris_population[k];
             C->ndrange_scat[k].local_work_size[0] = 0;
             if (C->verb > 2) {
                 printf("%s : RS : work[%d] offset, size = %d, %d\n",
@@ -3685,7 +3685,7 @@ void RS_rcs_from_dsd(RSHandle *H) {
     cl_event events[RS_MAX_GPU_DEVICE];
     
     for (i = 0; i < H->num_workers; i++) {
-        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_rcs, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], NULL, 0, NULL, &events[i]);
+        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_rcs, 1, &H->worker[i].debris_origin[0], &H->worker[i].debris_population[0], NULL, 0, NULL, &events[i]);
     }
     
     for (i = 0; i < H->num_workers; i++) {
@@ -3750,7 +3750,7 @@ void RS_advance_time(RSHandle *H) {
         r = 0;
         a = 0;
         for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
-            if (H->worker[i].species_population[k]) {
+            if (H->worker[i].debris_population[k]) {
                 dispatch_async(H->worker[i].que, ^{
                     db_atts_kernel(&H->worker[i].ndrange_scat[k],
                                    (cl_float4 *)H->worker[i].scat_pos,
@@ -3779,7 +3779,7 @@ void RS_advance_time(RSHandle *H) {
 	for (i = 0; i < H->num_workers; i++) {
 		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
         for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
-            if (H->worker[i].species_population[k]) {
+            if (H->worker[i].debris_population[k]) {
                 dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
             }
         }
@@ -3825,31 +3825,31 @@ void RS_advance_time(RSHandle *H) {
         // Convenient pointer to reduce dereferencing
         RSWorker *C = &H->worker[i];
 
-//        clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->species_origin[0], &C->num_scats, NULL, 0, NULL, &events[i][0]);
+//        clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->debris_origin[0], &C->num_scats, NULL, 0, NULL, &events[i][0]);
         
         // Background: Need to refresh some parameters at each time update
         if (H->sim_concept & RSSimulationConceptDraggedBackground) {
             clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
             clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-            clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->species_origin[0], &C->species_population[0], NULL, 0, NULL, &events[i][0]);
+            clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->debris_origin[0], &C->debris_population[0], NULL, 0, NULL, &events[i][0]);
         } else {
             clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
             clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-            clEnqueueNDRangeKernel(C->que, C->kern_bg_atts, 1, &C->species_origin[0], &C->species_population[0], NULL, 0, NULL, &events[i][0]);
+            clEnqueueNDRangeKernel(C->que, C->kern_bg_atts, 1, &C->debris_origin[0], &C->debris_population[0], NULL, 0, NULL, &events[i][0]);
         }
         
         // Debris particles
         clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
         clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
         for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
-            if (C->species_population[k]) {
+            if (C->debris_population[k]) {
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &C->adm_cd[a]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelMomentum,          sizeof(cl_mem),     &C->adm_cm[a]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &C->adm_desc);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &C->rcs_real[r]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[r]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[r]);
-                clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->species_origin[k], &C->species_population[k], NULL, 0, NULL, &events[i][k]);
+                clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->debris_origin[k], &C->debris_population[k], NULL, 0, NULL, &events[i][k]);
             }
             r = r == H->rcs_count - 1 ? 0 : r + 1;
             a = a == H->adm_count - 1 ? 0 : a + 1;
@@ -3864,7 +3864,7 @@ void RS_advance_time(RSHandle *H) {
         clWaitForEvents(1, &events[i][0]);
         clReleaseEvent(events[i][0]);
         for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
-            if (H->worker[i].species_population[k]) {
+            if (H->worker[i].debris_population[k]) {
                 clWaitForEvents(1, &events[i][k]);
                 clReleaseEvent(events[i][k]);
             }
@@ -4077,15 +4077,15 @@ static void RS_show_rcs_i(RSHandle *H, const size_t i) {
 void RS_show_scat_pos(RSHandle *H) {
 	size_t i, w;
     for (w = 0; w < H->num_workers; w++) {
-        for (i = H->worker[w].species_origin[0];
-             i < H->worker[w].species_origin[0] + H->worker[w].species_population[0];
-             i += H->worker[w].species_population[0] / 9) {
+        for (i = H->worker[w].debris_origin[0];
+             i < H->worker[w].debris_origin[0] + H->worker[w].debris_population[0];
+             i += H->worker[w].debris_population[0] / 9) {
             RS_show_scat_i(H, i);
         }
-        if (H->worker[w].species_population[1]) {
-            for (i = H->worker[w].species_origin[1];
-                 i < H->worker[w].species_origin[1] + H->worker[w].species_population[1];
-                 i += H->worker[w].species_population[1] / 9) {
+        if (H->worker[w].debris_population[1]) {
+            for (i = H->worker[w].debris_origin[1];
+                 i < H->worker[w].debris_origin[1] + H->worker[w].debris_population[1];
+                 i += H->worker[w].debris_population[1] / 9) {
                 RS_show_scat_i(H, i);
             }
         }
@@ -4097,19 +4097,19 @@ void RS_show_scat_sig(RSHandle *H) {
     size_t i, w;
     printf("background:\n");
     for (w = 0; w < H->num_workers; w++) {
-        for (i = 0; i < H->worker[w].species_population[0]; i += H->worker[w].species_population[0] / 9) {
-            RS_show_rcs_i(H, H->worker[w].species_global_offset + H->worker[w].species_origin[0] + i);
+        for (i = 0; i < H->worker[w].debris_population[0]; i += H->worker[w].debris_population[0] / 9) {
+            RS_show_rcs_i(H, H->worker[w].debris_global_offset + H->worker[w].debris_origin[0] + i);
         }
     }
-    if (H->species_population[1] == 0) {
+    if (H->debris_population[1] == 0) {
         return;
     }
     // Show the debris
-    //i = (int)H->species_population[0] / H->num_workers;
+    //i = (int)H->debris_population[0] / H->num_workers;
     printf("debris type #1:\n");
     for (w = 0; w < H->num_workers; w++) {
-        for (i = 0; i < H->worker[w].species_population[1]; i += H->worker[w].species_population[1] / 9) {
-            RS_show_rcs_i(H, H->worker[w].species_global_offset + H->worker[w].species_origin[1] + i);
+        for (i = 0; i < H->worker[w].debris_population[1]; i += H->worker[w].debris_population[1] / 9) {
+            RS_show_rcs_i(H, H->worker[w].debris_global_offset + H->worker[w].debris_origin[1] + i);
         }
     }
 }

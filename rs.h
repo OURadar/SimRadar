@@ -292,9 +292,9 @@ typedef struct _rs_worker {
 	// Scatter bodies
 	size_t                 num_scats;
     
-    size_t                 species_global_offset;
-    size_t                 species_origin[RS_MAX_DEBRIS_TYPES];
-    size_t                 species_population[RS_MAX_DEBRIS_TYPES];
+    size_t                 debris_global_offset;
+    size_t                 debris_origin[RS_MAX_DEBRIS_TYPES];
+    size_t                 debris_population[RS_MAX_DEBRIS_TYPES];
 	
 	RSMakePulseParams      make_pulse_params;
 
@@ -410,8 +410,8 @@ typedef struct _rs_handle {
 
 	// Scatter bodies
 	size_t                 num_scats;
-    size_t                 num_species;
-    size_t                 species_population[RS_MAX_DEBRIS_TYPES];
+    size_t                 num_debris;
+    size_t                 debris_population[RS_MAX_DEBRIS_TYPES];
 
 	// CPU side memory (for upload/download)
 	cl_float4              *scat_pos;       // position
@@ -501,10 +501,10 @@ void RS_set_scan_box(RSHandle *H,
 					 RSfloat elevation_start, RSfloat elevation_end, RSfloat elevation_gate);
 void RS_set_beam_pos(RSHandle *H, RSfloat az_deg, RSfloat el_deg);
 void RS_set_verbosity(RSHandle *H, const char verb);
-void RS_set_debris_count(RSHandle *H, const int species_id, const size_t count);
-size_t RS_get_debris_count(RSHandle *H, const int species_id);
-size_t RS_get_worker_debris_count(RSHandle *H, const int species_id, const int worker_id);
-size_t RS_get_all_worker_debris_counts(RSHandle *H, const int species_id, size_t counts[]);
+void RS_set_debris_count(RSHandle *H, const int debris_id, const size_t count);
+size_t RS_get_debris_count(RSHandle *H, const int debris_id);
+size_t RS_get_worker_debris_count(RSHandle *H, const int debris_id, const int worker_id);
+size_t RS_get_all_worker_debris_counts(RSHandle *H, const int debris_id, size_t counts[]);
 RSVolume RS_get_domain(RSHandle *H);
 
 void RS_set_dsd(RSHandle *H, const float *cdf, const float *diameters, const int count, const char name);

@@ -354,21 +354,21 @@
 #pragma mark -
 #pragma mark Simulation parameters
 
-- (GLint)decreasePopulationForSpecies:(const int)speciesId returnCounts:(GLint *)counts
+- (GLint)decreasePopulationForDebris:(const int)debrisId returnCounts:(GLint *)counts
 {
-    if (speciesId == 0) {
+    if (debrisId == 0) {
         return -1;
     }
-    size_t pop = RS_get_debris_count(S, speciesId);
+    size_t pop = RS_get_debris_count(S, debrisId);
     if (pop >= nearest_thousand) {
         pop -= nearest_thousand;
     } else if (pop >= nearest_hundred) {
         pop -= nearest_hundred;
     }
 
-    RS_set_debris_count(S, speciesId, pop);
+    RS_set_debris_count(S, debrisId, pop);
     
-    RS_get_all_worker_debris_counts(S, speciesId, returnCounts);
+    RS_get_all_worker_debris_counts(S, debrisId, returnCounts);
 
     for (int i = 0; i < S->num_workers; i++) {
         counts[i] = (GLint)returnCounts[i];
@@ -377,20 +377,20 @@
     return (GLuint)pop;
 }
 
-- (GLint)increasePopulationForSpecies:(const int)speciesId returnCounts:(GLint *)counts
+- (GLint)increasePopulationForDebris:(const int)debrisId returnCounts:(GLint *)counts
 {
-    if (speciesId == 0) {
+    if (debrisId == 0) {
         return -1;
     }
-    size_t pop = RS_get_debris_count(S, speciesId);
+    size_t pop = RS_get_debris_count(S, debrisId);
     if (pop >= nearest_thousand && pop <= S->num_scats - nearest_thousand) {
         pop += nearest_thousand;
     } else {
         pop += nearest_hundred;
     }
-    RS_set_debris_count(S, speciesId, pop);
+    RS_set_debris_count(S, debrisId, pop);
 
-    RS_get_all_worker_debris_counts(S, speciesId, returnCounts);
+    RS_get_all_worker_debris_counts(S, debrisId, returnCounts);
     
     for (int i = 0; i < S->num_workers; i++) {
         counts[i] = (GLint)returnCounts[i];
@@ -399,14 +399,14 @@
     return (GLuint)pop;
 }
 
-- (GLint)populationForSpecies:(const int)speciesId
+- (GLint)populationForDebris:(const int)debrisId
 {
-    return (GLint)RS_get_debris_count(S, speciesId);
+    return (GLint)RS_get_debris_count(S, debrisId);
 }
 
-- (GLint)populationForSpecies:(const int)speciesId forDevice:(const int)deviceId
+- (GLint)populationForDebris:(const int)debrisId forDevice:(const int)deviceId
 {
-    return (GLint)RS_get_worker_debris_count(S, speciesId, deviceId);
+    return (GLint)RS_get_worker_debris_count(S, debrisId, deviceId);
 }
 
 - (GLfloat)recommendedViewRange
