@@ -20,6 +20,7 @@
 #include <sys/time.h>
 #include <pthread.h>
 
+#include "rs_const.h"
 #include "rs_types.h"
 #include "les.h"
 #include "adm.h"
@@ -35,50 +36,6 @@
 #if defined (GUI) || defined (_SHARE_OBJ_)
 #include <OpenGL/OpenGL.h>
 #endif
-
-#define RS_C                 29979458.0
-#define RS_DOMAIN_PAD               2.0
-#define RS_MAX_STR               4096
-#define RS_MAX_GPU_PLATFORM        10
-#define RS_MAX_GPU_DEVICE           8
-#define RS_MAX_KERNEL_LINES      2048
-#define RS_MAX_KERNEL_SRC       65536
-#define RS_ALIGN_SIZE             128     // Align size. Be sure to have a least 16 for SSE, 32 for AVX, 64 for AVX-512
-#define RS_MAX_GATES              512
-#define RS_MAX_NUM_SCATS      4000000
-#define RS_BODY_PER_CELL           50.0
-#define RS_CL_GROUP_ITEMS          64
-#define RS_MAX_VEL_TABLES          10
-#define RS_MAX_DEBRIS_TYPES         4
-#define RS_MAX_ADM_TABLES           RS_MAX_DEBRIS_TYPES
-#define RS_MAX_RCS_TABLES           RS_MAX_DEBRIS_TYPES
-
-#ifndef MAX
-#define MAX(X, Y)      ((X) > (Y) ? (X) : (Y))
-#endif
-#ifndef MIN
-#define MIN(X, Y)      ((X) > (Y) ? (Y) : (X))
-#endif
-
-#define DTIME(T_begin, T_end)  ((double)(T_end.tv_sec - T_begin.tv_sec) + 1.0e-6 * (double)(T_end.tv_usec - T_begin.tv_usec))
-
-enum RSStatus {
-	RSStatusDomainNull                   = 0,
-	RSStatusDomainPopulated              = 1,
-    RSStatusScattererSignalsNeedsUpdate  = 1 << 1
-};
-
-enum RS_CL_PASS_2 {
-	RS_CL_PASS_2_UNIVERSAL,
-	RS_CL_PASS_2_IN_RANGE,
-	RS_CL_PASS_2_IN_LOCAL
-};
-
-typedef char RSMethod;
-enum RSMethod {
-	RS_METHOD_CPU,
-	RS_METHOD_GPU
-};
 
 #define CL_CHECK(_expr)                                                         \
    do {                                                                         \

@@ -9,6 +9,7 @@
 #define iq_h
 
 #include "rs_types.h"
+#include "rs_const.h"
 
 // Basic structure of a complex sample
 typedef struct iq_complex {
@@ -20,6 +21,7 @@ typedef struct iq_complex {
 typedef union fileheader {
     char      raw[1024];
     RSParams  params;
+    uint32_t  debris_population[RS_MAX_DEBRIS_TYPES];
 } IQFileHeader;
 
 // Header of each pulse
