@@ -36,10 +36,11 @@ int main(int argc, char *argv[]) {
     char write_file = FALSE;
     int num_frames = 5;
     float density = 0.0f;
+    float scan_el = 3.0f;
     
     struct timeval t1, t2;
     
-    while ((c = getopt(argc, argv, "vcgf:a:d:wh?")) != -1) {
+    while ((c = getopt(argc, argv, "vcge:f:a:d:wh?")) != -1) {
         switch (c) {
             case 'v':
                 verb++;
@@ -61,6 +62,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'w':
                 write_file = TRUE;
+                break;
+            case 'e':
+                scan_el = atof(optarg);
                 break;
             case 'h':
             case '?':
@@ -169,22 +173,20 @@ int main(int argc, char *argv[]) {
     RS_populate(S);
     
     // Show some basic info
-    if (verb) {
-        printf("%s : Emulating %s frame%s %.2f\n", now(), commaint(num_frames), num_frames>1 ? "s" : "", S->params.range_delta);
-    } else {
-        printf("%s : Emulating %s frame%s with %s scatter bodies\n",
-               now(), commaint(num_frames), num_frames>1?"s":"", commaint(S->num_scats));
-    }
+    printf("%s : Emulating %s frame%s with %s scatter bodies\n",
+           now(), commaint(num_frames), num_frames>1?"s":"", commaint(S->num_scats));
 
     // Now, we are ready to bake
     int k = 0;
 
     // Some warm up if we are going for real
     if (num_frames > 1200) {
-        printf("Warming up ...\n");
         const int ks = 3000;
         RS_set_prt(S, 1.0f / 60.0f);
         for (k = 0; k < ks; k++) {
+            if (k % 100 == 0) {
+                fprintf(stderr, "Warming up ... \033[32m%.2f%%\033[0m  \r", (float)k / ks * 100.0f);
+            }
             // RS_set_beam_pos(S, 15.0f, 10.0f);
             // RS_make_pulse(S);
             RS_advance_time(S);
@@ -193,10 +195,6 @@ int main(int argc, char *argv[]) {
                 RS_download(S);
                 printf("== k = %d ==============\n", k);
                 RS_show_scat_pos(S);
-            }
-            
-            if (k % 1000 == 0) {
-                printf("t = %zu\n", S->sim_tic);
             }
         }
         // Reset the frame counter
@@ -209,7 +207,7 @@ int main(int argc, char *argv[]) {
 
     // ---------------------------------------------------------------------------------------------------------------
     
-    float az_deg = -12.0f, el_deg = 3.0f;
+    float az_deg = -12.0f, el_deg = scan_el;
     
     // Initialize a file if the user wants an output file
     FILE *fid = NULL;
@@ -223,7 +221,7 @@ int main(int argc, char *argv[]) {
     if (write_file) {
         char filename[4096];
         memset(filename, 0, 4096);
-        snprintf(filename, 256, "%s/Downloads/sim-%s.iq", getenv("HOME"), nowlong());
+        snprintf(filename, 256, "%s/Downloads/sim-%s-E%04.1f.iq", getenv("HOME"), nowlong(), el_deg);
         printf("%s : Output file : %s\n", now(), filename);
         fid = fopen(filename, "wb");
         if (fid == NULL) {
@@ -236,16 +234,25 @@ int main(int argc, char *argv[]) {
     
     gettimeofday(&t1, NULL);
     
+    float dt;
+    
     for (; k<num_frames; k++) {
-
-        az_deg = fmodf(az_deg + 0.01f + 12.0f, 24.0f) - 12.0f;
-        
         if (k % 100 == 0) {
-            printf("t = %zu  az_deg = %.2f  el_deg = %.2f\n", S->sim_tic, az_deg, el_deg);
+            gettimeofday(&t2, NULL);
+            dt = DTIME(t1, t2);
+            t1 = t2;
+            if (k > 200) {
+                fprintf(stderr, "k = %d  az_deg = %.2f  el_deg = %.2f  completion: %.2f%%   %.2f FPS   \r", k, az_deg, el_deg, (float)k / num_frames * 100.0f, 100.0f / dt);
+            } else {
+                fprintf(stderr, "k = %d  az_deg = %.2f  el_deg = %.2f             \r", k, az_deg, el_deg);
+            }
         }
         RS_set_beam_pos(S, az_deg, el_deg);
         RS_make_pulse(S);
         RS_advance_time(S);
+
+        // Update scan angles for the next pulse
+        az_deg = fmodf(az_deg + 0.01f + 12.0f, 24.0f) - 12.0f;
 
         if (verb > 2) {
             RS_download(S);
@@ -274,21 +281,16 @@ int main(int argc, char *argv[]) {
         }
     }
     
-    gettimeofday(&t2, NULL);
+    // Clear the last line
+    fprintf(stderr, "                                                \n");
     
-    if (num_frames > 500) {
-        float dt = DTIME(t1, t2);
-        printf("%s : Finished.  Time elapsed = %.2f s  (%.2f FPS).\n", now(), dt, (num_frames - 10) / dt);
-    } else {
-        printf("%s : Finished.\n", now());
-    }
+    printf("%s : Finished.  Time elapsed = %.2f s\n", now(), dt);
     
-    if (accel_type == ACCEL_TYPE_GPU) {
+    if (accel_type == ACCEL_TYPE_GPU && verb > 1) {
         RS_download(S);
+        printf("Final scatter body positions:\n");
+        RS_show_scat_pos(S);
     }
-    
-    //printf("Final scatter body positions:\n");
-    //RS_show_scat_pos(S);
 
     if (write_file) {
         printf("%s : Data file with %s bytes.\n", now(), commaint(ftell(fid)));
