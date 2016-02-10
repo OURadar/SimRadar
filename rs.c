@@ -207,24 +207,33 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     C->num_scats = sub_num_scats;
     C->species_global_offset = offset;
     
-    size_t work_items = RS_CL_GROUP_ITEMS;
+    size_t group_size_multiple = RS_CL_GROUP_ITEMS;
 
 #if !defined (_SHARE_OBJ_)
     
-    clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_1, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(work_items), &work_items, NULL);
+    clGetKernelWorkGroupInfo(C->kern_dummy, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(group_size_multiple), &group_size_multiple, NULL);
 
 #endif
 
-    if (work_items > RS_CL_GROUP_ITEMS) {
-        rsprint("Potential memory leak. work_items(%d) > RS_CL_GROUP_ITEMS(%d).\n", now(), (int)work_items, RS_CL_GROUP_ITEMS);
-        return;
+    if (group_size_multiple > RS_CL_GROUP_ITEMS) {
+        rsprint("Potential memory leak. work_items(%d) > RS_CL_GROUP_ITEMS(%d).\n", now(), (int)group_size_multiple, RS_CL_GROUP_ITEMS);
+        exit(EXIT_FAILURE);
     }
     
     size_t max_work_group_size;
     clGetDeviceInfo(C->dev, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max_work_group_size), &max_work_group_size, NULL);
     
+    cl_ulong local_mem_size;
+    clGetDeviceInfo(C->dev, CL_DEVICE_LOCAL_MEM_SIZE, sizeof(cl_ulong), &local_mem_size, NULL);
+    
+    if (H->verb > 1) {
+        rsprint("CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %zu", group_size_multiple);
+        rsprint("CL_DEVICE_MAX_WORK_GROUP_SIZE = %zu", (int)max_work_group_size);
+        rsprint("CL_DEVICE_LOCAL_MEM_SIZE = %zu", (size_t)local_mem_size);
+    }
+    
     C->make_pulse_params = RS_make_pulse_params((cl_uint)C->num_scats,
-                                                (cl_uint)work_items,
+                                                (cl_uint)group_size_multiple,
                                                 (cl_uint)max_work_group_size,
                                                 H->params.range_start,
                                                 H->params.range_delta,
@@ -1123,14 +1132,14 @@ void RS_free(RSHandle *H) {
 }
 
 
-RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint user_max_work_items, cl_uint user_max_groups,
+RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint group_size_multiple, cl_uint user_max_groups,
 									   const float range_start, const float range_delta, const unsigned int range_count) {
 	RSMakePulseParams param;
 
 	// Keep a copy for reference
 	param.num_scats = count;
 	param.user_max_groups = user_max_groups;
-	param.user_max_work_items = user_max_work_items;
+	param.user_max_work_items = group_size_multiple;
 	param.range_start = range_start;
 	param.range_delta = range_delta;
 	param.range_count = MAX(1, range_count);
@@ -1169,7 +1178,7 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint user_m
         work_items = 1;
     }
 
-	if (param.local[0] % param.range_count == 0 && user_max_work_items >= work_items) {
+	if (param.local[0] % param.range_count == 0 && group_size_multiple >= work_items) {
 		//
 		param.cl_pass_2_method = RS_CL_PASS_2_UNIVERSAL;
 		param.group_counts[1] = 1;
@@ -1177,7 +1186,7 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint user_m
 		param.local[1] = work_items;
 		param.local_mem_size[1] = work_items * sizeof(cl_float4);
 		
-	} else if (group_count >= 2 * param.range_count && user_max_work_items >= work_items) {
+	} else if (group_count >= 2 * param.range_count && group_size_multiple >= work_items) {
 		//
 		param.cl_pass_2_method = RS_CL_PASS_2_IN_LOCAL;
 		param.group_counts[1] = 1;
@@ -2032,8 +2041,8 @@ void RS_set_dsd_to_mp(RSHandle *H) {
     
     float d, sum = 0.0f;
     
-    float ds[] = {0.0001f, 0.0002f, 0.0005f, 0.001f, 0.002f, 0.003f, 0.004f, 0.005f};
-//    float ds[] = {0.001f, 0.003f, 0.005f};
+//    float ds[] = {0.0001f, 0.0002f, 0.0005f, 0.001f, 0.002f, 0.003f, 0.004f, 0.005f};
+    float ds[] = {0.001f, 0.003f, 0.005f};
     
     const int count = sizeof(ds) / sizeof(float);
     

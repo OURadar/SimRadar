@@ -358,7 +358,6 @@ typedef struct _rs_worker {
 	cl_program             prog;
 	
     cl_kernel              kern_io;
-    cl_kernel              kern_dummy;
     cl_kernel              kern_bg_atts;
     cl_kernel              kern_el_atts;
     cl_kernel              kern_db_atts;
@@ -374,6 +373,8 @@ typedef struct _rs_worker {
 	cl_command_queue       que;
 	
 #endif
+
+    cl_kernel              kern_dummy;
 
 } RSWorker;
 
@@ -482,7 +483,7 @@ RSHandle *RS_init_verbose(const char verb);
 RSHandle *RS_init();
 void RS_free(RSHandle *H);
 
-RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint group_items, cl_uint user_group_counts,
+RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint group_size_multiple, cl_uint user_group_counts,
 								   const float range_start, const float range_delta, const unsigned int range_count);
 #pragma mark -
 #pragma mark Radar and Simulation Parameters

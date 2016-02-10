@@ -149,12 +149,10 @@ int main(int argc, char *argv[]) {
     //RS_set_debris_count(S, 1, 10000);
     RS_revise_debris_counts_to_gpu_preference(S);
     
-    RS_set_dsd_to_mp(S);
-
     RSBox box = RS_suggest_scan_doamin(S, 16);
     
     RS_set_scan_box(S,
-                    box.origin.r, box.origin.r + box.size.r, 60.0f,   // Range
+                    box.origin.r, box.origin.r + box.size.r, 20.0f,   // Range
                     box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
                     box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
     
@@ -163,6 +161,8 @@ int main(int argc, char *argv[]) {
     //                    -10.0f, 10.0f, 1.0f,                        // Azimuth
     //                    0.0f, 8.0f, 1.0f);                          // Elevation
     
+    RS_set_dsd_to_mp(S);
+
     // Populate the domain with scatter bodies.
     // This is also the function that triggers kernel compilation, GPU memory allocation and
     // upload all the parameters to the GPU.
