@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
     char c;
     char verb = 0;
     char accel_type = 0;
-    char write_file = FALSE;
+    char output_file = FALSE;
     int num_frames = 5;
     float density = 0.0f;
     float scan_el = 3.0f;
@@ -44,8 +44,9 @@ int main(int argc, char *argv[]) {
     
     int debris_types = 0;
     int debris_count[3] = {0, 0, 0};
-
-    while ((c = getopt(argc, argv, "vcgd:e:f:a:D:wh?")) != -1) {
+    int warm_up_frames = 2000;
+    
+    while ((c = getopt(argc, argv, "vcgd:e:f:a:D:w:oh?")) != -1) {
         switch (c) {
             case 'v':
                 verb++;
@@ -65,14 +66,17 @@ int main(int argc, char *argv[]) {
             case 'D':
                 density = atof(optarg);
                 break;
-            case 'w':
-                write_file = TRUE;
+            case 'o':
+                output_file = TRUE;
                 break;
             case 'e':
                 scan_el = atof(optarg);
                 break;
             case 'd':
                 debris_count[debris_types++] = atoi(optarg);
+                break;
+            case 'w':
+                warm_up_frames = atoi(optarg);
                 break;
             case 'h':
             case '?':
@@ -195,21 +199,12 @@ int main(int argc, char *argv[]) {
 
     // Some warm up if we are going for real
     if (num_frames > 1200) {
-        const int ks = 3000;
         RS_set_prt(S, 1.0f / 60.0f);
-        for (k = 0; k < ks; k++) {
+        for (k = 0; k < warm_up_frames; k++) {
             if (k % 100 == 0) {
-                fprintf(stderr, "Warming up ... \033[32m%.2f%%\033[0m  \r", (float)k / ks * 100.0f);
+                fprintf(stderr, "Warming up ... \033[32m%.2f%%\033[0m  \r", (float)k / warm_up_frames * 100.0f);
             }
-            // RS_set_beam_pos(S, 15.0f, 10.0f);
-            // RS_make_pulse(S);
             RS_advance_time(S);
-            
-            if (verb > 2) {
-                RS_download(S);
-                printf("== k = %d ==============\n", k);
-                RS_show_scat_pos(S);
-            }
         }
         // Reset the frame counter
         k = 0;
@@ -232,7 +227,7 @@ int main(int argc, char *argv[]) {
     
     file_header.params = S->params;
     
-    if (write_file) {
+    if (output_file) {
         char filename[4096];
         memset(filename, 0, 4096);
         snprintf(filename, 256, "%s/Downloads/sim-%s-E%04.1f.iq", getenv("HOME"), nowlong(), el_deg);
@@ -240,7 +235,7 @@ int main(int argc, char *argv[]) {
         fid = fopen(filename, "wb");
         if (fid == NULL) {
             fprintf(stderr, "%s : Error creating file for writing data.\n", now());
-            write_file = FALSE;
+            output_file = FALSE;
         }
         // For now, we simply write a 4K header. Will populate with more contents next time
         fwrite(&file_header, sizeof(IQFileHeader), 1, fid);
@@ -274,7 +269,7 @@ int main(int argc, char *argv[]) {
         // Only download the necessary data
         if (verb > 2) {
             RS_download(S);
-        } else if (write_file) {
+        } else if (output_file) {
             RS_download_pulse_only(S);
         }
 
@@ -288,7 +283,7 @@ int main(int argc, char *argv[]) {
             printf("\n");
         }
         
-        if (write_file) {
+        if (output_file) {
             // Gather information for the  pulse header
             pulse_header.time = S->sim_time;
             pulse_header.az_deg = az_deg;
@@ -299,8 +294,13 @@ int main(int argc, char *argv[]) {
         }
     }
     
-    // Clear the last line
+    // Clear the last line and beep five times
     fprintf(stderr, "%120s\r", "");
+#if defined (__APPLE__)
+    system("say -v Bells dong dong dong dong");
+#else
+    fprintf(stderr, "\a\a\a\a\a");
+#endif
     
     gettimeofday(&t2, NULL);
     dt = DTIME(t0, t2);
@@ -313,7 +313,7 @@ int main(int argc, char *argv[]) {
         RS_show_scat_sig(S);
     }
 
-    if (write_file) {
+    if (output_file) {
         printf("%s : Data file with %s bytes.\n", now(), commaint(ftell(fid)));
         fclose(fid);
     }
