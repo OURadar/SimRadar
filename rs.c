@@ -1246,6 +1246,8 @@ void RS_init_scat_pos(RSHandle *H) {
     int i, k, bin;
     float a;
     
+    srand(19760520);
+    
     memset(counts, 0, H->dsd_count * sizeof(int));
     
     RSVolume domain = RS_get_domain(H);

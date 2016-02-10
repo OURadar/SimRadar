@@ -234,7 +234,7 @@ int main(int argc, char *argv[]) {
     
     gettimeofday(&t1, NULL);
     
-    float dt;
+    float dt, fps, prog, eta;
     
     for (; k<num_frames; k++) {
         if (k % 100 == 0) {
@@ -242,7 +242,10 @@ int main(int argc, char *argv[]) {
             dt = DTIME(t1, t2);
             t1 = t2;
             if (k > 200) {
-                fprintf(stderr, "k = %d  az_deg = %.2f  el_deg = %.2f  completion: %.2f%%   %.2f FPS   \r", k, az_deg, el_deg, (float)k / num_frames * 100.0f, 100.0f / dt);
+                prog =  (float)k / num_frames * 100.0f;
+                fps = 100.0f / dt;
+                eta = (float)(num_frames - k) / fps;
+                fprintf(stderr, "k = %d  az_deg = %.2f  el_deg = %.2f  completion: \033[1;32m%.2f%%\033[0m   %.2f FPS   eta = %.0f s   \r", k, az_deg, el_deg, prog, fps, eta);
             } else {
                 fprintf(stderr, "k = %d  az_deg = %.2f  el_deg = %.2f             \r", k, az_deg, el_deg);
             }
@@ -282,7 +285,7 @@ int main(int argc, char *argv[]) {
     }
     
     // Clear the last line
-    fprintf(stderr, "                                                \n");
+    fprintf(stderr, "%80s\n", "");
     
     printf("%s : Finished.  Time elapsed = %.2f s\n", now(), dt);
     
