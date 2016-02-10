@@ -38,8 +38,10 @@ int main(int argc, char *argv[]) {
     float density = 0.0f;
     float scan_el = 3.0f;
     
-    struct timeval t1, t2;
+    struct timeval t0, t1, t2;
     
+    gettimeofday(&t0, NULL);
+
     while ((c = getopt(argc, argv, "vcge:f:a:d:wh?")) != -1) {
         switch (c) {
             case 'v':
@@ -241,11 +243,11 @@ int main(int argc, char *argv[]) {
             gettimeofday(&t2, NULL);
             dt = DTIME(t1, t2);
             t1 = t2;
-            if (k > 200) {
+            if (k > 100) {
                 prog =  (float)k / num_frames * 100.0f;
                 fps = 100.0f / dt;
                 eta = (float)(num_frames - k) / fps;
-                fprintf(stderr, "k = %d  az_deg = %.2f  el_deg = %.2f  completion: \033[1;32m%.2f%%\033[0m   %.2f FPS   eta = %.0f s   \r", k, az_deg, el_deg, prog, fps, eta);
+                fprintf(stderr, "k = %d  az_deg = %.2f  el_deg = %.2f   %.2f fps  progress: \033[1;33m%.2f%%\033[0m   eta = %.0f second%s   \r", k, az_deg, el_deg, fps, prog, eta, eta > 1.0f ? "s" : "");
             } else {
                 fprintf(stderr, "k = %d  az_deg = %.2f  el_deg = %.2f             \r", k, az_deg, el_deg);
             }
@@ -285,9 +287,11 @@ int main(int argc, char *argv[]) {
     }
     
     // Clear the last line
-    fprintf(stderr, "%80s\n", "");
+    fprintf(stderr, "%120s\r", "");
     
-    printf("%s : Finished.  Time elapsed = %.2f s\n", now(), dt);
+    gettimeofday(&t2, NULL);
+    dt = DTIME(t0, t2);
+    printf("%s : Finished.  Total time elapsed = %.2f s\n", now(), dt);
     
     if (accel_type == ACCEL_TYPE_GPU && verb > 1) {
         RS_download(S);
