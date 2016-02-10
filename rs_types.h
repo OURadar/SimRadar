@@ -42,7 +42,7 @@ typedef struct _rs_volume {
 
 typedef struct _rs_params {
 	RSfloat  c;                    // Speed of light (m/s)
-	RSfloat  prf;                  // Pulse repetition frequency (Hz)
+	RSfloat  prt;                  // Pulse repetition time (second)
 	RSfloat  loss;                 // System loss
 	
 	RSfloat  lambda;               // Wavelength (m)
@@ -67,7 +67,7 @@ typedef struct _rs_params {
 	RSfloat  body_per_cell;         // Average number of scatter bodies per cell
 
 	// Derived parameters for easy reference
-	RSfloat  prt;                   // Pulse repetition time (sec)
+	RSfloat  prf;                   // Pulse repetition frequency (Hz)
 	RSfloat  va;                    // Aliasing velocity (m/s)
 	RSfloat  fn;                    // Nyquist frequency (Hz)
 	RSfloat  antenna_bw_rad;        // Antenna beamwidth (rad)

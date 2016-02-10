@@ -81,10 +81,10 @@
 
 - (RSVolume)simulationDomain;
 
-- (GLint)decreasePopulationForSpecies:(const int)speciesId returnCounts:(GLint *)counts;
-- (GLint)increasePopulationForSpecies:(const int)speciesId returnCounts:(GLint *)counts;
-- (GLint)populationForSpecies:(const int)speciesId;
-- (GLint)populationForSpecies:(const int)speciesId forDevice:(const int)deviceId;
+- (GLint)decreasePopulationForDebris:(const int)debrisId returnCounts:(GLint *)counts;
+- (GLint)increasePopulationForDebris:(const int)debrisId returnCounts:(GLint *)counts;
+- (GLint)populationForDebris:(const int)debrisId;
+- (GLint)populationForDebris:(const int)debrisId forDevice:(const int)deviceId;
 
 - (GLfloat)recommendedViewRange;
 

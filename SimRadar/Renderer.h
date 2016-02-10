@@ -192,7 +192,7 @@ enum RendererLineSegment {
 
 - (void)setSize:(CGSize)size;
 - (void)setBodyCount:(GLuint)number forDevice:(GLuint)deviceId;
-- (void)setPopulationTo:(GLuint)count forSpecies:(GLuint)speciesId forDevice:(GLuint)deviceId;
+- (void)setPopulationTo:(GLuint)count forDebris:(GLuint)debrisId forDevice:(GLuint)deviceId;
 - (void)setGridAtOrigin:(GLfloat *)origin size:(GLfloat *)size;
 - (void)setAnchorPoints:(GLfloat *)points number:(GLuint)number;
 - (void)setAnchorLines:(GLfloat *)lines number:(GLuint)number;

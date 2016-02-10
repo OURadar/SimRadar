@@ -199,13 +199,13 @@ unsigned int grayToBinary(unsigned int num)
 }
 
 
-- (void)setPopulationTo:(GLuint)count forSpecies:(GLuint)speciesId forDevice:(GLuint)deviceId
+- (void)setPopulationTo:(GLuint)count forDebris:(GLuint)debrisId forDevice:(GLuint)deviceId
 {
-    if (speciesId == 0) {
-        NSLog(@"Invalid speciesId.");
+    if (debrisId == 0) {
+        NSLog(@"Invalid debrisId.");
         return;
     }
-    debrisRenderer[speciesId].count = count;
+    debrisRenderer[debrisId].count = count;
     debrisRenderer[0].count = bodyRenderer[deviceId].count;
     for (int i = 1; i < RENDERER_MAX_DEBRIS_TYPES; i++) {
         debrisRenderer[0].count -= debrisRenderer[i].count;
@@ -1033,7 +1033,7 @@ unsigned int grayToBinary(unsigned int num)
         }
     }
     
-    // Various Species
+    // Various Debris
     for (int k = 1; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
         if (debrisRenderer[k].count == 0) {
             continue;
@@ -1188,11 +1188,11 @@ unsigned int grayToBinary(unsigned int num)
             glUniform4f(instancedGeometryRenderer.colorUI, debrisRenderer[k].colors[0], debrisRenderer[k].colors[1], debrisRenderer[k].colors[2], debrisRenderer[k].colors[3]);
             
             glBindBuffer(GL_COPY_READ_BUFFER, bodyRenderer[i].vbo[0]);             // positions of simulation particles
-            glBindBuffer(GL_COPY_WRITE_BUFFER, debrisRenderer[k].vbo[2]);          // translations of species[k]
+            glBindBuffer(GL_COPY_WRITE_BUFFER, debrisRenderer[k].vbo[2]);          // translations of debris[k]
             glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, debrisRenderer[k].sourceOffset * sizeof(cl_float4), 0, debrisRenderer[k].count * sizeof(cl_float4));
             
             glBindBuffer(GL_COPY_READ_BUFFER, bodyRenderer[i].vbo[2]);             // quaternions of simulation particles
-            glBindBuffer(GL_COPY_WRITE_BUFFER, debrisRenderer[k].vbo[3]);          // quaternions of species[k]
+            glBindBuffer(GL_COPY_WRITE_BUFFER, debrisRenderer[k].vbo[3]);          // quaternions of debris[k]
             glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, debrisRenderer[k].sourceOffset * sizeof(cl_float4), 0, debrisRenderer[k].count * sizeof(cl_float4));
             
             glDrawElementsInstanced(debrisRenderer[k].drawMode, debrisRenderer[k].instanceSize, GL_UNSIGNED_INT, NULL, debrisRenderer[k].count);

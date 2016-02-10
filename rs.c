@@ -205,27 +205,37 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     
     // Copy the necessary parameters from host to compute workers
     C->num_scats = sub_num_scats;
-    C->species_global_offset = offset;
+    C->debris_global_offset = offset;
     
-    size_t work_items = RS_CL_GROUP_ITEMS;
+    size_t group_size_multiple = RS_CL_GROUP_ITEMS;
 
 #if !defined (_SHARE_OBJ_)
     
-    clGetKernelWorkGroupInfo(C->kern_make_pulse_pass_1, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(work_items), &work_items, NULL);
+    clGetKernelWorkGroupInfo(C->kern_dummy, C->dev, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(group_size_multiple), &group_size_multiple, NULL);
 
 #endif
 
-    if (work_items > RS_CL_GROUP_ITEMS) {
-        rsprint("Potential memory leak. work_items(%d) > RS_CL_GROUP_ITEMS(%d).\n", now(), (int)work_items, RS_CL_GROUP_ITEMS);
-        return;
+    if (group_size_multiple > RS_CL_GROUP_ITEMS) {
+        rsprint("Error. Potential memory leak. work_items(%d) > RS_CL_GROUP_ITEMS(%d).\n", now(), (int)group_size_multiple, RS_CL_GROUP_ITEMS);
+        exit(EXIT_FAILURE);
     }
     
     size_t max_work_group_size;
     clGetDeviceInfo(C->dev, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max_work_group_size), &max_work_group_size, NULL);
     
+    cl_ulong local_mem_size;
+    clGetDeviceInfo(C->dev, CL_DEVICE_LOCAL_MEM_SIZE, sizeof(cl_ulong), &local_mem_size, NULL);
+    
+    if (H->verb > 1) {
+        rsprint("CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %zu", group_size_multiple);
+        rsprint("CL_DEVICE_MAX_WORK_GROUP_SIZE = %zu", (int)max_work_group_size);
+        rsprint("CL_DEVICE_LOCAL_MEM_SIZE = %zu", (size_t)local_mem_size);
+    }
+    
     C->make_pulse_params = RS_make_pulse_params((cl_uint)C->num_scats,
-                                                (cl_uint)work_items,
+                                                (cl_uint)group_size_multiple,
                                                 (cl_uint)max_work_group_size,
+                                                (cl_uint)local_mem_size,
                                                 H->params.range_start,
                                                 H->params.range_delta,
                                                 H->params.range_count);
@@ -467,6 +477,14 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     }
 }
 
+void RS_update_computed_properties(RSHandle *H) {
+    H->params.prf = 1.0f / H->params.prt;
+    H->params.va = 0.25f * H->params.lambda * H->params.prf;
+    H->params.fn = 0.5 / H->params.prf;
+    H->params.antenna_bw_rad = H->params.antenna_bw_deg / 180.0f * M_PI;
+    H->params.dr = 0.5f * H->params.c * H->params.tau;
+}
+
 #pragma mark -
 #pragma mark Convenient Functions
 
@@ -535,7 +553,11 @@ void rsprint(const char *format, ...) {
 		str[len] = '\n';
 		str[len+1] = '\0';
 	}
-	printf("%s", str);
+    if (!strncmp(str, "Error", 5)) {
+        fprintf(stderr, "\033[1;31m%s\033[0m", str);
+    } else {
+        printf("%s", str);
+    }
 }
 
 
@@ -868,7 +890,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 	H->params.body_per_cell = RS_BODY_PER_CELL;
 	H->params.domain_pad_factor = RS_DOMAIN_PAD;
 	H->num_workers = 1;
-    H->num_species = 1;
+    H->num_debris = 1;
 	H->method = method;
 	
 	for (i = 0; i < RS_MAX_GPU_DEVICE; i++) {
@@ -876,7 +898,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 	}
     
     for (i = 0; i < RS_MAX_DEBRIS_TYPES; i++) {
-        H->species_population[i] = 0;
+        H->debris_population[i] = 0;
     }
 	
 	if (H->method == RS_METHOD_GPU) {
@@ -1125,14 +1147,14 @@ void RS_free(RSHandle *H) {
 }
 
 
-RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint user_max_work_items, cl_uint user_max_groups,
+RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint group_size_multiple, const cl_uint user_max_groups, const cl_uint max_local_mem_size,
 									   const float range_start, const float range_delta, const unsigned int range_count) {
 	RSMakePulseParams param;
 
 	// Keep a copy for reference
 	param.num_scats = count;
 	param.user_max_groups = user_max_groups;
-	param.user_max_work_items = user_max_work_items;
+	param.user_max_work_items = group_size_multiple;
 	param.range_start = range_start;
 	param.range_delta = range_delta;
 	param.range_count = MAX(1, range_count);
@@ -1160,6 +1182,23 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint user_m
 	param.global[0] = group_count * work_items;
 	param.local[0] = work_items;
 	param.local_mem_size[0] = range_count * work_items * sizeof(cl_float4);
+    if (param.local_mem_size[0] > max_local_mem_size) {
+        rsprint("local memory size = %zu. Adjusting ...", (size_t)max_local_mem_size);
+        if (range_count % 2 == 0) {
+            work_items /= 2;
+            group_count *= 2;
+            if (group_count > param.user_max_groups) {
+                group_count = param.user_max_groups;
+            }
+            param.group_counts[0] = group_count;
+            param.global[0] = group_count * work_items;
+            param.local[0] = work_items;\
+            param.local_mem_size[0] = range_count * work_items * sizeof(cl_float4);
+        } else {
+            rsprint("Error. Could not resolve local memory size limits.");
+            exit(EXIT_FAILURE);
+        }
+    }
 	
 	// 2nd pass
 	unsigned int work_count = group_count * param.range_count;
@@ -1171,7 +1210,7 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint user_m
         work_items = 1;
     }
 
-	if (param.local[0] % param.range_count == 0 && user_max_work_items >= work_items) {
+	if (param.local[0] % param.range_count == 0 && group_size_multiple >= work_items) {
 		//
 		param.cl_pass_2_method = RS_CL_PASS_2_UNIVERSAL;
 		param.group_counts[1] = 1;
@@ -1179,7 +1218,7 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint user_m
 		param.local[1] = work_items;
 		param.local_mem_size[1] = work_items * sizeof(cl_float4);
 		
-	} else if (group_count >= 2 * param.range_count && user_max_work_items >= work_items) {
+	} else if (group_count >= 2 * param.range_count && group_size_multiple >= work_items) {
 		//
 		param.cl_pass_2_method = RS_CL_PASS_2_IN_LOCAL;
 		param.group_counts[1] = 1;
@@ -1209,6 +1248,8 @@ void RS_init_scat_pos(RSHandle *H) {
     int i, k, bin;
     float a;
     
+    srand(19760520);
+    
     memset(counts, 0, H->dsd_count * sizeof(int));
     
     RSVolume domain = RS_get_domain(H);
@@ -1220,41 +1261,41 @@ void RS_init_scat_pos(RSHandle *H) {
 		H->scat_pos[i].x = (float)rand() / RAND_MAX * domain.size.x + domain.origin.x;
 		H->scat_pos[i].y = (float)rand() / RAND_MAX * domain.size.y + domain.origin.y;
 		H->scat_pos[i].z = (float)rand() / RAND_MAX * domain.size.z + domain.origin.z;
-        H->scat_pos[i].w = 0.0f;                       // Use this to store drop radius
+        H->scat_pos[i].w = 0.0f;                       // Use this to store drop radius in m
         
-		H->scat_aux[i].s0 = 0.0f;                      // Use this to store range
-        H->scat_aux[i].s1 = (float)rand() / RAND_MAX;  // Use this to store age
-		H->scat_aux[i].s2 = 0.0f;
-		H->scat_aux[i].s3 = 1.0f;                      // Use this to store angular weight
+		H->scat_aux[i].s0 = 0.0f;                      // range
+        H->scat_aux[i].s1 = (float)rand() / RAND_MAX;  // age
+		H->scat_aux[i].s2 = 0.0f;                      // dsd bin index
+		H->scat_aux[i].s3 = 1.0f;                      // angular weight [0.0, 1.0]
 		
-		H->scat_vel[i].x = 0.0f;
-		H->scat_vel[i].y = 0.0f;
-		H->scat_vel[i].z = 0.0f;
-		H->scat_vel[i].w = 0.0f;
+		H->scat_vel[i].x = 0.0f;                       // u component of velocity
+		H->scat_vel[i].y = 0.0f;                       // v component of velocity
+		H->scat_vel[i].z = 0.0f;                       // w component of velocity
+		H->scat_vel[i].w = 0.0f;                       // n/a
 
         // At the reference
-        H->scat_ori[i].x = 0.0f;
-        H->scat_ori[i].y = 0.0f;
-        H->scat_ori[i].z = 0.0f;
-        H->scat_ori[i].w = 1.0f;
+        H->scat_ori[i].x = 0.0f;                       // x of quaternion
+        H->scat_ori[i].y = 0.0f;                       // y of quaternion
+        H->scat_ori[i].z = 0.0f;                       // z of quaternion
+        H->scat_ori[i].w = 1.0f;                       // w of quaternion
         
         // Facing the sky
-//        H->scat_ori[i].x =  0.0f;
-//        H->scat_ori[i].y = -0.707106781186547f;
-//        H->scat_ori[i].z =  0.0f;
-//        H->scat_ori[i].w =  0.707106781186548f;
+//        H->scat_ori[i].x =  0.0f;                      // x of quaternion
+//        H->scat_ori[i].y = -0.707106781186547f;        // y of quaternion
+//        H->scat_ori[i].z =  0.0f;                      // z of quaternion
+//        H->scat_ori[i].w =  0.707106781186548f;        // w of quaternion
 
         // Facing the beam
-//        H->scat_ori[i].x =  0.5f;
-//        H->scat_ori[i].y = -0.5f;
-//        H->scat_ori[i].z = -0.5f;
-//        H->scat_ori[i].w =  0.5f;
+//        H->scat_ori[i].x =  0.5f;                      // x of quaternion
+//        H->scat_ori[i].y = -0.5f;                      // y of quaternion
+//        H->scat_ori[i].z = -0.5f;                      // z of quaternion
+//        H->scat_ori[i].w =  0.5f;                      // w of quaternion
         
         // Some other tests
-//        H->scat_ori[i].x =  0.5f;
-//        H->scat_ori[i].y =  0.5f;
-//        H->scat_ori[i].z = -0.5f;
-//        H->scat_ori[i].w =  0.5f;
+//        H->scat_ori[i].x =  0.5f;                      // x of quaternion
+//        H->scat_ori[i].y = -0.5f;                      // y of quaternion
+//        H->scat_ori[i].z =  0.5f;                      // z of quaternion
+//        H->scat_ori[i].w =  0.5f;                      // w of quaternion
 
         // Rotate by theta
 //        float theta = -70.0f / 180.0f * M_PI;
@@ -1264,22 +1305,22 @@ void RS_init_scat_pos(RSHandle *H) {
 //        H->scat_ori[i].w = cosf(0.5f * theta);
         
         // Tumbling vector for orientation update
-        H->scat_tum[i].x = 0.0f;
-        H->scat_tum[i].y = 0.0f;
-        H->scat_tum[i].z = 0.0f;
-        H->scat_tum[i].w = 1.0f;
+        H->scat_tum[i].x = 0.0f;                       // x of quaternion
+        H->scat_tum[i].y = 0.0f;                       // y of quaternion
+        H->scat_tum[i].z = 0.0f;                       // z of quaternion
+        H->scat_tum[i].w = 1.0f;                       // w of quaternion
 
         // Initial return from each point
-        H->scat_rcs[i].s0 = 1.0f;
-		H->scat_rcs[i].s1 = 0.0f;
-		H->scat_rcs[i].s2 = 1.0f;
-		H->scat_rcs[i].s3 = 0.0f;
+        H->scat_rcs[i].s0 = 1.0f;                      // sh_real of rcs
+		H->scat_rcs[i].s1 = 0.0f;                      // sh_imag of rcs
+		H->scat_rcs[i].s2 = 1.0f;                      // sv_real of rcs
+		H->scat_rcs[i].s3 = 0.0f;                      // sv_imag of rcs
         
         // Random seeds
-        H->scat_rnd[i].s0 = rand();
-        H->scat_rnd[i].s1 = rand();
-        H->scat_rnd[i].s2 = rand();
-        H->scat_rnd[i].s3 = rand();
+        H->scat_rnd[i].s0 = rand();                    // random seed
+        H->scat_rnd[i].s1 = rand();                    // random seed
+        H->scat_rnd[i].s2 = rand();                    // random seed
+        H->scat_rnd[i].s3 = rand();                    // random seed
 	}
     
     // Parameterized drop radius as scat_pos.w if DSD has been set
@@ -1298,8 +1339,8 @@ void RS_init_scat_pos(RSHandle *H) {
                 }
             }
             counts[bin]++;
-            H->scat_pos[i].w = H->dsd_r[bin];
-            H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // temporary use this to store normalized bin index
+            H->scat_pos[i].w = H->dsd_r[bin];                                  // set the drop radius
+            H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // set the dsd bin index
         }
         
         if (H->verb > 1) {
@@ -1324,8 +1365,8 @@ void RS_init_scat_pos(RSHandle *H) {
 	H->scat_pos[0].z = domain.origin.z + 0.5f * domain.size.z;
 	
     // Replace the very first debris particle
-    if (H->species_population[1] > 0) {
-        k = (int)H->species_population[0] / H->num_workers;
+    if (H->debris_population[1] > 0) {
+        k = (int)H->debris_population[0] / H->num_workers;
         H->scat_pos[k].x = 0.0f;
         H->scat_pos[k].y = H->params.range_start + floorf(H->params.range_count * 0.5f) * H->params.range_delta;
         H->scat_pos[k].z = 0.5f * domain.size.z;
@@ -1361,27 +1402,33 @@ void RS_set_concept(RSHandle *H, RSSimulationConcept c) {
 }
 
 
-void RS_set_prt(RSHandle *H, const float prt) {
+void RS_set_prt(RSHandle *H, const RSfloat prt) {
 	H->params.prt = prt;
-	H->params.prf = 1.0f / prt;
     
     H->sim_desc.s[RSSimulationDescriptionTimeIncrement] = H->params.prt;
+    
+    RS_update_computed_properties(H);
 }
 
 
-void RS_set_lambda(RSHandle *H, const float lambda) {
+void RS_set_lambda(RSHandle *H, const RSfloat lambda) {
     H->params.lambda = lambda;
+<<<<<<< HEAD
     
     H->sim_desc.s[RSSimulationDescriptionWaveNumber] = 4.0f * M_PI / H->params.lambda;
+=======
+    RS_update_computed_properties(H);
+>>>>>>> master
 }
 
 
-void RS_set_density(RSHandle *H, const float density) {
+void RS_set_density(RSHandle *H, const RSfloat density) {
     if (H->status & RSStatusDomainPopulated) {
         rsprint("Simulation domain has been populated. Density cannot be changed.");
         return;
     }
 	H->params.body_per_cell = density;
+    RS_update_computed_properties(H);
 }
 
 
@@ -1391,8 +1438,10 @@ void RS_set_antenna_params(RSHandle *H, RSfloat beamwidth_deg, RSfloat gain_dbi)
         return;
     }
 	H->params.antenna_bw_deg = beamwidth_deg;
-	H->params.antenna_bw_rad = H->params.antenna_bw_deg * M_PI / 180.0f;
-    
+    H->params.antenna_gain_dbi = gain_dbi;
+
+    RS_update_computed_properties(H);
+
     RS_set_angular_weight_to_standard(H, H->params.antenna_bw_rad);
 }
 
@@ -1403,8 +1452,9 @@ void RS_set_tx_params(RSHandle *H, RSfloat pulsewidth, RSfloat tx_power_watt) {
         return;
     }
 	H->params.tau = pulsewidth;
-	H->params.dr = H->params.c * H->params.tau * 0.5f;
 	H->params.tx_power_watt = tx_power_watt;
+
+    RS_update_computed_properties(H);
 
     RS_set_range_weight_to_triangle(H, H->params.dr);
 }
@@ -1437,7 +1487,7 @@ void RS_set_scan_box(RSHandle *H,
 	const RSfloat az_hi =  ceil((H->params.azimuth_end_deg   + H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg) * H->params.antenna_bw_deg;
 	const RSfloat el_lo = MAX(0.0f, floor((H->params.elevation_start_deg - H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg) * H->params.antenna_bw_deg);
 	const RSfloat el_hi = MIN(90.0f,  ceil((H->params.elevation_end_deg   + H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg) * H->params.antenna_bw_deg);
-	const RSfloat tiny = 1.0e-5;
+	const RSfloat tiny = 1.0e-5f;
 	
 	int nr = 0;
 	int naz = 0;
@@ -1486,7 +1536,7 @@ void RS_set_scan_box(RSHandle *H,
 	}
 	H->anchor_pos = (cl_float4 *)malloc(H->num_anchors * sizeof(cl_float4));
 	if (H->anchor_pos == NULL) {
-		fprintf(stderr, "%s : RS : Error in allocating anchors.\n", now());
+		rsprint("Error in allocating anchors.");
 		return;
 	}
 	
@@ -1570,6 +1620,8 @@ void RS_set_scan_box(RSHandle *H,
                1.0e-3*r_lo, 1.0e-3*r_hi,
                el_lo, el_hi,
                az_lo, az_hi);
+        rsprint("            @ R:[       %-3d     ]      E:[       %-3d     ]       A:[        %-3d      ]",
+                H->params.range_count, nel, naz);
 		rsprint("            @ X:[ %.2f ~ %.2f ] m   Y:[ %.2f ~ %.2f ] m   Z:[ %.2f ~ %.2f ] m\n",
 			   xmin, xmax,
 			   ymin, ymax,
@@ -1813,26 +1865,26 @@ void RS_set_verbosity(RSHandle *H, const char verb) {
 }
 
 
-void RS_set_debris_count(RSHandle *H, const int species_id, const size_t count) {
+void RS_set_debris_count(RSHandle *H, const int debris_id, const size_t count) {
     
     int i;
     
-    if (species_id == 0) {
-        printf("%s : RS : RS_set_debris_count() cannot have species = 0.\n", now());
+    if (debris_id == 0) {
+        printf("%s : RS : RS_set_debris_count() cannot have debris = 0.\n", now());
         return;
     }
 
-    H->species_population[species_id] = count;
+    H->debris_population[debris_id] = count;
 
-    H->num_species = 0;
+    H->num_debris = 0;
     for (i = 0; i < RS_MAX_DEBRIS_TYPES; i++) {
-        if (H->species_population[i] > 0) {
-            H->num_species++;
+        if (H->debris_population[i] > 0) {
+            H->num_debris++;
         }
     }
     
     if (H->verb > 1) {
-        printf("%s : RS : Total number of species = %d\n", now(), (int)H->num_species);
+        rsprint("Total number of debris types = %d", (int)H->num_debris);
     }
 
     if (H->sim_tic > 0) {
@@ -1853,31 +1905,31 @@ void RS_revise_debris_counts_to_gpu_preference(RSHandle *H) {
     int i;
     
     for (i = 0; i < RS_MAX_DEBRIS_TYPES; i++) {
-        if (H->species_population[i]) {
-            H->species_population[i] = ((H->species_population[i] + H->preferred_multiple - 1) / H->preferred_multiple) * H->preferred_multiple;
+        if (H->debris_population[i]) {
+            H->debris_population[i] = ((H->debris_population[i] + H->preferred_multiple - 1) / H->preferred_multiple) * H->preferred_multiple;
         }
     }
 }
 
 
-size_t RS_get_debris_count(RSHandle *H, const int species_id) {
-    return H->species_population[species_id];
+size_t RS_get_debris_count(RSHandle *H, const int debris_id) {
+    return H->debris_population[debris_id];
 }
 
 
-size_t RS_get_worker_debris_count(RSHandle *H, const int species_id, const int worker_id) {
-    return H->worker[worker_id].species_population[species_id];
+size_t RS_get_worker_debris_count(RSHandle *H, const int debris_id, const int worker_id) {
+    return H->worker[worker_id].debris_population[debris_id];
 }
 
 
-size_t RS_get_all_worker_debris_counts(RSHandle *H, const int species_id, size_t counts[]) {
+size_t RS_get_all_worker_debris_counts(RSHandle *H, const int debris_id, size_t counts[]) {
     
     int i;
     
     for (i = 0; i < H->num_workers; i++) {
-        counts[i] = H->worker[i].species_population[species_id];
+        counts[i] = H->worker[i].debris_population[debris_id];
     }
-    return H->species_population[species_id];
+    return H->debris_population[debris_id];
 }
 
 
@@ -1907,36 +1959,36 @@ void RS_update_debris_count(RSHandle *H) {
     k = RS_MAX_DEBRIS_TYPES;
     while (k > 1) {
         k--;
-        count -= H->species_population[k];
+        count -= H->debris_population[k];
     }
-    H->species_population[0] = count;
+    H->debris_population[0] = count;
 
     if (H->verb > 1) {
         printf("%s : RS : Population details:\n", now());
         for (k = 0; k < RS_MAX_DEBRIS_TYPES; k++) {
-            printf("                 o Global species_population[%d] = %s\n", k, commaint(H->species_population[k]));
+            printf("                 o Global debris_population[%d] = %s\n", k, commaint(H->debris_population[k]));
         }
     }
     
     k = RS_MAX_DEBRIS_TYPES;
     while (k > 0) {
         k--;
-        size_t species_count_left = H->species_population[k];
-        if (species_count_left == 0) {
+        size_t debris_count_left = H->debris_population[k];
+        if (debris_count_left == 0) {
             for (i = 0; i < H->num_workers; i++) {
-                H->worker[i].species_population[k] = 0;
+                H->worker[i].debris_population[k] = 0;
             }
             continue;
         }
         // Groups of debris types
         size_t round_up_down_toggle = H->num_workers > 1 ? k % H->num_workers : k;
-        size_t sub_species_population = (H->species_population[k] + round_up_down_toggle) / H->num_workers;
+        size_t sub_debris_population = (H->debris_population[k] + round_up_down_toggle) / H->num_workers;
         for (i = 0; i < H->num_workers - 1; i++) {
-            H->worker[i].species_population[k] = sub_species_population;
-            species_count_left -= sub_species_population;
+            H->worker[i].debris_population[k] = sub_debris_population;
+            debris_count_left -= sub_debris_population;
         }
         // The last worker gets all the remainders
-        H->worker[i].species_population[k] = species_count_left;
+        H->worker[i].debris_population[k] = debris_count_left;
     }
     
     for (i = 0; i < H->num_workers; i++) {
@@ -1944,22 +1996,22 @@ void RS_update_debris_count(RSHandle *H) {
         size_t origin = H->worker[i].num_scats;
         while (k > 1) {
             k--;
-            if (H->worker[i].species_population[k] == 0) {
+            if (H->worker[i].debris_population[k] == 0) {
                 continue;
             }
-            origin -= H->worker[i].species_population[k];
-            H->worker[i].species_origin[k] = origin;
+            origin -= H->worker[i].debris_population[k];
+            H->worker[i].debris_origin[k] = origin;
         }
     }
     
     if (H->verb > 2) {
         for (i = 0; i < H->num_workers; i++) {
-            printf("%s : RS : worker[%d] with total population %s  offset %s\n", now(), i, commaint(H->worker[i].num_scats), commaint(H->worker[i].species_global_offset));
+            printf("%s : RS : worker[%d] with total population %s  offset %s\n", now(), i, commaint(H->worker[i].num_scats), commaint(H->worker[i].debris_global_offset));
             for (k = 0; k < RS_MAX_DEBRIS_TYPES; k++) {
-                printf("                 o species_population[%d] - [ %9s, %9s, %9s ]\n", k,
-                       commaint(H->worker[i].species_origin[k]),
-                       commaint(H->worker[i].species_population[k]),
-                       commaint(H->worker[i].species_origin[k] + H->worker[i].species_population[k]));
+                printf("                 o debris_population[%d] - [ %9s, %9s, %9s ]\n", k,
+                       commaint(H->worker[i].debris_origin[k]),
+                       commaint(H->worker[i].debris_population[k]),
+                       commaint(H->worker[i].debris_origin[k] + H->worker[i].debris_population[k]));
             }
         }
     }
@@ -2033,8 +2085,8 @@ void RS_set_dsd_to_mp(RSHandle *H) {
     
     float d, sum = 0.0f;
     
-    float ds[] = {0.0001f, 0.0002f, 0.0005f, 0.001f, 0.002f, 0.003f, 0.004f, 0.005f};
-//    float ds[] = {0.001f, 0.003f, 0.005f};
+//    float ds[] = {0.0001f, 0.0002f, 0.0005f, 0.001f, 0.002f, 0.003f, 0.004f, 0.005f};
+    float ds[] = {0.001f, 0.003f, 0.005f};
     
     const int count = sizeof(ds) / sizeof(float);
     
@@ -3167,12 +3219,12 @@ void RS_derive_ndranges(RSHandle *H) {
         C->ndrange_scat_all.local_work_size[0] = 0;
         
         for (int k = 0; k < RS_MAX_DEBRIS_TYPES; k++) {
-            if (H->species_population[k] == 0) {
+            if (H->debris_population[k] == 0) {
                 continue;
             }
             C->ndrange_scat[k].work_dim = 1;
-            C->ndrange_scat[k].global_work_offset[0] = C->species_origin[k];
-            C->ndrange_scat[k].global_work_size[0] = C->species_population[k];
+            C->ndrange_scat[k].global_work_offset[0] = C->debris_origin[k];
+            C->ndrange_scat[k].global_work_size[0] = C->debris_population[k];
             C->ndrange_scat[k].local_work_size[0] = 0;
             if (C->verb > 2) {
                 printf("%s : RS : work[%d] offset, size = %d, %d\n",
@@ -3438,6 +3490,7 @@ void RS_download(RSHandle *H) {
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_vel, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, &events[i][1]);
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, &events[i][2]);
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_aux, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_aux + H->offset[i], 0, NULL, &events[i][3]);
+        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_rcs, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_rcs + H->offset[i], 0, NULL, &events[i][4]);
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_sig, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, &events[i][4]);
         clEnqueueReadBuffer(H->worker[i].que, H->worker[i].pulse, CL_FALSE, 0, H->params.range_count * sizeof(cl_float4), H->pulse_tmp[i], 0, NULL, &events[i][5]);
 	}
@@ -3522,7 +3575,7 @@ void RS_merge_pulse_tmp(RSHandle *H) {
     //
     // Scale to 1-km referece: sqrt(R ^ 4) = R ^ 2 = 1.0e6
     //
-    float g = powf(10.0f, 0.1f * H->params.antenna_gain_dbi) * sqrtf(H->params.tx_power_watt) / (4.0f * M_PI) * 1.0e6f;
+    float g = powf(10.0f, 0.1f * H->params.antenna_gain_dbi) * sqrtf(H->params.tx_power_watt) / (4.0f * M_PI) * 1.0e3f / sqrtf(H->params.body_per_cell);
     for (int k = 0; k < H->params.range_count; k++) {
         H->pulse[k].s0 *= g;
         H->pulse[k].s1 *= g;
@@ -3633,13 +3686,11 @@ void RS_rcs_from_dsd(RSHandle *H) {
     }
     
 #else
-
-    size_t local_item_size = 1;
     
     cl_event events[RS_MAX_GPU_DEVICE];
     
     for (i = 0; i < H->num_workers; i++) {
-        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_rcs, 1, &H->worker[i].species_origin[0], &H->worker[i].species_population[0], &local_item_size, 0, NULL, &events[i]);
+        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_rcs, 1, &H->worker[i].debris_origin[0], &H->worker[i].debris_population[0], NULL, 0, NULL, &events[i]);
     }
     
     for (i = 0; i < H->num_workers; i++) {
@@ -3704,7 +3755,7 @@ void RS_advance_time(RSHandle *H) {
         r = 0;
         a = 0;
         for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
-            if (H->worker[i].species_population[k]) {
+            if (H->worker[i].debris_population[k]) {
                 dispatch_async(H->worker[i].que, ^{
                     db_atts_kernel(&H->worker[i].ndrange_scat[k],
                                    (cl_float4 *)H->worker[i].scat_pos,
@@ -3733,7 +3784,7 @@ void RS_advance_time(RSHandle *H) {
 	for (i = 0; i < H->num_workers; i++) {
 		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
         for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
-            if (H->worker[i].species_population[k]) {
+            if (H->worker[i].debris_population[k]) {
                 dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
             }
         }
@@ -3779,31 +3830,31 @@ void RS_advance_time(RSHandle *H) {
         // Convenient pointer to reduce dereferencing
         RSWorker *C = &H->worker[i];
 
-//        clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->species_origin[0], &C->num_scats, NULL, 0, NULL, &events[i][0]);
+//        clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->debris_origin[0], &C->num_scats, NULL, 0, NULL, &events[i][0]);
         
         // Background: Need to refresh some parameters at each time update
         if (H->sim_concept & RSSimulationConceptDraggedBackground) {
             clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
             clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-            clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->species_origin[0], &C->species_population[0], NULL, 0, NULL, &events[i][0]);
+            clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->debris_origin[0], &C->debris_population[0], NULL, 0, NULL, &events[i][0]);
         } else {
             clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
             clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-            clEnqueueNDRangeKernel(C->que, C->kern_bg_atts, 1, &C->species_origin[0], &C->species_population[0], NULL, 0, NULL, &events[i][0]);
+            clEnqueueNDRangeKernel(C->que, C->kern_bg_atts, 1, &C->debris_origin[0], &C->debris_population[0], NULL, 0, NULL, &events[i][0]);
         }
         
         // Debris particles
         clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
         clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
         for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
-            if (C->species_population[k]) {
+            if (C->debris_population[k]) {
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &C->adm_cd[a]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelMomentum,          sizeof(cl_mem),     &C->adm_cm[a]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &C->adm_desc);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &C->rcs_real[r]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[r]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[r]);
-                clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->species_origin[k], &C->species_population[k], NULL, 0, NULL, &events[i][k]);
+                clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->debris_origin[k], &C->debris_population[k], NULL, 0, NULL, &events[i][k]);
             }
             r = r == H->rcs_count - 1 ? 0 : r + 1;
             a = a == H->adm_count - 1 ? 0 : a + 1;
@@ -3818,7 +3869,7 @@ void RS_advance_time(RSHandle *H) {
         clWaitForEvents(1, &events[i][0]);
         clReleaseEvent(events[i][0]);
         for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
-            if (H->worker[i].species_population[k]) {
+            if (H->worker[i].debris_population[k]) {
                 clWaitForEvents(1, &events[i][k]);
                 clReleaseEvent(events[i][k]);
             }
@@ -3913,9 +3964,9 @@ void RS_make_pulse(RSHandle *H) {
     for (i = 0; i < H->num_workers; i++) {
         RSWorker *C = &H->worker[i];
         if (H->status & RSStatusScattererSignalsNeedsUpdate) {
-            //printf("RS_make_pulse: kern_scat_sig_aux\n");
+            //printf("RS_make_pulse: kern_scat_sig_aux : %zu\n", C->num_scats);
             clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-            clEnqueueNDRangeKernel(C->que, C->kern_scat_sig_aux, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, &events[i][0]);
+            clEnqueueNDRangeKernel(C->que, C->kern_scat_sig_aux, 1, NULL, &C->num_scats, NULL, 0, NULL, &events[i][0]);
             clEnqueueNDRangeKernel(C->que, C->kern_make_pulse_pass_1, 1, NULL, &C->make_pulse_params.global[0], &C->make_pulse_params.local[0], 1, &events[i][0], &events[i][1]);
         } else {
             clEnqueueNDRangeKernel(C->que, C->kern_make_pulse_pass_1, 1, NULL, &C->make_pulse_params.global[0], &C->make_pulse_params.local[0], 0, NULL, &events[i][1]);
@@ -4021,10 +4072,9 @@ static void RS_show_scat_i(RSHandle *H, const size_t i) {
 
 
 static void RS_show_rcs_i(RSHandle *H, const size_t i) {
-    printf(" %7lu - ( %9.2f, %9.2f, %9.2f )  %7.4f %7.4f %7.4f %7.4f  [ %7.2f %7.2f %7.2f %7.2f ] %.2f\n", i,
-           H->scat_pos[i].x, H->scat_pos[i].y, H->scat_pos[i].z,
+    printf(" %7lu - ( %9.4f, %9.4f, %9.4f, %9.4f )   ( %7.4f %7.4f %7.4f %7.4f )   r = %.2f m\n", i,
+           H->scat_rcs[i].x, H->scat_rcs[i].y, H->scat_rcs[i].z, H->scat_rcs[i].w,
            H->scat_ori[i].x, H->scat_ori[i].y, H->scat_ori[i].z, H->scat_ori[i].w,
-           H->scat_sig[i].x, H->scat_sig[i].y, H->scat_sig[i].z, H->scat_sig[i].w,
            H->scat_aux[i].s0);
 }
 
@@ -4032,14 +4082,19 @@ static void RS_show_rcs_i(RSHandle *H, const size_t i) {
 void RS_show_scat_pos(RSHandle *H) {
 	size_t i, w;
     for (w = 0; w < H->num_workers; w++) {
-        for (i = H->worker[w].species_origin[0];
-             i < H->worker[w].species_origin[0] + H->worker[w].species_population[0];
-             i += H->worker[w].species_population[0] / 9) {
+        for (i = H->worker[w].debris_origin[0];
+             i < H->worker[w].debris_origin[0] + H->worker[w].debris_population[0];
+             i += H->worker[w].debris_population[0] / 9) {
             RS_show_scat_i(H, i);
         }
+        if (H->worker[w].debris_population[1]) {
+            for (i = H->worker[w].debris_origin[1];
+                 i < H->worker[w].debris_origin[1] + H->worker[w].debris_population[1];
+                 i += H->worker[w].debris_population[1] / 9) {
+                RS_show_scat_i(H, i);
+            }
+        }
     }
-	i = H->worker[w].species_origin[0] + H->worker[w].species_population[0] - 1;
-	RS_show_scat_i(H, i);
 }
 
 
@@ -4047,19 +4102,19 @@ void RS_show_scat_sig(RSHandle *H) {
     size_t i, w;
     printf("background:\n");
     for (w = 0; w < H->num_workers; w++) {
-        for (i = 0; i < H->worker[w].species_population[0]; i += H->worker[w].species_population[0] / 9) {
-            RS_show_rcs_i(H, H->worker[w].species_global_offset + H->worker[w].species_origin[0] + i);
+        for (i = 0; i < H->worker[w].debris_population[0]; i += H->worker[w].debris_population[0] / 9) {
+            RS_show_rcs_i(H, H->worker[w].debris_global_offset + H->worker[w].debris_origin[0] + i);
         }
     }
-    if (H->species_population[1] == 0) {
+    if (H->debris_population[1] == 0) {
         return;
     }
     // Show the debris
-    //i = (int)H->species_population[0] / H->num_workers;
+    //i = (int)H->debris_population[0] / H->num_workers;
     printf("debris type #1:\n");
     for (w = 0; w < H->num_workers; w++) {
-        for (i = 0; i < H->worker[w].species_population[1]; i++) {
-            RS_show_rcs_i(H, H->worker[w].species_global_offset + H->worker[w].species_origin[1] + i);
+        for (i = 0; i < H->worker[w].debris_population[1]; i += H->worker[w].debris_population[1] / 9) {
+            RS_show_rcs_i(H, H->worker[w].debris_global_offset + H->worker[w].debris_origin[1] + i);
         }
     }
 }
@@ -4082,7 +4137,7 @@ void RS_show_pulse(RSHandle *H) {
 
 #pragma mark -
 
-RSBox RS_suggest_scan_doamin(RSHandle *H, const int nbeams) {
+RSBox RS_suggest_scan_domain(RSHandle *H, const int nbeams) {
     RSBox box;
 
     // Extremas of the domain
@@ -4101,9 +4156,16 @@ RSBox RS_suggest_scan_doamin(RSHandle *H, const int nbeams) {
     // Minimum y of the emulation box: The range when the height is fully utilized
     float rmin = (rmax - 2.0f * w) / cosf(na * H->params.antenna_bw_rad) / cosf(ne * H->params.antenna_bw_rad);
     
+    // If we cannot respect the padding on both sides
     // Maximum number of range cells minus the padding on both sides minus one radar cell
     float nr = (rmax - rmin) / H->params.dr - 2.0f * RS_DOMAIN_PAD - 1.0f;
-    
+    nr = ceilf(nr * 0.5f) * 2.0f;
+    if (rmax - rmin < 8.0f * H->params.dr) {
+        rsprint("Error. Range resolution of the radar is too coarse!");
+        rsprint("rmax = %.3f  rmin = %.3f   dr = %.2f", rmax, rmin, H->params.dr);
+        exit(EXIT_FAILURE);
+    }
+
     box.origin.a = ceilf(-0.5f * (float)nbeams) * H->params.antenna_bw_rad * 180.0f / M_PI;
     box.size.a = nbeams * H->params.antenna_bw_deg;
 

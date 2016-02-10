@@ -292,9 +292,9 @@ typedef struct _rs_worker {
 	// Scatter bodies
 	size_t                 num_scats;
     
-    size_t                 species_global_offset;
-    size_t                 species_origin[RS_MAX_DEBRIS_TYPES];
-    size_t                 species_population[RS_MAX_DEBRIS_TYPES];
+    size_t                 debris_global_offset;
+    size_t                 debris_origin[RS_MAX_DEBRIS_TYPES];
+    size_t                 debris_population[RS_MAX_DEBRIS_TYPES];
 	
 	RSMakePulseParams      make_pulse_params;
 
@@ -358,7 +358,6 @@ typedef struct _rs_worker {
 	cl_program             prog;
 	
     cl_kernel              kern_io;
-    cl_kernel              kern_dummy;
     cl_kernel              kern_bg_atts;
     cl_kernel              kern_el_atts;
     cl_kernel              kern_db_atts;
@@ -374,6 +373,8 @@ typedef struct _rs_worker {
 	cl_command_queue       que;
 	
 #endif
+
+    cl_kernel              kern_dummy;
 
 } RSWorker;
 
@@ -409,8 +410,8 @@ typedef struct _rs_handle {
 
 	// Scatter bodies
 	size_t                 num_scats;
-    size_t                 num_species;
-    size_t                 species_population[RS_MAX_DEBRIS_TYPES];
+    size_t                 num_debris;
+    size_t                 debris_population[RS_MAX_DEBRIS_TYPES];
 
 	// CPU side memory (for upload/download)
 	cl_float4              *scat_pos;       // position
@@ -482,16 +483,16 @@ RSHandle *RS_init_verbose(const char verb);
 RSHandle *RS_init();
 void RS_free(RSHandle *H);
 
-RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint group_items, cl_uint user_group_counts,
+RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint group_size_multiple, const cl_uint user_group_counts, const cl_uint max_local_mem_size,
 								   const float range_start, const float range_delta, const unsigned int range_count);
 #pragma mark -
 #pragma mark Radar and Simulation Parameters
 
 void RS_set_concept(RSHandle *H, RSSimulationConcept c);
 
-void RS_set_prt(RSHandle *H, const float prt);
-void RS_set_lambda(RSHandle *H, const float lambda);
-void RS_set_density(RSHandle *H, const float density);
+void RS_set_prt(RSHandle *H, const RSfloat prt);
+void RS_set_lambda(RSHandle *H, const RSfloat lambda);
+void RS_set_density(RSHandle *H, const RSfloat density);
 void RS_set_antenna_params(RSHandle *H, RSfloat beamwidth_deg, RSfloat gain_dbi);
 void RS_set_tx_params(RSHandle *H, RSfloat pulsewidth, RSfloat tx_power_watt);
 void RS_set_scan_box(RSHandle *H,
@@ -500,10 +501,10 @@ void RS_set_scan_box(RSHandle *H,
 					 RSfloat elevation_start, RSfloat elevation_end, RSfloat elevation_gate);
 void RS_set_beam_pos(RSHandle *H, RSfloat az_deg, RSfloat el_deg);
 void RS_set_verbosity(RSHandle *H, const char verb);
-void RS_set_debris_count(RSHandle *H, const int species_id, const size_t count);
-size_t RS_get_debris_count(RSHandle *H, const int species_id);
-size_t RS_get_worker_debris_count(RSHandle *H, const int species_id, const int worker_id);
-size_t RS_get_all_worker_debris_counts(RSHandle *H, const int species_id, size_t counts[]);
+void RS_set_debris_count(RSHandle *H, const int debris_id, const size_t count);
+size_t RS_get_debris_count(RSHandle *H, const int debris_id);
+size_t RS_get_worker_debris_count(RSHandle *H, const int debris_id, const int worker_id);
+size_t RS_get_all_worker_debris_counts(RSHandle *H, const int debris_id, size_t counts[]);
 RSVolume RS_get_domain(RSHandle *H);
 
 void RS_set_dsd(RSHandle *H, const float *cdf, const float *diameters, const int count, const char name);
@@ -588,7 +589,7 @@ void RS_show_pulse(RSHandle *H);
 #pragma mark -
 #pragma mark High-Level Functions to Condition Emulation Setup
 
-RSBox RS_suggest_scan_doamin(RSHandle *H, const int nbeams);
+RSBox RS_suggest_scan_domain(RSHandle *H, const int nbeams);
 void RS_revise_debris_counts_to_gpu_preference(RSHandle *H);
 
 #endif

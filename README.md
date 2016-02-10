@@ -100,6 +100,7 @@ The simulation framework is written is plain C for performance and portability. 
         }
 
         // Set up the parameters: use the setter functions to change the state.
+        RS_set_prt(S, 0.05f);
 
         RS_set_antenna_params(S, 1.0f, 44.5f);                // 1.0-deg, 44.5 dBi gain
 
@@ -178,11 +179,11 @@ Details on Scatterer Attributes
 
 Multiple arrays of type `cl_float` are used to keep track of a set of attributes associated with each scatterer. The following list provides a summary of the attriutes and the variables used on the C-level abstraction.
 
-    cl_mem                 scat_pos;   // x, y, z coordinates
+    cl_mem                 scat_pos;   // x, y, z coordinates; and w = drop radius in m
     cl_mem                 scat_vel;   // u, v, w wind components
     cl_mem                 scat_ori;   // orientation descbried by a quaternion
     cl_mem                 scat_tum;   // tumbling motion = change of orientation derived from ADM
-    cl_mem                 scat_att;   // scatterer type, dot products, range, etc.
+    cl_mem                 scat_aux;   // auxiliary attributes: s0 = range; s1 = age; s2 = DSD bin index; s3 = angular weight
     cl_mem                 scat_rcs;   // radar cross section: Ih Qh Iv Qv
     cl_mem                 scat_sig;   // signal: Ih Qh Iv Qv
     cl_mem                 scat_rnd;   // random seed
@@ -206,7 +207,7 @@ Multiple arrays of type `cl_float` are used to keep track of a set of attributes
 
 ### Convenient Functions for Simulation Setup ###
 
-    RS_suggest_scan_doamin()
+    RS_suggest_scan_domain()
     RS_revise_debris_counts_to_gpu_preference()
 
 ### Functions to Interact Directly with GPUs (Private API) ###

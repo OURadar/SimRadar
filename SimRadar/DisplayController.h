@@ -21,7 +21,7 @@
 	id rootSender;
 	NSTimer *inputMonitorTimer;
 
-    int speciesId;
+    int debrisId;
     
     GLfloat *sampleAnchorLines, *sampleAnchors;
     
