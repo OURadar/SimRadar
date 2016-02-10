@@ -483,16 +483,16 @@ RSHandle *RS_init_verbose(const char verb);
 RSHandle *RS_init();
 void RS_free(RSHandle *H);
 
-RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint group_size_multiple, cl_uint user_group_counts,
+RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint group_size_multiple, const cl_uint user_group_counts, const cl_uint max_local_mem_size,
 								   const float range_start, const float range_delta, const unsigned int range_count);
 #pragma mark -
 #pragma mark Radar and Simulation Parameters
 
 void RS_set_concept(RSHandle *H, RSSimulationConcept c);
 
-void RS_set_prt(RSHandle *H, const float prt);
-void RS_set_lambda(RSHandle *H, const float lambda);
-void RS_set_density(RSHandle *H, const float density);
+void RS_set_prt(RSHandle *H, const RSfloat prt);
+void RS_set_lambda(RSHandle *H, const RSfloat lambda);
+void RS_set_density(RSHandle *H, const RSfloat density);
 void RS_set_antenna_params(RSHandle *H, RSfloat beamwidth_deg, RSfloat gain_dbi);
 void RS_set_tx_params(RSHandle *H, RSfloat pulsewidth, RSfloat tx_power_watt);
 void RS_set_scan_box(RSHandle *H,
@@ -589,7 +589,7 @@ void RS_show_pulse(RSHandle *H);
 #pragma mark -
 #pragma mark High-Level Functions to Condition Emulation Setup
 
-RSBox RS_suggest_scan_doamin(RSHandle *H, const int nbeams);
+RSBox RS_suggest_scan_domain(RSHandle *H, const int nbeams);
 void RS_revise_debris_counts_to_gpu_preference(RSHandle *H);
 
 #endif

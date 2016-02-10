@@ -149,10 +149,10 @@ int main(int argc, char *argv[]) {
     //RS_set_debris_count(S, 1, 10000);
     RS_revise_debris_counts_to_gpu_preference(S);
     
-    RSBox box = RS_suggest_scan_doamin(S, 16);
+    RSBox box = RS_suggest_scan_domain(S, 16);
     
     RS_set_scan_box(S,
-                    box.origin.r, box.origin.r + box.size.r, 20.0f,   // Range
+                    box.origin.r, box.origin.r + box.size.r, 15.0f,   // Range
                     box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
                     box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
     
@@ -170,12 +170,47 @@ int main(int argc, char *argv[]) {
     
     // Show some basic info
     if (verb) {
-        printf("%s : Emulating %s frame%s\n", now(), commaint(num_frames), num_frames>1 ? "s" : "");
+        printf("%s : Emulating %s frame%s %.2f\n", now(), commaint(num_frames), num_frames>1 ? "s" : "", S->params.range_delta);
     } else {
         printf("%s : Emulating %s frame%s with %s scatter bodies\n",
                now(), commaint(num_frames), num_frames>1?"s":"", commaint(S->num_scats));
     }
 
+    // Now, we are ready to bake
+    int k = 0;
+
+    // Some warm up if we are going for real
+    if (num_frames > 1200) {
+        printf("Warming up ...\n");
+        const int ks = 3000;
+        RS_set_prt(S, 1.0f / 60.0f);
+        for (k = 0; k < ks; k++) {
+            // RS_set_beam_pos(S, 15.0f, 10.0f);
+            // RS_make_pulse(S);
+            RS_advance_time(S);
+            
+            if (verb > 2) {
+                RS_download(S);
+                printf("== k = %d ==============\n", k);
+                RS_show_scat_pos(S);
+            }
+            
+            if (k % 1000 == 0) {
+                printf("t = %zu\n", S->sim_tic);
+            }
+        }
+        // Reset the frame counter
+        k = 0;
+    }
+
+    // Set PRT to the actual one
+    
+    RS_set_prt(S, 1.0e-3f);
+
+    // ---------------------------------------------------------------------------------------------------------------
+    
+    float az_deg = -12.0f, el_deg = 3.0f;
+    
     // Initialize a file if the user wants an output file
     FILE *fid = NULL;
     IQFileHeader file_header;
@@ -198,37 +233,6 @@ int main(int argc, char *argv[]) {
         // For now, we simply write a 4K header. Will populate with more contents next time
         fwrite(&file_header, sizeof(IQFileHeader), 1, fid);
     }
-
-    // Now, we are ready to bake
-    int k = 0;
-
-    // Some warm up
-    if (num_frames > 500) {
-        printf("Warming up ...\n");
-        const int ks = 2500;
-        RS_set_prt(S, 1.0f / 60.0f);
-        for (k = 0; k < ks; k++) {
-            // RS_set_beam_pos(S, 15.0f, 10.0f);
-            // RS_make_pulse(S);
-            RS_advance_time(S);
-            
-            if (verb > 2) {
-                RS_download(S);
-                printf("== k = %d ==============\n", k);
-                RS_show_scat_pos(S);
-            }
-            
-            if (k % 1000 == 0) {
-                printf("t = %zu\n", S->sim_tic);
-            }
-        }
-    }
-
-    // Set PRT to the actual one
-    
-    RS_set_prt(S, 1.0e-3f);
-
-    float az_deg = -12.0f, el_deg = 3.0f;
     
     gettimeofday(&t1, NULL);
     

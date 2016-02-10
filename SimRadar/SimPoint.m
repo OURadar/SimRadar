@@ -122,7 +122,7 @@
                 //LES_show_table_summary(les);
                 RS_set_vel_data_to_LES_table(S, les);
             }
-            box = RS_suggest_scan_doamin(S, 16);
+            box = RS_suggest_scan_domain(S, 16);
         }
         
         ADMTable *adm = ADM_get_table(A, ADMConfigModelPlate);
@@ -151,7 +151,7 @@
 
         if (useLES) {
             RS_set_scan_box(S,
-                            box.origin.r, box.origin.r + box.size.r, 30.0f,   // Range
+                            box.origin.r, box.origin.r + box.size.r, 15.0f,   // Range
                             box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
                             box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
 

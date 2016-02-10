@@ -207,7 +207,7 @@ Multiple arrays of type `cl_float` are used to keep track of a set of attributes
 
 ### Convenient Functions for Simulation Setup ###
 
-    RS_suggest_scan_doamin()
+    RS_suggest_scan_domain()
     RS_revise_debris_counts_to_gpu_preference()
 
 ### Functions to Interact Directly with GPUs (Private API) ###

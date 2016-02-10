@@ -11,7 +11,7 @@
 #define NUM_ELEM      (1079196)
 //#define NUM_ELEM      (102400)
 //#define NUM_ELEM      (64)
-#define RANGE_GATES   (9)
+#define RANGE_GATES   (64)
 #define GROUP_ITEMS   (64)
 #define GROUP_COUNTS  (64)
 
@@ -362,7 +362,10 @@ int main(int argc, char **argv)
     free(table);
 
     // Global / local parameterization for CL kernels
-    RSMakePulseParams R = RS_make_pulse_params(num_elem, GROUP_ITEMS, GROUP_COUNTS, 1.0f, 0.25f, RANGE_GATES);
+    cl_ulong local_mem_size;
+    clGetDeviceInfo(devices[0], CL_DEVICE_LOCAL_MEM_SIZE, sizeof(cl_ulong), &local_mem_size, NULL);
+
+    RSMakePulseParams R = RS_make_pulse_params(num_elem, GROUP_ITEMS, GROUP_COUNTS, local_mem_size, 1.0f, 0.25f, RANGE_GATES);
     
     // -----------------------------------------
     
@@ -592,24 +595,34 @@ int main(int argc, char **argv)
     }
 
     // Validate CPU vs GPU calculations
+    int j;
 	printf("CPU Pulse :");
-	for (int j=0; j<RANGE_GATES; j++) {
+	for (j=0; j<MIN(16, RANGE_GATES); j++) {
 		printf(" %.3e", cpu_pulse[j].s0);
 	}
+    if (j<RANGE_GATES) {
+        printf(" ...");
+    }
 	printf("\n");
 	printf("GPU Pulse :");
-	for (int j=0; j<R.range_count; j++) {
+	for (j=0; j<MIN(16, R.range_count); j++) {
 		printf(" %.3e", host_rcs[j].s0);
 	}
+    if (j<RANGE_GATES) {
+        printf(" ...");
+    }
 	printf("\n");
 	printf("Deltas    :");
 	float delta = 0.0f, avg_delta = 0.0f;
-	for (int j=0; j<R.range_count; j++) {
+	for (j=0; j<MIN(16, R.range_count); j++) {
 		delta = (cpu_pulse[j].s0 - host_rcs[j].s0) / MAX(1.0f, host_rcs[j].s0);
 		avg_delta += delta;
 		printf(" %.1e", delta);
 	}
 	avg_delta /= R.range_count;
+    if (j<RANGE_GATES) {
+        printf(" ...");
+    }
 	printf("\n");
 	printf("Delta avg : %e\n", avg_delta);
 	

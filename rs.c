@@ -216,7 +216,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 #endif
 
     if (group_size_multiple > RS_CL_GROUP_ITEMS) {
-        rsprint("Potential memory leak. work_items(%d) > RS_CL_GROUP_ITEMS(%d).\n", now(), (int)group_size_multiple, RS_CL_GROUP_ITEMS);
+        rsprint("Error. Potential memory leak. work_items(%d) > RS_CL_GROUP_ITEMS(%d).\n", now(), (int)group_size_multiple, RS_CL_GROUP_ITEMS);
         exit(EXIT_FAILURE);
     }
     
@@ -235,6 +235,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     C->make_pulse_params = RS_make_pulse_params((cl_uint)C->num_scats,
                                                 (cl_uint)group_size_multiple,
                                                 (cl_uint)max_work_group_size,
+                                                (cl_uint)local_mem_size,
                                                 H->params.range_start,
                                                 H->params.range_delta,
                                                 H->params.range_count);
@@ -476,6 +477,14 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     }
 }
 
+void RS_update_computed_properties(RSHandle *H) {
+    H->params.prf = 1.0f / H->params.prt;
+    H->params.va = 0.25f * H->params.lambda * H->params.prf;
+    H->params.fn = 0.5 / H->params.prf;
+    H->params.antenna_bw_rad = H->params.antenna_bw_deg / 180.0f * M_PI;
+    H->params.dr = 0.5f * H->params.c * H->params.tau;
+}
+
 #pragma mark -
 #pragma mark Convenient Functions
 
@@ -544,7 +553,11 @@ void rsprint(const char *format, ...) {
 		str[len] = '\n';
 		str[len+1] = '\0';
 	}
-	printf("%s", str);
+    if (!strncmp(str, "Error", 5)) {
+        fprintf(stderr, "\033[1;31m%s\033[0m", str);
+    } else {
+        printf("%s", str);
+    }
 }
 
 
@@ -1132,7 +1145,7 @@ void RS_free(RSHandle *H) {
 }
 
 
-RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint group_size_multiple, cl_uint user_max_groups,
+RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint group_size_multiple, const cl_uint user_max_groups, const cl_uint max_local_mem_size,
 									   const float range_start, const float range_delta, const unsigned int range_count) {
 	RSMakePulseParams param;
 
@@ -1167,6 +1180,23 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint group_
 	param.global[0] = group_count * work_items;
 	param.local[0] = work_items;
 	param.local_mem_size[0] = range_count * work_items * sizeof(cl_float4);
+    if (param.local_mem_size[0] > max_local_mem_size) {
+        rsprint("local memory size = %zu. Adjusting ...", (size_t)max_local_mem_size);
+        if (range_count % 2 == 0) {
+            work_items /= 2;
+            group_count *= 2;
+            if (group_count > param.user_max_groups) {
+                group_count = param.user_max_groups;
+            }
+            param.group_counts[0] = group_count;
+            param.global[0] = group_count * work_items;
+            param.local[0] = work_items;\
+            param.local_mem_size[0] = range_count * work_items * sizeof(cl_float4);
+        } else {
+            rsprint("Error. Could not resolve local memory size limits.");
+            exit(EXIT_FAILURE);
+        }
+    }
 	
 	// 2nd pass
 	unsigned int work_count = group_count * param.range_count;
@@ -1370,26 +1400,28 @@ void RS_set_concept(RSHandle *H, RSSimulationConcept c) {
 }
 
 
-void RS_set_prt(RSHandle *H, const float prt) {
+void RS_set_prt(RSHandle *H, const RSfloat prt) {
 	H->params.prt = prt;
-	H->params.prf = 1.0f / prt;
     
     H->sim_desc.s[RSSimulationDescriptionTimeIncrement] = H->params.prt;
+    
+    RS_update_computed_properties(H);
 }
 
 
-void RS_set_lambda(RSHandle *H, const float lambda) {
+void RS_set_lambda(RSHandle *H, const RSfloat lambda) {
     H->params.lambda = lambda;
-    H->params.va = lambda * 0.25f * H->params.prf;
+    RS_update_computed_properties(H);
 }
 
 
-void RS_set_density(RSHandle *H, const float density) {
+void RS_set_density(RSHandle *H, const RSfloat density) {
     if (H->status & RSStatusDomainPopulated) {
         rsprint("Simulation domain has been populated. Density cannot be changed.");
         return;
     }
 	H->params.body_per_cell = density;
+    RS_update_computed_properties(H);
 }
 
 
@@ -1399,8 +1431,10 @@ void RS_set_antenna_params(RSHandle *H, RSfloat beamwidth_deg, RSfloat gain_dbi)
         return;
     }
 	H->params.antenna_bw_deg = beamwidth_deg;
-	H->params.antenna_bw_rad = H->params.antenna_bw_deg * M_PI / 180.0f;
-    
+    H->params.antenna_gain_dbi = gain_dbi;
+
+    RS_update_computed_properties(H);
+
     RS_set_angular_weight_to_standard(H, H->params.antenna_bw_rad);
 }
 
@@ -1411,8 +1445,9 @@ void RS_set_tx_params(RSHandle *H, RSfloat pulsewidth, RSfloat tx_power_watt) {
         return;
     }
 	H->params.tau = pulsewidth;
-	H->params.dr = H->params.c * H->params.tau * 0.5f;
 	H->params.tx_power_watt = tx_power_watt;
+
+    RS_update_computed_properties(H);
 
     RS_set_range_weight_to_triangle(H, H->params.dr);
 }
@@ -1445,7 +1480,7 @@ void RS_set_scan_box(RSHandle *H,
 	const RSfloat az_hi =  ceil((H->params.azimuth_end_deg   + H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg) * H->params.antenna_bw_deg;
 	const RSfloat el_lo = MAX(0.0f, floor((H->params.elevation_start_deg - H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg) * H->params.antenna_bw_deg);
 	const RSfloat el_hi = MIN(90.0f,  ceil((H->params.elevation_end_deg   + H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg) * H->params.antenna_bw_deg);
-	const RSfloat tiny = 1.0e-5;
+	const RSfloat tiny = 1.0e-5f;
 	
 	int nr = 0;
 	int naz = 0;
@@ -1494,7 +1529,7 @@ void RS_set_scan_box(RSHandle *H,
 	}
 	H->anchor_pos = (cl_float4 *)malloc(H->num_anchors * sizeof(cl_float4));
 	if (H->anchor_pos == NULL) {
-		fprintf(stderr, "%s : RS : Error in allocating anchors.\n", now());
+		rsprint("Error in allocating anchors.");
 		return;
 	}
 	
@@ -1578,6 +1613,8 @@ void RS_set_scan_box(RSHandle *H,
                1.0e-3*r_lo, 1.0e-3*r_hi,
                el_lo, el_hi,
                az_lo, az_hi);
+        rsprint("            @ R:[       %-3d     ]      E:[       %-3d     ]       A:[        %-3d      ]",
+                H->params.range_count, nel, naz);
 		rsprint("            @ X:[ %.2f ~ %.2f ] m   Y:[ %.2f ~ %.2f ] m   Z:[ %.2f ~ %.2f ] m\n",
 			   xmin, xmax,
 			   ymin, ymax,
@@ -3530,7 +3567,7 @@ void RS_merge_pulse_tmp(RSHandle *H) {
     //
     // Scale to 1-km referece: sqrt(R ^ 4) = R ^ 2 = 1.0e6
     //
-    float g = powf(10.0f, 0.1f * H->params.antenna_gain_dbi) * sqrtf(H->params.tx_power_watt) / (4.0f * M_PI) * 1.0e6f;
+    float g = powf(10.0f, 0.1f * H->params.antenna_gain_dbi) * sqrtf(H->params.tx_power_watt) / (4.0f * M_PI) * 1.0e3f / sqrtf(H->params.body_per_cell);
     for (int k = 0; k < H->params.range_count; k++) {
         H->pulse[k].s0 *= g;
         H->pulse[k].s1 *= g;
@@ -4088,7 +4125,7 @@ void RS_show_pulse(RSHandle *H) {
 
 #pragma mark -
 
-RSBox RS_suggest_scan_doamin(RSHandle *H, const int nbeams) {
+RSBox RS_suggest_scan_domain(RSHandle *H, const int nbeams) {
     RSBox box;
 
     // Extremas of the domain
@@ -4110,9 +4147,11 @@ RSBox RS_suggest_scan_doamin(RSHandle *H, const int nbeams) {
     // If we cannot respect the padding on both sides
     // Maximum number of range cells minus the padding on both sides minus one radar cell
     float nr = (rmax - rmin) / H->params.dr - 2.0f * RS_DOMAIN_PAD - 1.0f;
+    nr = ceilf(nr * 0.5f) * 2.0f;
     if (rmax - rmin < 8.0f * H->params.dr) {
-        rsprint("Range resolution of the radar is too coarse!");
+        rsprint("Error. Range resolution of the radar is too coarse!");
         rsprint("rmax = %.3f  rmin = %.3f   dr = %.2f", rmax, rmin, H->params.dr);
+        exit(EXIT_FAILURE);
     }
 
     box.origin.a = ceilf(-0.5f * (float)nbeams) * H->params.antenna_bw_rad * 180.0f / M_PI;
