@@ -367,7 +367,7 @@ typedef struct _rs_handle {
 
 	// Scatter bodies
 	size_t                 num_scats;
-    size_t                 num_debris;
+    size_t                 num_body_types;
     size_t                 debris_population[RS_MAX_DEBRIS_TYPES];
 
 	// CPU side memory (for upload/download)

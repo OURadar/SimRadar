@@ -224,8 +224,8 @@ int main(int argc, char *argv[]) {
     memset(&pulse_header, 0, sizeof(IQPulseHeader));
     
     file_header.params = S->params;
-    for (k = 0; k < S->num_debris; k++) {
-        file_header.debris_population[k] = S->debris_population[k];
+    for (k = 0; k < S->num_body_types; k++) {
+        file_header.debris_population[k] = (uint32_t)S->debris_population[k];
     }
     
     if (output_file) {

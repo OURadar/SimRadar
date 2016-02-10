@@ -892,7 +892,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
     H->params.lambda = 0.1f;
 	H->params.prt = 0.0f;
 	H->num_workers = 1;
-    H->num_debris = 1;
+    H->num_body_types = 1;
 	H->method = method;
 	
 	for (i = 0; i < RS_MAX_GPU_DEVICE; i++) {
@@ -1871,15 +1871,15 @@ void RS_set_debris_count(RSHandle *H, const int debris_id, const size_t count) {
 
     H->debris_population[debris_id] = count;
 
-    H->num_debris = 0;
-    for (i = 0; i < RS_MAX_DEBRIS_TYPES; i++) {
+    H->num_body_types = 1;
+    for (i = 1; i < RS_MAX_DEBRIS_TYPES; i++) {
         if (H->debris_population[i] > 0) {
-            H->num_debris++;
+            H->num_body_types++;
         }
     }
     
     if (H->verb > 1) {
-        rsprint("Total number of debris types = %d", (int)H->num_debris);
+        rsprint("Total number of body types = %d", (int)H->num_body_types);
     }
 
     if (H->sim_tic > 0) {
@@ -2005,7 +2005,7 @@ void RS_update_debris_count(RSHandle *H) {
     if (H->verb > 2) {
         for (i = 0; i < H->num_workers; i++) {
             printf("%s : RS : worker[%d] with total population %s  offset %s\n", now(), i, commaint(H->worker[i].num_scats), commaint(H->worker[i].debris_global_offset));
-            for (k = 0; k <= H->num_debris; k++) {
+            for (k = 0; k < H->num_body_types; k++) {
                 printf("                 o debris_population[%d] - [ %9s, %9s, %9s ]\n", k,
                        commaint(H->worker[i].debris_origin[k]),
                        commaint(H->worker[i].debris_population[k]),
@@ -3216,7 +3216,7 @@ void RS_derive_ndranges(RSHandle *H) {
         C->ndrange_scat_all.global_work_size[0] = C->num_scats;
         C->ndrange_scat_all.local_work_size[0] = 0;
         
-        for (int k = 0; k <= H->num_debris; k++) {
+        for (int k = 0; k < H->num_body_types; k++) {
             if (H->debris_population[k] == 0) {
                 continue;
             }
@@ -3814,7 +3814,7 @@ void RS_advance_time(RSHandle *H) {
 
 #else
 
-    cl_event events[RS_MAX_GPU_DEVICE][H->num_debris + 1];
+    cl_event events[RS_MAX_GPU_DEVICE][H->num_body_types];
     memset(events, 0, sizeof(events));
 	
 	if (H->sim_tic >= H->sim_toc) {
@@ -3844,7 +3844,7 @@ void RS_advance_time(RSHandle *H) {
         // Debris particles
         clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
         clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-        for (k = 1; k <= H->num_debris; k++) {
+        for (k = 1; k < H->num_body_types; k++) {
             if (C->debris_population[k]) {
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &C->adm_cd[a]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelMomentum,          sizeof(cl_mem),     &C->adm_cm[a]);
@@ -3866,7 +3866,7 @@ void RS_advance_time(RSHandle *H) {
     for (i = 0; i < H->num_workers; i++) {
         clWaitForEvents(1, &events[i][0]);
         clReleaseEvent(events[i][0]);
-        for (k = 1; k <= H->num_debris; k++) {
+        for (k = 1; k < H->num_body_types; k++) {
             if (H->worker[i].debris_population[k]) {
                 clWaitForEvents(1, &events[i][k]);
                 clReleaseEvent(events[i][k]);
