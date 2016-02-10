@@ -20,8 +20,10 @@ typedef struct iq_complex {
 // Header of a raw file
 typedef union fileheader {
     char      raw[1024];
-    RSParams  params;
-    uint32_t  debris_population[RS_MAX_DEBRIS_TYPES];
+    struct {
+        RSParams  params;
+        uint32_t  debris_population[RS_MAX_DEBRIS_TYPES];
+    };
 } IQFileHeader;
 
 // Header of each pulse

@@ -748,7 +748,7 @@ __kernel void scat_rcs(__global float4 *x,
     float vv = 1.0048f + dot((float4)(5.7e-4f, -2.628e-2f, 3.682e-3f, -1.667e-4f), DD);
     
     // H is 1.0 while V is the attenuated version as a function of aspect ratio
-    x[i] = (float4)(1.0f, 0.0f, vv, 0.0f);
+    x[i] = (float4)(1.0f, 0.0f, vv, 0.0f) * pos.w;
 }
 
 

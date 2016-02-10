@@ -206,8 +206,6 @@ int main(int argc, char *argv[]) {
             }
             RS_advance_time(S);
         }
-        // Reset the frame counter
-        k = 0;
     }
 
     // Set PRT to the actual one
@@ -226,12 +224,15 @@ int main(int argc, char *argv[]) {
     memset(&pulse_header, 0, sizeof(IQPulseHeader));
     
     file_header.params = S->params;
+    for (k = 0; k < S->num_debris; k++) {
+        file_header.debris_population[k] = S->debris_population[k];
+    }
     
     if (output_file) {
         char filename[4096];
         memset(filename, 0, 4096);
         snprintf(filename, 256, "%s/Downloads/sim-%s-E%04.1f.iq", getenv("HOME"), nowlong(), el_deg);
-        printf("%s : Output file : %s\n", now(), filename);
+        printf("%s : Output file : \033[1;32m%s\033[0m\n", now(), filename);
         fid = fopen(filename, "wb");
         if (fid == NULL) {
             fprintf(stderr, "%s : Error creating file for writing data.\n", now());
@@ -245,7 +246,7 @@ int main(int argc, char *argv[]) {
     
     float dt, fps, prog, eta;
     
-    for (; k<num_frames; k++) {
+    for (k = 0; k<num_frames; k++) {
         if (k % 100 == 0) {
             gettimeofday(&t2, NULL);
             dt = DTIME(t1, t2);
@@ -254,7 +255,7 @@ int main(int argc, char *argv[]) {
                 prog =  (float)k / num_frames * 100.0f;
                 fps = 100.0f / dt;
                 eta = (float)(num_frames - k) / fps;
-                fprintf(stderr, "k = %d  az_deg = %.2f  el_deg = %.2f   %.2f fps  progress: \033[1;33m%.2f%%\033[0m   eta = %.0f second%s   \r", k, az_deg, el_deg, fps, prog, eta, eta > 1.4f ? "s" : "");
+                fprintf(stderr, "k = %d  az_deg = %.2f  el_deg = %.2f   %.2f fps  progress: \033[1;33m%.2f%%\033[0m   eta = %.0f second%s   \r", k, az_deg, el_deg, fps, prog, eta, eta > 1.5f ? "s" : "");
             } else {
                 fprintf(stderr, "k = %d  az_deg = %.2f  el_deg = %.2f             \r", k, az_deg, el_deg);
             }
@@ -263,9 +264,6 @@ int main(int argc, char *argv[]) {
         RS_make_pulse(S);
         RS_advance_time(S);
 
-        // Update scan angles for the next pulse
-        az_deg = fmodf(az_deg + 0.01f + 12.0f, 24.0f) - 12.0f;
-
         // Only download the necessary data
         if (verb > 2) {
             RS_download(S);
@@ -273,15 +271,15 @@ int main(int argc, char *argv[]) {
             RS_download_pulse_only(S);
         }
 
-        if (verb > 2) {
-            RS_show_scat_sig(S);
-            
-            printf("signal:\n");
-            for (int r = 0; r < S->params.range_count; r++) {
-                printf("sig[%d] = (%.4f %.4f %.4f %.4f)\n", r, S->pulse[r].s0, S->pulse[r].s1, S->pulse[r].s2, S->pulse[r].s3);
-            }
-            printf("\n");
-        }
+//        if (verb > 2) {
+//            RS_show_scat_sig(S);
+//            
+//            printf("signal:\n");
+//            for (int r = 0; r < S->params.range_count; r++) {
+//                printf("sig[%d] = (%.4f %.4f %.4f %.4f)\n", r, S->pulse[r].s0, S->pulse[r].s1, S->pulse[r].s2, S->pulse[r].s3);
+//            }
+//            printf("\n");
+//        }
         
         if (output_file) {
             // Gather information for the  pulse header
@@ -292,15 +290,18 @@ int main(int argc, char *argv[]) {
             fwrite(&pulse_header, sizeof(IQPulseHeader), 1, fid);
             fwrite(S->pulse, sizeof(cl_float4), S->params.range_count, fid);
         }
+
+        // Update scan angles for the next pulse
+        az_deg = fmodf(az_deg + 0.01f + 12.0f, 24.0f) - 12.0f;
     }
     
     // Clear the last line and beep five times
     fprintf(stderr, "%120s\r", "");
-#if defined (__APPLE__)
-    system("say -v Bells dong dong dong dong");
-#else
+    #if defined (__APPLE__)
+    system("say -v Bells dong dong dong dong &");
+    #else
     fprintf(stderr, "\a\a\a\a\a");
-#endif
+    #endif
     
     gettimeofday(&t2, NULL);
     dt = DTIME(t0, t2);

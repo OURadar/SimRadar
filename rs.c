@@ -226,7 +226,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     cl_ulong local_mem_size;
     clGetDeviceInfo(C->dev, CL_DEVICE_LOCAL_MEM_SIZE, sizeof(cl_ulong), &local_mem_size, NULL);
     
-    if (H->verb > 1) {
+    if (H->verb > 2) {
         rsprint("CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE = %zu", group_size_multiple);
         rsprint("CL_DEVICE_MAX_WORK_GROUP_SIZE = %zu", (int)max_work_group_size);
         rsprint("CL_DEVICE_LOCAL_MEM_SIZE = %zu", (size_t)local_mem_size);
@@ -1961,6 +1961,9 @@ void RS_update_debris_count(RSHandle *H) {
     if (H->verb > 1) {
         printf("%s : RS : Population details:\n", now());
         for (k = 0; k < RS_MAX_DEBRIS_TYPES; k++) {
+            if (H->debris_population[k] == 0) {
+                break;
+            }
             printf("                 o Global debris_population[%d] = %s\n", k, commaint(H->debris_population[k]));
         }
     }
@@ -2002,7 +2005,7 @@ void RS_update_debris_count(RSHandle *H) {
     if (H->verb > 2) {
         for (i = 0; i < H->num_workers; i++) {
             printf("%s : RS : worker[%d] with total population %s  offset %s\n", now(), i, commaint(H->worker[i].num_scats), commaint(H->worker[i].debris_global_offset));
-            for (k = 0; k < RS_MAX_DEBRIS_TYPES; k++) {
+            for (k = 0; k <= H->num_debris; k++) {
                 printf("                 o debris_population[%d] - [ %9s, %9s, %9s ]\n", k,
                        commaint(H->worker[i].debris_origin[k]),
                        commaint(H->worker[i].debris_population[k]),
@@ -3213,7 +3216,7 @@ void RS_derive_ndranges(RSHandle *H) {
         C->ndrange_scat_all.global_work_size[0] = C->num_scats;
         C->ndrange_scat_all.local_work_size[0] = 0;
         
-        for (int k = 0; k < RS_MAX_DEBRIS_TYPES; k++) {
+        for (int k = 0; k <= H->num_debris; k++) {
             if (H->debris_population[k] == 0) {
                 continue;
             }
@@ -3570,7 +3573,7 @@ void RS_merge_pulse_tmp(RSHandle *H) {
     //
     // Scale to 1-km referece: sqrt(R ^ 4) = R ^ 2 = 1.0e6
     //
-    float g = powf(10.0f, 0.1f * H->params.antenna_gain_dbi) * sqrtf(H->params.tx_power_watt) / (4.0f * M_PI) * 1.0e3f / sqrtf(H->params.body_per_cell);
+    float g = powf(10.0f, 0.1f * H->params.antenna_gain_dbi) * sqrtf(H->params.tx_power_watt) / (4.0f * M_PI) * 1.0e6f / sqrtf(H->params.body_per_cell);
     for (int k = 0; k < H->params.range_count; k++) {
         H->pulse[k].s0 *= g;
         H->pulse[k].s1 *= g;
@@ -3811,7 +3814,7 @@ void RS_advance_time(RSHandle *H) {
 
 #else
 
-    cl_event events[RS_MAX_GPU_DEVICE][RS_MAX_DEBRIS_TYPES];
+    cl_event events[RS_MAX_GPU_DEVICE][H->num_debris + 1];
     memset(events, 0, sizeof(events));
 	
 	if (H->sim_tic >= H->sim_toc) {
@@ -3841,7 +3844,7 @@ void RS_advance_time(RSHandle *H) {
         // Debris particles
         clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
         clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
+        for (k = 1; k <= H->num_debris; k++) {
             if (C->debris_population[k]) {
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &C->adm_cd[a]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelMomentum,          sizeof(cl_mem),     &C->adm_cm[a]);
@@ -3863,7 +3866,7 @@ void RS_advance_time(RSHandle *H) {
     for (i = 0; i < H->num_workers; i++) {
         clWaitForEvents(1, &events[i][0]);
         clReleaseEvent(events[i][0]);
-        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
+        for (k = 1; k <= H->num_debris; k++) {
             if (H->worker[i].debris_population[k]) {
                 clWaitForEvents(1, &events[i][k]);
                 clReleaseEvent(events[i][k]);
