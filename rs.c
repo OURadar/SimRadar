@@ -3485,6 +3485,7 @@ void RS_download(RSHandle *H) {
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_vel, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, &events[i][1]);
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, &events[i][2]);
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_aux, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_aux + H->offset[i], 0, NULL, &events[i][3]);
+        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_rcs, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_rcs + H->offset[i], 0, NULL, &events[i][4]);
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_sig, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, &events[i][4]);
         clEnqueueReadBuffer(H->worker[i].que, H->worker[i].pulse, CL_FALSE, 0, H->params.range_count * sizeof(cl_float4), H->pulse_tmp[i], 0, NULL, &events[i][5]);
 	}
@@ -3958,9 +3959,9 @@ void RS_make_pulse(RSHandle *H) {
     for (i = 0; i < H->num_workers; i++) {
         RSWorker *C = &H->worker[i];
         if (H->status & RSStatusScattererSignalsNeedsUpdate) {
-            //printf("RS_make_pulse: kern_scat_sig_aux\n");
+            //printf("RS_make_pulse: kern_scat_sig_aux : %zu\n", C->num_scats);
             clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-            clEnqueueNDRangeKernel(C->que, C->kern_scat_sig_aux, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, &events[i][0]);
+            clEnqueueNDRangeKernel(C->que, C->kern_scat_sig_aux, 1, NULL, &C->num_scats, NULL, 0, NULL, &events[i][0]);
             clEnqueueNDRangeKernel(C->que, C->kern_make_pulse_pass_1, 1, NULL, &C->make_pulse_params.global[0], &C->make_pulse_params.local[0], 1, &events[i][0], &events[i][1]);
         } else {
             clEnqueueNDRangeKernel(C->que, C->kern_make_pulse_pass_1, 1, NULL, &C->make_pulse_params.global[0], &C->make_pulse_params.local[0], 0, NULL, &events[i][1]);
@@ -4066,10 +4067,9 @@ static void RS_show_scat_i(RSHandle *H, const size_t i) {
 
 
 static void RS_show_rcs_i(RSHandle *H, const size_t i) {
-    printf(" %7lu - ( %9.2f, %9.2f, %9.2f )  %7.4f %7.4f %7.4f %7.4f  [ %7.2f %7.2f %7.2f %7.2f ] %.2f\n", i,
-           H->scat_pos[i].x, H->scat_pos[i].y, H->scat_pos[i].z,
+    printf(" %7lu - ( %9.4f, %9.4f, %9.4f, %9.4f )   ( %7.4f %7.4f %7.4f %7.4f )   r = %.2f m\n", i,
+           H->scat_rcs[i].x, H->scat_rcs[i].y, H->scat_rcs[i].z, H->scat_rcs[i].w,
            H->scat_ori[i].x, H->scat_ori[i].y, H->scat_ori[i].z, H->scat_ori[i].w,
-           H->scat_sig[i].x, H->scat_sig[i].y, H->scat_sig[i].z, H->scat_sig[i].w,
            H->scat_aux[i].s0);
 }
 
@@ -4082,9 +4082,14 @@ void RS_show_scat_pos(RSHandle *H) {
              i += H->worker[w].species_population[0] / 9) {
             RS_show_scat_i(H, i);
         }
+        if (H->worker[w].species_population[1]) {
+            for (i = H->worker[w].species_origin[1];
+                 i < H->worker[w].species_origin[1] + H->worker[w].species_population[1];
+                 i += H->worker[w].species_population[1] / 9) {
+                RS_show_scat_i(H, i);
+            }
+        }
     }
-	i = H->worker[w].species_origin[0] + H->worker[w].species_population[0] - 1;
-	RS_show_scat_i(H, i);
 }
 
 
@@ -4103,7 +4108,7 @@ void RS_show_scat_sig(RSHandle *H) {
     //i = (int)H->species_population[0] / H->num_workers;
     printf("debris type #1:\n");
     for (w = 0; w < H->num_workers; w++) {
-        for (i = 0; i < H->worker[w].species_population[1]; i++) {
+        for (i = 0; i < H->worker[w].species_population[1]; i += H->worker[w].species_population[1] / 9) {
             RS_show_rcs_i(H, H->worker[w].species_global_offset + H->worker[w].species_origin[1] + i);
         }
     }

@@ -41,8 +41,11 @@ int main(int argc, char *argv[]) {
     struct timeval t0, t1, t2;
     
     gettimeofday(&t0, NULL);
+    
+    int debris_types = 0;
+    int debris_count[3] = {0, 0, 0};
 
-    while ((c = getopt(argc, argv, "vcge:f:a:d:wh?")) != -1) {
+    while ((c = getopt(argc, argv, "vcgd:e:f:a:D:wh?")) != -1) {
         switch (c) {
             case 'v':
                 verb++;
@@ -59,7 +62,7 @@ int main(int argc, char *argv[]) {
             case 'a':
                 accel_type = atoi(optarg);
                 break;
-            case 'd':
+            case 'D':
                 density = atof(optarg);
                 break;
             case 'w':
@@ -67,6 +70,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'e':
                 scan_el = atof(optarg);
+                break;
+            case 'd':
+                debris_count[debris_types++] = atoi(optarg);
                 break;
             case 'h':
             case '?':
@@ -141,8 +147,8 @@ int main(int argc, char *argv[]) {
     RS_set_antenna_params(S, 1.0f, 44.5f);
     
     RS_set_tx_params(S, 0.2e-6, 50.0e3f);
-    
-    for (int k=0; k<RS_MAX_VEL_TABLES; k++) {
+
+    for (int k = 0; k < RS_MAX_VEL_TABLES; k++) {
         RS_set_vel_data_to_LES_table(S, LES_get_frame(L, k));
     }
     
@@ -152,10 +158,13 @@ int main(int argc, char *argv[]) {
     RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigLeaf));
     RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigWoodBoard));
 
-    //RS_set_debris_count(S, 1, 10000);
-    RS_revise_debris_counts_to_gpu_preference(S);
-    
     RSBox box = RS_suggest_scan_domain(S, 16);
+    
+    // Set debris population
+    for (int k = 0; k < debris_types; k++) {
+        RS_set_debris_count(S, k + 1, debris_count[k]);
+    }
+    RS_revise_debris_counts_to_gpu_preference(S);
     
     RS_set_scan_box(S,
                     box.origin.r, box.origin.r + box.size.r, 15.0f,   // Range
@@ -247,7 +256,7 @@ int main(int argc, char *argv[]) {
                 prog =  (float)k / num_frames * 100.0f;
                 fps = 100.0f / dt;
                 eta = (float)(num_frames - k) / fps;
-                fprintf(stderr, "k = %d  az_deg = %.2f  el_deg = %.2f   %.2f fps  progress: \033[1;33m%.2f%%\033[0m   eta = %.0f second%s   \r", k, az_deg, el_deg, fps, prog, eta, eta > 1.0f ? "s" : "");
+                fprintf(stderr, "k = %d  az_deg = %.2f  el_deg = %.2f   %.2f fps  progress: \033[1;33m%.2f%%\033[0m   eta = %.0f second%s   \r", k, az_deg, el_deg, fps, prog, eta, eta > 1.4f ? "s" : "");
             } else {
                 fprintf(stderr, "k = %d  az_deg = %.2f  el_deg = %.2f             \r", k, az_deg, el_deg);
             }
@@ -264,18 +273,15 @@ int main(int argc, char *argv[]) {
             RS_show_scat_sig(S);
             
             printf("signal:\n");
-            for (int r=0; r<S->params.range_count; r++) {
+            for (int r = 0; r < S->params.range_count; r++) {
                 printf("sig[%d] = (%.4f %.4f %.4f %.4f)\n", r, S->pulse[r].s0, S->pulse[r].s1, S->pulse[r].s2, S->pulse[r].s3);
             }
             printf("\n");
         }
         
         if (write_file) {
-            if (verb <= 1) {
-                // The data hasn't been downloaded yet, so download it now
-                RS_download_pulse_only(S);
-                //RS_download(S);
-            }
+            RS_download_pulse_only(S);
+
             // Gather information for the  pulse header
             pulse_header.time = S->sim_time;
             pulse_header.az_deg = az_deg;
@@ -295,8 +301,9 @@ int main(int argc, char *argv[]) {
     
     if (accel_type == ACCEL_TYPE_GPU && verb > 1) {
         RS_download(S);
-        printf("Final scatter body positions:\n");
+        printf("Final scatter body positions, velocities and orientations:\n");
         RS_show_scat_pos(S);
+        RS_show_scat_sig(S);
     }
 
     if (write_file) {
