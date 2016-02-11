@@ -1298,11 +1298,11 @@ void RS_init_scat_pos(RSHandle *H) {
 //        H->scat_ori[i].w =  0.5f;                      // w of quaternion
 
         // Rotate by theta
-//        float theta = -70.0f / 180.0f * M_PI;
-//        H->scat_ori[i].x = 0.0f;
-//        H->scat_ori[i].y = sinf(0.5f * theta);
-//        H->scat_ori[i].z = 0.0f;
-//        H->scat_ori[i].w = cosf(0.5f * theta);
+        float theta = -70.0f / 180.0f * M_PI;
+        H->scat_ori[i].x = 0.0f;
+        H->scat_ori[i].y = sinf(0.5f * theta);
+        H->scat_ori[i].z = 0.0f;
+        H->scat_ori[i].w = cosf(0.5f * theta);
         
         // Tumbling vector for orientation update
         H->scat_tum[i].x = 0.0f;                       // x of quaternion
@@ -1413,12 +1413,10 @@ void RS_set_prt(RSHandle *H, const RSfloat prt) {
 
 void RS_set_lambda(RSHandle *H, const RSfloat lambda) {
     H->params.lambda = lambda;
-<<<<<<< HEAD
     
     H->sim_desc.s[RSSimulationDescriptionWaveNumber] = 4.0f * M_PI / H->params.lambda;
-=======
+
     RS_update_computed_properties(H);
->>>>>>> master
 }
 
 
@@ -1428,6 +1426,7 @@ void RS_set_density(RSHandle *H, const RSfloat density) {
         return;
     }
 	H->params.body_per_cell = density;
+    
     RS_update_computed_properties(H);
 }
 
