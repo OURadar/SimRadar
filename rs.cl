@@ -347,13 +347,27 @@ float4 compute_rcs(float4 ori, __read_only image2d_t rcs_real, __read_only image
     //
     // derive alpha, beta & gamma of RCS for RCS table lookup --------------------------
     //
-    float ce, se = sincos(0.5f * el, &ce);
+//    float ce, se = sincos(0.5f * el - M_PI_4_F, &ce);
+//    float ca, sa = sincos(0.5f * az, &ca);
+    
+    // I know this part looks like a black box, check reference MATLAB implementation quat_ref_change.m for the raw version
+//    float4 F = (float4)(sa * ce + ca * se, -ca * ce - sa * se, ca * se + sa * ce, ca * ce - sa * se) * M_SQRT1_2_F;
+//    float4 quat_rel = quat_mult(quat_mult(F, ori), (float4)(-0.5f, 0.5f, -0.5f, 0.5f));
+
+//    float a = 0.5f * az;
+//    float e = 0.5f * el;
+//    
+//    float4 ori_rcs = (float4)(ori.x, ori.z, -ori.y, ori.w);
+//    float4 o_rcs_conj = (float4)(-cos(e - a + M_PI_4_F), cos(a + e + M_PI_4_F), -cos(a - e + M_PI_4_F), sin(a + e + M_PI_4_F)) * M_SQRT1_2_F;
+//    float4 quat_rel = quat_mult(ori_rcs, o_rcs_conj);
+
+    float ce, se = sincos(0.5f * el - M_PI_4_F, &ce);
     float ca, sa = sincos(0.5f * az, &ca);
-    
-    // I know this part looks like a black box, check reference MATLAB implementation quat2euler.m for the raw version
-    float4 F = (float4)(-M_SQRT1_2_F * sa * (ce + se), -M_SQRT1_2_F * ca * (ce + se), M_SQRT1_2_F * ca * (ce - se), -M_SQRT1_2_F * sa * (ce - se));
-    float4 quat_rel = quat_mult(quat_mult(F, ori), (float4)(-0.5f, 0.5f, -0.5f, 0.5f));
-    
+
+    float4 ori_rcs = (float4)(ori.x, ori.z, -ori.y, ori.w);
+    float4 o_rcs_conj = (float4)(se, -se, -ce, ce) * ca - (float4)(ce, ce, se, se) * sa;
+    float4 quat_rel = quat_mult(ori_rcs, o_rcs_conj);
+
     // 3-2-3 conversion:
     float alpha = atan2(quat_rel.y * quat_rel.z + quat_rel.w * quat_rel.x , quat_rel.w * quat_rel.y - quat_rel.x * quat_rel.z);
     float beta  =  acos(quat_rel.w * quat_rel.w + quat_rel.z * quat_rel.z - quat_rel.y * quat_rel.y - quat_rel.x * quat_rel.x);
