@@ -17,11 +17,21 @@
 
 #include "rs.h"
 #include "iq.h"
+#include <getopt.h>
 
-enum {
+enum ACCEL_TYPE {
     ACCEL_TYPE_GPU,
     ACCEL_TYPE_CPU
 };
+
+enum SCAN_MODE {
+    SCAN_MODE_PPI,
+    SCAN_MODE_RHI
+};
+
+void show_help(void) {
+    printf("I'll do this later\n");
+}
 
 //
 //
@@ -30,11 +40,11 @@ enum {
 //
 int main(int argc, char *argv[]) {
     
-    char c;
     char verb = 0;
     char accel_type = 0;
+    char scan_mode = SCAN_MODE_PPI;
     char output_file = FALSE;
-    int num_frames = 5;
+    int num_pulses = 5;
     float density = 0.0f;
     float scan_el = 3.0f;
     
@@ -44,57 +54,59 @@ int main(int argc, char *argv[]) {
     
     int debris_types = 0;
     int debris_count[3] = {0, 0, 0};
-    int warm_up_frames = 2000;
+    int warm_up_pulses = 2000;
+
+    static struct option long_options[] = {
+        {"cpu"        , no_argument      , 0, 'c'},
+        {"debris"     , required_argument, 0, 'd'},
+        {"density"    , required_argument, 0, 'D'},
+        {"gpu"        , no_argument      , 0, 'g'},
+        {"frames"     , required_argument, 0, 'f'},
+        {"pulses"     , required_argument, 0, 'p'},
+        {"ppi"        , no_argument      , 0, 'P'},
+        {"rhi"        , no_argument      , 0, 'R'},
+        {"verbose"    , no_argument      , 0, 'v'},
+        {"warmup"     , required_argument, 0, 'w'},
+        {0, 0, 0, 0}
+    };
     
-    while ((c = getopt(argc, argv, "vcgd:e:f:a:D:w:oh?")) != -1) {
-        switch (c) {
-            case 'v':
-                verb++;
-                break;
+    int opt, long_index = 0;
+    while ((opt = getopt_long(argc, argv, "cd:D:gp:f:p:PRv", long_options, &long_index)) != -1) {
+        switch (opt) {
             case 'c':
                 accel_type = ACCEL_TYPE_CPU;
+                break;
+            case 'd':
+                debris_count[debris_types++] = atoi(optarg);
+                break;
+            case 'D':
+                density = atof(optarg);
                 break;
             case 'g':
                 accel_type = ACCEL_TYPE_GPU;
                 break;
             case 'f':
-                num_frames = atoi(optarg);
+                num_pulses = atoi(optarg);
                 break;
-            case 'a':
-                accel_type = atoi(optarg);
+            case 'p':
+                num_pulses = atoi(optarg);
                 break;
-            case 'D':
-                density = atof(optarg);
+            case 'P':
+                scan_mode = SCAN_MODE_PPI;
                 break;
-            case 'o':
-                output_file = TRUE;
+            case 'R':
+                scan_mode = SCAN_MODE_RHI;
                 break;
-            case 'e':
-                scan_el = atof(optarg);
-                break;
-            case 'd':
-                debris_count[debris_types++] = atoi(optarg);
+            case 'v':
+                verb++;
                 break;
             case 'w':
-                warm_up_frames = atoi(optarg);
+                warm_up_pulses = atoi(optarg);
                 break;
-            case 'h':
-            case '?':
-                printf("%s\n\n"
-                       "%s [-v] [-c] [-g] FILE1 FILE2 ...\n\n"
-                       "    -v    increases verbosity\n"
-                       "    -c    CPU\n"
-                       "    -g    GPU\n"
-                       "    -f F  generates F frames\n"
-                       "\n",
-                       argv[0], argv[0]);
-                return EXIT_FAILURE;
             default:
-                fprintf (stderr, "Unknown option character `\\x%x'.\n", optopt);
                 break;
         }
     }
-    
     printf("%s : Session started\n", now());
     
     RSHandle *S;
@@ -148,6 +160,8 @@ int main(int argc, char *argv[]) {
     
     // Set up the parameters:
     // Only use the setter functions to change the state.
+    RS_set_lambda(S, .2f);
+    
     RS_set_antenna_params(S, 1.0f, 44.5f);
     
     RS_set_tx_params(S, 0.2e-6, 50.0e3f);
@@ -192,17 +206,17 @@ int main(int argc, char *argv[]) {
     
     // Show some basic info
     printf("%s : Emulating %s frame%s with %s scatter bodies\n",
-           now(), commaint(num_frames), num_frames>1?"s":"", commaint(S->num_scats));
+           now(), commaint(num_pulses), num_pulses>1?"s":"", commaint(S->num_scats));
 
     // Now, we are ready to bake
     int k = 0;
 
     // Some warm up if we are going for real
-    if (num_frames > 1200) {
+    if (num_pulses > 1200) {
         RS_set_prt(S, 1.0f / 60.0f);
-        for (k = 0; k < warm_up_frames; k++) {
+        for (k = 0; k < warm_up_pulses; k++) {
             if (k % 100 == 0) {
-                fprintf(stderr, "Warming up ... \033[32m%.2f%%\033[0m  \r", (float)k / warm_up_frames * 100.0f);
+                fprintf(stderr, "Warming up ... \033[32m%.2f%%\033[0m  \r", (float)k / warm_up_pulses * 100.0f);
             }
             RS_advance_time(S);
         }
@@ -246,15 +260,15 @@ int main(int argc, char *argv[]) {
     
     float dt, fps, prog, eta;
     
-    for (k = 0; k<num_frames; k++) {
+    for (k = 0; k<num_pulses; k++) {
         if (k % 100 == 0) {
             gettimeofday(&t2, NULL);
             dt = DTIME(t1, t2);
             t1 = t2;
             if (k > 100) {
-                prog =  (float)k / num_frames * 100.0f;
+                prog =  (float)k / num_pulses * 100.0f;
                 fps = 100.0f / dt;
-                eta = (float)(num_frames - k) / fps;
+                eta = (float)(num_pulses - k) / fps;
                 fprintf(stderr, "k = %d  az_deg = %.2f  el_deg = %.2f   %.2f fps  progress: \033[1;33m%.2f%%\033[0m   eta = %.0f second%s   \r", k, az_deg, el_deg, fps, prog, eta, eta > 1.5f ? "s" : "");
             } else {
                 fprintf(stderr, "k = %d  az_deg = %.2f  el_deg = %.2f             \r", k, az_deg, el_deg);
