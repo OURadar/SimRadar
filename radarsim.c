@@ -45,16 +45,19 @@ int main(int argc, char *argv[]) {
     char scan_mode = SCAN_MODE_PPI;
     char output_file = FALSE;
     int num_pulses = 5;
-    float density = 0.0f;
     float scan_el = 3.0f;
     
+    float prt = 1.0e-3f;
+
     struct timeval t0, t1, t2;
     
     gettimeofday(&t0, NULL);
     
     int debris_types = 0;
-    int debris_count[3] = {0, 0, 0};
+    int debris_count[RS_MAX_DEBRIS_TYPES];
     int warm_up_pulses = 2000;
+    
+    memset(debris_count, 0, RS_MAX_DEBRIS_TYPES * sizeof(int));
 
     static struct option long_options[] = {
         {"cpu"        , no_argument      , 0, 'c'},
@@ -62,16 +65,33 @@ int main(int argc, char *argv[]) {
         {"density"    , required_argument, 0, 'D'},
         {"gpu"        , no_argument      , 0, 'g'},
         {"frames"     , required_argument, 0, 'f'},
+        {"lambda"     , required_argument, 0, 'l'},
+        {"output"     , no_argument      , 0, 'o'},
         {"pulses"     , required_argument, 0, 'p'},
         {"ppi"        , no_argument      , 0, 'P'},
+        {"prt"        , required_argument, 0, 't'},
+        {"quiet"      , no_argument      , 0, 'q'},
         {"rhi"        , no_argument      , 0, 'R'},
         {"verbose"    , no_argument      , 0, 'v'},
-        {"warmup"     , required_argument, 0, 'w'},
+        {"warmup"     , required_argument, 0, 'W'},
         {0, 0, 0, 0}
     };
     
+    // Initialize the RS framework
+    RSHandle *S;
+    if (accel_type == ACCEL_TYPE_CPU) {
+        S = RS_init_for_cpu_verbose(verb);
+    } else {
+        S = RS_init_verbose(verb);
+    }
+    if (S == NULL) {
+        fprintf(stderr, "%s : Some errors occurred during RS_init().\n", now());
+        return EXIT_FAILURE;
+    }
+
+    // Process the input arguments and set the simulator parameters
     int opt, long_index = 0;
-    while ((opt = getopt_long(argc, argv, "cd:D:gp:f:p:PRv", long_options, &long_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "cd:D:gp:f:l:op:PRt:vW:", long_options, &long_index)) != -1) {
         switch (opt) {
             case 'c':
                 accel_type = ACCEL_TYPE_CPU;
@@ -80,13 +100,19 @@ int main(int argc, char *argv[]) {
                 debris_count[debris_types++] = atoi(optarg);
                 break;
             case 'D':
-                density = atof(optarg);
+                RS_set_density(S, atof(optarg));
                 break;
             case 'g':
                 accel_type = ACCEL_TYPE_GPU;
                 break;
             case 'f':
                 num_pulses = atoi(optarg);
+                break;
+            case 'l':
+                RS_set_lambda(S, atof(optarg));
+                break;
+            case 'o':
+                output_file = true;
                 break;
             case 'p':
                 num_pulses = atoi(optarg);
@@ -97,10 +123,13 @@ int main(int argc, char *argv[]) {
             case 'R':
                 scan_mode = SCAN_MODE_RHI;
                 break;
+            case 't':
+                prt = atof(optarg);
+                break;
             case 'v':
                 verb++;
                 break;
-            case 'w':
+            case 'W':
                 warm_up_pulses = atoi(optarg);
                 break;
             default:
@@ -109,26 +138,11 @@ int main(int argc, char *argv[]) {
     }
     printf("%s : Session started\n", now());
     
-    RSHandle *S;
     ADMHandle *A;
     LESHandle *L;
     RCSHandle *R;
 //    ARPSHandle *O;
     
-    // Initialize the RS framework
-    if (accel_type == ACCEL_TYPE_CPU) {
-        S = RS_init_for_cpu_verbose(verb);
-    } else {
-        S = RS_init_verbose(verb);
-    }
-    if (S == NULL) {
-        fprintf(stderr, "%s : Some errors occurred during RS_init().\n", now());
-        return EXIT_FAILURE;
-    }
-    
-    if (density > 0.0f) {
-        RS_set_density(S, density);
-    }
     
     // Initialize the LES ingest
     L = LES_init();
@@ -157,10 +171,6 @@ int main(int argc, char *argv[]) {
 //        fprintf(stderr, "%s : Some errors occurred during ARPS_init().\n", now());
 //        return EXIT_FAILURE;
 //    }
-    
-    // Set up the parameters:
-    // Only use the setter functions to change the state.
-    RS_set_lambda(S, .2f);
     
     RS_set_antenna_params(S, 1.0f, 44.5f);
     
@@ -223,8 +233,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Set PRT to the actual one
-    
-    RS_set_prt(S, 1.0e-3f);
+    RS_set_prt(S, prt);
 
     // ---------------------------------------------------------------------------------------------------------------
     
@@ -233,9 +242,7 @@ int main(int argc, char *argv[]) {
     // Initialize a file if the user wants an output file
     FILE *fid = NULL;
     IQFileHeader file_header;
-    IQPulseHeader pulse_header;
     memset(&file_header, 0, sizeof(IQFileHeader));
-    memset(&pulse_header, 0, sizeof(IQPulseHeader));
     
     file_header.params = S->params;
     for (k = 0; k < S->num_body_types; k++) {
@@ -260,8 +267,15 @@ int main(int argc, char *argv[]) {
     
     float dt, fps, prog, eta;
     
+    // Allocate a pulse cache
+    IQPulseHeader *pulse_headers = (IQPulseHeader *)malloc(num_pulses * sizeof(IQPulseHeader));
+    cl_float4 *pulse_cache = (cl_float4 *)malloc(num_pulses * S->params.range_count * sizeof(cl_float4));
+    memset(pulse_headers, 0, num_pulses * sizeof(IQPulseHeader));
+    memset(pulse_cache, 0, num_pulses * S->params.range_count * sizeof(cl_float4));
+
+    // Now we bake
     for (k = 0; k<num_pulses; k++) {
-        if (k % 100 == 0) {
+        if (k % 200 == 0) {
             gettimeofday(&t2, NULL);
             dt = DTIME(t1, t2);
             t1 = t2;
@@ -297,12 +311,10 @@ int main(int argc, char *argv[]) {
         
         if (output_file) {
             // Gather information for the  pulse header
-            pulse_header.time = S->sim_time;
-            pulse_header.az_deg = az_deg;
-            pulse_header.el_deg = el_deg;
-            
-            fwrite(&pulse_header, sizeof(IQPulseHeader), 1, fid);
-            fwrite(S->pulse, sizeof(cl_float4), S->params.range_count, fid);
+            pulse_headers[k].time = S->sim_time;
+            pulse_headers[k].az_deg = az_deg;
+            pulse_headers[k].el_deg = el_deg;
+            memcpy(&pulse_cache[k * S->params.range_count], S->pulse, S->params.range_count * sizeof(cl_float4));
         }
 
         // Update scan angles for the next pulse
@@ -329,9 +341,17 @@ int main(int argc, char *argv[]) {
     }
 
     if (output_file) {
+        // Flush out the cache
+        for (k = 0; k < num_pulses; k++) {
+            fwrite(&pulse_headers[k], sizeof(IQPulseHeader), 1, fid);
+            fwrite(&pulse_cache[k * S->params.range_count], sizeof(cl_float4), S->params.range_count, fid);
+        }
         printf("%s : Data file with %s bytes.\n", now(), commaint(ftell(fid)));
         fclose(fid);
     }
+    
+    free(pulse_headers);
+    free(pulse_cache);
     
     printf("%s : Session ended\n", now());
 
