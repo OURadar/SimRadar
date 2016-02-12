@@ -948,8 +948,6 @@ __kernel void make_pulse_pass_1(__global float4 *out,
         s_a *= aux[i].s3;
         s_b *= aux[j].s3;
         
-        //wa_ab = (float2)(aux[i].s3, aux[j].s3);
-
         for (k = 0; k < range_count; k++) {
             float4 dr_from_center = (float4)(r_a, r_a, r_b, r_b) - r;
             
@@ -962,8 +960,6 @@ __kernel void make_pulse_pass_1(__global float4 *out,
             float2 w2 = mix((float2)(range_weight[iidx_int.s0], range_weight[iidx_int.s2]),
                             (float2)(range_weight[iidx_int.s1], range_weight[iidx_int.s3]),
                             fidx_dec.s02);
-            
-            //w2 *= wa_ab;
             
             // Vectorized range * angular weights
             w_a = (float4)w2.s0;
@@ -1107,7 +1103,7 @@ __kernel void make_pulse_pass_2_range(__global float4 *out,
     unsigned int range_id = get_global_id(0);
     float4 tmp = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
     //	int k = 0;
-    for (unsigned int i=range_id; i<n; i+=range_count) {
+    for (unsigned int i = range_id; i < n; i += range_count) {
         //		if (range_id == 1 || range_id == 2) {
         //			printf("k=%2d  range_id=%d  i=%3d  tmp += %.2f\n", k, range_id, i, in[i].x);
         //			k++;
@@ -1131,7 +1127,7 @@ __kernel void make_pulse_pass_2_group(__global float4 *out,
     
     unsigned int i = local_id * range_count;
     
-    for (unsigned int k=0; k<range_count; k++) {
+    for (unsigned int k = 0; k < range_count; k++) {
         float4 a = in[i + k];
         float4 b = in[i + k + group_stride];
         shared[local_id] = a + b;
