@@ -503,7 +503,6 @@ void RS_derive_ndranges(RSHandle *H);
 #pragma mark -
 
 void RS_io_test(RSHandle *H);
-void RS_dummy_test(RSHandle *H);
 
 #pragma mark -
 #pragma mark Populate the Emulation Domain
