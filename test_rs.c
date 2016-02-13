@@ -146,18 +146,6 @@ int main(int argc, char **argv)
     }
 
     //
-    // RS_dummy_test()
-    //
-    if (test & TEST_DUMMY) {
-        gettimeofday(&t1, NULL);
-        for (i=0; i<N; i++)
-            RS_dummy_test(H);
-        gettimeofday(&t2, NULL);
-        dt = DTIME(t1, t2) / (float)N;
-        printf(FMT, "RS_dummy_test()", 1.0e3f * dt);
-    }
-    
-    //
 	//  RS_advance_time()
 	//
 	if (test & TEST_ADVANCE_TIME_GPU) {

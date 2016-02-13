@@ -347,39 +347,27 @@ float4 compute_rcs(float4 ori, __read_only image2d_t rcs_real, __read_only image
     //
     // derive alpha, beta & gamma of RCS for RCS table lookup --------------------------
     //
-//    float ce, se = sincos(0.5f * el - M_PI_4_F, &ce);
-//    float ca, sa = sincos(0.5f * az, &ca);
-    
-    // I know this part looks like a black box, check reference MATLAB implementation quat_ref_change.m for the raw version
-//    float4 F = (float4)(sa * ce + ca * se, -ca * ce - sa * se, ca * se + sa * ce, ca * ce - sa * se) * M_SQRT1_2_F;
-//    float4 quat_rel = quat_mult(quat_mult(F, ori), (float4)(-0.5f, 0.5f, -0.5f, 0.5f));
-
-//    float a = 0.5f * az;
-//    float e = 0.5f * el;
-//    
-//    float4 ori_rcs = (float4)(ori.x, ori.z, -ori.y, ori.w);
-//    float4 o_rcs_conj = (float4)(-cos(e - a + M_PI_4_F), cos(a + e + M_PI_4_F), -cos(a - e + M_PI_4_F), sin(a + e + M_PI_4_F)) * M_SQRT1_2_F;
-//    float4 quat_rel = quat_mult(ori_rcs, o_rcs_conj);
-
+    // I know this part looks like a black box, check reference MATLAB implementation quat_ref_change.m for the derivation
+    //
     float ce, se = sincos(0.5f * el - M_PI_4_F, &ce);
     float ca, sa = sincos(0.5f * az, &ca);
-
+    
     float4 ori_rcs = (float4)(ori.x, ori.z, -ori.y, ori.w);
-    float4 o_rcs_conj = (float4)(se, -se, -ce, ce) * ca - (float4)(ce, ce, se, se) * sa;
-    float4 quat_rel = quat_mult(ori_rcs, o_rcs_conj);
-
+    float4 o_rcs_c = ((float4)(se, -se, -ce, ce) * ca - (float4)(ce, ce, se, se) * sa) * M_SQRT1_2_F;
+    float4 quat_rel = quat_mult(ori_rcs, o_rcs_c);
+    
     // 3-2-3 conversion:
     float alpha = atan2(quat_rel.y * quat_rel.z + quat_rel.w * quat_rel.x , quat_rel.w * quat_rel.y - quat_rel.x * quat_rel.z);
     float beta  =  acos(quat_rel.w * quat_rel.w + quat_rel.z * quat_rel.z - quat_rel.y * quat_rel.y - quat_rel.x * quat_rel.x);
     float gamma = atan2(quat_rel.y * quat_rel.z - quat_rel.w * quat_rel.x , quat_rel.x * quat_rel.z + quat_rel.w * quat_rel.y);
 
-//    if (get_global_id(0) == 0) {
-//        printf("ori = [ %.3f %.3f %.3f %.3f ]   BLC = [ %.4f %.4f %.4f %.4f ]  ==> abg = [ %.4f %.4f %.4f ]\n",
-//               ori.x, ori.y, ori.z, ori.w,
-//               quat_rel.x, quat_rel.y, quat_rel.z, quat_rel.w,
-//               degrees(alpha), degrees(beta), degrees(gamma));
-//    }
-    
+    //    if (i == 0) {
+    //        printf("angles = [ %5.1v4f ]   quat_rel = [ %7.4v4f ]  ->  abg = [ %8.4f %8.4f %8.4f ]  a+g = %9.6f  l = %9.6f\n",
+    //               degrees(angles), quat_rel,
+    //               degrees(alpha), degrees(beta), degrees(gamma),
+    //               degrees(alpha + gamma), length(o_rcs_conj));
+    //    }
+
     // RCS values are stored as real(hh, vv, hv, __) + imag(hh, vv, hv, __)
     float2 rcs_coord = fma((float2)(alpha, beta), rcs_desc.s01, rcs_desc.s45);
     float4 real = read_imagef(rcs_real, sampler, rcs_coord);
@@ -452,35 +440,26 @@ __kernel void dummy(__global float4 *o,
 //    }
     
     float4 u = (float4)( 0.5f, -0.5f , -0.5f,  0.5f );
-    float4 y = (float4)( 0.0f, sin(angles.s0),  0.0f, cos(angles.s0));
+    float4 ra = (float4)( 0.0f, -sin(0.5f * angles.s0), 0.0f, cos(0.5f * angles.s0));
+    float4 rb = (float4)( 0.0f, 0.0f, sin(0.5f * angles.s1),  cos(0.5f * angles.s1));
+    float4 rc = (float4)( 0.0f, -sin(0.5f * angles.s2), 0.0f, cos(0.5f * angles.s2));
     
     // Change the orientation
-    ori = quat_mult(y, u);
+    ori = quat_mult(quat_mult(quat_mult(ra, rb), rc), u);
 
     const float el = atan2(sim_desc.s2, length(sim_desc.s01));
     const float az = atan2(sim_desc.s0, sim_desc.s1);
+
     //
     // derive alpha, beta & gamma of RCS for RCS table lookup --------------------------
     //
-    //    float ce, se = sincos(0.5f * el - M_PI_4_F, &ce);
-    //    float ca, sa = sincos(0.5f * az, &ca);
-    
-    // I know this part looks like a black box, check reference MATLAB implementation quat_ref_change.m for the raw version
-    //    float4 F = (float4)(sa * ce + ca * se, -ca * ce - sa * se, ca * se + sa * ce, ca * ce - sa * se) * M_SQRT1_2_F;
-    //    float4 quat_rel = quat_mult(quat_mult(F, ori), (float4)(-0.5f, 0.5f, -0.5f, 0.5f));
-    
-    //    float a = 0.5f * az;
-    //    float e = 0.5f * el;
+    // I know this part looks like a black box, check reference MATLAB implementation quat_ref_change.m for the derivation
     //
-    //    float4 ori_rcs = (float4)(ori.x, ori.z, -ori.y, ori.w);
-    //    float4 o_rcs_conj = (float4)(-cos(e - a + M_PI_4_F), cos(a + e + M_PI_4_F), -cos(a - e + M_PI_4_F), sin(a + e + M_PI_4_F)) * M_SQRT1_2_F;
-    //    float4 quat_rel = quat_mult(ori_rcs, o_rcs_conj);
-    
     float ce, se = sincos(0.5f * el - M_PI_4_F, &ce);
     float ca, sa = sincos(0.5f * az, &ca);
     
     float4 ori_rcs = (float4)(ori.x, ori.z, -ori.y, ori.w);
-    float4 o_rcs_conj = (float4)(se, -se, -ce, ce) * ca - (float4)(ce, ce, se, se) * sa;
+    float4 o_rcs_conj = ((float4)(se, -se, -ce, ce) * ca - (float4)(ce, ce, se, se) * sa) * M_SQRT1_2_F;
     float4 quat_rel = quat_mult(ori_rcs, o_rcs_conj);
     
     // 3-2-3 conversion:
@@ -488,12 +467,14 @@ __kernel void dummy(__global float4 *o,
     float beta  =  acos(quat_rel.w * quat_rel.w + quat_rel.z * quat_rel.z - quat_rel.y * quat_rel.y - quat_rel.x * quat_rel.x);
     float gamma = atan2(quat_rel.y * quat_rel.z - quat_rel.w * quat_rel.x , quat_rel.x * quat_rel.z + quat_rel.w * quat_rel.y);
     
-    if (i == 0) {
-        printf("ori = [ %.3f %.3f %.3f %.3f ]   BLC = [ %.4f %.4f %.4f %.4f ]  ==> abg = [ %.4f %.4f %.4f ]\n",
-               ori.x, ori.y, ori.z, ori.w,
-               quat_rel.x, quat_rel.y, quat_rel.z, quat_rel.w,
-               degrees(alpha), degrees(beta), degrees(gamma));
-    }
+//    if (i == 0) {
+//        printf("angles = [ %5.1v4f ]   quat_rel = [ %7.4v4f ]  ->  abg = [ %8.4f %8.4f %8.4f ]  a+g = %9.6f  l = %9.6f\n",
+//               degrees(angles), quat_rel,
+//               degrees(alpha), degrees(beta), degrees(gamma),
+//               degrees(alpha + gamma), length(o_rcs_conj));
+//    }
+    
+    o[i] = ori;
 }
 
 //
