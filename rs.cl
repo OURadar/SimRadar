@@ -342,6 +342,7 @@ float4 compute_dudt_dwdt(float4 *dwdt,
 float4 compute_rcs(float4 ori, __read_only image2d_t rcs_real, __read_only image2d_t rcs_imag, const float16 rcs_desc, const float16 sim_desc) {
     const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
 
+    // These should be the particle's AZ & EL.
     const float el = atan2(sim_desc.s2, length(sim_desc.s01));
     const float az = atan2(sim_desc.s0, sim_desc.s1);
     //
