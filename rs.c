@@ -3286,45 +3286,6 @@ void RS_io_test(RSHandle *H) {
 }
 
 
-void RS_dummy_test(RSHandle *H) {
-    
-    int i;
-    
-#if defined (__APPLE__) && defined (_SHARE_OBJ_)
-    
-    for (i = 0; i < H->num_workers; i++) {
-        dispatch_async(H->worker[i].que, ^{
-            dummy_kernel(&H->worker[i].ndrange_scat[0],
-                         (cl_float4 *)H->worker[i].scat_pos);
-            dispatch_semaphore_signal(H->worker[i].sem);
-        });
-    }
-    
-    for (i = 0; i < H->num_workers; i++) {
-        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
-    }
-    
-#else
-    
-    //	cl_event events[RS_MAX_GPU_DEVICE];
-    
-    for (i = 0; i < H->num_workers; i++) {
-        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_dummy, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, NULL);
-    }
-    
-    for (i = 0; i < H->num_workers; i++) {
-        clFlush(H->worker[i].que);
-    }
-    
-    for (i = 0; i < H->num_workers; i++) {
-        clFinish(H->worker[i].que);
-    }
-    
-#endif
-
-}
-
-
 void RS_populate(RSHandle *H) {
 	if (H->num_scats > RS_MAX_NUM_SCATS) {
 		rsprint("Exceed the maximum allowed. (%ld > %d).\n", (unsigned long)H->num_scats, RS_MAX_NUM_SCATS);
@@ -3808,6 +3769,15 @@ void RS_advance_time(RSHandle *H) {
 //                       (cl_image)H->worker[i].rcs_imag[r],
 //                       H->worker[i].rcs_desc[r],
 //                       H->sim_desc);
+//        dispatch_semaphore_signal(H->worker[i].sem);
+//    });
+//    dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+
+//    i = 0;
+//    dispatch_async(H->worker[i].que, ^{
+//        dummy_kernel(&H->worker[i].ndrange_scat_all,
+//                     (cl_float4 *)H->worker[i].scat_ori,
+//                     H->sim_desc);
 //        dispatch_semaphore_signal(H->worker[i].sem);
 //    });
 //    dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
