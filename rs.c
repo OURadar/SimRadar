@@ -3773,6 +3773,7 @@ void RS_advance_time(RSHandle *H) {
     i = 0;
     dispatch_async(H->worker[i].que, ^{
         dummy_kernel(&H->worker[i].ndrange_scat_all,
+                     (cl_float4 *)H->worker[i].scat_pos,
                      (cl_float4 *)H->worker[i].scat_ori,
                      H->sim_desc);
         dispatch_semaphore_signal(H->worker[i].sem);

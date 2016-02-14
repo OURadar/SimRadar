@@ -342,20 +342,33 @@ float4 compute_dudt_dwdt(float4 *dwdt,
 float4 compute_rcs(float4 ori, __read_only image2d_t rcs_real, __read_only image2d_t rcs_imag, const float16 rcs_desc, const float16 sim_desc) {
     const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
 
-    // These should be the particle's AZ & EL.
-    const float el = atan2(sim_desc.s2, length(sim_desc.s01));
-    const float az = atan2(sim_desc.s0, sim_desc.s1);
+    const float el = atan2(pos.s2, length(pos.s01));
+    const float az = atan2(pos.s0, pos.s1);
+    
+    //    const float el = 0.0f;
+    //    const float az = 0.0f;
+    
     //
     // derive alpha, beta & gamma of RCS for RCS table lookup --------------------------
     //
     // I know this part looks like a black box, check reference MATLAB implementation quat_ref_change.m for the derivation
     //
-    float ce, se = sincos(0.5f * el - M_PI_4_F, &ce);
+    float ce, se = sincos(0.5f * el + M_PI_4_F, &ce);
     float ca, sa = sincos(0.5f * az, &ca);
     
-    float4 ori_rcs = (float4)(ori.x, ori.z, -ori.y, ori.w);
-    float4 o_rcs_c = ((float4)(se, -se, -ce, ce) * ca - (float4)(ce, ce, se, se) * sa) * M_SQRT1_2_F;
-    float4 quat_rel = quat_mult(ori_rcs, o_rcs_c);
+    // O.' =
+    //
+    //  - (2^(1/2)*cos(a/2)*sin(e/2 + pi/4))/2 + (2^(1/2)*sin(a/2)*cos(e/2 + pi/4))/2
+    //    (2^(1/2)*cos(a/2)*cos(e/2 + pi/4))/2 + (2^(1/2)*sin(a/2)*sin(e/2 + pi/4))/2
+    //    (2^(1/2)*cos(a/2)*sin(e/2 + pi/4))/2 + (2^(1/2)*sin(a/2)*cos(e/2 + pi/4))/2
+    //    (2^(1/2)*cos(a/2)*cos(e/2 + pi/4))/2 - (2^(1/2)*sin(a/2)*sin(e/2 + pi/4))/2
+    float4 o_conj = ((float4)(-se, ce, se, ce) * ca + (float4)(ce, se, ce, -se) * sa) * M_SQRT1_2_F;
+    
+    // Relative rotation from the identity
+    float4 R = quat_mult(ori, o_conj);
+    
+    // Axis shuffle for reference frame permutation (ADM -> RCS)
+    float4 quat_rel = (float4)(R.x, R.z, -R.y, R.w);
     
     // 3-2-3 conversion:
     float alpha = atan2(quat_rel.y * quat_rel.z + quat_rel.w * quat_rel.x , quat_rel.w * quat_rel.y - quat_rel.x * quat_rel.z);
@@ -398,7 +411,7 @@ float4 compute_rcs(float4 ori, __read_only image2d_t rcs_real, __read_only image
     //float vh_real = cg * (real.s2 * cg + real.s0 * sg) - sg * (real.s1 * cg + real.s2 * sg);
     //float vh_imag = cg * (imag.s2 * cg + imag.s0 * sg) - sg * (imag.s1 * cg + imag.s2 * sg);
     
-    float vv_real = cg * (real.s1 * cg + real.s2 * sg) + sg * (real.s2 * cg + real.s1 * sg);
+    float vv_real = cg * (real.s1 * cg + real.s2 * sg) + sg * (real.s2 * cg + real.s0 * sg);
     float vv_imag = cg * (imag.s1 * cg + imag.s2 * sg) + sg * (imag.s2 * cg + imag.s0 * sg);
     
     // Assign signal amplitude as Hi, Hq, Vi, Vq
@@ -425,11 +438,13 @@ __kernel void io(__global float4 *i,
     o[k] = i[k];
 }
 
-__kernel void dummy(__global float4 *o,
+__kernel void dummy(__global float4 *p,
+                    __global float4 *o,
                     const float16 sim_desc)
 {
     unsigned int i = get_global_id(0);
     
+    float4 pos = p[i];
     float4 ori = o[i];
     
     float t = sim_desc.s7 / 100.0f;
@@ -448,31 +463,49 @@ __kernel void dummy(__global float4 *o,
     // Change the orientation
     ori = quat_mult(quat_mult(quat_mult(ra, rb), rc), u);
 
-    const float el = atan2(sim_desc.s2, length(sim_desc.s01));
-    const float az = atan2(sim_desc.s0, sim_desc.s1);
+//    const float el = atan2(sim_desc.s2, length(sim_desc.s01));
+//    const float az = atan2(sim_desc.s0, sim_desc.s1);
+
+    const float el = atan2(pos.s2, length(pos.s01));
+    const float az = atan2(pos.s0, pos.s1);
+
+//    const float el = 0.0f;
+//    const float az = 0.0f;
 
     //
     // derive alpha, beta & gamma of RCS for RCS table lookup --------------------------
     //
     // I know this part looks like a black box, check reference MATLAB implementation quat_ref_change.m for the derivation
     //
-    float ce, se = sincos(0.5f * el - M_PI_4_F, &ce);
+    float ce, se = sincos(0.5f * el + M_PI_4_F, &ce);
     float ca, sa = sincos(0.5f * az, &ca);
     
-    float4 ori_rcs = (float4)(ori.x, ori.z, -ori.y, ori.w);
-    float4 o_rcs_conj = ((float4)(se, -se, -ce, ce) * ca - (float4)(ce, ce, se, se) * sa) * M_SQRT1_2_F;
-    float4 quat_rel = quat_mult(ori_rcs, o_rcs_conj);
+    // O.' =
+    //
+    //  - (2^(1/2)*cos(a/2)*sin(e/2 + pi/4))/2 + (2^(1/2)*sin(a/2)*cos(e/2 + pi/4))/2
+    //    (2^(1/2)*cos(a/2)*cos(e/2 + pi/4))/2 + (2^(1/2)*sin(a/2)*sin(e/2 + pi/4))/2
+    //    (2^(1/2)*cos(a/2)*sin(e/2 + pi/4))/2 + (2^(1/2)*sin(a/2)*cos(e/2 + pi/4))/2
+    //    (2^(1/2)*cos(a/2)*cos(e/2 + pi/4))/2 - (2^(1/2)*sin(a/2)*sin(e/2 + pi/4))/2
+    float4 o_conj = ((float4)(-se, ce, se, ce) * ca + (float4)(ce, se, ce, -se) * sa) * M_SQRT1_2_F;
+
+    // Relative rotation from the identity
+    float4 R = quat_mult(ori, o_conj);
     
+    // Axis shuffle for reference frame permutation (ADM -> RCS)
+    float4 quat_rel = (float4)(R.x, R.z, -R.y, R.w);
+
     // 3-2-3 conversion:
     float alpha = atan2(quat_rel.y * quat_rel.z + quat_rel.w * quat_rel.x , quat_rel.w * quat_rel.y - quat_rel.x * quat_rel.z);
     float beta  =  acos(quat_rel.w * quat_rel.w + quat_rel.z * quat_rel.z - quat_rel.y * quat_rel.y - quat_rel.x * quat_rel.x);
     float gamma = atan2(quat_rel.y * quat_rel.z - quat_rel.w * quat_rel.x , quat_rel.x * quat_rel.z + quat_rel.w * quat_rel.y);
     
+//    ori = quat_conj(o_conj);
+
 //    if (i == 0) {
 //        printf("angles = [ %5.1v4f ]   quat_rel = [ %7.4v4f ]  ->  abg = [ %8.4f %8.4f %8.4f ]  a+g = %9.6f  l = %9.6f\n",
 //               degrees(angles), quat_rel,
 //               degrees(alpha), degrees(beta), degrees(gamma),
-//               degrees(alpha + gamma), length(o_rcs_conj));
+//               degrees(alpha + gamma), length(o_conj));
 //    }
     
     o[i] = ori;
