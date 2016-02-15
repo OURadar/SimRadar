@@ -345,8 +345,8 @@ float4 compute_rcs(const float4 pos, const float4 ori, __read_only image2d_t rcs
     const float el = atan2(pos.s2, length(pos.s01));
     const float az = atan2(pos.s0, pos.s1);
     
-    //    const float el = 0.0f;
-    //    const float az = 0.0f;
+//    const float el = 0.0f;
+//    const float az = 0.0f;
     
     //
     // derive alpha, beta & gamma of RCS for RCS table lookup --------------------------
@@ -356,7 +356,7 @@ float4 compute_rcs(const float4 pos, const float4 ori, __read_only image2d_t rcs
     float ce, se = sincos(0.5f * el + M_PI_4_F, &ce);
     float ca, sa = sincos(0.5f * az, &ca);
     
-    // O.' =
+    // O_conj.' =
     //
     //  - (2^(1/2)*cos(a/2)*sin(e/2 + pi/4))/2 + (2^(1/2)*sin(a/2)*cos(e/2 + pi/4))/2
     //    (2^(1/2)*cos(a/2)*cos(e/2 + pi/4))/2 + (2^(1/2)*sin(a/2)*sin(e/2 + pi/4))/2
@@ -440,6 +440,10 @@ __kernel void io(__global float4 *i,
 
 __kernel void dummy(__global float4 *p,
                     __global float4 *o,
+                    __global float4 *x,
+                    __read_only image2d_t rcs_real,
+                    __read_only image2d_t rcs_imag,
+                    const float16 rcs_desc,
                     const float16 sim_desc)
 {
     unsigned int i = get_global_id(0);
@@ -447,66 +451,52 @@ __kernel void dummy(__global float4 *p,
     float4 pos = p[i];
     float4 ori = o[i];
     
-    float t = sim_desc.s7 / 100.0f;
-    float4 t4 = clamp(-(float4)(0.0f, 2.0f, 4.0f, 6.0f) + t, 0.0f, 1.0f);
-    float4 angles = t4 * M_PI_4_F;
+    float t = sim_desc.s7 * 0.01f;
+    //float4 t4 = clamp(-(float4)(0.0f, 2.0f, 4.0f, 6.0f) + t, 0.0f, 1.0f);
+    //float4 angles = t4 * M_PI_F;
+    float4 angles = M_PI_F * sin((float4)(0.0f, 2.0f, 4.0f, 6.0f) + t);
     
 //    if (i == 0) {
 //        printf("t = %.2f, t4 = %.2v4f  angles = %.2v4f\n", t, t4, angles * 180.0f / M_PI_2_F);
 //    }
-    
-    float4 u = (float4)( 0.5f, -0.5f , -0.5f,  0.5f );
-    float4 ra = (float4)( 0.0f, -sin(0.5f * angles.s0), 0.0f, cos(0.5f * angles.s0));
-    float4 rb = (float4)( 0.0f, 0.0f, sin(0.5f * angles.s1),  cos(0.5f * angles.s1));
-    float4 rc = (float4)( 0.0f, -sin(0.5f * angles.s2), 0.0f, cos(0.5f * angles.s2));
-    
-    // Change the orientation
-    ori = quat_mult(quat_mult(quat_mult(ra, rb), rc), u);
-
-//    const float el = atan2(sim_desc.s2, length(sim_desc.s01));
-//    const float az = atan2(sim_desc.s0, sim_desc.s1);
-
-    const float el = atan2(pos.s2, length(pos.s01));
-    const float az = atan2(pos.s0, pos.s1);
-
-//    const float el = 0.0f;
-//    const float az = 0.0f;
-
-    //
-    // derive alpha, beta & gamma of RCS for RCS table lookup --------------------------
-    //
-    // I know this part looks like a black box, check reference MATLAB implementation quat_ref_change.m for the derivation
-    //
-    float ce, se = sincos(0.5f * el + M_PI_4_F, &ce);
-    float ca, sa = sincos(0.5f * az, &ca);
-    
-    // O.' =
-    //
-    //  - (2^(1/2)*cos(a/2)*sin(e/2 + pi/4))/2 + (2^(1/2)*sin(a/2)*cos(e/2 + pi/4))/2
-    //    (2^(1/2)*cos(a/2)*cos(e/2 + pi/4))/2 + (2^(1/2)*sin(a/2)*sin(e/2 + pi/4))/2
-    //    (2^(1/2)*cos(a/2)*sin(e/2 + pi/4))/2 + (2^(1/2)*sin(a/2)*cos(e/2 + pi/4))/2
-    //    (2^(1/2)*cos(a/2)*cos(e/2 + pi/4))/2 - (2^(1/2)*sin(a/2)*sin(e/2 + pi/4))/2
-    float4 o_conj = ((float4)(-se, ce, se, ce) * ca + (float4)(ce, se, ce, -se) * sa) * M_SQRT1_2_F;
-
-    // Relative rotation from the identity
-    float4 R = quat_mult(ori, o_conj);
-    
-    // Axis shuffle for reference frame permutation (ADM -> RCS)
-    float4 quat_rel = (float4)(R.x, R.z, -R.y, R.w);
-
-    // 3-2-3 conversion:
-    float alpha = atan2(quat_rel.y * quat_rel.z + quat_rel.w * quat_rel.x , quat_rel.w * quat_rel.y - quat_rel.x * quat_rel.z);
-    float beta  =  acos(quat_rel.w * quat_rel.w + quat_rel.z * quat_rel.z - quat_rel.y * quat_rel.y - quat_rel.x * quat_rel.x);
-    float gamma = atan2(quat_rel.y * quat_rel.z - quat_rel.w * quat_rel.x , quat_rel.x * quat_rel.z + quat_rel.w * quat_rel.y);
-    
+//    const float el = atan2(pos.s2, length(pos.s01));
+//    const float az = atan2(pos.s0, pos.s1);
+//    
+//    //    const float el = 0.0f;
+//    //    const float az = 0.0f;
+//    
+//    //
+//    // derive alpha, beta & gamma of RCS for RCS table lookup --------------------------
+//    //
+//    // I know this part looks like a black box, check reference MATLAB implementation quat_ref_change.m for the derivation
+//    //
+//    float ce, se = sincos(0.5f * el + M_PI_4_F, &ce);
+//    float ca, sa = sincos(0.5f * az, &ca);
+//    
+//    // O_conj.' =
+//    //
+//    //  - (2^(1/2)*cos(a/2)*sin(e/2 + pi/4))/2 + (2^(1/2)*sin(a/2)*cos(e/2 + pi/4))/2
+//    //    (2^(1/2)*cos(a/2)*cos(e/2 + pi/4))/2 + (2^(1/2)*sin(a/2)*sin(e/2 + pi/4))/2
+//    //    (2^(1/2)*cos(a/2)*sin(e/2 + pi/4))/2 + (2^(1/2)*sin(a/2)*cos(e/2 + pi/4))/2
+//    //    (2^(1/2)*cos(a/2)*cos(e/2 + pi/4))/2 - (2^(1/2)*sin(a/2)*sin(e/2 + pi/4))/2
+//    float4 o_conj = ((float4)(-se, ce, se, ce) * ca + (float4)(ce, se, ce, -se) * sa) * M_SQRT1_2_F;
+//
 //    ori = quat_conj(o_conj);
 
-//    if (i == 0) {
-//        printf("angles = [ %5.1v4f ]   quat_rel = [ %7.4v4f ]  ->  abg = [ %8.4f %8.4f %8.4f ]  a+g = %9.6f  l = %9.6f\n",
-//               degrees(angles), quat_rel,
-//               degrees(alpha), degrees(beta), degrees(gamma),
-//               degrees(alpha + gamma), length(o_conj));
-//    }
+
+    float4 u = (float4)( 0.5f, -0.5f , -0.5f,  0.5f );
+    float4 rr = (float4)( 0.0f, 0.0f, sin(0.5f * angles.s0),  cos(0.5f * angles.s0));
+    
+    //float4 ra = (float4)( 0.0f, -sin(0.5f * angles.s0), 0.0f, cos(0.5f * angles.s0));
+    //float4 rb = (float4)( 0.0f, 0.0f, sin(0.5f * angles.s1),  cos(0.5f * angles.s1));
+    //float4 rc = (float4)( 0.0f, -sin(0.5f * angles.s2), 0.0f, cos(0.5f * angles.s2));
+    
+    // Change the orientation
+    //ori = quat_mult(quat_mult(quat_mult(ra, rb), rc), u);
+    //ori = quat_mult(quat_mult(quat_mult(ra, rb), rc), ori);
+    ori = quat_mult(rr, u);
+
+    x[i] = compute_rcs(pos, ori, rcs_real, rcs_imag, rcs_desc, sim_desc);
     
     o[i] = ori;
 }
@@ -803,7 +793,7 @@ __kernel void scat_rcs(__global float4 *x,
     float vv = 1.0048f + dot((float4)(5.7e-4f, -2.628e-2f, 3.682e-3f, -1.667e-4f), DD);
     
     // H is 1.0 while V is the attenuated version as a function of aspect ratio
-    x[i] = (float4)(1.0f, 0.0f, vv, 0.0f);
+    x[i] = (float4)(1.0f, 0.0f, vv, 0.0f) * pos.w;
 }
 
 
@@ -822,14 +812,19 @@ __kernel void scat_clr(__global float4 *c,
     
     float m = 0.0f;
     float4 aux = a[i];
+    float4 rcs = x[i];
     
     if (draw_mode == 0) {
+        // DSD bin index
         m = clamp(aux.s2, 0.0f, 1.0f);
     } else if (draw_mode == 1) {
+        // Angular weight (antenna pattern)
         m = aux.s3;
     } else if (draw_mode == 2) {
+        // Angular weight in log scale
         m = clamp(fma(log10(100.0f * aux.s3), 0.1f, 0.8f), 0.0f, 1.0f);
-    } else {
+    } else if (draw_mode == 3) {
+        // Range weight
         m = clamp((aux.s0 - 2000.0f) * 0.0005f, 0.0f, 1.0f);
         
         float dr = 60.0f;
@@ -844,8 +839,11 @@ __kernel void scat_clr(__global float4 *c,
         float2 fidx_int, fidx_dec = fract(fidx_raw, &fidx_int);                             // The integer and decimal fraction
         uint2 iidx_int = convert_uint2(fidx_int);
         
-        // Range weight
+        // Actual range weight
         m = mix(range_weight[iidx_int.s0], range_weight[iidx_int.s1], fidx_dec.s0);
+    } else {
+        // Magnitude of HH
+        m = length(rcs.s01) * 100.0f;
     }
     
     c[i].x = m;

@@ -1285,10 +1285,10 @@ void RS_init_scat_pos(RSHandle *H) {
 //        H->scat_ori[i].w =  0.707106781186548f;        // w of quaternion
 
         // Facing the beam
-//        H->scat_ori[i].x =  0.5f;                      // x of quaternion
-//        H->scat_ori[i].y = -0.5f;                      // y of quaternion
-//        H->scat_ori[i].z = -0.5f;                      // z of quaternion
-//        H->scat_ori[i].w =  0.5f;                      // w of quaternion
+        H->scat_ori[i].x =  0.5f;                      // x of quaternion
+        H->scat_ori[i].y = -0.5f;                      // y of quaternion
+        H->scat_ori[i].z = -0.5f;                      // z of quaternion
+        H->scat_ori[i].w =  0.5f;                      // w of quaternion
         
         // Some other tests
 //        H->scat_ori[i].x =  0.5f;                      // x of quaternion
@@ -1310,9 +1310,9 @@ void RS_init_scat_pos(RSHandle *H) {
         H->scat_tum[i].w = 1.0f;                       // w of quaternion
 
         // Initial return from each point
-        H->scat_rcs[i].s0 = 1.0f;                      // sh_real of rcs
+        H->scat_rcs[i].s0 = 0.0f;                      // sh_real of rcs
 		H->scat_rcs[i].s1 = 0.0f;                      // sh_imag of rcs
-		H->scat_rcs[i].s2 = 1.0f;                      // sv_real of rcs
+		H->scat_rcs[i].s2 = 0.0f;                      // sv_real of rcs
 		H->scat_rcs[i].s3 = 0.0f;                      // sv_imag of rcs
         
         // Random seeds
@@ -3137,7 +3137,7 @@ void RS_update_colors(RSHandle *H) {
                                     H->sim_desc);
             }
             // Set individual color based on draw mode
-            scat_clr_kernel(&H->worker[i].ndrange_scat[0],
+            scat_clr_kernel(&H->worker[i].ndrange_scat_all,
                             (cl_float4 *)H->worker[i].scat_clr,
                             (cl_float4 *)H->worker[i].scat_pos,
                             (cl_float4 *)H->worker[i].scat_aux,
@@ -3402,13 +3402,6 @@ void RS_populate(RSHandle *H) {
         printf("%s : RS : CL domain synchronized.\n", now());
     }
     
-    if (H->dsd_name != RSDropSizeDistributionUndefined) {
-        RS_rcs_from_dsd(H);
-        if (H->verb) {
-            printf("%s : RS : Drop-size derived RCS computed.\n", now());
-        }
-    }
-    
 	H->status |= RSStatusDomainPopulated | RSStatusScattererSignalsNeedsUpdate;
 
 	return;
@@ -3621,7 +3614,13 @@ void RS_upload(RSHandle *H) {
 	}
 
 #endif
-	
+
+    if (H->dsd_name != RSDropSizeDistributionUndefined) {
+        RS_rcs_from_dsd(H);
+        if (H->verb) {
+            printf("%s : RS : Drop-size derived RCS computed.\n", now());
+        }
+    }
 }
 
 
@@ -3687,66 +3686,67 @@ void RS_advance_time(RSHandle *H) {
         }
     }
 
-//    // These kernels are actually independent and, thus, can be parallelized.
-//    for (i = 0; i < H->num_workers; i++) {
-//        dispatch_async(H->worker[i].que, ^{
-//            if (H->sim_concept & RSSimulationConceptDraggedBackground) {
-//                el_atts_kernel(&H->worker[i].ndrange_scat[0],
-//                               (cl_float4 *)H->worker[i].scat_pos,
-//                               (cl_float4 *)H->worker[i].scat_vel,
-//                               (cl_uint4 *)H->worker[i].scat_rnd,
-//                               (cl_image)H->worker[i].vel[v],
-//                               H->worker[i].vel_desc,
-//                               H->sim_desc);
-//            } else {
-//                bg_atts_kernel(&H->worker[i].ndrange_scat[0],
-//                               (cl_float4 *)H->worker[i].scat_pos,
-//                               (cl_float4 *)H->worker[i].scat_vel,
-//                               (cl_uint4 *)H->worker[i].scat_rnd,
-//                               (cl_image)H->worker[i].vel[v],
-//                               H->worker[i].vel_desc,
-//                               H->sim_desc);
-//            }
-//            dispatch_semaphore_signal(H->worker[i].sem);
-//		});
-//
-//        r = 0;
-//        a = 0;
-//        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
-//            if (H->worker[i].debris_population[k]) {
-//                dispatch_async(H->worker[i].que, ^{
-//                    db_atts_kernel(&H->worker[i].ndrange_scat[k],
-//                                   (cl_float4 *)H->worker[i].scat_pos,
-//                                   (cl_float4 *)H->worker[i].scat_ori,
-//                                   (cl_float4 *)H->worker[i].scat_vel,
-//                                   (cl_float4 *)H->worker[i].scat_tum,
-//                                   (cl_float4 *)H->worker[i].scat_sig,
-//                                   (cl_uint4 *)H->worker[i].scat_rnd,
-//                                   (cl_image)H->worker[i].vel[v],
-//                                   H->worker[i].vel_desc,
-//                                   (cl_image)H->worker[i].adm_cd[a],
-//                                   (cl_image)H->worker[i].adm_cm[a],
-//                                   H->worker[i].adm_desc[a],
-//                                   (cl_image)H->worker[i].rcs_real[r],
-//                                   (cl_image)H->worker[i].rcs_imag[r],
-//                                   H->worker[i].rcs_desc[r],
-//                                   H->sim_desc);
-//                    dispatch_semaphore_signal(H->worker[i].sem);
-//                });
-//            }
-//            r = r == H->rcs_count - 1 ? 0 : r + 1;
-//            a = a == H->adm_count - 1 ? 0 : a + 1;
-//        }
-//	}
-//	
-//	for (i = 0; i < H->num_workers; i++) {
-//		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
-//        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
-//            if (H->worker[i].debris_population[k]) {
-//                dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
-//            }
-//        }
-//    }
+    // These kernels are actually independent and, thus, can be parallelized.
+    for (i = 0; i < H->num_workers; i++) {
+        dispatch_async(H->worker[i].que, ^{
+            if (H->sim_concept & RSSimulationConceptDraggedBackground) {
+                el_atts_kernel(&H->worker[i].ndrange_scat[0],
+                               (cl_float4 *)H->worker[i].scat_pos,
+                               (cl_float4 *)H->worker[i].scat_vel,
+                               (cl_uint4 *)H->worker[i].scat_rnd,
+                               (cl_image)H->worker[i].vel[v],
+                               H->worker[i].vel_desc,
+                               H->sim_desc);
+            } else {
+                bg_atts_kernel(&H->worker[i].ndrange_scat[0],
+                               (cl_float4 *)H->worker[i].scat_pos,
+                               (cl_float4 *)H->worker[i].scat_vel,
+                               (cl_uint4 *)H->worker[i].scat_rnd,
+                               (cl_image)H->worker[i].vel[v],
+                               H->worker[i].vel_desc,
+                               H->sim_desc);
+            }
+            dispatch_semaphore_signal(H->worker[i].sem);
+		});
+
+        r = 0;
+        a = 0;
+        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
+            if (H->worker[i].debris_population[k]) {
+                dispatch_async(H->worker[i].que, ^{
+                    db_atts_kernel(&H->worker[i].ndrange_scat[k],
+                                   (cl_float4 *)H->worker[i].scat_pos,
+                                   (cl_float4 *)H->worker[i].scat_ori,
+                                   (cl_float4 *)H->worker[i].scat_vel,
+                                   (cl_float4 *)H->worker[i].scat_tum,
+                                   (cl_float4 *)H->worker[i].scat_rcs,
+                                   (cl_uint4 *)H->worker[i].scat_rnd,
+                                   (cl_image)H->worker[i].vel[v],
+                                   H->worker[i].vel_desc,
+                                   (cl_image)H->worker[i].adm_cd[a],
+                                   (cl_image)H->worker[i].adm_cm[a],
+                                   H->worker[i].adm_desc[a],
+                                   (cl_image)H->worker[i].rcs_real[r],
+                                   (cl_image)H->worker[i].rcs_imag[r],
+                                   H->worker[i].rcs_desc[r],
+                                   H->sim_desc);
+                    dispatch_semaphore_signal(H->worker[i].sem);
+                });
+            }
+            r = r == H->rcs_count - 1 ? 0 : r + 1;
+            a = a == H->adm_count - 1 ? 0 : a + 1;
+        }
+	}
+	
+	for (i = 0; i < H->num_workers; i++) {
+		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
+            if (H->worker[i].debris_population[k]) {
+                dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+            }
+        }
+    }
+
 
 //    i = 0;
 //    r = 0;
@@ -3772,15 +3772,21 @@ void RS_advance_time(RSHandle *H) {
 //    });
 //    dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
 
-    i = 0;
-    dispatch_async(H->worker[i].que, ^{
-        dummy_kernel(&H->worker[i].ndrange_scat_all,
-                     (cl_float4 *)H->worker[i].scat_pos,
-                     (cl_float4 *)H->worker[i].scat_ori,
-                     H->sim_desc);
-        dispatch_semaphore_signal(H->worker[i].sem);
-    });
-    dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+    
+//    i = 0;
+//    r = 0;
+//    dispatch_async(H->worker[i].que, ^{
+//        dummy_kernel(&H->worker[i].ndrange_scat[1],
+//                     (cl_float4 *)H->worker[i].scat_pos,
+//                     (cl_float4 *)H->worker[i].scat_ori,
+//                     (cl_float4 *)H->worker[i].scat_rcs,
+//                     (cl_image)H->worker[i].rcs_real[r],
+//                     (cl_image)H->worker[i].rcs_imag[r],
+//                     H->worker[i].rcs_desc[r],
+//                     H->sim_desc);
+//        dispatch_semaphore_signal(H->worker[i].sem);
+//    });
+//    dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
 
 #else
 

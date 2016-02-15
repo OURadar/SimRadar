@@ -180,7 +180,7 @@ enum RendererLineSegment {
     GLuint ifbo;
 }
 
-@property (nonatomic, copy) NSString *titleString;
+@property (nonatomic, copy) NSString *titleString, *subtitleString;
 @property (nonatomic) GLfloat resetRange;
 @property (nonatomic) GLKMatrix4 resetModelRotate;
 @property (nonatomic, retain) id<RendererDelegate> delegate;

@@ -42,7 +42,7 @@ unsigned int grayToBinary(unsigned int num)
 
 @implementation Renderer
 
-@synthesize titleString;
+@synthesize titleString, subtitleString;
 @synthesize delegate;
 @synthesize resetRange;
 @synthesize resetModelRotate;
@@ -491,7 +491,7 @@ unsigned int grayToBinary(unsigned int num)
         resource->colormap = [self loadTexture:@"colormap.png"];
         resource->colormapID = [resource->colormap name];
         resource->colormapCount = resource->colormap.height;
-        resource->colormapIndex = 3;
+        resource->colormapIndex = RENDERER_DEFAULT_BODY_COLOR_INDEX;
         glUniform1i(resource->colormapUI, 1);  // TEXTURE1 for colormap
         if (verb) {
             NSLog(@"Colormap has %d maps, each with %d colors", resource->colormap.height, resource->colormap.width);
@@ -792,7 +792,9 @@ unsigned int grayToBinary(unsigned int num)
     }
 
     // This is the renderer that uses GL instancing
-    instancedGeometryRenderer = [self createRenderResourceFromVertexShader:@"inst-geom.vsh" fragmentShader:@"inst-geom.fsh"];
+    //instancedGeometryRenderer = [self createRenderResourceFromVertexShader:@"inst-geom.vsh" fragmentShader:@"inst-geom.fsh"];
+    instancedGeometryRenderer = [self createRenderResourceFromVertexShader:@"inst-geom-t.vsh" fragmentShader:@"inst-geom.fsh"];
+    glUniform4f(instancedGeometryRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
 
     for (int k = 0; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
         debrisRenderer[k] = [self createRenderResourceFromProgram:instancedGeometryRenderer.program];
@@ -860,15 +862,15 @@ unsigned int grayToBinary(unsigned int num)
 	glVertexAttribPointer(lineRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
 	glEnableVertexAttribArray(lineRenderer.positionAI);
 	
-	// Scatter body
+	// Scatter body (spheroid)
     for (i = 0; i < clDeviceCount; i++) {
         if (bodyRenderer[i].count == 0) {
             continue;
         }
         glBindVertexArray(bodyRenderer[i].vao);
         
-        glDeleteBuffers(4, bodyRenderer[i].vbo);
-        glGenBuffers(4, bodyRenderer[i].vbo);
+        glDeleteBuffers(3, bodyRenderer[i].vbo);
+        glGenBuffers(3, bodyRenderer[i].vbo);
         
         glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer[i].vbo[0]);  // position
         glBufferData(GL_ARRAY_BUFFER, bodyRenderer[i].count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
@@ -1041,9 +1043,9 @@ unsigned int grayToBinary(unsigned int num)
         glBindVertexArray(debrisRenderer[k].vao);
         
         if (debrisRenderer[k].vbo[0]) {
-            glDeleteBuffers(4, debrisRenderer[k].vbo);
+            glDeleteBuffers(5, debrisRenderer[k].vbo);
         }
-        glGenBuffers(4, debrisRenderer[k].vbo);
+        glGenBuffers(5, debrisRenderer[k].vbo);
         
         RenderPrimitive *prim = &primitives[(k + 2) % 3];
 
@@ -1059,16 +1061,22 @@ unsigned int grayToBinary(unsigned int num)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, prim->instanceSize * sizeof(GLuint), prim->indices, GL_STATIC_DRAW);
         
         glBindBuffer(GL_ARRAY_BUFFER, debrisRenderer[k].vbo[2]);           // 3-rd VBO for translation
-        glBufferData(GL_ARRAY_BUFFER, debrisRenderer[k].count * sizeof(cl_float4), NULL, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, debrisRenderer[k].count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
         glVertexAttribPointer(debrisRenderer[k].translationAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
         glVertexAttribDivisor(debrisRenderer[k].translationAI, 1);
         glEnableVertexAttribArray(debrisRenderer[k].translationAI);
         
         glBindBuffer(GL_ARRAY_BUFFER, debrisRenderer[k].vbo[3]);           // 4-th VBO for quaternion (rotation)
-        glBufferData(GL_ARRAY_BUFFER, debrisRenderer[k].count * sizeof(cl_float4), NULL, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, debrisRenderer[k].count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
         glVertexAttribPointer(debrisRenderer[k].quaternionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
         glVertexAttribDivisor(debrisRenderer[k].quaternionAI, 1);
         glEnableVertexAttribArray(debrisRenderer[k].quaternionAI);
+
+        glBindBuffer(GL_ARRAY_BUFFER, debrisRenderer[k].vbo[4]);           // 5-th VBO for color index
+        glBufferData(GL_ARRAY_BUFFER, debrisRenderer[k].count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
+        glVertexAttribPointer(debrisRenderer[k].colorAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+        glVertexAttribDivisor(debrisRenderer[k].colorAI, 1);
+        glEnableVertexAttribArray(debrisRenderer[k].colorAI);
     }
 }
 
@@ -1185,7 +1193,8 @@ unsigned int grayToBinary(unsigned int num)
             // Update the VBOs by copy
             glBindVertexArray(debrisRenderer[k].vao);
             
-            glUniform4f(instancedGeometryRenderer.colorUI, debrisRenderer[k].colors[0], debrisRenderer[k].colors[1], debrisRenderer[k].colors[2], debrisRenderer[k].colors[3]);
+            glUniform4f(instancedGeometryRenderer.colorUI, bodyRenderer[0].colormapIndexNormalized, 1.0f, 1.0f, 1.0f);
+            //glUniform4f(instancedGeometryRenderer.colorUI, debrisRenderer[k].colors[0], debrisRenderer[k].colors[1], debrisRenderer[k].colors[2], debrisRenderer[k].colors[3]);
             
             glBindBuffer(GL_COPY_READ_BUFFER, bodyRenderer[i].vbo[0]);             // positions of simulation particles
             glBindBuffer(GL_COPY_WRITE_BUFFER, debrisRenderer[k].vbo[2]);          // translations of debris[k]
@@ -1195,6 +1204,10 @@ unsigned int grayToBinary(unsigned int num)
             glBindBuffer(GL_COPY_WRITE_BUFFER, debrisRenderer[k].vbo[3]);          // quaternions of debris[k]
             glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, debrisRenderer[k].sourceOffset * sizeof(cl_float4), 0, debrisRenderer[k].count * sizeof(cl_float4));
             
+            glBindBuffer(GL_COPY_READ_BUFFER, bodyRenderer[i].vbo[1]);             // color index
+            glBindBuffer(GL_COPY_WRITE_BUFFER, debrisRenderer[k].vbo[4]);          // color index of debris[k]
+            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, debrisRenderer[k].sourceOffset * sizeof(cl_float4), 0, debrisRenderer[k].count * sizeof(cl_float4));
+
             glDrawElementsInstanced(debrisRenderer[k].drawMode, debrisRenderer[k].instanceSize, GL_UNSIGNED_INT, NULL, debrisRenderer[k].count);
         }
     }
@@ -1222,7 +1235,7 @@ unsigned int grayToBinary(unsigned int num)
                 continue;
             }
             glBindVertexArray(debrisRenderer[k].vao);
-            glUniform4f(instancedGeometryRenderer.colorUI, debrisRenderer[k].colors[0], debrisRenderer[k].colors[1], debrisRenderer[k].colors[2], debrisRenderer[k].colors[3]);
+            //glUniform4f(instancedGeometryRenderer.colorUI, debrisRenderer[k].colors[0], debrisRenderer[k].colors[1], debrisRenderer[k].colors[2], debrisRenderer[k].colors[3]);
             glDrawElementsInstanced(GL_LINE_STRIP, debrisRenderer[k].instanceSize, GL_UNSIGNED_INT, NULL, debrisRenderer[k].count);
         }
 
@@ -1431,12 +1444,20 @@ unsigned int grayToBinary(unsigned int num)
     // Text
     snprintf(statusMessage[3], 256, "FBO %u   VFX %u  Frame %d", ifbo, applyVFX, iframe);
     
-    if (titleString)
-        [textRenderer drawText:[titleString UTF8String] origin:NSMakePoint(25.0f, height - 60.0f) scale:0.5f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
-    [textRenderer drawText:statusMessage[0] origin:NSMakePoint(25.0f, height - 90.0f) scale:0.3f];
-    [textRenderer drawText:statusMessage[1] origin:NSMakePoint(25.0f, height - 120.0f) scale:0.3f];
-    [textRenderer drawText:statusMessage[2] origin:NSMakePoint(25.0f, height - 150.0f) scale:0.3f];
-    [textRenderer drawText:statusMessage[3] origin:NSMakePoint(25.0f, height - 180.0f) scale:0.3f];
+    NSPoint origin = NSMakePoint(25.0f, height - 60.0f);
+    
+    if (titleString) {
+        [textRenderer drawText:[titleString UTF8String] origin:origin scale:0.5f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
+        origin.y -= 30.0f;
+    }
+    if (subtitleString) {
+        [textRenderer drawText:[subtitleString UTF8String] origin:origin scale:0.3f];
+        origin.y -= 30.0f;
+    }
+    [textRenderer drawText:statusMessage[0] origin:origin scale:0.3f];   origin.y -= 30.0f;
+    [textRenderer drawText:statusMessage[1] origin:origin scale:0.3f];   origin.y -= 30.0f;
+    [textRenderer drawText:statusMessage[2] origin:origin scale:0.3f];   origin.y -= 30.0f;
+    [textRenderer drawText:statusMessage[3] origin:origin scale:0.3f];   origin.y -= 30.0f;
 
 #ifndef GEN_IMG
     [textRenderer drawText:fpsString origin:NSMakePoint(width - 30.0f, 20.0f) scale:0.333f red:1.0f green:0.9f blue:0.2f alpha:1.0f align:GLTextAlignmentRight];
