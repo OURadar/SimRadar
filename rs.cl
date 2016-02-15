@@ -778,6 +778,8 @@ __kernel void scat_rcs(__global float4 *x,
 
     float4 pos = p[i];
     
+    const float epsilon_0 = 8.85418782e-12f;
+    const float2 epsilon_r = (float2)(79.669, 18.2257);
     //
     // Ratio is usually in ( semi-major : semi-minor ) = ( H : V );
     // Use (1.0, 0.0) for H and (v, 0.0) for V
@@ -787,6 +789,20 @@ __kernel void scat_rcs(__global float4 *x,
     float D = 2000.0f * pos.w;
     float4 DD = pown((float4)D, (int4)(1, 2, 3, 4));
     float vv = 1.0048f + dot((float4)(5.7e-4f, -2.628e-2f, 3.682e-3f, -1.667e-4f), DD);
+    
+    float rab = 1.0f / vv;
+    float fsq = rab * rab - 1.0f;
+    float f = sqrt(fsq);
+    float lz = (1.0f + fsq) / fsq * (1.0f - atan(f) / f);
+    float lx = (1.0f - lz) * 0.5f;
+    float vol = M_PI_F * D / 6.0f;
+//    float alx = vol * epsilon_0 * (epsilon_r - 1.0f) * (1.0f / (1.0f + lx * (epsilon_r - 1.0f)));
+//    float alz = vol * epsilon_0 * (epsilon_r - 1.0f) * (1.0f / (1.0f + lz * (epsilon_r - 1.0f)));
+
+    // beta = elevation
+    // Sc = k0^2 / (4 * pi * epsilon_0)
+    //    shh = Sc * alx;
+    //    svv = Sc * (alx * cos(beta).^2 + alz * sin(beta).^2);
     
     // H is 1.0 while V is the attenuated version as a function of aspect ratio
     x[i] = (float4)(1.0f, 0.0f, vv, 0.0f) * pos.w;
