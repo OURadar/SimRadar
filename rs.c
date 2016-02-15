@@ -3722,11 +3722,7 @@ void RS_advance_time(RSHandle *H) {
                                    (cl_float4 *)H->worker[i].scat_ori,
                                    (cl_float4 *)H->worker[i].scat_vel,
                                    (cl_float4 *)H->worker[i].scat_tum,
-<<<<<<< HEAD
-                                   (cl_float4 *)H->worker[i].scat_sig,
-=======
                                    (cl_float4 *)H->worker[i].scat_rcs,
->>>>>>> rcs
                                    (cl_uint4 *)H->worker[i].scat_rnd,
                                    (cl_image)H->worker[i].vel[v],
                                    H->worker[i].vel_desc,
@@ -3753,10 +3749,6 @@ void RS_advance_time(RSHandle *H) {
             }
         }
     }
-<<<<<<< HEAD
-=======
-
->>>>>>> rcs
 
 //    i = 0;
 //    r = 0;
@@ -3782,13 +3774,6 @@ void RS_advance_time(RSHandle *H) {
 //    });
 //    dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
 
-<<<<<<< HEAD
-//    i = 0;
-//    dispatch_async(H->worker[i].que, ^{
-//        dummy_kernel(&H->worker[i].ndrange_scat_all,
-//                     (cl_float4 *)H->worker[i].scat_ori,
-=======
-    
 //    i = 0;
 //    r = 0;
 //    dispatch_async(H->worker[i].que, ^{
@@ -3799,7 +3784,6 @@ void RS_advance_time(RSHandle *H) {
 //                     (cl_image)H->worker[i].rcs_real[r],
 //                     (cl_image)H->worker[i].rcs_imag[r],
 //                     H->worker[i].rcs_desc[r],
->>>>>>> rcs
 //                     H->sim_desc);
 //        dispatch_semaphore_signal(H->worker[i].sem);
 //    });
