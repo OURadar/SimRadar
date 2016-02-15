@@ -890,8 +890,6 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 	H->params.c = 3.0e8f;
 	H->params.body_per_cell = RS_BODY_PER_CELL;
 	H->params.domain_pad_factor = RS_DOMAIN_PAD;
-    H->params.lambda = 0.1f;
-	H->params.prt = 0.0f;
 	H->num_workers = 1;
     H->num_body_types = 1;
 	H->method = method;
@@ -995,6 +993,10 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 	H->verb = 0;
 	
     // Set up some basic parameters to default values, H->verb is still 0 so no API message output
+    RS_set_prt(H, 1.0e-3f);
+    
+    RS_set_lambda(H, 0.1f);
+    
     RS_set_antenna_params(H, 1.0f, 50.0f);
 
     RS_set_tx_params(H, 1.0e-6f, 50.0e3f);
@@ -1297,10 +1299,10 @@ void RS_init_scat_pos(RSHandle *H) {
 //        H->scat_ori[i].w =  0.5f;                      // w of quaternion
 
         // Rotate by theta
-//        float theta = 70.0f / 180.0f * M_PI_2;
+//        float theta = -70.0f / 180.0f * M_PI;
 //        H->scat_ori[i].x = 0.0f;
-//        H->scat_ori[i].y = 0.0f;
-//        H->scat_ori[i].z = sinf(0.5f * theta);
+//        H->scat_ori[i].y = sinf(0.5f * theta);
+//        H->scat_ori[i].z = 0.0f;
 //        H->scat_ori[i].w = cosf(0.5f * theta);
         
         // Tumbling vector for orientation update
@@ -1380,8 +1382,6 @@ void RS_init_scat_pos(RSHandle *H) {
     H->sim_desc.s[RSSimulationDescriptionBeamUnitX] = 0.0f;
     H->sim_desc.s[RSSimulationDescriptionBeamUnitY] = 1.0f;
     H->sim_desc.s[RSSimulationDescriptionBeamUnitZ] = 0.0f;
-    H->sim_desc.s[RSSimulationDescriptionWaveNumber] = 4.0f * M_PI / H->params.lambda;
-    H->sim_desc.s[RSSimulationDescriptionTimeIncrement] = H->params.prt;
     H->sim_desc.s[RSSimulationDescriptionTotalParticles] = H->num_scats;
     H->sim_desc.s[RSSimulationDescriptionDebrisAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTable3DDescriptionRefreshTime];
     
@@ -1414,6 +1414,9 @@ void RS_set_prt(RSHandle *H, const RSfloat prt) {
 
 void RS_set_lambda(RSHandle *H, const RSfloat lambda) {
     H->params.lambda = lambda;
+    
+    H->sim_desc.s[RSSimulationDescriptionWaveNumber] = 4.0f * M_PI / H->params.lambda;
+
     RS_update_computed_properties(H);
 }
 
