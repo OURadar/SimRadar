@@ -272,8 +272,9 @@
 	[NSThread detachNewThreadSelector:@selector(runInBackground) toTarget:self withObject:nil];
 }
 
-- (void)cycleScattererColorMode {
-    S->draw_mode.s0 = S->draw_mode.s0 >= 3 ? 0 : S->draw_mode.s0 + 1;
+- (int)cycleScattererColorMode {
+    S->draw_mode.s0 = S->draw_mode.s0 >= 4 ? 0 : S->draw_mode.s0 + 1;
+    return (int)S->draw_mode.s0;
 }
 
 #pragma mark -

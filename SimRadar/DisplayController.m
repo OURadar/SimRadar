@@ -388,10 +388,11 @@ NSWindow *standardWindow;
             break;
             
         case 'm':
-            mkey = mkey >= 5 ? 0 : mkey + 1;
+            mkey = mkey >= 8 ? 0 : mkey + 1;
             if (mkey % 2 == 0) {
                 [sim cycleScattererColorMode];
             }
+            [glView.renderer setSubtitleString:[NSString stringWithFormat:@"Draw mode %d / %d", mkey / 2, mkey % 2]];
             [glView.renderer toggleBlurSmallScatterer];
             break;
             

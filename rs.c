@@ -391,10 +391,11 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     }
     
     ret = CL_SUCCESS;
-    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentColor,     sizeof(cl_mem),   &C->scat_clr);
-    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentPosition,  sizeof(cl_mem),   &C->scat_pos);
-    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentAuxiliary, sizeof(cl_mem),   &C->scat_aux);
-    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentDrawMode,  sizeof(cl_uint4), &H->draw_mode);
+    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentColor,             sizeof(cl_mem),   &C->scat_clr);
+    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentPosition,          sizeof(cl_mem),   &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentAuxiliary,         sizeof(cl_mem),   &C->scat_aux);
+    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentRadarCrossSection, sizeof(cl_mem),   &C->scat_rcs);
+    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentDrawMode,          sizeof(cl_uint4), &H->draw_mode);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_clr().\n", now());
         exit(EXIT_FAILURE);
@@ -1284,10 +1285,10 @@ void RS_init_scat_pos(RSHandle *H) {
 //        H->scat_ori[i].w =  0.707106781186548f;        // w of quaternion
 
         // Facing the beam
-//        H->scat_ori[i].x =  0.5f;                      // x of quaternion
-//        H->scat_ori[i].y = -0.5f;                      // y of quaternion
-//        H->scat_ori[i].z = -0.5f;                      // z of quaternion
-//        H->scat_ori[i].w =  0.5f;                      // w of quaternion
+        H->scat_ori[i].x =  0.5f;                      // x of quaternion
+        H->scat_ori[i].y = -0.5f;                      // y of quaternion
+        H->scat_ori[i].z = -0.5f;                      // z of quaternion
+        H->scat_ori[i].w =  0.5f;                      // w of quaternion
         
         // Some other tests
 //        H->scat_ori[i].x =  0.5f;                      // x of quaternion
@@ -1309,9 +1310,9 @@ void RS_init_scat_pos(RSHandle *H) {
         H->scat_tum[i].w = 1.0f;                       // w of quaternion
 
         // Initial return from each point
-        H->scat_rcs[i].s0 = 1.0f;                      // sh_real of rcs
+        H->scat_rcs[i].s0 = 0.0f;                      // sh_real of rcs
 		H->scat_rcs[i].s1 = 0.0f;                      // sh_imag of rcs
-		H->scat_rcs[i].s2 = 1.0f;                      // sv_real of rcs
+		H->scat_rcs[i].s2 = 0.0f;                      // sv_real of rcs
 		H->scat_rcs[i].s3 = 0.0f;                      // sv_imag of rcs
         
         // Random seeds
@@ -3139,10 +3140,11 @@ void RS_update_colors(RSHandle *H) {
                                     H->sim_desc);
             }
             // Set individual color based on draw mode
-            scat_clr_kernel(&H->worker[i].ndrange_scat[0],
+            scat_clr_kernel(&H->worker[i].ndrange_scat_all,
                             (cl_float4 *)H->worker[i].scat_clr,
                             (cl_float4 *)H->worker[i].scat_pos,
                             (cl_float4 *)H->worker[i].scat_aux,
+                            (cl_float4 *)H->worker[i].scat_rcs,
                             H->draw_mode);
             dispatch_semaphore_signal(H->worker[i].sem);
         });
@@ -3403,13 +3405,6 @@ void RS_populate(RSHandle *H) {
         printf("%s : RS : CL domain synchronized.\n", now());
     }
     
-    if (H->dsd_name != RSDropSizeDistributionUndefined) {
-        RS_rcs_from_dsd(H);
-        if (H->verb) {
-            printf("%s : RS : Drop-size derived RCS computed.\n", now());
-        }
-    }
-    
 	H->status |= RSStatusDomainPopulated | RSStatusScattererSignalsNeedsUpdate;
 
 	return;
@@ -3622,7 +3617,13 @@ void RS_upload(RSHandle *H) {
 	}
 
 #endif
-	
+
+    if (H->dsd_name != RSDropSizeDistributionUndefined) {
+        RS_rcs_from_dsd(H);
+        if (H->verb) {
+            printf("%s : RS : Drop-size derived RCS computed.\n", now());
+        }
+    }
 }
 
 
@@ -3721,7 +3722,11 @@ void RS_advance_time(RSHandle *H) {
                                    (cl_float4 *)H->worker[i].scat_ori,
                                    (cl_float4 *)H->worker[i].scat_vel,
                                    (cl_float4 *)H->worker[i].scat_tum,
+<<<<<<< HEAD
                                    (cl_float4 *)H->worker[i].scat_sig,
+=======
+                                   (cl_float4 *)H->worker[i].scat_rcs,
+>>>>>>> rcs
                                    (cl_uint4 *)H->worker[i].scat_rnd,
                                    (cl_image)H->worker[i].vel[v],
                                    H->worker[i].vel_desc,
@@ -3748,6 +3753,10 @@ void RS_advance_time(RSHandle *H) {
             }
         }
     }
+<<<<<<< HEAD
+=======
+
+>>>>>>> rcs
 
 //    i = 0;
 //    r = 0;
@@ -3773,10 +3782,24 @@ void RS_advance_time(RSHandle *H) {
 //    });
 //    dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
 
+<<<<<<< HEAD
 //    i = 0;
 //    dispatch_async(H->worker[i].que, ^{
 //        dummy_kernel(&H->worker[i].ndrange_scat_all,
 //                     (cl_float4 *)H->worker[i].scat_ori,
+=======
+    
+//    i = 0;
+//    r = 0;
+//    dispatch_async(H->worker[i].que, ^{
+//        dummy_kernel(&H->worker[i].ndrange_scat[1],
+//                     (cl_float4 *)H->worker[i].scat_pos,
+//                     (cl_float4 *)H->worker[i].scat_ori,
+//                     (cl_float4 *)H->worker[i].scat_rcs,
+//                     (cl_image)H->worker[i].rcs_real[r],
+//                     (cl_image)H->worker[i].rcs_imag[r],
+//                     H->worker[i].rcs_desc[r],
+>>>>>>> rcs
 //                     H->sim_desc);
 //        dispatch_semaphore_signal(H->worker[i].sem);
 //    });
