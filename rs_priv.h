@@ -48,6 +48,7 @@ enum RSScattererColorKernelArgument {
     RSScattererColorKernelArgumentColor,
     RSScattererColorKernelArgumentPosition,
     RSScattererColorKernelArgumentAuxiliary,
+    RSScattererColorKernelArgumentRadarCrossSection,
     RSScattererColorKernelArgumentDrawMode
 };
 

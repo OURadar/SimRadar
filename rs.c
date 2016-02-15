@@ -391,10 +391,11 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     }
     
     ret = CL_SUCCESS;
-    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentColor,     sizeof(cl_mem),   &C->scat_clr);
-    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentPosition,  sizeof(cl_mem),   &C->scat_pos);
-    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentAuxiliary, sizeof(cl_mem),   &C->scat_aux);
-    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentDrawMode,  sizeof(cl_uint4), &H->draw_mode);
+    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentColor,             sizeof(cl_mem),   &C->scat_clr);
+    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentPosition,          sizeof(cl_mem),   &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentAuxiliary,         sizeof(cl_mem),   &C->scat_aux);
+    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentRadarCrossSection, sizeof(cl_mem),   &C->scat_rcs);
+    ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentDrawMode,          sizeof(cl_uint4), &H->draw_mode);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_clr().\n", now());
         exit(EXIT_FAILURE);
@@ -3140,6 +3141,7 @@ void RS_update_colors(RSHandle *H) {
                             (cl_float4 *)H->worker[i].scat_clr,
                             (cl_float4 *)H->worker[i].scat_pos,
                             (cl_float4 *)H->worker[i].scat_aux,
+                            (cl_float4 *)H->worker[i].scat_rcs,
                             H->draw_mode);
             dispatch_semaphore_signal(H->worker[i].sem);
         });

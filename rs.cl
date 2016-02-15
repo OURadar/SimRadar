@@ -813,28 +813,24 @@ __kernel void scat_rcs(__global float4 *x,
 __kernel void scat_clr(__global float4 *c,
                        __global __read_only float4 *p,
                        __global __read_only float4 *a,
+                       __global __read_only float4 *x,
                        const uint4 mode)
 {
     unsigned int i = get_global_id(0);
     
     const uint draw_mode = mode.s0;
     
-    float x = 0.0f;
+    float m = 0.0f;
     float4 aux = a[i];
     
     if (draw_mode == 0) {
-        x = clamp(aux.s2, 0.0f, 1.0f);
+        m = clamp(aux.s2, 0.0f, 1.0f);
     } else if (draw_mode == 1) {
-        x = aux.s3;
+        m = aux.s3;
     } else if (draw_mode == 2) {
-        x = clamp(fma(log10(100.0f * aux.s3), 0.1f, 0.8f), 0.0f, 1.0f);
-//            if (i < 20) {
-//                printf("i=%d  w=%.4e  c=%.1f\n", i, a[i].s3, c[i].x);
-//                //printf("i=%d  d=%.1fmm  c=%.3f\n", i, p[i].w * 1000.0f, c[i].x);
-//            }
+        m = clamp(fma(log10(100.0f * aux.s3), 0.1f, 0.8f), 0.0f, 1.0f);
     } else {
-        //c[i].x = clamp(p[i].w * 500.0f, 0.0f, 1.0f);
-        x = clamp((aux.s0 - 2000.0f) * 0.0005f, 0.0f, 1.0f);
+        m = clamp((aux.s0 - 2000.0f) * 0.0005f, 0.0f, 1.0f);
         
         float dr = 60.0f;
         float4 range_weight_desc = (float4)(1.0f / dr, 1.0f, 2.0f, 0.0f);
@@ -849,10 +845,10 @@ __kernel void scat_clr(__global float4 *c,
         uint2 iidx_int = convert_uint2(fidx_int);
         
         // Range weight
-        x = mix(range_weight[iidx_int.s0], range_weight[iidx_int.s1], fidx_dec.s0);
+        m = mix(range_weight[iidx_int.s0], range_weight[iidx_int.s1], fidx_dec.s0);
     }
     
-    c[i].x = x;
+    c[i].x = m;
 }
 
 //
