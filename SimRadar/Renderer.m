@@ -48,6 +48,7 @@ unsigned int grayToBinary(unsigned int num)
 @synthesize resetModelRotate;
 @synthesize width, height;
 @synthesize beamAzimuth, beamElevation;
+@synthesize showDebrisAttributes;
 
 #pragma mark -
 #pragma mark Properties
@@ -1193,8 +1194,17 @@ unsigned int grayToBinary(unsigned int num)
             // Update the VBOs by copy
             glBindVertexArray(debrisRenderer[k].vao);
             
-            glUniform4f(instancedGeometryRenderer.colorUI, bodyRenderer[0].colormapIndexNormalized, 1.0f, 1.0f, 1.0f);
-            //glUniform4f(instancedGeometryRenderer.colorUI, debrisRenderer[k].colors[0], debrisRenderer[k].colors[1], debrisRenderer[k].colors[2], debrisRenderer[k].colors[3]);
+            if (showDebrisAttributes) {
+                glUniform1i(instancedGeometryRenderer.pingPongUI, 1);
+                glUniform4f(instancedGeometryRenderer.colorUI, bodyRenderer[0].colormapIndexNormalized, 1.0f, 1.0f, 1.0f);
+                
+                glBindBuffer(GL_COPY_READ_BUFFER, bodyRenderer[i].vbo[1]);             // color index
+                glBindBuffer(GL_COPY_WRITE_BUFFER, debrisRenderer[k].vbo[4]);          // color index of debris[k]
+                glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, debrisRenderer[k].sourceOffset * sizeof(cl_float4), 0, debrisRenderer[k].count * sizeof(cl_float4));
+            } else {
+                glUniform1i(instancedGeometryRenderer.pingPongUI, 0);
+                glUniform4f(instancedGeometryRenderer.colorUI, debrisRenderer[k].colors[0], debrisRenderer[k].colors[1], debrisRenderer[k].colors[2], debrisRenderer[k].colors[3]);
+            }
             
             glBindBuffer(GL_COPY_READ_BUFFER, bodyRenderer[i].vbo[0]);             // positions of simulation particles
             glBindBuffer(GL_COPY_WRITE_BUFFER, debrisRenderer[k].vbo[2]);          // translations of debris[k]
@@ -1204,10 +1214,6 @@ unsigned int grayToBinary(unsigned int num)
             glBindBuffer(GL_COPY_WRITE_BUFFER, debrisRenderer[k].vbo[3]);          // quaternions of debris[k]
             glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, debrisRenderer[k].sourceOffset * sizeof(cl_float4), 0, debrisRenderer[k].count * sizeof(cl_float4));
             
-            glBindBuffer(GL_COPY_READ_BUFFER, bodyRenderer[i].vbo[1]);             // color index
-            glBindBuffer(GL_COPY_WRITE_BUFFER, debrisRenderer[k].vbo[4]);          // color index of debris[k]
-            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, debrisRenderer[k].sourceOffset * sizeof(cl_float4), 0, debrisRenderer[k].count * sizeof(cl_float4));
-
             glDrawElementsInstanced(debrisRenderer[k].drawMode, debrisRenderer[k].instanceSize, GL_UNSIGNED_INT, NULL, debrisRenderer[k].count);
         }
     }

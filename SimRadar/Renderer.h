@@ -139,6 +139,7 @@ enum RendererLineSegment {
     BOOL applyVFX;
     BOOL colorbarNeedsUpdate;
     BOOL blurSmallScatterers;
+    BOOL showDebrisAttributes;
 	
 	@private
 	
@@ -186,7 +187,7 @@ enum RendererLineSegment {
 @property (nonatomic, retain) id<RendererDelegate> delegate;
 @property (nonatomic, readonly) GLsizei width, height;
 @property (nonatomic) GLfloat beamAzimuth, beamElevation;
-@property (nonatomic) BOOL debrisCountsHaveChanged;
+@property (nonatomic) BOOL showDebrisAttributes;
 
 - (id)initWithDevicePixelRatio:(GLfloat)pixelRatio;
 

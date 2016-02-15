@@ -1310,9 +1310,9 @@ void RS_init_scat_pos(RSHandle *H) {
         H->scat_tum[i].w = 1.0f;                       // w of quaternion
 
         // Initial return from each point
-        H->scat_rcs[i].s0 = 0.0f;                      // sh_real of rcs
+        H->scat_rcs[i].s0 = 1.0f;                      // sh_real of rcs
 		H->scat_rcs[i].s1 = 0.0f;                      // sh_imag of rcs
-		H->scat_rcs[i].s2 = 0.0f;                      // sv_real of rcs
+		H->scat_rcs[i].s2 = 1.0f;                      // sv_real of rcs
 		H->scat_rcs[i].s3 = 0.0f;                      // sv_imag of rcs
         
         // Random seeds

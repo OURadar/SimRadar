@@ -334,7 +334,6 @@ NSWindow *standardWindow;
                 for (int i = 0; i< sim.deviceCount; i++) {
                     [glView.renderer setPopulationTo:counts[i] forDebris:debrisId forDevice:i];
                 }
-                [glView.renderer setDebrisCountsHaveChanged:true];
             }
 			break;
             
@@ -345,7 +344,6 @@ NSWindow *standardWindow;
                 for (int i = 0; i< sim.deviceCount; i++) {
                     [glView.renderer setPopulationTo:counts[i] forDebris:debrisId forDevice:i];
                 }
-                [glView.renderer setDebrisCountsHaveChanged:true];
             }
 			break;
 			
@@ -388,12 +386,19 @@ NSWindow *standardWindow;
             break;
             
         case 'm':
-            mkey = mkey >= 8 ? 0 : mkey + 1;
+            mkey = mkey >= 9 ? 0 : mkey + 1;
             if (mkey % 2 == 0) {
-                [sim cycleScattererColorMode];
+                ret = [sim cycleScattererColorMode];
+            } else {
+                ret = mkey / 2;
             }
-            [glView.renderer setSubtitleString:[NSString stringWithFormat:@"Draw mode %d / %d", mkey / 2, mkey % 2]];
+            [glView.renderer setSubtitleString:[NSString stringWithFormat:@"Draw mode %d%d", ret, mkey % 2]];
             [glView.renderer toggleBlurSmallScatterer];
+            if (ret == 4) {
+                [glView.renderer setShowDebrisAttributes:TRUE];
+            } else {
+                [glView.renderer setShowDebrisAttributes:FALSE];
+            }
             break;
             
 		default:

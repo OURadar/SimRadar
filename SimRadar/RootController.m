@@ -219,7 +219,6 @@
     } else {
         NSLog(@"No simulation yet.");
     }
-    [dc.glView.renderer setDebrisCountsHaveChanged:true];
 }
 
 

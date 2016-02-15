@@ -811,6 +811,7 @@ __kernel void scat_clr(__global float4 *c,
     const uint draw_mode = mode.s0;
     
     float m = 0.0f;
+    float4 pos = p[i];
     float4 aux = a[i];
     float4 rcs = x[i];
     
@@ -843,7 +844,8 @@ __kernel void scat_clr(__global float4 *c,
         m = mix(range_weight[iidx_int.s0], range_weight[iidx_int.s1], fidx_dec.s0);
     } else {
         // Magnitude of HH
-        m = length(rcs.s01) * 100.0f;
+        //m = length(rcs.s01) * 100.0f;
+        m = clamp(10.0f * log10(length(rcs.s01) / length(rcs.s23)), -3.0f, 3.0f) / 6.0f + 0.5f;
     }
     
     c[i].x = m;

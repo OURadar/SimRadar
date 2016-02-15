@@ -1,6 +1,7 @@
 uniform mat4 modelViewProjectionMatrix;
 uniform vec4 drawColor;
 uniform vec4 drawSize;
+uniform bool pingPong;
 
 uniform sampler2D colormapTexture;
 
@@ -32,8 +33,11 @@ void main (void)
 
     gl_Position = modelViewProjectionMatrix * (pos + vec4(inTranslation, 1.0));
 
-	//varColor = drawColor;
-    varColor = texture(colormapTexture, vec2(inColor.x, drawColor.x));
+    if (pingPong) {
+        varColor = texture(colormapTexture, vec2(inColor.x, drawColor.x));
+    } else {
+        varColor = drawColor;
+    }
     
     // Make debris closer to surface more transparent
     if (inTranslation.z < 25.0) {
