@@ -273,7 +273,7 @@
 }
 
 - (int)cycleScattererColorMode {
-    S->draw_mode.s0 = S->draw_mode.s0 >= 4 ? 0 : S->draw_mode.s0 + 1;
+    S->draw_mode.s0 = S->draw_mode.s0 >= 5 ? 0 : S->draw_mode.s0 + 1;
     return (int)S->draw_mode.s0;
 }
 

@@ -842,9 +842,10 @@ __kernel void scat_clr(__global float4 *c,
         
         // Actual range weight
         m = mix(range_weight[iidx_int.s0], range_weight[iidx_int.s1], fidx_dec.s0);
-    } else {
+    } else if (draw_mode == 4) {
         // Magnitude of HH
-        //m = length(rcs.s01) * 100.0f;
+        m = length(rcs.s01) * 100.0f;
+    } else {
         m = clamp(10.0f * log10(length(rcs.s01) / length(rcs.s23)), -3.0f, 3.0f) / 6.0f + 0.5f;
     }
     

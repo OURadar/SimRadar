@@ -1702,7 +1702,7 @@ unsigned int grayToBinary(unsigned int num)
     if (backgroundOpacity >= 0.01) {
         backgroundOpacity = MIN(1.0f, backgroundOpacity + 0.01f);
     } else {
-        backgroundOpacity = MIN(0.01f, backgroundOpacity + 0.001f);
+        backgroundOpacity = MIN(0.101f, backgroundOpacity + 0.001f);
     }
     statusMessageNeedsUpdate = true;
 }

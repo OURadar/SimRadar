@@ -386,7 +386,7 @@ NSWindow *standardWindow;
             break;
             
         case 'm':
-            mkey = mkey >= 9 ? 0 : mkey + 1;
+            mkey = mkey >= 11 ? 0 : mkey + 1;
             if (mkey % 2 == 0) {
                 ret = [sim cycleScattererColorMode];
             } else {
@@ -394,7 +394,7 @@ NSWindow *standardWindow;
             }
             [glView.renderer setSubtitleString:[NSString stringWithFormat:@"Draw mode %d%d", ret, mkey % 2]];
             [glView.renderer toggleBlurSmallScatterer];
-            if (ret == 4) {
+            if (ret >= 4) {
                 [glView.renderer setShowDebrisAttributes:TRUE];
             } else {
                 [glView.renderer setShowDebrisAttributes:FALSE];
