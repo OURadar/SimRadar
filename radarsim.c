@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
     char scan_mode = SCAN_MODE_PPI;
     char output_file = FALSE;
     int num_pulses = 5;
-    float scan_el = 3.0f;
+    float scan_az = 0.0f, scan_el = 3.0f;
     
     float prt = 1.0e-3f;
 
@@ -60,9 +60,11 @@ int main(int argc, char *argv[]) {
     memset(debris_count, 0, RS_MAX_DEBRIS_TYPES * sizeof(int));
 
     static struct option long_options[] = {
+        {"azimuth"    , required_argument, 0, 'a'},
         {"cpu"        , no_argument      , 0, 'c'},
         {"debris"     , required_argument, 0, 'd'},
         {"density"    , required_argument, 0, 'D'},
+        {"elevation"  , required_argument, 0, 'e'},
         {"gpu"        , no_argument      , 0, 'g'},
         {"frames"     , required_argument, 0, 'f'},
         {"lambda"     , required_argument, 0, 'l'},
@@ -91,13 +93,19 @@ int main(int argc, char *argv[]) {
 
     // Process the input arguments and set the simulator parameters
     int opt, long_index = 0;
-    while ((opt = getopt_long(argc, argv, "cd:D:gp:f:l:op:PRt:vW:", long_options, &long_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "a:cd:D:e:gp:f:l:op:PRt:vW:", long_options, &long_index)) != -1) {
         switch (opt) {
+            case 'a':
+                scan_az = atof(optarg);
+                break;
             case 'c':
                 accel_type = ACCEL_TYPE_CPU;
                 break;
             case 'd':
                 debris_count[debris_types++] = atoi(optarg);
+                break;
+            case 'e':
+                scan_el = atof(optarg);
                 break;
             case 'D':
                 RS_set_density(S, atof(optarg));
@@ -239,30 +247,6 @@ int main(int argc, char *argv[]) {
     
     float az_deg = -12.0f, el_deg = scan_el;
     
-    // Initialize a file if the user wants an output file
-    FILE *fid = NULL;
-    IQFileHeader file_header;
-    memset(&file_header, 0, sizeof(IQFileHeader));
-    
-    file_header.params = S->params;
-    for (k = 0; k < S->num_body_types; k++) {
-        file_header.debris_population[k] = (uint32_t)S->debris_population[k];
-    }
-    
-    if (output_file) {
-        char filename[4096];
-        memset(filename, 0, 4096);
-        snprintf(filename, 256, "%s/Downloads/sim-%s-E%04.1f.iq", getenv("HOME"), nowlong(), el_deg);
-        printf("%s : Output file : \033[1;32m%s\033[0m\n", now(), filename);
-        fid = fopen(filename, "wb");
-        if (fid == NULL) {
-            fprintf(stderr, "%s : Error creating file for writing data.\n", now());
-            output_file = FALSE;
-        }
-        // For now, we simply write a 4K header. Will populate with more contents next time
-        fwrite(&file_header, sizeof(IQFileHeader), 1, fid);
-    }
-    
     gettimeofday(&t1, NULL);
     
     float dt, fps, prog, eta;
@@ -341,6 +325,30 @@ int main(int argc, char *argv[]) {
     }
 
     if (output_file) {
+        // Initialize a file if the user wants an output file
+        FILE *fid = NULL;
+        IQFileHeader file_header;
+        memset(&file_header, 0, sizeof(IQFileHeader));
+        
+        file_header.params = S->params;
+        for (k = 0; k < S->num_body_types; k++) {
+            file_header.debris_population[k] = (uint32_t)S->debris_population[k];
+        }
+        
+        if (output_file) {
+            char filename[4096];
+            memset(filename, 0, 4096);
+            snprintf(filename, 256, "%s/Downloads/sim-%s-E%04.1f.iq", getenv("HOME"), nowlong(), el_deg);
+            printf("%s : Output file : \033[1;32m%s\033[0m\n", now(), filename);
+            fid = fopen(filename, "wb");
+            if (fid == NULL) {
+                fprintf(stderr, "%s : Error creating file for writing data.\n", now());
+                output_file = FALSE;
+            }
+            // For now, we simply write a 4K header. Will populate with more contents next time
+            fwrite(&file_header, sizeof(IQFileHeader), 1, fid);
+        }
+
         // Flush out the cache
         for (k = 0; k < num_pulses; k++) {
             fwrite(&pulse_headers[k], sizeof(IQPulseHeader), 1, fid);

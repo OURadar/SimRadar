@@ -807,7 +807,7 @@ __kernel void scat_clr(__global float4 *c,
     const uint draw_mode = mode.s0;
     
     float m = 0.0f;
-    float4 pos = p[i];
+    
     float4 aux = a[i];
     float4 rcs = x[i];
     
