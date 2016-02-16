@@ -198,7 +198,9 @@ int main(int argc, char *argv[]) {
     
     // Set debris population
     for (int k = 0; k < debris_types; k++) {
-        RS_set_debris_count(S, k + 1, debris_count[k]);
+        if (debris_count[k]) {
+            RS_set_debris_count(S, k + 1, debris_count[k]);
+        }
     }
     RS_revise_debris_counts_to_gpu_preference(S);
     

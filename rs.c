@@ -1184,8 +1184,10 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint group_
 	param.global[0] = group_count * work_items;
 	param.local[0] = work_items;
 	param.local_mem_size[0] = range_count * work_items * sizeof(cl_float4);
-    if (param.local_mem_size[0] > max_local_mem_size) {
+    while (param.local_mem_size[0] > max_local_mem_size) {
+        #ifdef DEBUG
         rsprint("local memory size = %zu. Adjusting ...", (size_t)max_local_mem_size);
+        #endif
         if (range_count % 2 == 0) {
             work_items /= 2;
             group_count *= 2;
@@ -1610,7 +1612,7 @@ void RS_set_scan_box(RSHandle *H,
 	while (preferred_n < H->params.body_per_cell * 9 / 10) {
 		preferred_n += mul;
 	}
-    float concentration_scale = 2500.0f * nvol / (float)H->num_scats * vol;
+    float concentration_scale = sqrtf((nvol * vol * 2500.0f) / (float)preferred_n);
     
 	if (H->verb) {
         rsprint("User domain @ R:[ %5.2f ~ %5.2f ] km   E:[ %5.2f ~ %5.2f ] deg   A:[ %+6.2f ~ %+6.2f ] deg\n",
