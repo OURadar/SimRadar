@@ -48,44 +48,44 @@
 
 
 typedef struct _reduction_params {
-	cl_uint  count;
-	cl_uint  cl_max_group_size;
-	cl_uint  user_max_groups;
-	cl_uint  user_max_work_items;
-	
-	cl_uint  pass_counts;
-	cl_uint  *entry_counts;
-	cl_uint  *group_counts;
-	cl_uint  *work_item_counts;
+    cl_uint  count;
+    cl_uint  cl_max_group_size;
+    cl_uint  user_max_groups;
+    cl_uint  user_max_work_items;
+    
+    cl_uint  pass_counts;
+    cl_uint  *entry_counts;
+    cl_uint  *group_counts;
+    cl_uint  *work_item_counts;
 } ReductionParams;
 
 
 typedef struct _rs_pulse_params {
-	unsigned int  num_scats;
-	unsigned int  user_max_groups;
-	unsigned int  user_max_work_items;
-	unsigned int  cl_pass_2_method;
-
-	unsigned int  range_count;
-	float         range_start;
-	float         range_delta;
-
-	unsigned int  entry_counts[2];    // entry count of the 2-pass reduction
-	unsigned int  group_counts[2];    // group count of the 2-pass reduction
-
-	size_t        global[2];          // global count of the 2-pass reduction
-	size_t        local[2];           // local count of the 2-pass reduction
-	size_t        local_mem_size[2];  // local size of the 2-pass reduction in bytes
+    unsigned int  num_scats;
+    unsigned int  user_max_groups;
+    unsigned int  user_max_work_items;
+    unsigned int  cl_pass_2_method;
+    
+    unsigned int  range_count;
+    float         range_start;
+    float         range_delta;
+    
+    unsigned int  entry_counts[2];    // entry count of the 2-pass reduction
+    unsigned int  group_counts[2];    // group count of the 2-pass reduction
+    
+    size_t        global[2];          // global count of the 2-pass reduction
+    size_t        local[2];           // local count of the 2-pass reduction
+    size_t        local_mem_size[2];  // local size of the 2-pass reduction in bytes
 } RSMakePulseParams;
 
 
 // A table (texture) for antenna/range pattern
 typedef struct _rs_table {
-	float         x0;                 // offset to the 1st element in the table
-	float         xm;                 // maximum index in float
-	float         dx;                 // scaling to map to table index
-	uint32_t      reserved;           // n/a
-	float         *data;              // table values
+    float         x0;                 // offset to the 1st element in the table
+    float         xm;                 // maximum index in float
+    float         dx;                 // scaling to map to table index
+    uint32_t      reserved;           // n/a
+    float         *data;              // table values
 } RSTable;
 
 
@@ -105,23 +105,23 @@ typedef struct _rs_table2d {
 
 // A table (texture) for 3D wind parameters
 typedef struct _rs_table3d {
-	float         xs;                 // x scaling to map to table index              or "m" for stretched grid: m * log1p(n * pos.x) + o;
-	float         xo;                 // x offset to the 1st element in the table     or "n" for stretched grid: m * log1p(n * pos.x) + o;
-	float         xm;                 // x maximum index in float                     or "o" for stretched grid: m * log1p(n * pos.z) + o;
-	uint32_t      x_;
-	float         ys;                 // y scaling to map to table index
-	float         yo;                 // y offset to the 1st element in the table
-	float         ym;                 // y maximum index in float
-	uint32_t      y_;
-	float         zs;                 // z scaling to map to table index;             or "m" for stretched grid: zm * log1p(n * pos.z) + o;
-	float         zo;                 // z offset to the 1st element in the table;    or "n" for stretched grid: zm * log1p(n * pos.z) + o;
-	float         zm;                 // z maximum index in float                     or "o" for stretched grid: zm * log1p(n * pos.z) + o;
-	uint32_t      z_;
-	float         tr;                 // replenishing time constant
-	float         reserved1;          // n/a. simply pad to 128-bit
+    float         xs;                 // x scaling to map to table index              or "m" for stretched grid: m * log1p(n * pos.x) + o;
+    float         xo;                 // x offset to the 1st element in the table     or "n" for stretched grid: m * log1p(n * pos.x) + o;
+    float         xm;                 // x maximum index in float                     or "o" for stretched grid: m * log1p(n * pos.z) + o;
+    uint32_t      x_;
+    float         ys;                 // y scaling to map to table index
+    float         yo;                 // y offset to the 1st element in the table
+    float         ym;                 // y maximum index in float
+    uint32_t      y_;
+    float         zs;                 // z scaling to map to table index;             or "m" for stretched grid: zm * log1p(n * pos.z) + o;
+    float         zo;                 // z offset to the 1st element in the table;    or "n" for stretched grid: zm * log1p(n * pos.z) + o;
+    float         zm;                 // z maximum index in float                     or "o" for stretched grid: zm * log1p(n * pos.z) + o;
+    uint32_t      z_;
+    float         tr;                 // replenishing time constant
+    float         reserved1;          // n/a. simply pad to 128-bit
     float         reserved2;          // n/a. simply pad to 128-bit
     uint32_t      spacing;            // spacing convention: uniform or stretched (geometric)
-	cl_float4     *data;              // Data in float4 grid, e.g., u, v, w, t
+    cl_float4     *data;              // Data in float4 grid, e.g., u, v, w, t
 } RSTable3D;
 
 
@@ -240,41 +240,41 @@ enum RSSimulationConcept {
 //  Worker (per GPU) handle
 //
 typedef struct _rs_worker {
-	char                   name;
-	char                   verb;
-
-	// OpenCL device
-	cl_device_id           dev;
-	cl_uint                num_cus;
-
-	// Scatter bodies
-	size_t                 num_scats;
+    char                   name;
+    char                   verb;
+    
+    // OpenCL device
+    cl_device_id           dev;
+    cl_uint                num_cus;
+    
+    // Scatter bodies
+    size_t                 num_scats;
     
     size_t                 debris_global_offset;
     size_t                 debris_origin[RS_MAX_DEBRIS_TYPES];
     size_t                 debris_population[RS_MAX_DEBRIS_TYPES];
-	
-	RSMakePulseParams      make_pulse_params;
-
-	// GPU side memory
-	cl_mem                 scat_pos;   // x, y, z coordinates
-	cl_mem                 scat_vel;   // u, v, w wind components
-	cl_mem                 scat_ori;   // alpha, beta, gamma angles
+    
+    RSMakePulseParams      make_pulse_params;
+    
+    // GPU side memory
+    cl_mem                 scat_pos;   // x, y, z coordinates
+    cl_mem                 scat_vel;   // u, v, w wind components
+    cl_mem                 scat_ori;   // alpha, beta, gamma angles
     cl_mem                 scat_tum;   // alpha, beta, gamma tumbling
-	cl_mem                 scat_aux;   // type, dot products, range, etc.
+    cl_mem                 scat_aux;   // type, dot products, range, etc.
     cl_mem                 scat_rcs;   // radar cross section: Ih Qh Iv Qv
-	cl_mem                 scat_sig;   // signal: Ih Qh Iv Qv
-	cl_mem                 scat_rnd;   // random seed
+    cl_mem                 scat_sig;   // signal: Ih Qh Iv Qv
+    cl_mem                 scat_rnd;   // random seed
     cl_mem                 scat_clr;   // color
-	cl_mem                 work;
-	cl_mem                 pulse;
-
-	cl_mem                 range_weight;
-	cl_float4              range_weight_desc;
-	
-	cl_mem                 angular_weight;
-	cl_float4              angular_weight_desc;
-	
+    cl_mem                 work;
+    cl_mem                 pulse;
+    
+    cl_mem                 range_weight;
+    cl_float4              range_weight_desc;
+    
+    cl_mem                 angular_weight;
+    cl_float4              angular_weight_desc;
+    
     cl_mem                 adm_cd[RS_MAX_ADM_TABLES];
     cl_mem                 adm_cm[RS_MAX_ADM_TABLES];
     cl_float16             adm_desc[RS_MAX_ADM_TABLES];
@@ -283,25 +283,25 @@ typedef struct _rs_worker {
     cl_mem                 rcs_imag[RS_MAX_RCS_TABLES];
     cl_float16             rcs_desc[RS_MAX_RCS_TABLES];
     
-	cl_mem                 vel[RS_MAX_VEL_TABLES];
-	cl_float16             vel_desc;
-
+    cl_mem                 vel[RS_MAX_VEL_TABLES];
+    cl_float16             vel_desc;
+    
     cl_uint                mem_size;
-
+    
     // GPU side memory for VBOs
     unsigned int           vbo_scat_pos;
     unsigned int           vbo_scat_clr;
     unsigned int           vbo_scat_ori;
     
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
-	
-	dispatch_queue_t       que;
-	dispatch_semaphore_t   sem;
+    
+    dispatch_queue_t       que;
+    dispatch_semaphore_t   sem;
     cl_ndrange             ndrange_scat_all;
-	cl_ndrange             ndrange_scat[RS_MAX_DEBRIS_TYPES];
-	cl_ndrange             ndrange_pulse_pass_1;
-	cl_ndrange             ndrange_pulse_pass_2;
-	
+    cl_ndrange             ndrange_scat[RS_MAX_DEBRIS_TYPES];
+    cl_ndrange             ndrange_pulse_pass_1;
+    cl_ndrange             ndrange_pulse_pass_2;
+    
     IOSurfaceRef           surf_adm_cd[RS_MAX_ADM_TABLES];
     IOSurfaceRef           surf_adm_cm[RS_MAX_ADM_TABLES];
     IOSurfaceRef           surf_rcs_real[RS_MAX_RCS_TABLES];
@@ -309,12 +309,12 @@ typedef struct _rs_worker {
     IOSurfaceRef           surf_vel[RS_MAX_VEL_TABLES];
     
 #else
-	
-	cl_context             context;
+    
+    cl_context             context;
     cl_context_properties  sharegroup;
-	
-	cl_program             prog;
-	
+    
+    cl_program             prog;
+    
     cl_kernel              kern_io;
     cl_kernel              kern_bg_atts;
     cl_kernel              kern_el_atts;
@@ -322,18 +322,18 @@ typedef struct _rs_worker {
     cl_kernel              kern_scat_clr;
     cl_kernel              kern_scat_rcs;
     cl_kernel              kern_scat_sig_aux;
-	cl_kernel              kern_make_pulse_pass_1;
-	cl_kernel              kern_make_pulse_pass_2;
-	cl_kernel              kern_make_pulse_pass_2_group;
-	cl_kernel              kern_make_pulse_pass_2_local;
-	cl_kernel              kern_make_pulse_pass_2_range;
-
-	cl_command_queue       que;
-	
+    cl_kernel              kern_make_pulse_pass_1;
+    cl_kernel              kern_make_pulse_pass_2;
+    cl_kernel              kern_make_pulse_pass_2_group;
+    cl_kernel              kern_make_pulse_pass_2_local;
+    cl_kernel              kern_make_pulse_pass_2_range;
+    
+    cl_command_queue       que;
+    
 #endif
-
+    
     cl_kernel              kern_dummy;
-
+    
 } RSWorker;
 
 
@@ -341,18 +341,18 @@ typedef struct _rs_worker {
 //  Master handle
 //
 typedef struct _rs_handle {
-	char                   verb;
-	char                   method;
-	RSParams               params;
-
-	// Various simualtor state variables
-	char                   status;
-	size_t                 sim_tic;
-	size_t                 sim_toc;
-	RSfloat                sim_time;
+    char                   verb;
+    char                   method;
+    RSParams               params;
+    
+    // Various simualtor state variables
+    char                   status;
+    size_t                 sim_tic;
+    size_t                 sim_toc;
+    RSfloat                sim_time;
     cl_float16             sim_desc;
     RSSimulationConcept    sim_concept;
-
+    
     // Table related variables
     uint32_t               vel_idx;
     uint32_t               vel_count;
@@ -365,48 +365,48 @@ typedef struct _rs_handle {
     LESTable               vel_desc;
     ADMTable               adm_desc[RS_MAX_DEBRIS_TYPES];
     RCSTable               rcs_desc[RS_MAX_DEBRIS_TYPES];
-
-	// Scatter bodies
-	size_t                 num_scats;
+    
+    // Scatter bodies
+    size_t                 num_scats;
     size_t                 num_body_types;
     size_t                 debris_population[RS_MAX_DEBRIS_TYPES];
-
-	// CPU side memory (for upload/download)
-	cl_float4              *scat_pos;       // position
-	cl_float4              *scat_vel;       // velocity
-	cl_float4              *scat_ori;       // orientation
+    
+    // CPU side memory (for upload/download)
+    cl_float4              *scat_pos;       // position
+    cl_float4              *scat_vel;       // velocity
+    cl_float4              *scat_ori;       // orientation
     cl_float4              *scat_tum;       // tumble
-	cl_float4              *scat_aux;       // auxiliary
+    cl_float4              *scat_aux;       // auxiliary
     cl_float4              *scat_rcs;       // rcs
-	cl_float4              *scat_sig;       // signal
+    cl_float4              *scat_sig;       // signal
     cl_uint4               *scat_rnd;       // random seed
-	cl_float4              *pulse;
-
-	cl_float4              *pulse_tmp[RS_MAX_GPU_DEVICE];
-	
-	// OpenCL device
-	cl_uint                num_devs;
-	cl_uint                num_workers;
+    cl_float4              *pulse;
+    
+    cl_float4              *pulse_tmp[RS_MAX_GPU_DEVICE];
+    
+    // OpenCL device
+    cl_uint                num_devs;
+    cl_uint                num_workers;
     cl_uint                preferred_multiple;
-	cl_uint                num_cus[RS_MAX_GPU_DEVICE];
+    cl_uint                num_cus[RS_MAX_GPU_DEVICE];
     cl_uint                vendors[RS_MAX_GPU_DEVICE];
-	cl_device_id           devs[RS_MAX_GPU_DEVICE];
-
+    cl_device_id           devs[RS_MAX_GPU_DEVICE];
+    
     // OpenGL sharing
     char                   has_vbo_from_gl;
     
-	// GPU side memory
-	RSWorker               worker[RS_MAX_GPU_DEVICE];
-	size_t                 offset[RS_MAX_GPU_DEVICE];
-
-	// Anchors
-	ssize_t                num_anchors;
-	ssize_t                num_anchor_lines;
+    // GPU side memory
+    RSWorker               worker[RS_MAX_GPU_DEVICE];
+    size_t                 offset[RS_MAX_GPU_DEVICE];
+    
+    // Anchors
+    ssize_t                num_anchors;
+    ssize_t                num_anchor_lines;
     cl_uint4               draw_mode;
-
-	// CPU side memory
-	cl_float4              *anchor_pos;
-	cl_float4              *anchor_lines;
+    
+    // CPU side memory
+    cl_float4              *anchor_pos;
+    cl_float4              *anchor_lines;
     
     // DSD parameters
     char                   dsd_name;
@@ -417,7 +417,7 @@ typedef struct _rs_handle {
     RSfloat                *dsd_pdf;
     RSfloat                *dsd_cdf;
     RSfloat                *dsd_r;           // DSD radii
-	
+    
 } RSHandle;
 
 
