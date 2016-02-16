@@ -39,7 +39,7 @@ enum RSSimulationDescription {
     RSSimulationDescriptionBoundSizeX         =  12, // hi.s4
     RSSimulationDescriptionBoundSizeY         =  13, // hi.s5
     RSSimulationDescriptionBoundSizeZ         =  14, // hi.s6
-    RSSimulationDescriptionDebrisAgeIncrement =  15  // PRT / vel_desc.tr
+    RSSimulationDescription15                 =  15  //
 };
 
 enum RSTable3DDescription {
@@ -94,6 +94,7 @@ float4 quat_rotate(float4 vector, float4 quat);
 #pragma mark -
 
 float4 complex_multiply(const float4 a, const float4 b);
+float4 complex_divide(const float4 a, const float4 b);
 float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16 sim_desc);
 float4 compute_bg_vel(const float4 pos, __read_only image3d_t wind_uvw, const float16 wind_desc, const float16 sim_desc);
 float4 compute_dudt_dwdt(float4 *dwdt, const float4 vel, const float4 vel_bg, const float4 ori, __read_only image2d_t adm_cd, __read_only image2d_t adm_cm, const float16 adm_desc);
@@ -168,7 +169,8 @@ float4 quat_rotate(float4 vector, float4 quat)
 //   - s0123 = (IH, QH, IV, QV)
 //
 //   - s01 is treated as one number while s23 is another
-//   - s01 is only affected by another s01 and so on
+//   - s01 is only affected by another s01
+//   - s23 is only affected by another s23
 //
 
 float4 complex_multiply(const float4 a, const float4 b)
@@ -179,6 +181,16 @@ float4 complex_multiply(const float4 a, const float4 b)
 //                    a.s3 * b.s2 + a.s2 * b.s3);
     float4 iiqq = (float4)(a.s02 * b.s02 - a.s13 * b.s13,
                            a.s13 * b.s02 + a.s02 * b.s13);
+    return shuffle(iiqq, (uint4)(0, 2, 1, 3));
+}
+
+float4 complex_divide(const float4 a, const float4 b)
+{
+    float bm01 = dot(b.s01, b.s01);
+    float bm23 = dot(b.s23, b.s23);
+    float4 iiqq = (float4)(a.s02 * b.s02 + a.s13 * b.s13,
+                           a.s13 * b.s02 - a.s02 * b.s13)
+                / (float4)(bm01, bm23, bm01, bm23);
     return shuffle(iiqq, (uint4)(0, 2, 1, 3));
 }
 
@@ -771,15 +783,17 @@ __kernel void db_atts(__global float4 *p,
 
 __kernel void scat_rcs(__global float4 *x,
                        __global float4 *p,
-                       __global float4 *a)
+                       __global float4 *a,
+                       const float16 sim_desc)
 {
     unsigned int i = get_global_id(0);
     //x[i] = (float4)(1.0f, 0.0f, 1.0f, 0.0f);
 
     float4 pos = p[i];
     
+    const float k_0 = sim_desc.s4 * 0.5f;
     const float epsilon_0 = 8.85418782e-12f;
-    const float2 epsilon_r = (float2)(79.669, 18.2257);
+    const float4 epsilon_r_minus_one = (float4)(78.669f, 18.2257f, 78.669f, 18.2257f);
     //
     // Ratio is usually in ( semi-major : semi-minor ) = ( H : V );
     // Use (1.0, 0.0) for H and (v, 0.0) for V
@@ -788,24 +802,30 @@ __kernel void scat_rcs(__global float4 *x,
     //
     float D = 2000.0f * pos.w;
     float4 DD = pown((float4)D, (int4)(1, 2, 3, 4));
-    float vv = 1.0048f + dot((float4)(5.7e-4f, -2.628e-2f, 3.682e-3f, -1.667e-4f), DD);
+    
+    float vv = 1.0048f + dot((float4)(0.0057e-1f, -2.628e-2f, 3.682e-3f, -1.677e-4f), DD);
     
     float rab = 1.0f / vv;
     float fsq = rab * rab - 1.0f;
     float f = sqrt(fsq);
     float lz = (1.0f + fsq) / fsq * (1.0f - atan(f) / f);
     float lx = (1.0f - lz) * 0.5f;
-    float vol = M_PI_F * D / 6.0f;
-//    float alx = vol * epsilon_0 * (epsilon_r - 1.0f) * (1.0f / (1.0f + lx * (epsilon_r - 1.0f)));
-//    float alz = vol * epsilon_0 * (epsilon_r - 1.0f) * (1.0f / (1.0f + lz * (epsilon_r - 1.0f)));
+    float vol = M_PI_F * pown(D, 3) / 6.0f;
+    //
+    // alx = vol * epsilon_0 * (epsilon_r - 1.0f) * (1.0f / (1.0f + lx * (epsilon_r - 1.0f)));
+    // alz = vol * epsilon_0 * (epsilon_r - 1.0f) * (1.0f / (1.0f + lz * (epsilon_r - 1.0f)));
+    //
+    float4 numer = vol * epsilon_0 * epsilon_r_minus_one;
+    float4 denom = (float4)(1.0f, 0.0f, 1.0f, 0.0f) + (float4)(lx, lx, lz, lz) * epsilon_r_minus_one;
+    float4 alxz = complex_divide(numer, denom);
+    //
+    // Sc = k_0 ^ 2 / (4 * pi * epsilon_0)
+    // Coefficient 1.0e-9 for scaling the volume to unit of m^3
+    // Drop concentration scale derived based on ~2,500 drops / m^3
+    //
+    float sc = 1.0e-9f * sim_desc.s6 * k_0 * k_0 / (4.0f * M_PI_F * epsilon_0);
 
-    // beta = elevation
-    // Sc = k0^2 / (4 * pi * epsilon_0)
-    //    shh = Sc * alx;
-    //    svv = Sc * (alx * cos(beta).^2 + alz * sin(beta).^2);
-    
-    // H is 1.0 while V is the attenuated version as a function of aspect ratio
-    x[i] = (float4)(1.0f, 0.0f, vv, 0.0f) * pos.w;
+    x[i] = sc * alxz;
 }
 
 

@@ -382,9 +382,10 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     }
 
     ret = CL_SUCCESS;
-    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentRadarCrossSection, sizeof(cl_mem), &C->scat_rcs);
-    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentPosition,          sizeof(cl_mem), &C->scat_pos);
-    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentAuxiliary,         sizeof(cl_mem), &C->scat_aux);
+    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentRadarCrossSection,     sizeof(cl_mem),     &C->scat_rcs);
+    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentPosition,              sizeof(cl_mem),     &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentAuxiliary,             sizeof(cl_mem),     &C->scat_aux);
+    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_rcs().\n", now());
         exit(EXIT_FAILURE);
@@ -1383,7 +1384,6 @@ void RS_init_scat_pos(RSHandle *H) {
     H->sim_desc.s[RSSimulationDescriptionBeamUnitY] = 1.0f;
     H->sim_desc.s[RSSimulationDescriptionBeamUnitZ] = 0.0f;
     H->sim_desc.s[RSSimulationDescriptionTotalParticles] = H->num_scats;
-    H->sim_desc.s[RSSimulationDescriptionDebrisAgeIncrement] = H->params.prt / H->worker[0].vel_desc.s[RSTable3DDescriptionRefreshTime];
     
     // Make a copy in float so we are maintaining all 32-bits
     float tmpf; memcpy(&tmpf, &H->sim_concept, sizeof(float));
@@ -1406,7 +1406,7 @@ void RS_set_concept(RSHandle *H, RSSimulationConcept c) {
 void RS_set_prt(RSHandle *H, const RSfloat prt) {
 	H->params.prt = prt;
     
-    H->sim_desc.s[RSSimulationDescriptionTimeIncrement] = H->params.prt;
+    H->sim_desc.s[RSSimulationDescriptionPRT] = H->params.prt;
     
     RS_update_computed_properties(H);
 }
@@ -1586,8 +1586,8 @@ void RS_set_scan_box(RSHandle *H,
 	
 	//printf("H->num_anchors = %zu   ii = %d\n", H->num_anchors, ii);
 	
-	// Volume of a single resolution cell
-	r = 0.5f * (H->params.range_start + H->params.range_start);
+	// Volume of a single resolution cell at the middle of the domain
+	r = 0.5f * (H->params.range_start + H->params.range_end);
 	RSfloat vol = (H->params.antenna_bw_rad * r) * (H->params.antenna_bw_rad * r) * (H->params.c * H->params.tau * 0.5f);
 	RSfloat nvol = ((xmax - xmin) * (ymax - ymin) * (zmax - zmin)) / vol;
 	
@@ -1610,7 +1610,8 @@ void RS_set_scan_box(RSHandle *H,
 	while (preferred_n < H->params.body_per_cell * 9 / 10) {
 		preferred_n += mul;
 	}
-	
+    float concentration_scale = 2500.0f * nvol / (float)H->num_scats * vol;
+    
 	if (H->verb) {
         rsprint("User domain @ R:[ %5.2f ~ %5.2f ] km   E:[ %5.2f ~ %5.2f ] deg   A:[ %+6.2f ~ %+6.2f ] deg\n",
                1.0e-3*H->params.range_start, 1e-3*H->params.range_end,
@@ -1628,15 +1629,20 @@ void RS_set_scan_box(RSHandle *H,
                zmin, zmax);
         rsprint("              = ( %.2f m x %.2f m x %.2f m )\n",
                xmax - xmin, ymax - ymin, zmax - zmin);
-        rsprint("nvol = %s.%02d\n", commaint(floor(nvol)), (int)(100 * (nvol - floor(nvol))));
+        rsprint("nvol = %s.%02d x %s.%02d m^3\n", commaint(floor(nvol)), (int)(100 * (nvol - floor(nvol))), commaint(floor(vol)), (int)(100 * (vol - floor(vol))));
 		rsprint("Suggested %s bodies\n", commaint(preferred_n));
 		rsprint("Set to GPU preferred %s (%.2f bodies / resolution cell)\n", commaint(preferred_n), (float)preferred_n / nvol);
+        rsprint("Drop concentration scale = %s.%02d\n", commaint(concentration_scale), (int)(100 * (concentration_scale - floor(concentration_scale))));
 	}
 	
     // Now, we actually set it to suggested debris count
 	H->num_scats = preferred_n;
 	
-	// Anchor lines to show the volume of interest, which was set by the user. The number is well more than enough
+    // Drop concentration scaling factor
+    // Typical volume is about 2500 drops per m^2, each scatterer represents N drops (Radar Equation document example)
+    H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] = concentration_scale;
+
+    // Anchor lines to show the volume of interest, which was set by the user. The number is well more than enough
 	H->num_anchor_lines  = 8 * (naz + nel);
 	
 	if (H->anchor_lines) {
@@ -3643,7 +3649,8 @@ void RS_rcs_from_dsd(RSHandle *H) {
             scat_rcs_kernel(&H->worker[i].ndrange_scat[0],
                             (cl_float4 *)H->worker[i].scat_rcs,
                             (cl_float4 *)H->worker[i].scat_pos,
-                            (cl_float4 *)H->worker[i].scat_aux);
+                            (cl_float4 *)H->worker[i].scat_aux,
+                            H->sim_desc);
             dispatch_semaphore_signal(H->worker[i].sem);
         });
         dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);

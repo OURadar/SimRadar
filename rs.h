@@ -188,22 +188,22 @@ enum RSTable3DStaggeredDescription {
 };
 
 enum RSSimulationDescription {
-    RSSimulationDescriptionBeamUnitX          =  0,
-    RSSimulationDescriptionBeamUnitY          =  1,
-    RSSimulationDescriptionBeamUnitZ          =  2,
-    RSSimulationDescriptionTotalParticles     =  3,
-    RSSimulationDescriptionWaveNumber         =  4,
-    RSSimulationDescriptionConcept            =  5,
-    RSSimulationDescription6                  =  6,
-    RSSimulationDescriptionSimTic             =  7,
-    RSSimulationDescriptionBoundOriginX       =  8,  // hi.s0
-    RSSimulationDescriptionBoundOriginY       =  9,  // hi.s1
-    RSSimulationDescriptionBoundOriginZ       =  10, // hi.s2
-    RSSimulationDescriptionTimeIncrement      =  11,
-    RSSimulationDescriptionBoundSizeX         =  12, // hi.s4
-    RSSimulationDescriptionBoundSizeY         =  13, // hi.s5
-    RSSimulationDescriptionBoundSizeZ         =  14, // hi.s6
-    RSSimulationDescriptionDebrisAgeIncrement =  15  // PRT / vel_desc.tr
+    RSSimulationDescriptionBeamUnitX              =  0,
+    RSSimulationDescriptionBeamUnitY              =  1,
+    RSSimulationDescriptionBeamUnitZ              =  2,
+    RSSimulationDescriptionTotalParticles         =  3,
+    RSSimulationDescriptionWaveNumber             =  4,
+    RSSimulationDescriptionConcept                =  5,
+    RSSimulationDescriptionDropConcentrationScale =  6,
+    RSSimulationDescriptionSimTic                 =  7,
+    RSSimulationDescriptionBoundOriginX           =  8,  // hi.s0
+    RSSimulationDescriptionBoundOriginY           =  9,  // hi.s1
+    RSSimulationDescriptionBoundOriginZ           =  10, // hi.s2
+    RSSimulationDescriptionPRT                    =  11,
+    RSSimulationDescriptionBoundSizeX             =  12, // hi.s4
+    RSSimulationDescriptionBoundSizeY             =  13, // hi.s5
+    RSSimulationDescriptionBoundSizeZ             =  14, // hi.s6
+    RSSimulationDescription15                     =  15  //
 };
 
 enum RSDropSizeDistribution {

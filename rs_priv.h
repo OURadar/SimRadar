@@ -55,7 +55,8 @@ enum RSScattererColorKernelArgument {
 enum RSScattererSignalDropSizeDistributionKernalArgument {
     RSScattererSignalDropSizeDistributionKernalArgumentRadarCrossSection,
     RSScattererSignalDropSizeDistributionKernalArgumentPosition,
-    RSScattererSignalDropSizeDistributionKernalArgumentAuxiliary
+    RSScattererSignalDropSizeDistributionKernalArgumentAuxiliary,
+    RSScattererSignalDropSizeDistributionKernalArgumentSimulationDescription
 };
 
 enum RSScattererAngularWeightKernalArgument {
