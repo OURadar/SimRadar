@@ -1365,12 +1365,13 @@ void RS_init_scat_pos(RSHandle *H) {
 	
 	// Replace a few points for debugging purpose.
 	H->scat_pos[0].x = domain.origin.x + 0.5f * domain.size.x;
-	H->scat_pos[0].y = domain.origin.y + 0.5f * domain.size.y;
-	H->scat_pos[0].z = domain.origin.z + 0.5f * domain.size.z;
+    H->scat_pos[0].y = domain.origin.y + 0.5f * domain.size.y;
+    H->scat_pos[0].z = 0.0f; // domain.origin.z + 0.5f * domain.size.z;
 	
     // Replace the very first debris particle
     if (H->debris_population[1] > 0) {
-        k = (int)H->debris_population[0] / H->num_workers;
+        k = (int)H->debris_population[0];
+        printf("k = %d\n", k);
         H->scat_pos[k].x = 0.0f;
         H->scat_pos[k].y = H->params.range_start + floorf(H->params.range_count * 0.5f) * H->params.range_delta;
         H->scat_pos[k].z = 0.5f * domain.size.z;
@@ -3372,9 +3373,6 @@ void RS_populate(RSHandle *H) {
 		return;
 	}
 	
-    // Initialize the scatter body positions on CPU, will upload to the GPU later
-    RS_init_scat_pos(H);
-
     //
 	// GPU memory allocation
 	//
@@ -3394,6 +3392,9 @@ void RS_populate(RSHandle *H) {
     }
 	
     RS_update_debris_count(H);
+    
+    // Initialize the scatter body positions on CPU, will upload to the GPU later
+    RS_init_scat_pos(H);
     
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
     
@@ -3790,7 +3791,7 @@ void RS_advance_time(RSHandle *H) {
 //    i = 0;
 //    r = 0;
 //    dispatch_async(H->worker[i].que, ^{
-//        dummy_kernel(&H->worker[i].ndrange_scat[1],
+//        dummy_kernel(&H->worker[i].ndrange_scat_all,
 //                     (cl_float4 *)H->worker[i].scat_pos,
 //                     (cl_float4 *)H->worker[i].scat_ori,
 //                     (cl_float4 *)H->worker[i].scat_rcs,

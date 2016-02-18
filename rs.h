@@ -442,7 +442,7 @@ RSHandle *RS_init();
 void RS_free(RSHandle *H);
 
 RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint group_size_multiple, const cl_uint user_group_counts, const cl_uint max_local_mem_size,
-								   const float range_start, const float range_delta, const unsigned int range_count);
+                                       const float range_start, const float range_delta, const unsigned int range_count);
 #pragma mark -
 #pragma mark Radar and Simulation Parameters
 
@@ -454,9 +454,9 @@ void RS_set_density(RSHandle *H, const RSfloat density);
 void RS_set_antenna_params(RSHandle *H, RSfloat beamwidth_deg, RSfloat gain_dbi);
 void RS_set_tx_params(RSHandle *H, RSfloat pulsewidth, RSfloat tx_power_watt);
 void RS_set_scan_box(RSHandle *H,
-					 RSfloat range_start, RSfloat range_end, RSfloat range_gate,
-					 RSfloat azimuth_start, RSfloat azimuth_end, RSfloat azimuth_gate,
-					 RSfloat elevation_start, RSfloat elevation_end, RSfloat elevation_gate);
+                     RSfloat range_start, RSfloat range_end, RSfloat range_gate,
+                     RSfloat azimuth_start, RSfloat azimuth_end, RSfloat azimuth_gate,
+                     RSfloat elevation_start, RSfloat elevation_end, RSfloat elevation_gate);
 void RS_set_beam_pos(RSHandle *H, RSfloat az_deg, RSfloat el_deg);
 void RS_set_verbosity(RSHandle *H, const char verb);
 void RS_set_debris_count(RSHandle *H, const int debris_id, const size_t count);
