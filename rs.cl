@@ -383,6 +383,13 @@ float4 compute_rcs(const float4 pos, const float4 ori, __read_only image2d_t rcs
     float beta  =  acos(quat_rel.w * quat_rel.w + quat_rel.z * quat_rel.z - quat_rel.y * quat_rel.y - quat_rel.x * quat_rel.x);
     float gamma = atan2(quat_rel.y * quat_rel.z - quat_rel.w * quat_rel.x , quat_rel.x * quat_rel.z + quat_rel.w * quat_rel.y);
 
+    // Lump everything to gamma when beta ~ 0.0f (< 1.0 deg);
+    if (beta < 0.0175f) {
+        gamma += alpha;
+        beta = 0.0f;
+        alpha = 0.0f;
+    }
+
     // RCS values are stored as real(hh, vv, hv, __) + imag(hh, vv, hv, __)
     float2 rcs_coord = fma((float2)(alpha, beta), rcs_desc.s01, rcs_desc.s45);
     float4 real = read_imagef(rcs_real, sampler, rcs_coord);
@@ -406,17 +413,19 @@ float4 compute_rcs(const float4 pos, const float4 ori, __read_only image2d_t rcs
     float hh_real = cg * (real.s0 * cg - real.s2 * sg) - sg * (real.s2 * cg - real.s1 * sg);
     float hh_imag = cg * (imag.s0 * cg - imag.s2 * sg) - sg * (imag.s2 * cg - imag.s1 * sg);
     
-    //float hv_real = cg * (real.s2 * cg - real.s1 * sg) + sg * (real.s0 * cg - real.s2 * sg);
-    //float hv_imag = cg * (imag.s2 * cg - imag.s1 * sg) + sg * (imag.s0 * cg - imag.s2 * sg);
+    float hv_real = cg * (real.s2 * cg - real.s1 * sg) + sg * (real.s0 * cg - real.s2 * sg);
+    float hv_imag = cg * (imag.s2 * cg - imag.s1 * sg) + sg * (imag.s0 * cg - imag.s2 * sg);
     
-    //float vh_real = cg * (real.s2 * cg + real.s0 * sg) - sg * (real.s1 * cg + real.s2 * sg);
-    //float vh_imag = cg * (imag.s2 * cg + imag.s0 * sg) - sg * (imag.s1 * cg + imag.s2 * sg);
+    float vh_real = cg * (real.s2 * cg + real.s0 * sg) - sg * (real.s1 * cg + real.s2 * sg);
+    float vh_imag = cg * (imag.s2 * cg + imag.s0 * sg) - sg * (imag.s1 * cg + imag.s2 * sg);
     
     float vv_real = cg * (real.s1 * cg + real.s2 * sg) + sg * (real.s2 * cg + real.s0 * sg);
     float vv_imag = cg * (imag.s1 * cg + imag.s2 * sg) + sg * (imag.s2 * cg + imag.s0 * sg);
     
     // Assign signal amplitude as Hi, Hq, Vi, Vq
     return (float4)(hh_real, hh_imag, vv_real, vv_imag);
+    //return (float4)(hh_real + vh_real, hh_imag + vh_imag, vv_real + hv_real, vv_imag + hv_imag);
+    //return (float4)(hh_real + hv_real, hh_imag + hv_imag, vv_real + vh_real, vv_imag + vh_imag);
 }
 
 #pragma mark -
@@ -533,6 +542,12 @@ __kernel void dummy(__read_only __global float4 *p,
     float beta  =  acos(quat_rel.w * quat_rel.w + quat_rel.z * quat_rel.z - quat_rel.y * quat_rel.y - quat_rel.x * quat_rel.x);
     float gamma = atan2(quat_rel.y * quat_rel.z - quat_rel.w * quat_rel.x , quat_rel.x * quat_rel.z + quat_rel.w * quat_rel.y);
     
+    if (beta < 0.0175f) {
+        gamma += alpha;
+        beta = 0.0f;
+        alpha = 0.0f;
+    }
+    
     const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
 
     // RCS values are stored as real(hh, vv, hv, __) + imag(hh, vv, hv, __)
@@ -558,11 +573,11 @@ __kernel void dummy(__read_only __global float4 *p,
     float hh_real = cg * (real.s0 * cg - real.s2 * sg) - sg * (real.s2 * cg - real.s1 * sg);
     float hh_imag = cg * (imag.s0 * cg - imag.s2 * sg) - sg * (imag.s2 * cg - imag.s1 * sg);
     
-    float hv_real = cg * (real.s2 * cg - real.s1 * sg) + sg * (real.s0 * cg - real.s2 * sg);
-    float hv_imag = cg * (imag.s2 * cg - imag.s1 * sg) + sg * (imag.s0 * cg - imag.s2 * sg);
-    
-    float vh_real = cg * (real.s2 * cg + real.s0 * sg) - sg * (real.s1 * cg + real.s2 * sg);
-    float vh_imag = cg * (imag.s2 * cg + imag.s0 * sg) - sg * (imag.s1 * cg + imag.s2 * sg);
+    //    float hv_real = cg * (real.s2 * cg - real.s1 * sg) + sg * (real.s0 * cg - real.s2 * sg);
+    //    float hv_imag = cg * (imag.s2 * cg - imag.s1 * sg) + sg * (imag.s0 * cg - imag.s2 * sg);
+    //    
+    //    float vh_real = cg * (real.s2 * cg + real.s0 * sg) - sg * (real.s1 * cg + real.s2 * sg);
+    //    float vh_imag = cg * (imag.s2 * cg + imag.s0 * sg) - sg * (imag.s1 * cg + imag.s2 * sg);
     
     float vv_real = cg * (real.s1 * cg + real.s2 * sg) + sg * (real.s2 * cg + real.s0 * sg);
     float vv_imag = cg * (imag.s1 * cg + imag.s2 * sg) + sg * (imag.s2 * cg + imag.s0 * sg);
@@ -571,11 +586,12 @@ __kernel void dummy(__read_only __global float4 *p,
     //float4 ss = (float4)(hh_real + vh_real, hh_imag + vh_imag, vv_real + hv_real, vv_imag + hv_imag);
     float4 ss = (float4)(hh_real, hh_imag, vv_real, vv_imag);
 
-    if (i == 0) {
-        float hh = length(ss.s01);
-        float vv = length(ss.s23);
-        printf("%7.2v4f  abc = [%7.2v3f]  abg' = [%7.2f %7.2f %7.2f]  %.3f / %.3f -> %.2f dB\n", quat_rel, degrees(angles.s012), degrees(alpha), degrees(beta), degrees(gamma), hh, vv, 10.0 * log10(hh / vv));
-    }
+//    if (i == 0) {
+//        float hh = length(ss.s01);
+//        float vv = length(ss.s23);
+//        printf("abc = [%7.2v3f]  abg' = [%7.2f %7.2f %7.2f]  hvc = (%.4v4f %.4v4f)  cg = %.3f  %.4f / %.4f -> %.2f dB\n",
+//               degrees(angles.s012), degrees(alpha), degrees(beta), degrees(gamma), real, imag, cg, hh, vv, 10.0 * log10(hh / vv));
+//    }
     
     o[i] = ori;
 }
