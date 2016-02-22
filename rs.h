@@ -310,6 +310,7 @@ typedef struct _rs_worker {
     IOSurfaceRef           surf_rcs_real[RS_MAX_RCS_TABLES];
     IOSurfaceRef           surf_rcs_imag[RS_MAX_RCS_TABLES];
     IOSurfaceRef           surf_vel[RS_MAX_VEL_TABLES];
+    IOSurfaceRef           surf_rcs_ellipsoids;
     
 #else
     

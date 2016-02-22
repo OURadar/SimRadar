@@ -43,6 +43,7 @@ int main(int argc, char *argv[]) {
     char verb = 0;
     char accel_type = 0;
     char scan_mode = SCAN_MODE_PPI;
+    char quiet_mode = FALSE;
     char output_file = FALSE;
     int num_pulses = 5;
     float scan_az = 0.0f, scan_el = 3.0f;
@@ -93,7 +94,7 @@ int main(int argc, char *argv[]) {
 
     // Process the input arguments and set the simulator parameters
     int opt, long_index = 0;
-    while ((opt = getopt_long(argc, argv, "a:cd:D:e:gp:f:l:op:PRt:vW:", long_options, &long_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "a:cd:D:e:gp:f:l:op:PqRt:vW:", long_options, &long_index)) != -1) {
         switch (opt) {
             case 'a':
                 scan_az = atof(optarg);
@@ -130,6 +131,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'R':
                 scan_mode = SCAN_MODE_RHI;
+                break;
+            case 'q':
+                quiet_mode = true;
                 break;
             case 't':
                 prt = atof(optarg);
@@ -309,11 +313,13 @@ int main(int argc, char *argv[]) {
     
     // Clear the last line and beep five times
     fprintf(stderr, "%120s\r", "");
-    #if defined (__APPLE__)
-    system("say -v Bells dong dong dong dong &");
-    #else
-    fprintf(stderr, "\a\a\a\a\a");
-    #endif
+    if (!quiet_mode) {
+        #if defined (__APPLE__)
+        system("say -v Bells dong dong dong dong &");
+        #else
+        fprintf(stderr, "\a\a\a\a\a");
+        #endif
+    }
     
     gettimeofday(&t2, NULL);
     dt = DTIME(t0, t2);

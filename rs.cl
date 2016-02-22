@@ -98,7 +98,9 @@ float4 cl_complex_divide(const float4 a, const float4 b);
 float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16 sim_desc);
 float4 compute_bg_vel(const float4 pos, __read_only image3d_t wind_uvw, const float16 wind_desc, const float16 sim_desc);
 float4 compute_dudt_dwdt(float4 *dwdt, const float4 vel, const float4 vel_bg, const float4 ori, __read_only image2d_t adm_cd, __read_only image2d_t adm_cm, const float16 adm_desc);
-float4 compute_rcs(const float4 pos, const float4 ori, __read_only image2d_t rcs_real, __read_only image2d_t rcs_imag, const float16 rcs_desc, const float16 sim_desc);
+//float4 compute_ellipsoid_rcs(const float4 pos, __read_only image1d_t rcs, const float4 rcs_desc);
+float4 compute_ellipsoid_rcs(const float4 pos, __constant float4 *table, const float4 table_desc);
+float4 compute_debris_rcs(const float4 pos, const float4 ori, __read_only image2d_t rcs_real, __read_only image2d_t rcs_imag, const float16 rcs_desc, const float16 sim_desc);
 
 #pragma mark -
 
@@ -347,7 +349,35 @@ float4 compute_dudt_dwdt(float4 *dwdt,
 // Particle RCS
 //
 
-float4 compute_rcs(const float4 pos, const float4 ori, __read_only image2d_t rcs_real, __read_only image2d_t rcs_imag, const float16 rcs_desc, const float16 sim_desc) {
+float4 compute_ellipsoid_rcs(const float4 pos, __constant float4 *table, const float4 table_desc) {
+//    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
+    //    float4 x = read_imagef(table, sampler, coord);
+    
+
+    float fidx_raw = clamp(fma(pos.w, table_desc.s0, table_desc.s1), 0.0f, table_desc.s2);
+//    float fidx_int, fidx_dec = fract(fidx_raw, &fidx_int);
+//    uint iidx_int = convert_uint(fidx_int);
+    uint iidx_int = (uint)fidx_raw;
+
+    // Actual weight
+    //float xz = mix(table[iidx_int.s0], table[iidx_int.s1], fidx_dec.s0);
+    float4 xz = table[iidx_int];
+    
+    //const float beta = atan2(length(pos.s01), pos.s2);
+    const float beta = atan2(pos.s2, length(pos.s01));
+    
+    float cb = cos(beta);
+
+    float4 x = (float4)(xz.s01, xz.s01 + (xz.s23 - xz.s01) * cb * cb);
+    
+//    if (get_global_id(0) == 0) {
+//        printf("d %.1fmm, coord = %.1f  rcs = %.3v4e  beta = %.3f  cb = %.3f  h/v = %.3f dB\n", pos.w * 2000.0f, fidx_raw, x, beta, cb, 20.0f * log10(length(x.s01) / length(x.s23)));
+//    }
+    
+    return x;
+}
+
+float4 compute_debris_rcs(const float4 pos, const float4 ori, __read_only image2d_t rcs_real, __read_only image2d_t rcs_imag, const float16 rcs_desc, const float16 sim_desc) {
     const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
 
     const float el = atan2(pos.s2, length(pos.s01));
@@ -413,11 +443,11 @@ float4 compute_rcs(const float4 pos, const float4 ori, __read_only image2d_t rcs
     float hh_real = cg * (real.s0 * cg - real.s2 * sg) - sg * (real.s2 * cg - real.s1 * sg);
     float hh_imag = cg * (imag.s0 * cg - imag.s2 * sg) - sg * (imag.s2 * cg - imag.s1 * sg);
     
-    float hv_real = cg * (real.s2 * cg - real.s1 * sg) + sg * (real.s0 * cg - real.s2 * sg);
-    float hv_imag = cg * (imag.s2 * cg - imag.s1 * sg) + sg * (imag.s0 * cg - imag.s2 * sg);
-    
-    float vh_real = cg * (real.s2 * cg + real.s0 * sg) - sg * (real.s1 * cg + real.s2 * sg);
-    float vh_imag = cg * (imag.s2 * cg + imag.s0 * sg) - sg * (imag.s1 * cg + imag.s2 * sg);
+    //    float hv_real = cg * (real.s2 * cg - real.s1 * sg) + sg * (real.s0 * cg - real.s2 * sg);
+    //    float hv_imag = cg * (imag.s2 * cg - imag.s1 * sg) + sg * (imag.s0 * cg - imag.s2 * sg);
+    //
+    //    float vh_real = cg * (real.s2 * cg + real.s0 * sg) - sg * (real.s1 * cg + real.s2 * sg);
+    //    float vh_imag = cg * (imag.s2 * cg + imag.s0 * sg) - sg * (imag.s1 * cg + imag.s2 * sg);
     
     float vv_real = cg * (real.s1 * cg + real.s2 * sg) + sg * (real.s2 * cg + real.s0 * sg);
     float vv_imag = cg * (imag.s1 * cg + imag.s2 * sg) + sg * (imag.s2 * cg + imag.s0 * sg);
@@ -458,7 +488,7 @@ __kernel void dummy(__read_only __global float4 *p,
 {
     unsigned int i = get_global_id(0);
     
-    float4 pos = p[i];
+//    float4 pos = p[i];
     float4 ori = o[i];
     
     float t = sim_desc.s7 * 0.01f;
@@ -508,7 +538,7 @@ __kernel void dummy(__read_only __global float4 *p,
 //    ori = quat_mult(quat_mult(quat_mult(ra, rb), rc), ori);
 //    ori = quat_mult(rr, u);
 
-    //x[i] = compute_rcs(pos, ori, rcs_real, rcs_imag, rcs_desc, sim_desc);
+    //x[i] = compute_debris_rcs(pos, ori, rcs_real, rcs_imag, rcs_desc, sim_desc);
 //    const float el = atan2(pos.s2, length(pos.s01));
 //    const float az = atan2(pos.s0, pos.s1);
     
@@ -584,7 +614,7 @@ __kernel void dummy(__read_only __global float4 *p,
     
     // Assign signal amplitude as Hi, Hq, Vi, Vq
     //float4 ss = (float4)(hh_real + vh_real, hh_imag + vh_imag, vv_real + hv_real, vv_imag + hv_imag);
-    float4 ss = (float4)(hh_real, hh_imag, vv_real, vv_imag);
+//    float4 ss = (float4)(hh_real, hh_imag, vv_real, vv_imag);
 
 //    if (i == 0) {
 //        float hh = length(ss.s01);
@@ -601,9 +631,12 @@ __kernel void dummy(__read_only __global float4 *p,
 //
 __kernel void bg_atts(__global float4 *p,
                       __global float4 *v,
+                      __global float4 *x,
                       __global uint4 *y,
                       __read_only image3d_t wind_uvw,
                       const float16 wind_desc,
+                      __constant float4 *drop_rcs,
+                      const float4 drop_rcs_desc,
                       const float16 sim_desc)
 {
 
@@ -659,6 +692,7 @@ __kernel void bg_atts(__global float4 *p,
     
     p[i] = pos;
     v[i] = vel;
+    x[i] = compute_ellipsoid_rcs(pos, drop_rcs, drop_rcs_desc);
 }
 
 //
@@ -666,9 +700,12 @@ __kernel void bg_atts(__global float4 *p,
 //
 __kernel void el_atts(__global float4 *p,                  // position (x, y, z) and size (radius)
                       __global float4 *v,                  // velocity (u, v, w) and a vacant float
+                      __global float4 *x,                  // rcs (hi, hq, vi, vq) of the particle
                       __global uint4 *y,                   // 128-bit random seed (4 x 32-bit)
                       __read_only image3d_t wind_uvw,
                       const float16 wind_desc,
+                      __constant float4 *drop_rcs,
+                      const float4 drop_rcs_desc,
                       const float16 sim_desc)
 {
     
@@ -759,9 +796,10 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
         vel += (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
 
     }
-
+    
     p[i] = pos;
     v[i] = vel;
+    x[i] = compute_ellipsoid_rcs(pos, drop_rcs, drop_rcs_desc);
 }
 
 //
@@ -857,7 +895,7 @@ __kernel void db_atts(__global float4 *p,
     
     tum = normalize(tum);
 
-    rcs = compute_rcs(pos, ori, rcs_real, rcs_imag, rcs_desc, sim_desc);
+    rcs = compute_debris_rcs(pos, ori, rcs_real, rcs_imag, rcs_desc, sim_desc);
     
     // Copy back to global memory space
     p[i] = pos;

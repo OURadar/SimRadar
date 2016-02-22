@@ -72,6 +72,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
         C->surf_rcs_real[i] = NULL;
         C->surf_rcs_imag[i] = NULL;
     }
+    C->surf_rcs_ellipsoids = NULL;
     
 #else
 	
@@ -362,9 +363,12 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
+    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &C->scat_rcs);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
+    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCS,                  sizeof(cl_mem),     &C->rcs_ellipsoid);
+    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCSDescription,       sizeof(cl_float4),  &C->rcs_ellipsoid_desc);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_bg_atts().\n", now());
@@ -374,9 +378,12 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
+    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &C->scat_rcs);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
+    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentEllipsoidRCS,                  sizeof(cl_mem),     &C->rcs_ellipsoid);
+    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentEllipsoidRCSDescription,       sizeof(cl_float4),  &C->rcs_ellipsoid_desc);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_el_atts().\n", now());
@@ -1036,6 +1043,8 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 	
 	H->verb = verb;
 	
+    RS_compute_rcs_ellipsoids(H);
+    
 	return H;
 }
 
@@ -1080,7 +1089,7 @@ void RS_free_scat_memory(RSHandle *H) {
 		gcl_free(H->worker[i].work);
 		gcl_free(H->worker[i].pulse);
 		gcl_free(H->worker[i].scat_rnd);
-	}
+    }
 	
 #else
 	
@@ -1133,32 +1142,50 @@ void RS_free(RSHandle *H) {
 	
 	RS_free_scat_memory(H);
 	
-    int t = 0;
-
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 
 	for (i = 0; i < H->num_workers; i++) {
-		gcl_free(H->worker[i].range_weight);
-		gcl_free(H->worker[i].angular_weight);
-		gcl_release_image(H->worker[i].vel[t]);
-        gcl_release_image(H->worker[i].adm_cd[t]);
-        gcl_release_image(H->worker[i].adm_cm[t]);
-        gcl_release_image(H->worker[i].rcs_real[t]);
-        gcl_release_image(H->worker[i].rcs_imag[t]);
+        gcl_free(H->worker[i].angular_weight);
+        gcl_free(H->worker[i].range_weight);
+        
+        gcl_release_image(H->worker[i].rcs_ellipsoid);
+        
+        for (int a = 0; a < H->adm_count; a++) {
+            gcl_release_image(H->worker[i].adm_cd[a]);
+            gcl_release_image(H->worker[i].adm_cm[a]);
+        }
+        
+        for (int r = 0; r < H->rcs_count; r++) {
+            gcl_release_image(H->worker[i].rcs_real[r]);
+            gcl_release_image(H->worker[i].rcs_imag[r]);
+        }
+        
+        for (int v = 0; v < H->vel_count; v++) {
+            gcl_release_image(H->worker[i].vel[v]);
+        }
 	}
 	
 #else
 	
-	for (i = 0; i < H->num_workers; i++) {
-		clReleaseMemObject(H->worker[i].range_weight);
-		clReleaseMemObject(H->worker[i].angular_weight);
-		clReleaseMemObject(H->worker[i].vel[t]);
-        clReleaseMemObject(H->worker[i].adm_cd[t]);
-        clReleaseMemObject(H->worker[i].adm_cm[t]);
-        clReleaseMemObject(H->worker[i].rcs_real[t]);
-        clReleaseMemObject(H->worker[i].rcs_imag[t]);
-	}
-	
+    for (i = 0; i < H->num_workers; i++) {
+        clReleaseMemObject(H->worker[i].angular_weight);
+        clReleaseMemObject(H->worker[i].range_weight);
+        
+        for (int a = 0; a < H->adm_count; a++) {
+            clReleaseMemObject(H->worker[i].adm_cd[a]);
+            clReleaseMemObject(H->worker[i].adm_cm[a]);
+        }
+        
+        for (int r = 0; r < H->rcs_count; r++) {
+            clReleaseMemObject(H->worker[i].rcs_real[r]);
+            clReleaseMemObject(H->worker[i].rcs_imag[r]);
+        }
+        
+        for (int v = 0; v < H->vel_count; v++) {
+            clReleaseMemObject(H->worker[i].vel[v]);
+        }
+    }
+    
 #endif
 	
     free(H->anchor_pos);
@@ -1394,7 +1421,7 @@ void RS_init_scat_pos(RSHandle *H) {
     // Replace the very first debris particle
     if (H->debris_population[1] > 0) {
         k = (int)H->debris_population[0];
-        printf("k = %d\n", k);
+        //printf("k = %d\n", k);
         H->scat_pos[k].x = 0.0f;
         H->scat_pos[k].y = H->params.range_start + floorf(H->params.range_count * 0.5f) * H->params.range_delta;
         H->scat_pos[k].z = 0.5f * domain.size.z;
@@ -2143,9 +2170,7 @@ void RS_set_dsd_to_mp(RSHandle *H) {
     }
     
     RS_set_dsd(H, n, ds, count, RSDropSizeDistributionMarshallPalmer);
-    
-    RS_compute_rcs_ellipsoids(H);
-    
+
     free(n);
 }
 
@@ -2170,6 +2195,91 @@ void RS_set_rcs_ellipsoids(RSHandle *H, const cl_float4 *weights, const float ta
                 table.dx, table.x0, table.xm, table_size);
     }
     
+//    cl_image_format format = {CL_RGBA, CL_FLOAT};
+//    
+//#if defined (CL_VERSION_1_2)
+//    
+//    cl_image_desc desc;
+//    desc.image_type = CL_MEM_OBJECT_IMAGE1D;
+//    desc.image_width  = table_size;
+//    desc.image_height = 1;
+//    desc.image_depth  = 1;
+//    desc.image_array_size = 0;
+//    desc.image_row_pitch = desc.image_width * sizeof(cl_float4);
+//    desc.image_slice_pitch = desc.image_height * desc.image_row_pitch;
+//    desc.num_mip_levels = 0;
+//    desc.num_samples = 0;
+//    desc.buffer = NULL;
+//    
+//#endif
+//    
+//#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+//    
+//    for (i = 0; i < H->num_workers; i++) {
+//        if (H->worker[i].rcs_ellipsoid != NULL) {
+//            if (H->verb > 1) {
+//                rsprint("worker[%d] setting RCS of ellipsoids.", i);
+//            }
+//            gcl_release_image(H->worker[i].rcs_ellipsoid);
+//            H->worker[i].mem_size -= (cl_uint)(H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionMaximum] + 1.0f) * sizeof(cl_float4);
+//        }
+//        H->worker[i].rcs_ellipsoid = gcl_create_image(&format, table_size, 1, 1, H->worker[i].surf_rcs_ellipsoids);
+//        if (H->worker[i].rcs_ellipsoid == NULL) {
+//            fprintf(stderr, "%s : RS : Error creating RCS of ellipsoid table on CL device.\n", now());
+//            return;
+//        }
+//        for (int i = 0; i < 5; i++ ) {
+//            printf("weights[%d] = %.3e %.3e %.3e %.3e ...\n", i, weights[i].s0, weights[i].s1, weights[i].s2, weights[i].s3);
+//        }
+//        dispatch_async(H->worker[i].que, ^{
+//            size_t origin[3] = {0, 0, 0};
+//            size_t region[3] = {table_size, 1, 1};
+//            gcl_copy_ptr_to_image(H->worker[i].rcs_ellipsoid, (void *)weights, origin, region);
+//            dispatch_semaphore_signal(H->worker[i].sem);
+//        });
+//    }
+//    
+//    for (i = 0; i < H->num_workers; i++) {
+//        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+//    }
+//    
+//#else
+//    
+//    cl_int ret;
+//    cl_mem_flags flags = CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR;
+//
+//    for (i = 0; i < H->num_workers; i++) {
+//        if (H->worker[i].rcs_ellipsoid != NULL) {
+//            if (H->verb > 1) {
+//                rsprint("worker[%d] setting RCS of ellipsoids.", now(), i);
+//            }
+//            clReleaseMemObject(H->worker[i].rcs_ellipsoid);
+//        }
+//        if (H->verb > 2) {
+//            rsprint("worker[%d] creating RCS of ellipsoids (cl_mem) & copying data from %p.\n", i, table.data);
+//        }
+//        
+//        #if defined (CL_VERSION_1_2)
+//        
+//        H->worker[i].rcs_ellipsoid = clCreateImage(H->worker[i].context, flags, &format, &desc, (void *)weights, &ret);
+//        
+//        #else
+//        
+//        H->worker[i].rcs_ellipsoid = clCreateImage2D(H->worker[i].context, flags, &format, table_size, 1, table_size * sizeof(cl_float4), (void *)weights, &ret);
+//        
+//        #endif
+//        
+//        if (ret != CL_SUCCESS) {
+//            rsprint("Error creating RCS of ellipsoid table on CL device.");
+//            return;
+//        }
+//        if (H->verb > 2) {
+//            rsprint("worker[%d] created RCS of ellipsoids @ %p.", i, H->worker[i].rcs_ellipsoid);
+//        }
+//    }
+//    
+//#endif
+    
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
     
     for (i = 0; i < H->num_workers; i++) {
@@ -2179,6 +2289,9 @@ void RS_set_rcs_ellipsoids(RSHandle *H, const cl_float4 *weights, const float ta
             }
             gcl_free(H->worker[i].rcs_ellipsoid);
         }
+        //    for (int i = 0; i < 5; i++ ) {
+        //        printf("weights[%d] = %.3e %.3e %.3e %.3e ...\n", i, weights[i].s0, weights[i].s1, weights[i].s2, weights[i].s3);
+        //    }
         H->worker[i].rcs_ellipsoid = gcl_malloc(table_size * sizeof(cl_float4), (void *)weights, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
         if (H->worker[i].rcs_ellipsoid == NULL) {
             fprintf(stderr, "%s : RS : Error creating RCS of ellipsoid table on CL device.\n", now());
@@ -2192,25 +2305,25 @@ void RS_set_rcs_ellipsoids(RSHandle *H, const cl_float4 *weights, const float ta
     for (i = 0; i < H->num_workers; i++) {
         if (H->worker[i].rcs_ellipsoid != NULL) {
             if (H->verb > 1) {
-                rsprint("worker[%d] setting RCS of ellipsoids.", now(), i);
+                rsprint("worker[%d] setting RCS of ellipsoid.", i);
             }
             clReleaseMemObject(H->worker[i].rcs_ellipsoid);
         }
         if (H->verb > 2) {
-            printf("%s : RS : worker[%d] creating RCS of ellipsoids (cl_mem) & copying data from %p.\n", now(), i, table.data);
+            printf("%s : RS : worker[%d] creating RCS of ellipsoid (cl_mem) & copying data from %p.\n", now(), i, table.data);
         }
         H->worker[i].rcs_ellipsoid = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(cl_float4), (void *)weights, &ret);
         if (ret != CL_SUCCESS) {
-            fprintf(stderr, "%s : RS : Error creating RCS of ellipsoid table on CL device.\n", now());
+            rsprint("Error creating RCS of ellipsoid table on CL device.");
             return;
         }
         if (H->verb > 2) {
-            printf("%s : RS : worker[%d] created RCS of ellipsoids @ %p.\n", now(), i, H->worker[i].rcs_ellipsoid);
+            printf("worker[%d] created RCS of ellipsoid @ %p.\n", i, H->worker[i].rcs_ellipsoid);
         }
     }
     
 #endif
-    
+
     for (i = 0; i < H->num_workers; i++) {
         // Copy over to CL workers. A bit wasteful but the codes are easier to ready this way.
         H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionScale] = table.dx;
@@ -2264,7 +2377,7 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
     for (i = 0; i < H->num_workers; i++) {
         if (H->worker[i].range_weight != NULL) {
             if (H->verb > 1) {
-                rsprint("worker[%d] setting range weight.", now(), i);
+                rsprint("worker[%d] setting range weight.", i);
             }
             clReleaseMemObject(H->worker[i].range_weight);
         }
@@ -2288,7 +2401,7 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
         H->worker[i].range_weight_desc.s[RSTable1DDescriptionScale] = table.dx;
         H->worker[i].range_weight_desc.s[RSTable1DDescriptionOrigin] = table.x0;
         H->worker[i].range_weight_desc.s[RSTable1DDescriptionMaximum] = table.xm;
-        H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
+        H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float);
     }
     
     RS_table_free(table);
@@ -3815,6 +3928,29 @@ void RS_advance_time(RSHandle *H) {
     });
     dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
 
+    //    i = 0;
+    //    r = 0;
+    //    a = 0;
+    //    dispatch_async(H->worker[i].que, ^{
+    //        db_atts_kernel(&H->worker[i].ndrange_scat_all,
+    //                       (cl_float4 *)H->worker[i].scat_pos,
+    //                       (cl_float4 *)H->worker[i].scat_ori,
+    //                       (cl_float4 *)H->worker[i].scat_vel,
+    //                       (cl_float4 *)H->worker[i].scat_tum,
+    //                       (cl_float4 *)H->worker[i].scat_sig,
+    //                       (cl_uint4 *)H->worker[i].scat_rnd,
+    //                       (cl_image)H->worker[i].vel[v],
+    //                       H->worker[i].vel_desc,
+    //                       (cl_image)H->worker[i].adm_cd[a],
+    //                       (cl_image)H->worker[i].adm_cm[a],
+    //                       H->worker[i].adm_desc[a],
+    //                       (cl_image)H->worker[i].rcs_real[r],
+    //                       (cl_image)H->worker[i].rcs_imag[r],
+    //                       H->worker[i].rcs_desc[r],
+    //                       H->sim_desc);
+    //        dispatch_semaphore_signal(H->worker[i].sem);
+    //    });
+    //    dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
     #else
     
     // These kernels are actually independent and, thus, can be parallelized.
@@ -3824,17 +3960,23 @@ void RS_advance_time(RSHandle *H) {
                 el_atts_kernel(&H->worker[i].ndrange_scat[0],
                                (cl_float4 *)H->worker[i].scat_pos,
                                (cl_float4 *)H->worker[i].scat_vel,
+                               (cl_float4 *)H->worker[i].scat_rcs,
                                (cl_uint4 *)H->worker[i].scat_rnd,
                                (cl_image)H->worker[i].vel[v],
                                H->worker[i].vel_desc,
+                               (cl_float4 *)H->worker[i].rcs_ellipsoid,
+                               H->worker[i].rcs_ellipsoid_desc,
                                H->sim_desc);
             } else {
                 bg_atts_kernel(&H->worker[i].ndrange_scat[0],
                                (cl_float4 *)H->worker[i].scat_pos,
                                (cl_float4 *)H->worker[i].scat_vel,
+                               (cl_float4 *)H->worker[i].scat_rcs,
                                (cl_uint4 *)H->worker[i].scat_rnd,
                                (cl_image)H->worker[i].vel[v],
                                H->worker[i].vel_desc,
+                               (cl_float4 *)H->worker[i].rcs_ellipsoid,
+                               H->worker[i].rcs_ellipsoid_desc,
                                H->sim_desc);
             }
             dispatch_semaphore_signal(H->worker[i].sem);
@@ -3877,30 +4019,6 @@ void RS_advance_time(RSHandle *H) {
             }
         }
     }
-
-    i = 0;
-    r = 0;
-    a = 0;
-    dispatch_async(H->worker[i].que, ^{
-        db_atts_kernel(&H->worker[i].ndrange_scat_all,
-                       (cl_float4 *)H->worker[i].scat_pos,
-                       (cl_float4 *)H->worker[i].scat_ori,
-                       (cl_float4 *)H->worker[i].scat_vel,
-                       (cl_float4 *)H->worker[i].scat_tum,
-                       (cl_float4 *)H->worker[i].scat_sig,
-                       (cl_uint4 *)H->worker[i].scat_rnd,
-                       (cl_image)H->worker[i].vel[v],
-                       H->worker[i].vel_desc,
-                       (cl_image)H->worker[i].adm_cd[a],
-                       (cl_image)H->worker[i].adm_cm[a],
-                       H->worker[i].adm_desc[a],
-                       (cl_image)H->worker[i].rcs_real[r],
-                       (cl_image)H->worker[i].rcs_imag[r],
-                       H->worker[i].rcs_desc[r],
-                       H->sim_desc);
-        dispatch_semaphore_signal(H->worker[i].sem);
-    });
-    dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
     
     #endif
 
@@ -4284,13 +4402,13 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
     const float sc = 1.0e-9f * k_0 * k_0 / (4.0f * M_PI * epsilon_0);
     const cl_float4 epsilon_r_minus_one = (cl_float4){{78.669f, 18.2257f, 78.669f, 18.2257f}};
     
-    // Make table with D = 0.1mm, 0.2mm, 0.3mm ... 10.0mm (100 entries)
-    const size_t n = 100;
+    // Make table with D = 0.05mm, 0.06mm, ... 10.0mm (96 entries)
+    const size_t n = 96;
     
     cl_float4 *table = (cl_float4 *)malloc(n * sizeof(cl_float4));
     
     for (i = 0; i < n; i++) {
-        float d = 0.1f + (float)i * 0.1f;
+        float d = 0.5f + (float)i * 0.1f;
         float d2 = d * d;
         float d3 = d2 * d;
         float d4 = d3 * d;
@@ -4315,13 +4433,14 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
         table[i].s2 = sc * alxz.s2;
         table[i].s3 = sc * alxz.s3;
         
-#ifdef DEBUG_HEAVY
-        rsprint("D = %.2fmm  rab %.3f  lz %.3f  lx %.3f  numer = %.3e %.3e %.3e %.3e  denom = %.3f %.3f %.3f %.3f  alxz = %.3e %.3e %.3e %.3e  rcs = %.3e %.3e %.3e %.3e",
-                d, rab, lz, lx, numer.s0, numer.s1, numer.s2, numer.s3, denom.s0, denom.s1, denom.s2, denom.s3, alxz.s0, alxz.s1, alxz.s2, alxz.s3, rcs[i].s0, rcs[i].s1, rcs[i].s2, rcs[i].s3);
-#endif
+        #ifdef DEBUG_HEAVY
+        rsprint("D = %.2fmm  rab %.3f  lz %.3f  lx %.3f  numer = %.3e %.3e %.3e %.3e  denom = %.3f %.3f %.3f %.3f  alxz = %.3e %.3e %.3e %.3e  lx/lz = %.3e %.3e %.3e %.3e",
+                d, rab, lz, lx, numer.s0, numer.s1, numer.s2, numer.s3, denom.s0, denom.s1, denom.s2, denom.s3, alxz.s0, alxz.s1, alxz.s2, alxz.s3, table[i].s0, table[i].s1, table[i].s2, table[i].s3);
+        #endif
     }
     
-    RS_set_rcs_ellipsoids(H, table, 1.0e-3f, 1.0e-4f, n);
+    // Set table lookup in radius in mm
+    RS_set_rcs_ellipsoids(H, table, 0.25e-3f, 0.05e-3f, n);
     
     free(table);
     
