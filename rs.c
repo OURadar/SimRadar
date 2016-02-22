@@ -15,6 +15,29 @@
 #endif
 
 #pragma mark -
+
+// These implementations are very inefficient on CPU; They are coded this way so comparison with the GPU kernel codes can be made easily.
+cl_float4 complex_multiply(const cl_float4 a, const cl_float4 b) {
+    return (cl_float4){{
+        a.s0 * b.s0 - a.s1 * b.s1,
+        a.s1 * b.s0 + a.s0 * b.s1,
+        a.s2 * b.s2 - a.s3 * b.s3,
+        a.s3 * b.s2 + a.s2 * b.s3
+    }};
+}
+
+cl_float4 complex_divide(const cl_float4 a, const cl_float4 b) {
+    float bm01 = b.s0 * b.s0 + b.s1 * b.s1;
+    float bm23 = b.s2 * b.s2 + b.s3 * b.s3;
+    return (cl_float4){{
+        (a.s0 * b.s0 + a.s1 * b.s1) / bm01,
+        (a.s1 * b.s0 - a.s0 * b.s1) / bm01,
+        (a.s2 * b.s2 + a.s3 * b.s3) / bm23,
+        (a.s3 * b.s2 - a.s2 * b.s3) / bm23
+    }};
+}
+
+#pragma mark -
 #pragma mark Private Functions
 
 void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char **src_ptr, cl_context_properties sharegroup, const char verb) {
@@ -2121,12 +2144,132 @@ void RS_set_dsd_to_mp(RSHandle *H) {
     
     RS_set_dsd(H, n, ds, count, RSDropSizeDistributionMarshallPalmer);
     
+    RS_compute_rcs_ellipsoids(H);
+    
     free(n);
 }
 
+void RS_compute_rcs_ellipsoids(RSHandle *H) {
+    
+    int i;
+    
+    const float k_0 = H->sim_desc.s[RSSimulationDescriptionWaveNumber] * 0.5f;
+    const float epsilon_0 = 8.85418782e-12f;
+    const float sc = 1.0e-9f * k_0 * k_0 / (4.0f * M_PI * epsilon_0);
+    const cl_float4 epsilon_r_minus_one = (cl_float4){78.669f, 18.2257f, 78.669f, 18.2257f};
+
+    // Make table with D = 0.1mm, 0.2mm, 0.3mm ... 10.0mm (100 entries)
+    const size_t n = 100;
+    
+    cl_float4 *table = (cl_float4 *)malloc(n * sizeof(cl_float4));
+    
+    for (i = 0; i < n; i++) {
+        float d = 0.1f + (float)i * 0.1f;
+        float d2 = d * d;
+        float d3 = d2 * d;
+        float d4 = d3 * d;
+        float vv = 1.0048f + 0.0057e-1f * d - 2.628e-2f * d2 + 3.682e-3f * d3 - 1.667e-4f * d4;
+        float rab = 1.0f / vv;
+        float fsq = rab * rab - 1.0f;
+        float f = sqrt(fsq);
+        float lz = (1.0f + fsq) / fsq * (1.0f - atanf(f) / f);
+        float lx = (1.0f - lz) * 0.5f;
+        float vol = M_PI * d3 / 6.0f;
+        cl_float4 numer = complex_multiply((cl_float4){vol * epsilon_0, 0.0f, vol * epsilon_0, 0.0f}, epsilon_r_minus_one);
+        cl_float4 denom = {lx * epsilon_r_minus_one.s0 + 1.0f, lx * epsilon_r_minus_one.s1, lz * epsilon_r_minus_one.s2 + 1.0f, lz * epsilon_r_minus_one.s3};
+        cl_float4 alxz = complex_divide(numer, denom);
+        
+        table[i].s0 = sc * alxz.s0;
+        table[i].s1 = sc * alxz.s1;
+        table[i].s2 = sc * alxz.s2;
+        table[i].s3 = sc * alxz.s3;
+
+        #ifdef DEBUG_HEAVY
+        rsprint("D = %.2fmm  rab %.3f  lz %.3f  lx %.3f  numer = %.3e %.3e %.3e %.3e  denom = %.3f %.3f %.3f %.3f  alxz = %.3e %.3e %.3e %.3e  rcs = %.3e %.3e %.3e %.3e",
+                d, rab, lz, lx, numer.s0, numer.s1, numer.s2, numer.s3, denom.s0, denom.s1, denom.s2, denom.s3, alxz.s0, alxz.s1, alxz.s2, alxz.s3, rcs[i].s0, rcs[i].s1, rcs[i].s2, rcs[i].s3);
+        #endif
+    }
+    
+    RS_set_rcs_ellipsoids(H, table, 1.0e-3f, 1.0e-4f, n);
+    
+    free(table);
+    
+}
 
 #pragma mark -
 #pragma mark Functions to set properties after RS_init()
+
+void RS_set_rcs_ellipsoids(RSHandle *H, const cl_float4 *weights, const float table_index_start, const float table_index_delta, unsigned int table_size) {
+
+    int i;
+    
+    RSTable table = RS_table_init(table_size);
+    if (table.data == NULL) {
+        return;
+    }
+    // Set up the coefficients for FMA(a, b, c) in the CL kernel
+    table.dx = 1.0f / table_index_delta;
+    table.x0 = -table_index_start * table.dx;
+    table.xm = (float)table_size - 1.0f;
+    memcpy(table.data, weights, table_size * sizeof(float));
+    if (H->verb > 1) {
+        rsprint("Host RCS of ellipsoid table received.  dx = %.4f   x0 = %.1f   xm = %.0f  n = %d\n",
+                table.dx, table.x0, table.xm, table_size);
+    }
+    
+#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+    
+    for (i = 0; i < H->num_workers; i++) {
+        if (H->worker[i].rcs_ellipsoid != NULL) {
+            if (H->verb > 1) {
+                rsprint("worker[%d] setting RCS of ellipsoids.", i);
+            }
+            gcl_free(H->worker[i].rcs_ellipsoid);
+        }
+        H->worker[i].rcs_ellipsoid = gcl_malloc(table_size * sizeof(float), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+        if (H->worker[i].rcs_ellipsoid == NULL) {
+            fprintf(stderr, "%s : RS : Error creating RCS of ellipsoid table on CL device.\n", now());
+            return;
+        }
+    }
+    
+#else
+    
+    cl_int ret;
+    for (i = 0; i < H->num_workers; i++) {
+        if (H->worker[i].rcs_ellipsoid != NULL) {
+            if (H->verb > 1) {
+                rsprint("worker[%d] setting RCS of ellipsoids.", now(), i);
+            }
+            clReleaseMemObject(H->worker[i].rcs_ellipsoid);
+        }
+        if (H->verb > 2) {
+            printf("%s : RS : worker[%d] creating RCS of ellipsoids (cl_mem) & copying data from %p.\n", now(), i, table.data);
+        }
+        H->worker[i].rcs_ellipsoid = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), table.data, &ret);
+        if (ret != CL_SUCCESS) {
+            fprintf(stderr, "%s : RS : Error creating RCS of ellipsoid table on CL device.\n", now());
+            return;
+        }
+        if (H->verb > 2) {
+            printf("%s : RS : worker[%d] created RCS of ellipsoids @ %p.\n", now(), i, H->worker[i].rcs_ellipsoid);
+        }
+    }
+    
+#endif
+    
+    for (i = 0; i < H->num_workers; i++) {
+        // Copy over to CL workers. A bit wasteful but the codes are easier to ready this way.
+        H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionScale] = table.dx;
+        H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionOrigin] = table.x0;
+        H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionMaximum] = table.xm;
+        H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
+    }
+    
+    RS_table_free(table);
+    
+}
+
 
 void RS_set_range_weight(RSHandle *H, const float *weights, const float table_index_start, const float table_index_delta, unsigned int table_size) {
 	

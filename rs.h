@@ -275,13 +275,16 @@ typedef struct _rs_worker {
     cl_mem                 angular_weight;
     cl_float4              angular_weight_desc;
     
-    cl_mem                 adm_cd[RS_MAX_ADM_TABLES];
-    cl_mem                 adm_cm[RS_MAX_ADM_TABLES];
-    cl_float16             adm_desc[RS_MAX_ADM_TABLES];
+    cl_mem                 rcs_ellipsoid;                // RCS of background scatterers
+    cl_float4              rcs_ellipsoid_desc;           // RCS-desc of background scatterers
     
-    cl_mem                 rcs_real[RS_MAX_RCS_TABLES];
-    cl_mem                 rcs_imag[RS_MAX_RCS_TABLES];
-    cl_float16             rcs_desc[RS_MAX_RCS_TABLES];
+    cl_mem                 adm_cd[RS_MAX_ADM_TABLES];    // ADM-cd of debris
+    cl_mem                 adm_cm[RS_MAX_ADM_TABLES];    // ADM-cm of debris
+    cl_float16             adm_desc[RS_MAX_ADM_TABLES];  // ADM-desc of debris
+    
+    cl_mem                 rcs_real[RS_MAX_RCS_TABLES];  // RCS of debris
+    cl_mem                 rcs_imag[RS_MAX_RCS_TABLES];  // RCS of debris
+    cl_float16             rcs_desc[RS_MAX_RCS_TABLES];  // RCS-desc of debris
     
     cl_mem                 vel[RS_MAX_VEL_TABLES];
     cl_float16             vel_desc;
@@ -519,6 +522,7 @@ void RS_download_orientation_only(RSHandle *H);
 void RS_download_pulse_only(RSHandle *H);
 
 void RS_rcs_from_dsd(RSHandle *H);
+void RS_compute_rcs_ellipsoids(RSHandle *H);
 
 #pragma mark -
 #pragma mark Simulation Time Evolution
