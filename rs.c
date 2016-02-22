@@ -1040,11 +1040,9 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 					0.0f, 8.0f, 1.0f);                          // Elevation
 		
 	//RS_set_angular_weight_to_double_cone(H, 2.0f / 180.0f * M_PI);
+
+    H->verb = verb;
 	
-	H->verb = verb;
-	
-    RS_compute_rcs_ellipsoids(H);
-    
 	return H;
 }
 
@@ -1413,7 +1411,9 @@ void RS_init_scat_pos(RSHandle *H) {
         }
     }
 	
-	// Replace a few points for debugging purpose.
+    RS_compute_rcs_ellipsoids(H);
+
+    // Replace a few points for debugging purpose.
 	H->scat_pos[0].x = domain.origin.x + 0.5f * domain.size.x;
     H->scat_pos[0].y = domain.origin.y + 0.5f * domain.size.y;
     H->scat_pos[0].z = 0.0f; // domain.origin.z + 0.5f * domain.size.z;
@@ -1445,6 +1445,7 @@ void RS_init_scat_pos(RSHandle *H) {
     // Propagate / duplicate some constants to other places for efficient kernel execution
     for (i = 0; i < H->num_workers; i++) {
         H->worker[i].range_weight_desc.s[RSTable1DDescriptionUserConstant] = H->sim_desc.s[RSSimulationDescriptionWaveNumber];
+        H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionUserConstant] = H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale];
     }
 }
 
@@ -2177,7 +2178,7 @@ void RS_set_dsd_to_mp(RSHandle *H) {
 #pragma mark -
 #pragma mark Functions to set properties after RS_init()
 
-void RS_set_rcs_ellipsoids(RSHandle *H, const cl_float4 *weights, const float table_index_start, const float table_index_delta, unsigned int table_size) {
+void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const float table_index_start, const float table_index_delta, unsigned int table_size) {
 
     int i;
     
@@ -2189,7 +2190,7 @@ void RS_set_rcs_ellipsoids(RSHandle *H, const cl_float4 *weights, const float ta
     table.dx = 1.0f / table_index_delta;
     table.x0 = -table_index_start * table.dx;
     table.xm = (float)table_size - 1.0f;
-
+    memcpy(table.data, weights, table_size * sizeof(cl_float4));
     if (H->verb > 1) {
         rsprint("Host RCS of ellipsoid table received.  dx = %.4f   x0 = %.1f   xm = %.0f  n = %d\n",
                 table.dx, table.x0, table.xm, table_size);
@@ -2289,10 +2290,10 @@ void RS_set_rcs_ellipsoids(RSHandle *H, const cl_float4 *weights, const float ta
             }
             gcl_free(H->worker[i].rcs_ellipsoid);
         }
-        //    for (int i = 0; i < 5; i++ ) {
-        //        printf("weights[%d] = %.3e %.3e %.3e %.3e ...\n", i, weights[i].s0, weights[i].s1, weights[i].s2, weights[i].s3);
-        //    }
-        H->worker[i].rcs_ellipsoid = gcl_malloc(table_size * sizeof(cl_float4), (void *)weights, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+        for (int i = 0; i < 5; i++ ) {
+            printf("weights[%d] = %.3e %.3e %.3e %.3e ...\n", i, weights[i].s0, weights[i].s1, weights[i].s2, weights[i].s3);
+        }
+        H->worker[i].rcs_ellipsoid = gcl_malloc(table_size * sizeof(cl_float4), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
         if (H->worker[i].rcs_ellipsoid == NULL) {
             fprintf(stderr, "%s : RS : Error creating RCS of ellipsoid table on CL device.\n", now());
             return;
@@ -2312,7 +2313,10 @@ void RS_set_rcs_ellipsoids(RSHandle *H, const cl_float4 *weights, const float ta
         if (H->verb > 2) {
             printf("%s : RS : worker[%d] creating RCS of ellipsoid (cl_mem) & copying data from %p.\n", now(), i, table.data);
         }
-        H->worker[i].rcs_ellipsoid = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(cl_float4), (void *)weights, &ret);
+        for (int i = 0; i < 5; i++ ) {
+            printf("weights[%d] = %.3e %.3e %.3e %.3e ...\n", i, weights[i].s0, weights[i].s1, weights[i].s2, weights[i].s3);
+        }
+        H->worker[i].rcs_ellipsoid = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(cl_float4), table.data, &ret);
         if (ret != CL_SUCCESS) {
             rsprint("Error creating RCS of ellipsoid table on CL device.");
             return;
@@ -2329,6 +2333,10 @@ void RS_set_rcs_ellipsoids(RSHandle *H, const cl_float4 *weights, const float ta
         H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionScale] = table.dx;
         H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionOrigin] = table.x0;
         H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionMaximum] = table.xm;
+        H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionUserConstant] = H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale];
+        if (H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionUserConstant] == 0.0f) {
+            rsprint("WARNING: Drop concentration scaling not set.");
+        }
         H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
     }
     
@@ -3647,6 +3655,7 @@ void RS_download(RSHandle *H) {
             gcl_memcpy(H->scat_vel + H->offset[i], H->worker[i].scat_vel, H->worker[i].num_scats * sizeof(cl_float4));
             gcl_memcpy(H->scat_ori + H->offset[i], H->worker[i].scat_ori, H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->scat_aux + H->offset[i], H->worker[i].scat_aux, H->worker[i].num_scats * sizeof(cl_float4));
+            gcl_memcpy(H->scat_rcs + H->offset[i], H->worker[i].scat_rcs, H->worker[i].num_scats * sizeof(cl_float4));
 			gcl_memcpy(H->scat_sig + H->offset[i], H->worker[i].scat_sig, H->worker[i].num_scats * sizeof(cl_float4));
             gcl_memcpy(H->pulse_tmp[i], H->worker[i].pulse, H->params.range_count * sizeof(cl_float4));
             dispatch_semaphore_signal(H->worker[i].sem);
@@ -3658,7 +3667,7 @@ void RS_download(RSHandle *H) {
 
     int k;
 
-    cl_event events[H->num_workers][6];
+    cl_event events[H->num_workers][7];
     
     // Non-blocking read, wait for events later when they are queue up.
 	for (i = 0; i < H->num_workers; i++) {
@@ -3667,13 +3676,13 @@ void RS_download(RSHandle *H) {
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, &events[i][2]);
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_aux, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_aux + H->offset[i], 0, NULL, &events[i][3]);
         clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_rcs, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_rcs + H->offset[i], 0, NULL, &events[i][4]);
-		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_sig, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, &events[i][4]);
-        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].pulse, CL_FALSE, 0, H->params.range_count * sizeof(cl_float4), H->pulse_tmp[i], 0, NULL, &events[i][5]);
+		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_sig, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, &events[i][5]);
+        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].pulse, CL_FALSE, 0, H->params.range_count * sizeof(cl_float4), H->pulse_tmp[i], 0, NULL, &events[i][6]);
 	}
 
     for (i = 0; i < H->num_workers; i++) {
-        clWaitForEvents(6, events[i]);
-        for (k = 0; k < 6; k++) {
+        clWaitForEvents(7, events[i]);
+        for (k = 0; k < 7; k++) {
             clReleaseEvent(events[i][k]);
         }
     }
@@ -3840,12 +3849,12 @@ void RS_upload(RSHandle *H) {
 
 #endif
 
-    if (H->dsd_name != RSDropSizeDistributionUndefined) {
-        RS_rcs_from_dsd(H);
-        if (H->verb) {
-            printf("%s : RS : Drop-size derived RCS computed.\n", now());
-        }
-    }
+//    if (H->dsd_name != RSDropSizeDistributionUndefined) {
+//        RS_rcs_from_dsd(H);
+//        if (H->verb) {
+//            printf("%s : RS : Drop-size derived RCS computed.\n", now());
+//        }
+//    }
 }
 
 
@@ -3913,6 +3922,7 @@ void RS_advance_time(RSHandle *H) {
     }
 
     #if defined (_DUMMY_)
+    
     i = 0;
     r = 0;
     dispatch_async(H->worker[i].que, ^{
@@ -3928,29 +3938,32 @@ void RS_advance_time(RSHandle *H) {
     });
     dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
 
-    //    i = 0;
-    //    r = 0;
-    //    a = 0;
-    //    dispatch_async(H->worker[i].que, ^{
-    //        db_atts_kernel(&H->worker[i].ndrange_scat_all,
-    //                       (cl_float4 *)H->worker[i].scat_pos,
-    //                       (cl_float4 *)H->worker[i].scat_ori,
-    //                       (cl_float4 *)H->worker[i].scat_vel,
-    //                       (cl_float4 *)H->worker[i].scat_tum,
-    //                       (cl_float4 *)H->worker[i].scat_sig,
-    //                       (cl_uint4 *)H->worker[i].scat_rnd,
-    //                       (cl_image)H->worker[i].vel[v],
-    //                       H->worker[i].vel_desc,
-    //                       (cl_image)H->worker[i].adm_cd[a],
-    //                       (cl_image)H->worker[i].adm_cm[a],
-    //                       H->worker[i].adm_desc[a],
-    //                       (cl_image)H->worker[i].rcs_real[r],
-    //                       (cl_image)H->worker[i].rcs_imag[r],
-    //                       H->worker[i].rcs_desc[r],
-    //                       H->sim_desc);
-    //        dispatch_semaphore_signal(H->worker[i].sem);
-    //    });
-    //    dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+    #elif defined (_ALL_DEBRIS_)
+    
+    i = 0;
+    r = 0;
+    a = 0;
+    dispatch_async(H->worker[i].que, ^{
+        db_atts_kernel(&H->worker[i].ndrange_scat_all,
+                       (cl_float4 *)H->worker[i].scat_pos,
+                       (cl_float4 *)H->worker[i].scat_ori,
+                       (cl_float4 *)H->worker[i].scat_vel,
+                       (cl_float4 *)H->worker[i].scat_tum,
+                       (cl_float4 *)H->worker[i].scat_sig,
+                       (cl_uint4 *)H->worker[i].scat_rnd,
+                       (cl_image)H->worker[i].vel[v],
+                       H->worker[i].vel_desc,
+                       (cl_image)H->worker[i].adm_cd[a],
+                       (cl_image)H->worker[i].adm_cm[a],
+                       H->worker[i].adm_desc[a],
+                       (cl_image)H->worker[i].rcs_real[r],
+                       (cl_image)H->worker[i].rcs_imag[r],
+                       H->worker[i].rcs_desc[r],
+                       H->sim_desc);
+        dispatch_semaphore_signal(H->worker[i].sem);
+    });
+    dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+
     #else
     
     // These kernels are actually independent and, thus, can be parallelized.
@@ -4042,8 +4055,10 @@ void RS_advance_time(RSHandle *H) {
         
         // Background: Need to refresh some parameters at each time update
         if (H->sim_concept & RSSimulationConceptDraggedBackground) {
-            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
-            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
+            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,      sizeof(cl_mem),     &C->vel[v]);
+//            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentEllipsoidRCS,            sizeof(cl_mem),     C->rcs_ellipsoid);
+//            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentEllipsoidRCSDescription, sizeof(cl_float4),  &C->rcs_ellipsoid_desc);
+            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription,   sizeof(cl_float16), &H->sim_desc);
             clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->debris_origin[0], &C->debris_population[0], NULL, 0, NULL, &events[i][0]);
         } else {
             clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
@@ -4280,15 +4295,16 @@ static void RS_show_scat_i(RSHandle *H, const size_t i) {
 
 
 static void RS_show_rcs_i(RSHandle *H, const size_t i) {
-    printf(" %7lu - ( %9.4f, %9.4f, %9.4f, %9.4f )   ( %7.4f %7.4f %7.4f %7.4f )   r = %.2f m\n", i,
+    printf(" %7lu - ( %9.4f, %9.4f, %9.4f, %9.4f )   ( %7.3e %7.3e %7.3e %7.3e )   r = %.2f m  d = %.1f mm\n", i,
+           H->scat_sig[i].x, H->scat_sig[i].y, H->scat_sig[i].z, H->scat_sig[i].w,
            H->scat_rcs[i].x, H->scat_rcs[i].y, H->scat_rcs[i].z, H->scat_rcs[i].w,
-           H->scat_ori[i].x, H->scat_ori[i].y, H->scat_ori[i].z, H->scat_ori[i].w,
-           H->scat_aux[i].s0);
+           H->scat_aux[i].s0, 2000.0f * H->scat_pos[i].w);
 }
 
 
 void RS_show_scat_pos(RSHandle *H) {
 	size_t i, w;
+    printf("positions:\n");
     for (w = 0; w < H->num_workers; w++) {
         for (i = H->worker[w].debris_origin[0];
              i < H->worker[w].debris_origin[0] + H->worker[w].debris_population[0];
@@ -4399,8 +4415,14 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
     
     const float k_0 = H->sim_desc.s[RSSimulationDescriptionWaveNumber] * 0.5f;
     const float epsilon_0 = 8.85418782e-12f;
-    const float sc = 1.0e-9f * k_0 * k_0 / (4.0f * M_PI * epsilon_0);
     const cl_float4 epsilon_r_minus_one = (cl_float4){{78.669f, 18.2257f, 78.669f, 18.2257f}};
+    //
+    // Sc = k_0 ^ 2 / (4 * pi * epsilon_0)
+    // Coefficient 1.0e-9 for scaling the volume to unit of m^3
+    // Drop concentration scale derived based on ~2,500 drops / m^3
+    //
+    rsprint("Drop concentration scaling = %.2f", H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale]);
+    const float sc = 1.0e-9f * H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] * k_0 * k_0 / (4.0f * M_PI * epsilon_0);
     
     // Make table with D = 0.05mm, 0.06mm, ... 10.0mm (96 entries)
     const size_t n = 96;
@@ -4440,7 +4462,7 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
     }
     
     // Set table lookup in radius in mm
-    RS_set_rcs_ellipsoids(H, table, 0.25e-3f, 0.05e-3f, n);
+    RS_set_rcs_ellipsoid_table(H, table, 0.25e-3f, 0.05e-3f, n);
     
     free(table);
     

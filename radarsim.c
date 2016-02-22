@@ -327,7 +327,7 @@ int main(int argc, char *argv[]) {
     
     if (verb > 2) {
         RS_download(S);
-        printf("Final scatter body positions, velocities and orientations:\n");
+        printf("%s : Final scatter body positions, velocities and orientations:\n", now());
         RS_show_scat_pos(S);
         RS_show_scat_sig(S);
     }

@@ -105,6 +105,6 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table);
 void RS_set_adm_data(RSHandle *H, const RSTable2D table_cd, const RSTable2D table_cm);
 void RS_set_rcs_data(RSHandle *H, const RSTable2D table_real, const RSTable2D table_imag);
 
-void RS_set_rcs_ellipsoids(RSHandle *H, const cl_float4 *weights, const float table_index_start, const float table_index_delta, unsigned int table_size);
+void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const float table_index_start, const float table_index_delta, unsigned int table_size);
 
 #endif

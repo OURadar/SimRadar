@@ -353,7 +353,6 @@ float4 compute_ellipsoid_rcs(const float4 pos, __constant float4 *table, const f
 //    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
     //    float4 x = read_imagef(table, sampler, coord);
     
-
     float fidx_raw = clamp(fma(pos.w, table_desc.s0, table_desc.s1), 0.0f, table_desc.s2);
 //    float fidx_int, fidx_dec = fract(fidx_raw, &fidx_int);
 //    uint iidx_int = convert_uint(fidx_int);
@@ -363,7 +362,6 @@ float4 compute_ellipsoid_rcs(const float4 pos, __constant float4 *table, const f
     //float xz = mix(table[iidx_int.s0], table[iidx_int.s1], fidx_dec.s0);
     float4 xz = table[iidx_int];
     
-    //const float beta = atan2(length(pos.s01), pos.s2);
     const float beta = atan2(pos.s2, length(pos.s01));
     
     float cb = cos(beta);
@@ -371,7 +369,13 @@ float4 compute_ellipsoid_rcs(const float4 pos, __constant float4 *table, const f
     float4 x = (float4)(xz.s01, xz.s01 + (xz.s23 - xz.s01) * cb * cb);
     
 //    if (get_global_id(0) == 0) {
-//        printf("d %.1fmm, coord = %.1f  rcs = %.3v4e  beta = %.3f  cb = %.3f  h/v = %.3f dB\n", pos.w * 2000.0f, fidx_raw, x, beta, cb, 20.0f * log10(length(x.s01) / length(x.s23)));
+//        float a = length(x.s01);
+//        float b = length(x.s23);
+//        float r = a / b;
+////        //printf("D %.1fmm, coord = %.1f  rcs = %.3v4e  beta = %.3f  cb = %.3f  h/v = %.3f dB\n", pos.w * 2000.0f, fidx_raw, x, beta, cb, 20.0f * log10(length(x.s01) / length(x.s23)));
+////        //printf("D %.1fmm, coord = %.1f   h/v = %.3f dB\n", pos.w * 2000.0f, iidx_int, r);
+//        //printf("D %.1fmm, coord = %.1f   h = %.2e  v = %.2e  r = %.3f dB\n", pos.w * 2000.0f, iidx_int, a, b, r);
+//        printf("D %.1fmm  coord = %.1f\n", pos.w * 2000.0f, iidx_int);
 //    }
     
     return x;
@@ -614,7 +618,7 @@ __kernel void dummy(__read_only __global float4 *p,
     
     // Assign signal amplitude as Hi, Hq, Vi, Vq
     //float4 ss = (float4)(hh_real + vh_real, hh_imag + vh_imag, vv_real + hv_real, vv_imag + hv_imag);
-//    float4 ss = (float4)(hh_real, hh_imag, vv_real, vv_imag);
+    float4 ss = (float4)(hh_real, hh_imag, vv_real, vv_imag);
 
 //    if (i == 0) {
 //        float hh = length(ss.s01);
@@ -624,6 +628,7 @@ __kernel void dummy(__read_only __global float4 *p,
 //    }
     
     o[i] = ori;
+    x[i] = ss;
 }
 
 //
@@ -690,9 +695,11 @@ __kernel void bg_atts(__global float4 *p,
     // Look up the background velocity from the table
     vel = read_imagef(wind_uvw, sampler, wind_coord);
     
+    float4 rcs = compute_ellipsoid_rcs(pos, drop_rcs, drop_rcs_desc);
+    
     p[i] = pos;
     v[i] = vel;
-    x[i] = compute_ellipsoid_rcs(pos, drop_rcs, drop_rcs_desc);
+    x[i] = rcs;
 }
 
 //
@@ -797,9 +804,11 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
 
     }
     
+    float4 rcs = compute_ellipsoid_rcs(pos, drop_rcs, drop_rcs_desc);
+
     p[i] = pos;
     v[i] = vel;
-    x[i] = compute_ellipsoid_rcs(pos, drop_rcs, drop_rcs_desc);
+    x[i] = rcs;
 }
 
 //
