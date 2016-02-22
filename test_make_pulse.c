@@ -27,15 +27,6 @@ enum {
 	TEST_ALL          = TEST_CPU | TEST_GPU
 };
 
-cl_float4 complex_multiply(const cl_float4 a, const cl_float4 b) {
-    return (cl_float4){{
-        a.s0 * b.s0 - a.s1 * b.s1,
-        a.s1 * b.s0 + a.s0 * b.s1,
-        a.s2 * b.s2 - a.s3 * b.s3,
-        a.s3 * b.s2 + a.s2 * b.s3
-    }};
-}
-
 cl_float4 two_way_effects(const cl_float4 sig_in, const float range, const float wav_num) {
     float atten = powf(range, -2.0f);
     float phase = range * wav_num;

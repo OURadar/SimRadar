@@ -81,6 +81,9 @@ ReductionParams *make_reduction_params(cl_uint count, cl_uint user_max_groups, c
 void free_reduction_params(ReductionParams *params);
 float read_table(const float *table, const float index_last, const float index);
 
+cl_float4 complex_multiply(const cl_float4 a, const cl_float4 b);
+cl_float4 complex_divide(const cl_float4 a, const cl_float4 b);
+
 #pragma mark -
 
 void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char **src_ptr, cl_context_properties sharegroup, const char verb);

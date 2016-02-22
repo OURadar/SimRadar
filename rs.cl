@@ -93,8 +93,8 @@ float4 quat_rotate(float4 vector, float4 quat);
 
 #pragma mark -
 
-float4 complex_multiply(const float4 a, const float4 b);
-float4 complex_divide(const float4 a, const float4 b);
+float4 cl_complex_multiply(const float4 a, const float4 b);
+float4 cl_complex_divide(const float4 a, const float4 b);
 float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16 sim_desc);
 float4 compute_bg_vel(const float4 pos, __read_only image3d_t wind_uvw, const float16 wind_desc, const float16 sim_desc);
 float4 compute_dudt_dwdt(float4 *dwdt, const float4 vel, const float4 vel_bg, const float4 ori, __read_only image2d_t adm_cd, __read_only image2d_t adm_cm, const float16 adm_desc);
@@ -173,7 +173,7 @@ float4 quat_rotate(float4 vector, float4 quat)
 //   - s23 is only affected by another s23
 //
 
-float4 complex_multiply(const float4 a, const float4 b)
+float4 cl_complex_multiply(const float4 a, const float4 b)
 {
 //    return (float4)(a.s0 * b.s0 - a.s1 * b.s1,
 //                    a.s1 * b.s0 + a.s0 * b.s1,
@@ -184,7 +184,7 @@ float4 complex_multiply(const float4 a, const float4 b)
     return shuffle(iiqq, (uint4)(0, 2, 1, 3));
 }
 
-float4 complex_divide(const float4 a, const float4 b)
+float4 cl_complex_divide(const float4 a, const float4 b)
 {
     float bm01 = dot(b.s01, b.s01);
     float bm23 = dot(b.s23, b.s23);
@@ -904,7 +904,7 @@ __kernel void scat_rcs(__global float4 *x,
     //
     float4 numer = vol * epsilon_0 * epsilon_r_minus_one;
     float4 denom = (float4)(1.0f, 0.0f, 1.0f, 0.0f) + (float4)(lx, lx, lz, lz) * epsilon_r_minus_one;
-    float4 alxz = complex_divide(numer, denom);
+    float4 alxz = cl_complex_divide(numer, denom);
     //
     // Sc = k_0 ^ 2 / (4 * pi * epsilon_0)
     // Coefficient 1.0e-9 for scaling the volume to unit of m^3
@@ -1026,7 +1026,7 @@ __kernel void scat_sig_aux(__global float4 *s,
     // cosine & sine to represent exp(j phase)
     float cc, ss = sincos(phase, &cc);
 
-    sig = complex_multiply(r[i], (float4)(cc, ss, cc, ss)) * atten;
+    sig = cl_complex_multiply(r[i], (float4)(cc, ss, cc, ss)) * atten;
     
 //    if (i == 0) {
 //        printf("atten = %.4e  %.4v4e\n", atten, sig);
