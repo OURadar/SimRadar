@@ -404,7 +404,6 @@ float4 compute_debris_rcs(const float4 pos, const float4 ori, __read_only image2
     // Lump everything to gamma when beta ~ 0.0f (< 1.0 deg);
     if (beta < 0.0175f) {
         gamma += alpha;
-        beta = 0.0f;
         alpha = 0.0f;
     }
 
@@ -861,52 +860,52 @@ __kernel void db_atts(__global float4 *p,
 
 
 // Deprecating
-__kernel void scat_rcs(__global float4 *x,
-                       __global float4 *p,
-                       __global float4 *a,
-                       const float16 sim_desc)
-{
-    unsigned int i = get_global_id(0);
-    //x[i] = (float4)(1.0f, 0.0f, 1.0f, 0.0f);
-
-    float4 pos = p[i];
-    
-    const float k_0 = sim_desc.s4 * 0.5f;
-    const float epsilon_0 = 8.85418782e-12f;
-    const float4 epsilon_r_minus_one = (float4)(78.669f, 18.2257f, 78.669f, 18.2257f);
-    //
-    // Ratio is usually in ( semi-major : semi-minor ) = ( H : V );
-    // Use (1.0, 0.0) for H and (v, 0.0) for V
-    // v = 1.0048 + 5.7e-4 * D - 2.628e-2 * D ^ 2 + 3.682e-3 * D ^ 3 - 1.667e-4 * D ^ 4
-    // Reminder: pos.w = drop radius in m; equation below uses D in mm
-    //
-    float D = 2000.0f * pos.w;
-    float4 DD = pown((float4)D, (int4)(1, 2, 3, 4));
-    
-    float vv = 1.0048f + dot((float4)(0.0057e-1f, -2.628e-2f, 3.682e-3f, -1.677e-4f), DD);
-    
-    float rab = 1.0f / vv;
-    float fsq = rab * rab - 1.0f;
-    float f = sqrt(fsq);
-    float lz = (1.0f + fsq) / fsq * (1.0f - atan(f) / f);
-    float lx = (1.0f - lz) * 0.5f;
-    float vol = M_PI_F * pown(D, 3) / 6.0f;
-    //
-    // alx = vol * epsilon_0 * (epsilon_r - 1.0f) * (1.0f / (1.0f + lx * (epsilon_r - 1.0f)));
-    // alz = vol * epsilon_0 * (epsilon_r - 1.0f) * (1.0f / (1.0f + lz * (epsilon_r - 1.0f)));
-    //
-    float4 numer = vol * epsilon_0 * epsilon_r_minus_one;
-    float4 denom = (float4)(1.0f, 0.0f, 1.0f, 0.0f) + (float4)(lx, lx, lz, lz) * epsilon_r_minus_one;
-    float4 alxz = cl_complex_divide(numer, denom);
-    //
-    // Sc = k_0 ^ 2 / (4 * pi * epsilon_0)
-    // Coefficient 1.0e-9 for scaling the volume to unit of m^3
-    // Drop concentration scale derived based on ~2,500 drops / m^3
-    //
-    float sc = 1.0e-9f * sim_desc.s6 * k_0 * k_0 / (4.0f * M_PI_F * epsilon_0);
-
-    x[i] = sc * alxz;
-}
+//__kernel void scat_rcs(__global float4 *x,
+//                       __global float4 *p,
+//                       __global float4 *a,
+//                       const float16 sim_desc)
+//{
+//    unsigned int i = get_global_id(0);
+//    //x[i] = (float4)(1.0f, 0.0f, 1.0f, 0.0f);
+//
+//    float4 pos = p[i];
+//    
+//    const float k_0 = sim_desc.s4 * 0.5f;
+//    const float epsilon_0 = 8.85418782e-12f;
+//    const float4 epsilon_r_minus_one = (float4)(78.669f, 18.2257f, 78.669f, 18.2257f);
+//    //
+//    // Ratio is usually in ( semi-major : semi-minor ) = ( H : V );
+//    // Use (1.0, 0.0) for H and (v, 0.0) for V
+//    // v = 1.0048 + 5.7e-4 * D - 2.628e-2 * D ^ 2 + 3.682e-3 * D ^ 3 - 1.667e-4 * D ^ 4
+//    // Reminder: pos.w = drop radius in m; equation below uses D in mm
+//    //
+//    float D = 2000.0f * pos.w;
+//    float4 DD = pown((float4)D, (int4)(1, 2, 3, 4));
+//    
+//    float vv = 1.0048f + dot((float4)(0.0057e-1f, -2.628e-2f, 3.682e-3f, -1.677e-4f), DD);
+//    
+//    float rab = 1.0f / vv;
+//    float fsq = rab * rab - 1.0f;
+//    float f = sqrt(fsq);
+//    float lz = (1.0f + fsq) / fsq * (1.0f - atan(f) / f);
+//    float lx = (1.0f - lz) * 0.5f;
+//    float vol = M_PI_F * pown(D, 3) / 6.0f;
+//    //
+//    // alx = vol * epsilon_0 * (epsilon_r - 1.0f) * (1.0f / (1.0f + lx * (epsilon_r - 1.0f)));
+//    // alz = vol * epsilon_0 * (epsilon_r - 1.0f) * (1.0f / (1.0f + lz * (epsilon_r - 1.0f)));
+//    //
+//    float4 numer = vol * epsilon_0 * epsilon_r_minus_one;
+//    float4 denom = (float4)(1.0f, 0.0f, 1.0f, 0.0f) + (float4)(lx, lx, lz, lz) * epsilon_r_minus_one;
+//    float4 alxz = cl_complex_divide(numer, denom);
+//    //
+//    // Sc = k_0 ^ 2 / (4 * pi * epsilon_0)
+//    // Coefficient 1.0e-9 for scaling the volume to unit of m^3
+//    // Drop concentration scale derived based on ~2,500 drops / m^3
+//    //
+//    float sc = 1.0e-9f * sim_desc.s6 * k_0 * k_0 / (4.0f * M_PI_F * epsilon_0);
+//
+//    x[i] = sc * alxz;
+//}
 
 
 //
