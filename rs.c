@@ -37,6 +37,26 @@ cl_float4 complex_divide(const cl_float4 a, const cl_float4 b) {
     }};
 }
 
+cl_double4 double_complex_multiply(const cl_double4 a, const cl_double4 b) {
+    return (cl_double4){{
+        a.s0 * b.s0 - a.s1 * b.s1,
+        a.s1 * b.s0 + a.s0 * b.s1,
+        a.s2 * b.s2 - a.s3 * b.s3,
+        a.s3 * b.s2 + a.s2 * b.s3
+    }};
+}
+
+cl_double4 double_complex_divide(const cl_double4 a, const cl_double4 b) {
+    double bm01 = b.s0 * b.s0 + b.s1 * b.s1;
+    double bm23 = b.s2 * b.s2 + b.s3 * b.s3;
+    return (cl_double4){{
+        (a.s0 * b.s0 + a.s1 * b.s1) / bm01,
+        (a.s1 * b.s0 - a.s0 * b.s1) / bm01,
+        (a.s2 * b.s2 + a.s3 * b.s3) / bm23,
+        (a.s3 * b.s2 - a.s2 * b.s3) / bm23
+    }};
+}
+
 #pragma mark -
 #pragma mark Private Functions
 
@@ -548,6 +568,14 @@ char *commaint(long long num) {
 	return buf[b];
 }
 
+char *commafloat(float num) {
+    static int i = 7;
+    static char buf[8][64];
+    i = i == 7 ? 0 : i + 1;
+    int b = i;
+    snprintf(buf[b], 64, "%s.%02d", commaint(num), (int)(100 * (num - floorf(num))));
+    return buf[b];
+}
 
 // Here is a nice reference: http://www.cplusplus.com/ref/ctime/time.html
 char *now() {
@@ -1020,9 +1048,13 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 	
 #endif
 		
-    // Temporary supress the verbose output for setting default values
-	H->verb = 0;
-	
+    // Temporary supress the verbose output for setting default values; or very verbosy for heavy debug version
+    #ifdef DEBUG_HEAVY
+        H->verb = 3;
+    #else
+        H->verb = 0;
+    #endif
+    
     // Set up some basic parameters to default values, H->verb is still 0 so no API message output
     RS_set_prt(H, 1.0e-3f);
     
@@ -1038,7 +1070,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 					15.0e3f, 20.0e3f, 250.0f,                   // Range
 					-12.0f, 12.0f, 1.0f,                        // Azimuth
 					0.0f, 8.0f, 1.0f);                          // Elevation
-		
+    
 	//RS_set_angular_weight_to_double_cone(H, 2.0f / 180.0f * M_PI);
 
     H->verb = verb;
@@ -1395,6 +1427,11 @@ void RS_init_scat_pos(RSHandle *H) {
             H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // set the dsd bin index
         }
         
+        // Replace a few for debugging purpose
+        H->scat_pos[0].w = 0.0025f;
+        H->scat_pos[1].w = 0.001f;
+        H->scat_pos[2].w = 0.0005f;
+        
         if (H->verb > 1) {
             rsprint("Actual DSD Specifications:");
             for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
@@ -1411,8 +1448,6 @@ void RS_init_scat_pos(RSHandle *H) {
         }
     }
 	
-    RS_compute_rcs_ellipsoids(H);
-
     // Replace a few points for debugging purpose.
 	H->scat_pos[0].x = domain.origin.x + 0.5f * domain.size.x;
     H->scat_pos[0].y = domain.origin.y + 0.5f * domain.size.y;
@@ -1685,8 +1720,8 @@ void RS_set_scan_box(RSHandle *H,
                xmax - xmin, ymax - ymin, zmax - zmin);
         rsprint("nvol = %s.%02d x %s.%02d m^3\n", commaint(floor(nvol)), (int)(100 * (nvol - floor(nvol))), commaint(floor(vol)), (int)(100 * (vol - floor(vol))));
 		rsprint("Suggested %s bodies\n", commaint(preferred_n));
-		rsprint("Set to GPU preferred %s (%.2f bodies / resolution cell)\n", commaint(preferred_n), (float)preferred_n / nvol);
-        rsprint("Drop concentration scale = %s.%02d\n", commaint(concentration_scale), (int)(100 * (concentration_scale - floor(concentration_scale))));
+		rsprint("Set to GPU preferred %s (%.2f bodies / resolution cell)", commaint(preferred_n), (float)preferred_n / nvol);
+        rsprint("Drop concentration scale to be used later = %s", commafloat(concentration_scale));
 	}
 	
     // Now, we actually set it to suggested debris count
@@ -2149,7 +2184,8 @@ void RS_set_dsd_to_mp(RSHandle *H) {
     float d, sum = 0.0f;
     
 //    float ds[] = {0.0001f, 0.0002f, 0.0005f, 0.001f, 0.002f, 0.003f, 0.004f, 0.005f};
-    float ds[] = {0.001f, 0.003f, 0.005f};
+//    float ds[] = {0.001f, 0.003f, 0.005f};
+    float ds[] = {0.002f, 0.003f, 0.005f};
     
     const int count = sizeof(ds) / sizeof(float);
     
@@ -2290,9 +2326,6 @@ void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const flo
             }
             gcl_free(H->worker[i].rcs_ellipsoid);
         }
-        for (int i = 0; i < 5; i++ ) {
-            printf("weights[%d] = %.3e %.3e %.3e %.3e ...\n", i, weights[i].s0, weights[i].s1, weights[i].s2, weights[i].s3);
-        }
         H->worker[i].rcs_ellipsoid = gcl_malloc(table_size * sizeof(cl_float4), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
         if (H->worker[i].rcs_ellipsoid == NULL) {
             fprintf(stderr, "%s : RS : Error creating RCS of ellipsoid table on CL device.\n", now());
@@ -2312,9 +2345,6 @@ void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const flo
         }
         if (H->verb > 2) {
             printf("%s : RS : worker[%d] creating RCS of ellipsoid (cl_mem) & copying data from %p.\n", now(), i, table.data);
-        }
-        for (int i = 0; i < 5; i++ ) {
-            printf("weights[%d] = %.3e %.3e %.3e %.3e ...\n", i, weights[i].s0, weights[i].s1, weights[i].s2, weights[i].s3);
         }
         H->worker[i].rcs_ellipsoid = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(cl_float4), table.data, &ret);
         if (ret != CL_SUCCESS) {
@@ -3589,7 +3619,16 @@ void RS_populate(RSHandle *H) {
 		fprintf(stderr, "%s : RS : Error allocating memory space for pulses.\n", now());
 		return;
 	}
-	
+
+    // All tables must be ready at this point
+    // - range weight table
+    // - antenna weight table
+    // - RCS of ellipsoid table
+    // - RCS of debris table
+    // - ADM of debris table
+    // - 3D wind table
+    RS_compute_rcs_ellipsoids(H);
+
     //
 	// GPU memory allocation
 	//
@@ -3755,12 +3794,13 @@ void RS_merge_pulse_tmp(RSHandle *H) {
     // Scale the amplitude by antenna gain, tx power
     // Amplitude scaling, Ga = 10 ^ (Gt / 20) * 10 ^ (Gr / 20) * sqrt(Pt)
     // For dish antennas: Gt = Gr
-    //                ==> Ga = 10 ^ (G / 20) * 10 ^ (G / 20) * sqrt(Pt)
+    //
+    //                  => g = 10 ^ (G / 20) * 10 ^ (G / 20) * sqrt(Pt)
     //                       = 10 ^ (G / 10) * sqrt(Pt)
     //
-    // Scale to 1-km referece: sqrt(R ^ 4) = R ^ 2 = 1.0e6
+    // Amplitude scale to 1-km referece: sqrt(R ^ 2) = R = 1.0e3
     //
-    float g = powf(10.0f, 0.1f * H->params.antenna_gain_dbi) * sqrtf(H->params.tx_power_watt) / (4.0f * M_PI) * 1.0e6f / sqrtf(H->params.body_per_cell);
+    float g = powf(10.0f, 0.1f * H->params.antenna_gain_dbi) * sqrtf(H->params.tx_power_watt) / (4.0f * M_PI) * 1.0e3f;
     for (int k = 0; k < H->params.range_count; k++) {
         H->pulse[k].s0 *= g;
         H->pulse[k].s1 *= g;
@@ -4056,7 +4096,7 @@ void RS_advance_time(RSHandle *H) {
         // Background: Need to refresh some parameters at each time update
         if (H->sim_concept & RSSimulationConceptDraggedBackground) {
             clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,      sizeof(cl_mem),     &C->vel[v]);
-//            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentEllipsoidRCS,            sizeof(cl_mem),     C->rcs_ellipsoid);
+//            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentEllipsoidRCS,            sizeof(cl_mem),     &C->rcs_ellipsoid);
 //            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentEllipsoidRCSDescription, sizeof(cl_float4),  &C->rcs_ellipsoid_desc);
             clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription,   sizeof(cl_float16), &H->sim_desc);
             clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->debris_origin[0], &C->debris_population[0], NULL, 0, NULL, &events[i][0]);
@@ -4413,16 +4453,17 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
     
     int i;
     
-    const float k_0 = H->sim_desc.s[RSSimulationDescriptionWaveNumber] * 0.5f;
-    const float epsilon_0 = 8.85418782e-12f;
-    const cl_float4 epsilon_r_minus_one = (cl_float4){{78.669f, 18.2257f, 78.669f, 18.2257f}};
+    const cl_double k_0 = H->sim_desc.s[RSSimulationDescriptionWaveNumber] * 0.5f;
+    const cl_double epsilon_0 = 8.85418782e-12f;
+    const cl_double4 epsilon_r_minus_one = (cl_double4){{78.669, 18.2257, 78.669, 18.2257}};
     //
     // Sc = k_0 ^ 2 / (4 * pi * epsilon_0)
     // Coefficient 1.0e-9 for scaling the volume to unit of m^3
     // Drop concentration scale derived based on ~2,500 drops / m^3
     //
-    rsprint("Drop concentration scaling = %.2f", H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale]);
-    const float sc = 1.0e-9f * H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] * k_0 * k_0 / (4.0f * M_PI * epsilon_0);
+    rsprint("RS_compute_rcs_ellipsoids()");
+    rsprint("Drop concentration scaling = %s  (k_0 = %.4f)", commafloat(H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale]), k_0);
+    const cl_double sc = k_0 * k_0 / (4.0f * M_PI * epsilon_0) * 1.0e-9f * H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale];
     
     // Make table with D = 0.05mm, 0.06mm, ... 10.0mm (96 entries)
     const size_t n = 96;
@@ -4430,34 +4471,35 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
     cl_float4 *table = (cl_float4 *)malloc(n * sizeof(cl_float4));
     
     for (i = 0; i < n; i++) {
-        float d = 0.5f + (float)i * 0.1f;
-        float d2 = d * d;
-        float d3 = d2 * d;
-        float d4 = d3 * d;
-        float vv = 1.0048f + 0.0057e-1f * d - 2.628e-2f * d2 + 3.682e-3f * d3 - 1.667e-4f * d4;
-        float rab = 1.0f / vv;
-        float fsq = rab * rab - 1.0f;
-        float f = sqrt(fsq);
-        float lz = (1.0f + fsq) / fsq * (1.0f - atanf(f) / f);
-        float lx = (1.0f - lz) * 0.5f;
-        float vol = M_PI * d3 / 6.0f;
-        cl_float4 numer = complex_multiply((cl_float4){{vol * epsilon_0, 0.0f, vol * epsilon_0, 0.0f}}, epsilon_r_minus_one);
-        cl_float4 denom = {{
-            lx * epsilon_r_minus_one.s0 + 1.0f,
+        // Diameter (mm) to be computed
+        cl_double d = 0.5 + (cl_double)i * 0.1;
+        cl_double d2 = d * d;
+        cl_double d3 = d2 * d;
+        cl_double d4 = d3 * d;
+        cl_double rba = 1.0048 + (0.0057e-1 * d) - (2.628e-2 * d2) + (3.682e-3 * d3) - (1.677e-4 * d4);
+        cl_double rab = 1.0f / rba;
+        cl_double fsq = rab * rab - 1.0;
+        cl_double f = sqrt(fsq);
+        cl_double lz = (1.0 + fsq) / fsq * (1.0 - atan(f) / f);
+        cl_double lx = (1.0 - lz) * 0.5;
+        cl_double vol = M_PI * d3 / 6.0;
+        cl_double4 numer = double_complex_multiply((cl_double4){{vol * epsilon_0, 0.0, vol * epsilon_0, 0.0}}, epsilon_r_minus_one);
+        cl_double4 denom = {{
+            lx * epsilon_r_minus_one.s0 + 1.0,
             lx * epsilon_r_minus_one.s1,
-            lz * epsilon_r_minus_one.s2 + 1.0f,
+            lz * epsilon_r_minus_one.s2 + 1.0,
             lz * epsilon_r_minus_one.s3
         }};
-        cl_float4 alxz = complex_divide(numer, denom);
-        
-        table[i].s0 = sc * alxz.s0;
-        table[i].s1 = sc * alxz.s1;
-        table[i].s2 = sc * alxz.s2;
-        table[i].s3 = sc * alxz.s3;
+        cl_double4 alxz = double_complex_divide(numer, denom);
+        // Reduced precision at the very last step
+        table[i].s0 = (cl_float)(sc * alxz.s0);
+        table[i].s1 = (cl_float)(sc * alxz.s1);
+        table[i].s2 = (cl_float)(sc * alxz.s2);
+        table[i].s3 = (cl_float)(sc * alxz.s3);
         
         #ifdef DEBUG_HEAVY
-        rsprint("D = %.2fmm  rab %.3f  lz %.3f  lx %.3f  numer = %.3e %.3e %.3e %.3e  denom = %.3f %.3f %.3f %.3f  alxz = %.3e %.3e %.3e %.3e  lx/lz = %.3e %.3e %.3e %.3e",
-                d, rab, lz, lx, numer.s0, numer.s1, numer.s2, numer.s3, denom.s0, denom.s1, denom.s2, denom.s3, alxz.s0, alxz.s1, alxz.s2, alxz.s3, table[i].s0, table[i].s1, table[i].s2, table[i].s3);
+        rsprint("D = %.2fmm  rba %.4f  rab %.4f  lz %.4f  lx %.4f  numer = %.3e %.3e %.3e %.3e  denom = %.3f %.3f %.3f %.3f  alxz = %.3e %.3e %.3e %.3e  lx/lz = %.3e %.3e %.3e %.3e",
+                d, rba, rab, lz, lx, numer.s0, numer.s1, numer.s2, numer.s3, denom.s0, denom.s1, denom.s2, denom.s3, alxz.s0, alxz.s1, alxz.s2, alxz.s3, table[i].s0, table[i].s1, table[i].s2, table[i].s3);
         #endif
     }
     

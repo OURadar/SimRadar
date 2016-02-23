@@ -11,7 +11,8 @@
 #define NUM_ELEM      (1079196)
 //#define NUM_ELEM      (102400)
 //#define NUM_ELEM      (64)
-#define RANGE_GATES   (64)
+//#define RANGE_GATES   (64)
+#define RANGE_GATES   (9)
 #define GROUP_ITEMS   (64)
 #define GROUP_COUNTS  (64)
 
@@ -394,9 +395,12 @@ int main(int argc, char **argv)
     err = CL_SUCCESS;
     ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &pos);
     ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &vel);
+    ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &rcs);
     ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &rnd);
     ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &les);
     ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_mem),     &les_desc);
+    ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentEllipsoidRCS,                  sizeof(cl_mem),     &angular_weight);
+    ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentEllipsoidRCSDescription,       sizeof(cl_float4),  &angular_weight_desc);
     ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel el_atts().\n", now());

@@ -350,35 +350,17 @@ float4 compute_dudt_dwdt(float4 *dwdt,
 //
 
 float4 compute_ellipsoid_rcs(const float4 pos, __constant float4 *table, const float4 table_desc) {
-//    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
-    //    float4 x = read_imagef(table, sampler, coord);
-    
-    float fidx_raw = clamp(fma(pos.w, table_desc.s0, table_desc.s1), 0.0f, table_desc.s2);
-//    float fidx_int, fidx_dec = fract(fidx_raw, &fidx_int);
-//    uint iidx_int = convert_uint(fidx_int);
-    uint iidx_int = (uint)fidx_raw;
+    // Clamp to the edge, pick the nearest coefficient
+    float fidx = clamp(fma(pos.w, table_desc.s0, table_desc.s1), 0.0f, table_desc.s2);
+    uint idx = (uint)fidx;
 
-    // Actual weight
-    //float xz = mix(table[iidx_int.s0], table[iidx_int.s1], fidx_dec.s0);
-    float4 xz = table[iidx_int];
+    // Actual weight in the table
+    float4 xz = table[idx];
     
     const float beta = atan2(pos.s2, length(pos.s01));
-    
     float cb = cos(beta);
 
-    float4 x = (float4)(xz.s01, xz.s01 + (xz.s23 - xz.s01) * cb * cb);
-    
-//    if (get_global_id(0) == 0) {
-//        float a = length(x.s01);
-//        float b = length(x.s23);
-//        float r = a / b;
-////        //printf("D %.1fmm, coord = %.1f  rcs = %.3v4e  beta = %.3f  cb = %.3f  h/v = %.3f dB\n", pos.w * 2000.0f, fidx_raw, x, beta, cb, 20.0f * log10(length(x.s01) / length(x.s23)));
-////        //printf("D %.1fmm, coord = %.1f   h/v = %.3f dB\n", pos.w * 2000.0f, iidx_int, r);
-//        //printf("D %.1fmm, coord = %.1f   h = %.2e  v = %.2e  r = %.3f dB\n", pos.w * 2000.0f, iidx_int, a, b, r);
-//        printf("D %.1fmm  coord = %.1f\n", pos.w * 2000.0f, iidx_int);
-//    }
-    
-    return x;
+    return (float4)(xz.s01, xz.s01 + (xz.s23 - xz.s01) * cb * cb);
 }
 
 float4 compute_debris_rcs(const float4 pos, const float4 ori, __read_only image2d_t rcs_real, __read_only image2d_t rcs_imag, const float16 rcs_desc, const float16 sim_desc) {
@@ -646,40 +628,21 @@ __kernel void bg_atts(__global float4 *p,
 {
 
     const unsigned int i = get_global_id(0);
-    
+    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
+    const float4 dt = (float4)(sim_desc.sb, sim_desc.sb, sim_desc.sb, 0.0f);
+
     float4 pos = p[i];
     float4 vel = v[i];
-
-    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
     
-    //    RSSimulationDescriptionBeamUnitX     =  0,
-    //    RSSimulationDescriptionBeamUnitY     =  1,
-    //    RSSimulationDescriptionBeamUnitZ     =  2,
-    //    RSSimulationDescriptionDebrisCount   =  3,
-    //    RSSimulationDescriptionWaveNumber    =  4,
-    //    RSSimulationDescription5             =  5,
-    //    RSSimulationDescription6             =  6,
-    //    RSSimulationDescription7             =  7,
-    //    RSSimulationDescriptionBoundOriginX  =  8,  // hi.s0
-    //    RSSimulationDescriptionBoundOriginY  =  9,  // hi.s1
-    //    RSSimulationDescriptionBoundOriginZ  =  10, // hi.s2
-    //    RSSimulationDescriptionPRT           =  11,
-    //    RSSimulationDescriptionBoundSizeX    =  12, // hi.s4
-    //    RSSimulationDescriptionBoundSizeY    =  13, // hi.s5
-    //    RSSimulationDescriptionBoundSizeZ    =  14, // hi.s6
-    //    RSSimulationDescriptionAgeIncrement  =  15, // PRT / vel_desc.tr
-    const float4 dt = (float4)(sim_desc.sb, sim_desc.sb, sim_desc.sb, 0.0f);
-    
-    // Future position, orientation, etc.
     pos += vel * dt;
     
-    int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
+    int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456) | !all(isfinite(pos.xyz)));
     
     if (is_outside) {
         uint4 seed = y[i];
         float4 r = rand(&seed);
         pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
-        //pos.xyz = (float3)(fma(r.xy, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT); // This is kind of cool
+        //pos.xyz = (float3)(fma(r.xy, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT);   // Feed from the bottom
         vel = FLOAT4_ZERO;
 
         p[i] = pos;
@@ -717,38 +680,20 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
 {
     
     const unsigned int i = get_global_id(0);
+    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
+    const float4 dt = (float4)(sim_desc.sb, sim_desc.sb, sim_desc.sb, 0.0f);
     
     float4 pos = p[i];  // position
     float4 vel = v[i];  // velocity
 
-    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
-
     const float s5 = sim_desc.s5;
     const uint concept = *(uint *)&s5;
 
-    //    RSSimulationDescriptionBoundOriginX  =  8,  // hi.s0
-    //    RSSimulationDescriptionBoundOriginY  =  9,  // hi.s1
-    //    RSSimulationDescriptionBoundOriginZ  =  10, // hi.s2
-    //    RSSimulationDescriptionPRT           =  11,
-    //    RSSimulationDescriptionBoundSizeX    =  12, // hi.s4
-    //    RSSimulationDescriptionBoundSizeY    =  13, // hi.s5
-    //    RSSimulationDescriptionBoundSizeZ    =  14, // hi.s6
-    //    RSSimulationDescriptionAgeIncrement  =  15, // PRT / vel_desc.tr
-    const float4 dt = (float4)(sim_desc.sb, sim_desc.sb, sim_desc.sb, 0.0f);
-    
-    //pos.w = 0.0003f; // fixed size @ .3 mm
-    
-    //
-    // Update position ---------------------------------
-    //
-
     pos += vel * dt;
     
-    // Check for bounding constraints
     int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456) | !all(isfinite(pos.xyz)));
     
     if (is_outside) {
-
         uint4 seed = y[i];
         float4 r = rand(&seed);
         y[i] = seed;
@@ -772,11 +717,6 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
     // Particle velocity due to drag
     float4 delta_v = bg_vel - vel;
     float delta_v_abs = length(delta_v.xyz);
-    
-//        if (i < 10)
-//            printf("bg_vel = %.2v4f  vel = %.2v4f  delta_v = %.2v4f  bd = %.2v4f\n", bg_vel, vel, delta_v, bg_vel / dt);
-//        else if (i == 10)
-//            printf("--------\n");
     
     if (delta_v_abs > 1.0e-3f) {
 
@@ -805,6 +745,13 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
     }
     
     float4 rcs = compute_ellipsoid_rcs(pos, drop_rcs, drop_rcs_desc);
+    
+//    if (get_global_id(0) < 3) {
+//        float a = length(rcs.s01);
+//        float b = length(rcs.s23);
+//        float r = a / b;
+//        printf("D %.1fmm   rcs=%.3v4e  a=%.3e  b=%.3e  h/v=%.2f dB\n", pos.w * 2000.0f, rcs, a, b, 20 * log10(r));
+//    }
 
     p[i] = pos;
     v[i] = vel;
@@ -915,6 +862,7 @@ __kernel void db_atts(__global float4 *p,
 }
 
 
+// Deprecating
 __kernel void scat_rcs(__global float4 *x,
                        __global float4 *p,
                        __global float4 *a,
@@ -1011,8 +959,10 @@ __kernel void scat_clr(__global float4 *c,
     } else if (draw_mode == 4) {
         // Magnitude of HH
         m = length(rcs.s01) * 100.0f;
+    } else if (draw_mode == 5) {
+        m = clamp(10.0f * log10(dot(rcs.s01, rcs.s01) / dot(rcs.s23, rcs.s23)), -1.0f, 1.0f) / 2.0f + 0.5f;
     } else {
-        m = clamp(10.0f * log10(length(rcs.s01) / length(rcs.s23)), -3.0f, 3.0f) / 6.0f + 0.5f;
+        m = 0.5f;
     }
     
     c[i].x = m;

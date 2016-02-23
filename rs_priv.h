@@ -89,6 +89,8 @@ float read_table(const float *table, const float index_last, const float index);
 
 cl_float4 complex_multiply(const cl_float4 a, const cl_float4 b);
 cl_float4 complex_divide(const cl_float4 a, const cl_float4 b);
+cl_double4 double_complex_multiply(const cl_double4 a, const cl_double4 b);
+cl_double4 double_complex_divide(const cl_double4 a, const cl_double4 b);
 
 #pragma mark -
 

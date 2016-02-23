@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
     char quiet_mode = FALSE;
     char output_file = FALSE;
     int num_pulses = 5;
-    float scan_az = 0.0f, scan_el = 3.0f;
+    float scan_az = 0.0f, scan_el = 3.0f, density = 0.0f, lambda = 0.0f;
     
     float prt = 1.0e-3f;
 
@@ -80,18 +80,6 @@ int main(int argc, char *argv[]) {
         {0, 0, 0, 0}
     };
     
-    // Initialize the RS framework
-    RSHandle *S;
-    if (accel_type == ACCEL_TYPE_CPU) {
-        S = RS_init_for_cpu_verbose(verb);
-    } else {
-        S = RS_init_verbose(verb);
-    }
-    if (S == NULL) {
-        fprintf(stderr, "%s : Some errors occurred during RS_init().\n", now());
-        return EXIT_FAILURE;
-    }
-
     // Process the input arguments and set the simulator parameters
     int opt, long_index = 0;
     while ((opt = getopt_long(argc, argv, "a:cd:D:e:gp:f:l:op:PqRt:vW:", long_options, &long_index)) != -1) {
@@ -109,7 +97,7 @@ int main(int argc, char *argv[]) {
                 scan_el = atof(optarg);
                 break;
             case 'D':
-                RS_set_density(S, atof(optarg));
+                density = atof(optarg);
                 break;
             case 'g':
                 accel_type = ACCEL_TYPE_GPU;
@@ -118,7 +106,7 @@ int main(int argc, char *argv[]) {
                 num_pulses = atoi(optarg);
                 break;
             case 'l':
-                RS_set_lambda(S, atof(optarg));
+                lambda = atof(optarg);
                 break;
             case 'o':
                 output_file = true;
@@ -139,6 +127,7 @@ int main(int argc, char *argv[]) {
                 prt = atof(optarg);
                 break;
             case 'v':
+                printf("verb++\n");
                 verb++;
                 break;
             case 'W':
@@ -148,6 +137,19 @@ int main(int argc, char *argv[]) {
                 break;
         }
     }
+
+    // Initialize the RS framework
+    RSHandle *S;
+    if (accel_type == ACCEL_TYPE_CPU) {
+        S = RS_init_for_cpu_verbose(verb);
+    } else {
+        S = RS_init_verbose(verb);
+    }
+    if (S == NULL) {
+        fprintf(stderr, "%s : Some errors occurred during RS_init().\n", now());
+        return EXIT_FAILURE;
+    }
+    
     printf("%s : Session started\n", now());
     
     ADMHandle *A;
@@ -187,6 +189,14 @@ int main(int argc, char *argv[]) {
     RS_set_antenna_params(S, 1.0f, 44.5f);
     
     RS_set_tx_params(S, 0.2e-6, 50.0e3f);
+    
+    if (density > 0.0f) {
+        RS_set_density(S, density);
+    }
+    
+    if (lambda > 0.0f) {
+        RS_set_lambda(S, lambda);
+    }
 
     for (int k = 0; k < RS_MAX_VEL_TABLES; k++) {
         RS_set_vel_data_to_LES_table(S, LES_get_frame(L, k));
