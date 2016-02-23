@@ -43,11 +43,14 @@ int main(int argc, char *argv[]) {
     char verb = 0;
     char accel_type = 0;
     char scan_mode = SCAN_MODE_PPI;
-    char quiet_mode = FALSE;
-    char output_file = FALSE;
+    char quiet_mode = true;
+    char output_file = true;
     int num_pulses = 5;
-    float scan_az = 0.0f, scan_el = 3.0f, density = 0.0f, lambda = 0.0f;
-    
+    float scan_az = 0.0f;
+    float scan_el = 3.0f;
+    float density = 0.0f;
+    float lambda = 0.0f;
+    float pw = 0.2e-6f;   // pulse width in seconds
     float prt = 1.0e-3f;
 
     struct timeval t0, t1, t2;
@@ -62,6 +65,7 @@ int main(int argc, char *argv[]) {
 
     static struct option long_options[] = {
         {"azimuth"    , required_argument, 0, 'a'},
+        {"alarm"      , no_argument      , 0, 'A'},
         {"cpu"        , no_argument      , 0, 'c'},
         {"debris"     , required_argument, 0, 'd'},
         {"density"    , required_argument, 0, 'D'},
@@ -73,6 +77,7 @@ int main(int argc, char *argv[]) {
         {"pulses"     , required_argument, 0, 'p'},
         {"ppi"        , no_argument      , 0, 'P'},
         {"prt"        , required_argument, 0, 't'},
+        {"pulsewidth" , required_argument, 0, 'w'},
         {"quiet"      , no_argument      , 0, 'q'},
         {"rhi"        , no_argument      , 0, 'R'},
         {"verbose"    , no_argument      , 0, 'v'},
@@ -82,10 +87,13 @@ int main(int argc, char *argv[]) {
     
     // Process the input arguments and set the simulator parameters
     int opt, long_index = 0;
-    while ((opt = getopt_long(argc, argv, "a:cd:D:e:gp:f:l:op:PqRt:vW:", long_options, &long_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "a:Acd:D:e:gp:f:l:op:PqRt:vw:W:", long_options, &long_index)) != -1) {
         switch (opt) {
             case 'a':
                 scan_az = atof(optarg);
+                break;
+            case 'A':
+                quiet_mode = false;
                 break;
             case 'c':
                 accel_type = ACCEL_TYPE_CPU;
@@ -127,8 +135,10 @@ int main(int argc, char *argv[]) {
                 prt = atof(optarg);
                 break;
             case 'v':
-                printf("verb++\n");
                 verb++;
+                break;
+            case 'w':
+                pw = atof(optarg);
                 break;
             case 'W':
                 warm_up_pulses = atoi(optarg);
@@ -188,7 +198,7 @@ int main(int argc, char *argv[]) {
     
     RS_set_antenna_params(S, 1.0f, 44.5f);
     
-    RS_set_tx_params(S, 0.2e-6, 50.0e3f);
+    RS_set_tx_params(S, pw, 50.0e3f);
     
     if (density > 0.0f) {
         RS_set_density(S, density);

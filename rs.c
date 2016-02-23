@@ -1675,8 +1675,8 @@ void RS_set_scan_box(RSHandle *H,
 	
 	//printf("H->num_anchors = %zu   ii = %d\n", H->num_anchors, ii);
 	
-	// Volume of a single resolution cell at the middle of the domain
-	r = 0.5f * (H->params.range_start + H->params.range_end);
+	// Volume of a single resolution cell at the start of the domain
+	r = H->params.range_start;
 	RSfloat vol = (H->params.antenna_bw_rad * r) * (H->params.antenna_bw_rad * r) * (H->params.c * H->params.tau * 0.5f);
 	RSfloat nvol = ((xmax - xmin) * (ymax - ymin) * (zmax - zmin)) / vol;
 	
@@ -1699,6 +1699,8 @@ void RS_set_scan_box(RSHandle *H,
 	while (preferred_n < H->params.body_per_cell * 9 / 10) {
 		preferred_n += mul;
 	}
+    // Drop concentration scaling factor
+    // Typical volume is about 2500 drops per m^2, each scatterer represents N drops (Radar Equation document example)
     float concentration_scale = sqrtf((nvol * vol * 2500.0f) / (float)preferred_n);
     
 	if (H->verb) {
@@ -1718,17 +1720,16 @@ void RS_set_scan_box(RSHandle *H,
                zmin, zmax);
         rsprint("              = ( %.2f m x %.2f m x %.2f m )\n",
                xmax - xmin, ymax - ymin, zmax - zmin);
-        rsprint("nvol = %s.%02d x %s.%02d m^3\n", commaint(floor(nvol)), (int)(100 * (nvol - floor(nvol))), commaint(floor(vol)), (int)(100 * (vol - floor(vol))));
-		rsprint("Suggested %s bodies\n", commaint(preferred_n));
+        rsprint("nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(vol));
+		rsprint("Suggest %s bodies\n", commaint(preferred_n));
 		rsprint("Set to GPU preferred %s (%.2f bodies / resolution cell)", commaint(preferred_n), (float)preferred_n / nvol);
         rsprint("Drop concentration scale to be used later = %s", commafloat(concentration_scale));
 	}
 	
     // Now, we actually set it to suggested debris count
 	H->num_scats = preferred_n;
-	
-    // Drop concentration scaling factor
-    // Typical volume is about 2500 drops per m^2, each scatterer represents N drops (Radar Equation document example)
+
+    // Store a copy of concentration scale in simulation description
     H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] = concentration_scale;
 
     // Anchor lines to show the volume of interest, which was set by the user. The number is well more than enough
@@ -2183,9 +2184,9 @@ void RS_set_dsd_to_mp(RSHandle *H) {
     
     float d, sum = 0.0f;
     
-//    float ds[] = {0.0001f, 0.0002f, 0.0005f, 0.001f, 0.002f, 0.003f, 0.004f, 0.005f};
+    float ds[] = {0.001f, 0.002f, 0.003f, 0.004f, 0.005f};
 //    float ds[] = {0.001f, 0.003f, 0.005f};
-    float ds[] = {0.003f, 0.004f, 0.005f, 0.006f};
+    //float ds[] = {0.003f, 0.004f, 0.005f, 0.006f};
     
     const int count = sizeof(ds) / sizeof(float);
     
