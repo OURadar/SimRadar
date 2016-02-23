@@ -162,7 +162,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     C->kern_el_atts = clCreateKernel(C->prog, "el_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
     C->kern_db_atts = clCreateKernel(C->prog, "db_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
     C->kern_scat_clr = clCreateKernel(C->prog, "scat_clr", &ret);                                 CHECK_CL_CREATE_KERNEL
-    C->kern_scat_rcs = clCreateKernel(C->prog, "scat_rcs", &ret);                                 CHECK_CL_CREATE_KERNEL
+//    C->kern_scat_rcs = clCreateKernel(C->prog, "scat_rcs", &ret);                                 CHECK_CL_CREATE_KERNEL
     C->kern_scat_sig_aux = clCreateKernel(C->prog, "scat_sig_aux", &ret);                         CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_1 = clCreateKernel(C->prog, "make_pulse_pass_1", &ret);               CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_2_group = clCreateKernel(C->prog, "make_pulse_pass_2_group", &ret);   CHECK_CL_CREATE_KERNEL
@@ -222,7 +222,7 @@ void RS_worker_free(RSWorker *C) {
     clReleaseKernel(C->kern_el_atts);
     clReleaseKernel(C->kern_db_atts);
     clReleaseKernel(C->kern_scat_clr);
-    clReleaseKernel(C->kern_scat_rcs);
+//    clReleaseKernel(C->kern_scat_rcs);
     clReleaseKernel(C->kern_scat_sig_aux);
     clReleaseKernel(C->kern_make_pulse_pass_1);
     clReleaseKernel(C->kern_make_pulse_pass_2_group);
@@ -431,15 +431,15 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
         exit(EXIT_FAILURE);
     }
 
-    ret = CL_SUCCESS;
-    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentRadarCrossSection,     sizeof(cl_mem),     &C->scat_rcs);
-    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentPosition,              sizeof(cl_mem),     &C->scat_pos);
-    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentAuxiliary,             sizeof(cl_mem),     &C->scat_aux);
-    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-    if (ret != CL_SUCCESS) {
-        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_rcs().\n", now());
-        exit(EXIT_FAILURE);
-    }
+//    ret = CL_SUCCESS;
+//    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentRadarCrossSection,     sizeof(cl_mem),     &C->scat_rcs);
+//    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentPosition,              sizeof(cl_mem),     &C->scat_pos);
+//    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentAuxiliary,             sizeof(cl_mem),     &C->scat_aux);
+//    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
+//    if (ret != CL_SUCCESS) {
+//        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_rcs().\n", now());
+//        exit(EXIT_FAILURE);
+//    }
     
     ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentColor,             sizeof(cl_mem),   &C->scat_clr);
@@ -2185,7 +2185,7 @@ void RS_set_dsd_to_mp(RSHandle *H) {
     
 //    float ds[] = {0.0001f, 0.0002f, 0.0005f, 0.001f, 0.002f, 0.003f, 0.004f, 0.005f};
 //    float ds[] = {0.001f, 0.003f, 0.005f};
-    float ds[] = {0.002f, 0.003f, 0.005f};
+    float ds[] = {0.003f, 0.004f, 0.005f, 0.006f};
     
     const int count = sizeof(ds) / sizeof(float);
     
@@ -3798,9 +3798,9 @@ void RS_merge_pulse_tmp(RSHandle *H) {
     //                  => g = 10 ^ (G / 20) * 10 ^ (G / 20) * sqrt(Pt)
     //                       = 10 ^ (G / 10) * sqrt(Pt)
     //
-    // Amplitude scale to 1-km referece: sqrt(R ^ 2) = R = 1.0e3
+    // Amplitude scale to 1-km referece: sqrt(R ^ 4) = R ^ 2 = 1.0e6
     //
-    float g = powf(10.0f, 0.1f * H->params.antenna_gain_dbi) * sqrtf(H->params.tx_power_watt) / (4.0f * M_PI) * 1.0e3f;
+    float g = powf(10.0f, 0.1f * H->params.antenna_gain_dbi) * sqrtf(H->params.tx_power_watt) / (4.0f * M_PI) * 1.0e6f;
     for (int k = 0; k < H->params.range_count; k++) {
         H->pulse[k].s0 *= g;
         H->pulse[k].s1 *= g;
@@ -3899,44 +3899,44 @@ void RS_upload(RSHandle *H) {
 
 
 // Signal strength as a function of drop size
-void RS_rcs_from_dsd(RSHandle *H) {
-    
-    int i;
-    
-#if defined (__APPLE__) && defined (_SHARE_OBJ_)
-
-    for (i = 0; i < H->num_workers; i++) {
-        dispatch_async(H->worker[i].que, ^{
-            scat_rcs_kernel(&H->worker[i].ndrange_scat[0],
-                            (cl_float4 *)H->worker[i].scat_rcs,
-                            (cl_float4 *)H->worker[i].scat_pos,
-                            (cl_float4 *)H->worker[i].scat_aux,
-                            H->sim_desc);
-            dispatch_semaphore_signal(H->worker[i].sem);
-        });
-        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
-    }
-    
-#else
-    
-    cl_event events[RS_MAX_GPU_DEVICE];
-    
-    for (i = 0; i < H->num_workers; i++) {
-        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_rcs, 1, &H->worker[i].debris_origin[0], &H->worker[i].debris_population[0], NULL, 0, NULL, &events[i]);
-    }
-    
-    for (i = 0; i < H->num_workers; i++) {
-        clFlush(H->worker[i].que);
-    }
-    
-    for (i = 0; i < H->num_workers; i++) {
-        clWaitForEvents(1, &events[i]);
-        clReleaseEvent(events[i]);
-    }
-    
-#endif
-
-}
+//void RS_rcs_from_dsd(RSHandle *H) {
+//    
+//    int i;
+//    
+//#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+//
+//    for (i = 0; i < H->num_workers; i++) {
+//        dispatch_async(H->worker[i].que, ^{
+//            scat_rcs_kernel(&H->worker[i].ndrange_scat[0],
+//                            (cl_float4 *)H->worker[i].scat_rcs,
+//                            (cl_float4 *)H->worker[i].scat_pos,
+//                            (cl_float4 *)H->worker[i].scat_aux,
+//                            H->sim_desc);
+//            dispatch_semaphore_signal(H->worker[i].sem);
+//        });
+//        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+//    }
+//    
+//#else
+//    
+//    cl_event events[RS_MAX_GPU_DEVICE];
+//    
+//    for (i = 0; i < H->num_workers; i++) {
+//        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_rcs, 1, &H->worker[i].debris_origin[0], &H->worker[i].debris_population[0], NULL, 0, NULL, &events[i]);
+//    }
+//    
+//    for (i = 0; i < H->num_workers; i++) {
+//        clFlush(H->worker[i].que);
+//    }
+//    
+//    for (i = 0; i < H->num_workers; i++) {
+//        clWaitForEvents(1, &events[i]);
+//        clReleaseEvent(events[i]);
+//    }
+//    
+//#endif
+//
+//}
 
 
 void RS_advance_time(RSHandle *H) {

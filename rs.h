@@ -522,7 +522,7 @@ void RS_download_position_only(RSHandle *H);
 void RS_download_orientation_only(RSHandle *H);
 void RS_download_pulse_only(RSHandle *H);
 
-void RS_rcs_from_dsd(RSHandle *H);
+//void RS_rcs_from_dsd(RSHandle *H);
 void RS_compute_rcs_ellipsoids(RSHandle *H);
 
 #pragma mark -

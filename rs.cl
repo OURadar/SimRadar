@@ -80,6 +80,12 @@ enum RSTable3DStaggeredDescription {
     RSTable3DStaggeredDescriptionTachikawa       = 15
 };
 
+#pragma mark -
+
+const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
+
+#pragma mark -
+
 float4 rand(uint4 *seed);
 
 #pragma mark -
@@ -262,7 +268,6 @@ float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16
 //
 
 float4 compute_bg_vel(const float4 pos, __read_only image3d_t wind_uvw, const float16 wind_desc, const float16 sim_desc) {
-    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
 
     float4 wind_coord = wind_table_index(pos, wind_desc, sim_desc);
     
@@ -281,8 +286,6 @@ float4 compute_dudt_dwdt(float4 *dwdt,
                          __read_only image2d_t adm_cd,
                          __read_only image2d_t adm_cm,
                          const float16 adm_desc) {
-    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
-
     //
     // derive alpha & beta for ADM table lookup ---------------------------------
     //
@@ -364,7 +367,6 @@ float4 compute_ellipsoid_rcs(const float4 pos, __constant float4 *table, const f
 }
 
 float4 compute_debris_rcs(const float4 pos, const float4 ori, __read_only image2d_t rcs_real, __read_only image2d_t rcs_imag, const float16 rcs_desc, const float16 sim_desc) {
-    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
 
     const float el = atan2(pos.s2, length(pos.s01));
     const float az = atan2(pos.s0, pos.s1);
@@ -564,8 +566,6 @@ __kernel void dummy(__read_only __global float4 *p,
         alpha = 0.0f;
     }
     
-    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
-
     // RCS values are stored as real(hh, vv, hv, __) + imag(hh, vv, hv, __)
     float2 rcs_coord = fma((float2)(alpha, beta), rcs_desc.s01, rcs_desc.s45);
     float4 real = read_imagef(rcs_real, sampler, rcs_coord);
@@ -628,7 +628,6 @@ __kernel void bg_atts(__global float4 *p,
 {
 
     const unsigned int i = get_global_id(0);
-    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
     const float4 dt = (float4)(sim_desc.sb, sim_desc.sb, sim_desc.sb, 0.0f);
 
     float4 pos = p[i];
@@ -636,7 +635,7 @@ __kernel void bg_atts(__global float4 *p,
     
     pos += vel * dt;
     
-    int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456) | !all(isfinite(pos.xyz)));
+    int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
     
     if (is_outside) {
         uint4 seed = y[i];
@@ -680,7 +679,6 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
 {
     
     const unsigned int i = get_global_id(0);
-    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
     const float4 dt = (float4)(sim_desc.sb, sim_desc.sb, sim_desc.sb, 0.0f);
     
     float4 pos = p[i];  // position
@@ -691,7 +689,7 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
 
     pos += vel * dt;
     
-    int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456) | !all(isfinite(pos.xyz)));
+    int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
     
     if (is_outside) {
         uint4 seed = y[i];
@@ -960,7 +958,8 @@ __kernel void scat_clr(__global float4 *c,
         // Magnitude of HH
         m = length(rcs.s01) * 100.0f;
     } else if (draw_mode == 5) {
-        m = clamp(10.0f * log10(dot(rcs.s01, rcs.s01) / dot(rcs.s23, rcs.s23)), -1.0f, 1.0f) / 2.0f + 0.5f;
+        //m = clamp(10.0f * log10(dot(rcs.s01, rcs.s01) / dot(rcs.s23, rcs.s23)), -1.0f, 1.0f) / 2.0f + 0.5f;
+        m = clamp(10.0f * log10(dot(rcs.s01, rcs.s01) / dot(rcs.s23, rcs.s23)), -3.0f, 3.0f) / 6.0f + 0.5f;
     } else {
         m = 0.5f;
     }
