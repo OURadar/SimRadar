@@ -388,7 +388,7 @@ NSWindow *standardWindow;
         case 'M':
             mkey = mkey <= 0 ? 11 : mkey - 1;
             if (mkey % 2 == 0) {
-                ret = [sim cycleScattererColorMode];
+                ret = [sim cycleReverseScattererColorMode];
             } else {
                 ret = mkey / 2;
             }

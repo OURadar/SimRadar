@@ -138,8 +138,8 @@
             [delegate progressUpdated:90.0 message:@"ADM table"];
         }
         
-        //RCSTable *rcs = RCS_get_table(R, RCSConfigLeaf);
-        RCSTable *rcs = RCS_get_table(R, RCSConfigWoodBoard);
+        RCSTable *rcs = RCS_get_table(R, RCSConfigLeaf);
+        //RCSTable *rcs = RCS_get_table(R, RCSConfigWoodBoard);
 
         RS_set_rcs_data_to_RCS_table(S, rcs);
 
@@ -215,7 +215,7 @@
 //    float r = sqrtf(x * x + y * y);
 //    el_deg = atan2f(S->domain.origin.z + 0.5f * S->domain.size.z, r) * 180.0f / M_PI;
 
-    az_deg = 2.0f;
+    az_deg = 4.0f;
     el_deg = 5.0f;
 
     RS_set_beam_pos(S, az_deg, el_deg);
@@ -239,7 +239,7 @@
 - (void)advanceBeamPosition
 {
 //	az_deg = fmodf(az_deg + 0.05f + 15.0f, 30.0f) - 15.0f;
-
+    el_deg = fmodf(el_deg + 0.05f, 20.0f);
 	RS_set_beam_pos(S, az_deg, el_deg);
 //    RS_make_pulse(S);
     RS_update_colors(S);
@@ -248,7 +248,7 @@
 - (void)advanceTimeAndBeamPosition
 {
     //az_deg = fmodf(az_deg + 0.05f + 12.0f, 24.0f) - 12.0f;
-    el_deg = fmodf(el_deg + 0.05f, 10.0f);
+    el_deg = fmodf(el_deg + 0.05f, 20.0f);
 	RS_set_beam_pos(S, az_deg, el_deg);
     //RS_make_pulse(S);
     RS_update_colors(S);
@@ -276,7 +276,12 @@
 }
 
 - (int)cycleScattererColorMode {
-    S->draw_mode.s0 = S->draw_mode.s0 >= 5 ? 0 : S->draw_mode.s0 + 1;
+    S->draw_mode.s0 = S->draw_mode.s0 >= 6 ? 0 : S->draw_mode.s0 + 1;
+    return (int)S->draw_mode.s0;
+}
+
+- (int)cycleReverseScattererColorMode {
+    S->draw_mode.s0 = S->draw_mode.s0 <= 0 ? 6 : S->draw_mode.s0 - 1;
     return (int)S->draw_mode.s0;
 }
 

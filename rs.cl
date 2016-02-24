@@ -588,6 +588,9 @@ __kernel void dummy(__read_only __global float4 *p,
     float vv_real = cg * (cg * real.s1 + real.s2 * sg) + sg * (cg * real.s2 + real.s0 * sg);
     float vv_imag = cg * (cg * imag.s1 + imag.s2 * sg) + sg * (cg * imag.s2 + imag.s0 * sg);
     
+    
+    
+    
     // Assign signal amplitude as Hi, Hq, Vi, Vq
 //    float4 ss = (float4)(hh_real + vh_real, hh_imag + vh_imag, vv_real + hv_real, vv_imag + hv_imag);
     float4 ss = (float4)(hh_real, hh_imag, vv_real, vv_imag);
@@ -948,9 +951,11 @@ __kernel void scat_clr(__global float4 *c,
         m = mix(range_weight[iidx_int.s0], range_weight[iidx_int.s1], fidx_dec.s0);
     } else if (draw_mode == 4) {
         // Magnitude of HH
-        m = clamp(length(rcs.s01) * 50.0f, 0.0f, 1.0f);
-        //m = 0.1f * log10(length(rcs.s01)) + 1.0f;
+        m = clamp(length(rcs.s01) * 20.0f, 0.0f, 1.0f);
     } else if (draw_mode == 5) {
+        // Magnitude of VV
+        m = clamp(length(rcs.s23) * 20.0f, 0.0f, 1.0f);
+    } else if (draw_mode == 6) {
         //m = clamp(10.0f * log10(dot(rcs.s01, rcs.s01) / dot(rcs.s23, rcs.s23)), -1.0f, 1.0f) / 2.0f + 0.5f;
         m = clamp(10.0f * log10(dot(rcs.s01, rcs.s01) / dot(rcs.s23, rcs.s23)), -3.0f, 3.0f) / 6.0f + 0.5f;
     } else {
