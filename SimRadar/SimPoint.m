@@ -109,7 +109,7 @@
         
         RS_set_prt(S, 1.0f / 60.0f);
         
-        BOOL useLES = FALSE;
+        BOOL useLES = TRUE;
         
         RSBox box;
         if (useLES) {
@@ -138,7 +138,8 @@
             [delegate progressUpdated:90.0 message:@"ADM table"];
         }
         
-        RCSTable *rcs = RCS_get_table(R, RCSConfigLeaf);
+        //RCSTable *rcs = RCS_get_table(R, RCSConfigLeaf);
+        RCSTable *rcs = RCS_get_table(R, RCSConfigWoodBoard);
 
         RS_set_rcs_data_to_RCS_table(S, rcs);
 
@@ -214,6 +215,7 @@
 //    float r = sqrtf(x * x + y * y);
 //    el_deg = atan2f(S->domain.origin.z + 0.5f * S->domain.size.z, r) * 180.0f / M_PI;
 
+    az_deg = 2.0f;
     el_deg = 5.0f;
 
     RS_set_beam_pos(S, az_deg, el_deg);
@@ -236,7 +238,7 @@
 
 - (void)advanceBeamPosition
 {
-	az_deg = fmodf(az_deg + 0.05f + 15.0f, 30.0f) - 15.0f;
+//	az_deg = fmodf(az_deg + 0.05f + 15.0f, 30.0f) - 15.0f;
 
 	RS_set_beam_pos(S, az_deg, el_deg);
 //    RS_make_pulse(S);
@@ -245,7 +247,8 @@
 
 - (void)advanceTimeAndBeamPosition
 {
-    az_deg = fmodf(az_deg + 0.05f + 12.0f, 24.0f) - 12.0f;
+    //az_deg = fmodf(az_deg + 0.05f + 12.0f, 24.0f) - 12.0f;
+    el_deg = fmodf(el_deg + 0.05f, 10.0f);
 	RS_set_beam_pos(S, az_deg, el_deg);
     //RS_make_pulse(S);
     RS_update_colors(S);

@@ -284,4 +284,11 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
     [self setRecorder:nil];
 }
 
+#pragma mark -
+
+- (void)mouseDragged:(NSEvent *)event
+{
+    [renderer panX:event.locationInWindow.x Y:event.locationInWindow.y dx:event.deltaX dy:event.deltaY];
+}
+
 @end

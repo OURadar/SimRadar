@@ -1454,7 +1454,8 @@ void RS_init_scat_pos(RSHandle *H) {
     // Replace a few points for debugging purpose.
 	H->scat_pos[0].x = domain.origin.x + 0.5f * domain.size.x;
     H->scat_pos[0].y = domain.origin.y + 0.5f * domain.size.y;
-    H->scat_pos[0].z = 0.0f; // domain.origin.z + 0.5f * domain.size.z;
+    //H->scat_pos[0].z = 0.0f; // domain.origin.z + 0.5f * domain.size.z;
+    H->scat_pos[0].z = H->scat_pos[0].y * tanf(5.0f / 180.0f * M_PI);
 	
     // Replace the very first debris particle
     if (H->debris_population[1] > 0) {
@@ -1975,6 +1976,7 @@ void RS_set_debris_count(RSHandle *H, const int debris_id, const size_t count) {
 
     H->debris_population[debris_id] = count;
 
+    // Always start with one as the background scatterers are always there
     H->num_body_types = 1;
     for (i = 1; i < RS_MAX_DEBRIS_TYPES; i++) {
         if (H->debris_population[i] > 0) {
@@ -3396,31 +3398,87 @@ void RS_update_colors(RSHandle *H) {
 
 #if defined(__APPLE__) &&  defined (_SHARE_OBJ_)
 
-    for (i = 0; i < H->num_workers; i++) {
-        dispatch_async(H->worker[i].que, ^{
-            if (H->status & RSStatusScattererSignalsNeedsUpdate) {
-                // Compute the attributes
-                scat_sig_aux_kernel(&H->worker[i].ndrange_scat_all,
-                                    (cl_float4 *)H->worker[i].scat_sig,
-                                    (cl_float4 *)H->worker[i].scat_aux,
-                                    (cl_float4 *)H->worker[i].scat_pos,
-                                    (cl_float4 *)H->worker[i].scat_rcs,
-                                    (cl_float *)H->worker[i].angular_weight,
-                                    H->worker[i].angular_weight_desc,
-                                    H->sim_desc);
-            }
-            // Set individual color based on draw mode
-            scat_clr_kernel(&H->worker[i].ndrange_scat_all,
-                            (cl_float4 *)H->worker[i].scat_clr,
-                            (cl_float4 *)H->worker[i].scat_pos,
-                            (cl_float4 *)H->worker[i].scat_aux,
-                            (cl_float4 *)H->worker[i].scat_rcs,
-                            H->draw_mode);
-            dispatch_semaphore_signal(H->worker[i].sem);
-        });
-        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
-    }
+//    for (i = 0; i < H->num_workers; i++) {
+//        dispatch_async(H->worker[i].que, ^{
+//            if (H->status & RSStatusScattererSignalsNeedsUpdate) {
+//                // Compute the attributes
+//                scat_sig_aux_kernel(&H->worker[i].ndrange_scat_all,
+//                                    (cl_float4 *)H->worker[i].scat_sig,
+//                                    (cl_float4 *)H->worker[i].scat_aux,
+//                                    (cl_float4 *)H->worker[i].scat_pos,
+//                                    (cl_float4 *)H->worker[i].scat_rcs,
+//                                    (cl_float *)H->worker[i].angular_weight,
+//                                    H->worker[i].angular_weight_desc,
+//                                    H->sim_desc);
+//            }
+//            // Set individual color based on draw mode
+//            scat_clr_kernel(&H->worker[i].ndrange_scat_all,
+//                            (cl_float4 *)H->worker[i].scat_clr,
+//                            (cl_float4 *)H->worker[i].scat_pos,
+//                            (cl_float4 *)H->worker[i].scat_aux,
+//                            (cl_float4 *)H->worker[i].scat_rcs,
+//                            H->draw_mode);
+//            dispatch_semaphore_signal(H->worker[i].sem);
+//        });
+//        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+//    }
+//
     
+    if (H->status & RSStatusScattererSignalsNeedsUpdate) {
+        for (i = 0; i < H->num_workers; i++) {
+            r = 0;
+            a = 0;
+            RSWorker *C = &H->worker[i];
+            for (k = 1; k < H->num_body_types; k++) {
+                if (C->debris_population[k]) {
+                    dispatch_async(C->que, ^{
+                        db_rcs_kernel(&C->ndrange_scat[k],
+                                      (cl_float4 *)C->scat_pos,
+                                      (cl_float4 *)C->scat_ori,
+                                      (cl_float4 *)C->scat_rcs,
+                                      (cl_image)H->worker[i].rcs_real[r],
+                                      (cl_image)H->worker[i].rcs_imag[r],
+                                      H->worker[i].rcs_desc[r],
+                                      H->sim_desc);
+                        dispatch_semaphore_signal(C->sem);
+                    });
+                }
+                r = r == H->rcs_count - 1 ? 0 : r + 1;
+                a = a == H->adm_count - 1 ? 0 : a + 1;
+            }
+            for (k = 1; k < H->num_body_types; k++) {
+                if (C->debris_population[k]) {
+                    dispatch_semaphore_wait(C->sem, DISPATCH_TIME_FOREVER);
+                }
+            }
+            dispatch_async(C->que, ^{
+                scat_clr_kernel(&H->worker[i].ndrange_scat_all,
+                                (cl_float4 *)C->scat_clr,
+                                (cl_float4 *)C->scat_pos,
+                                (cl_float4 *)C->scat_aux,
+                                (cl_float4 *)C->scat_rcs,
+                                H->draw_mode);
+                dispatch_semaphore_signal(C->sem);
+            });
+            dispatch_semaphore_wait(C->sem, DISPATCH_TIME_FOREVER);
+        }
+    } else {
+        for (i = 0; i < H->num_workers; i++) {
+            RSWorker *C = &H->worker[i];
+            dispatch_async(H->worker[i].que, ^{
+                // Set individual color based on draw mode
+                scat_clr_kernel(&H->worker[i].ndrange_scat_all,
+                                (cl_float4 *)C->scat_clr,
+                                (cl_float4 *)C->scat_pos,
+                                (cl_float4 *)C->scat_aux,
+                                (cl_float4 *)C->scat_rcs,
+                                H->draw_mode);
+                dispatch_semaphore_signal(C->sem);
+            });
+            dispatch_semaphore_wait(C->sem, DISPATCH_TIME_FOREVER);
+        }
+    }
+
 #else
     
     cl_event events[RS_MAX_GPU_DEVICE][H->num_body_types];

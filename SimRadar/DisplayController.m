@@ -209,10 +209,10 @@ NSWindow *standardWindow;
 //{
 //}
 
-- (void)mouseDragged:(NSEvent *)event
-{
-    [glView.renderer panX:event.locationInWindow.x Y:event.locationInWindow.y dx:event.deltaX dy:event.deltaY];
-}
+//- (void)mouseDragged:(NSEvent *)event
+//{
+//    [glView.renderer panX:event.locationInWindow.x Y:event.locationInWindow.y dx:event.deltaX dy:event.deltaY];
+//}
 
 - (void)mouseUp:(NSEvent *)event
 {
@@ -385,6 +385,22 @@ NSWindow *standardWindow;
             [glView.renderer cycleVFX];
             break;
             
+        case 'M':
+            mkey = mkey <= 0 ? 11 : mkey - 1;
+            if (mkey % 2 == 0) {
+                ret = [sim cycleScattererColorMode];
+            } else {
+                ret = mkey / 2;
+            }
+            [glView.renderer setSubtitleString:[NSString stringWithFormat:@"Draw mode %d%d", ret, mkey % 2]];
+            [glView.renderer toggleBlurSmallScatterer];
+            if (ret >= 4) {
+                [glView.renderer setShowDebrisAttributes:TRUE];
+            } else {
+                [glView.renderer setShowDebrisAttributes:FALSE];
+            }
+            break;
+
         case 'm':
             mkey = mkey >= 11 ? 0 : mkey + 1;
             if (mkey % 2 == 0) {

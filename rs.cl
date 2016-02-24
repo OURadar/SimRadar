@@ -405,13 +405,13 @@ float4 compute_debris_rcs(const float4 pos, const float4 ori, __read_only image2
     float beta_arg = quat_rel.w * quat_rel.w + quat_rel.z * quat_rel.z - quat_rel.y * quat_rel.y - quat_rel.x * quat_rel.x;
     // Lump everything to gamma when beta ~ 0.0f deg or 180.0 deg (< 1.0 deg or > 179.0 deg);
     if (beta_arg > 0.999847f || beta_arg < -0.999847f) {
-        gamma = sign(quat_rel.z) * acos(quat_rel.w) * 2.0f;
-        beta = 0.0f;
         alpha = 0.0f;
+        beta = 0.0f;
+        gamma = sign(quat_rel.z) * acos(quat_rel.w) * 2.0f;
     } else {
-        alpha =  atan2(quat_rel.y * quat_rel.z + quat_rel.w * quat_rel.x , quat_rel.w * quat_rel.y - quat_rel.x * quat_rel.z);
+        alpha = atan2(quat_rel.y * quat_rel.z - quat_rel.w * quat_rel.x , quat_rel.x * quat_rel.z + quat_rel.w * quat_rel.y);
         beta  =  acos(quat_rel.w * quat_rel.w + quat_rel.z * quat_rel.z - quat_rel.y * quat_rel.y - quat_rel.x * quat_rel.x);
-        gamma = atan2(quat_rel.y * quat_rel.z - quat_rel.w * quat_rel.x , quat_rel.x * quat_rel.z + quat_rel.w * quat_rel.y);
+        gamma = atan2(quat_rel.y * quat_rel.z + quat_rel.w * quat_rel.x , quat_rel.w * quat_rel.y - quat_rel.x * quat_rel.z);
     }
 
     // RCS values are stored as real(hh, vv, hv, __) + imag(hh, vv, hv, __)
@@ -468,21 +468,22 @@ __kernel void dummy(__read_only __global float4 *p,
 {
     unsigned int i = get_global_id(0);
     
-//    float4 pos = p[i];
+    float4 pos = p[i];
     float4 ori = o[i];
     
-    float t = sim_desc.s7 * 0.01f;
+//    float t = sim_desc.s7 * 0.01f;
 
-    float4 t4 = clamp(-(float4)(0.0f, 2.0f, 4.0f, 6.0f) + t, 0.0f, 1.0f);
-    float4 angles = t4 * M_PI_F;
+//    float4 t4 = clamp(-(float4)(0.0f, 2.0f, 4.0f, 6.0f) + t, 0.0f, 1.0f);
+//    float4 angles = t4 * M_PI_F;
     
     //float4 angles = M_PI_F * sin((float4)(0.0f, 0.2f, 0.4f, 6.0f) + t);
     
 //    if (i == 0) {
 //        printf("t = %.2f, angles = %.2v4f\n", t, angles * 180.0f / M_PI_2_F);
 //    }
-    const float el = 0.0f;
-    const float az = 0.0f;
+    
+    const float el = atan2(pos.s2, length(pos.s01));
+    const float az = atan2(pos.s0, pos.s1);
     
     const float el_beam = atan2(sim_desc.s2, length(sim_desc.s01));
     const float az_beam = atan2(sim_desc.s0, sim_desc.s1);
@@ -503,18 +504,18 @@ __kernel void dummy(__read_only __global float4 *p,
     //    (2^(1/2)*cos(a/2)*cos(e/2 + pi/4))/2 - (2^(1/2)*sin(a/2)*sin(e/2 + pi/4))/2
     float4 o_conj = ((float4)(-se, ce, se, ce) * ca + (float4)(ce, se, ce, -se) * sa) * M_SQRT1_2_F;
 
-    ori = quat_conj(o_conj);
+//    ori = quat_conj(o_conj);
 
 
-    float4 u = (float4)( 0.5f, -0.5f , -0.5f,  0.5f );
+//    float4 u = (float4)( 0.5f, -0.5f , -0.5f,  0.5f );
 //    float4 rr = (float4)( 0.0f, 0.0f, sin(0.5f * angles.s0),  cos(0.5f * angles.s0));
     
-    float4 ra = (float4)( 0.0f, -sin(0.5f * angles.s0), 0.0f, cos(0.5f * angles.s0));
-    float4 rb = (float4)( 0.0f, 0.0f, sin(0.5f * angles.s1),  cos(0.5f * angles.s1));
-    float4 rc = (float4)( 0.0f, -sin(0.5f * angles.s2), 0.0f, cos(0.5f * angles.s2));
+//    float4 ra = (float4)( 0.0f, -sin(0.5f * angles.s0), 0.0f, cos(0.5f * angles.s0));
+//    float4 rb = (float4)( 0.0f, 0.0f, sin(0.5f * angles.s1),  cos(0.5f * angles.s1));
+//    float4 rc = (float4)( 0.0f, -sin(0.5f * angles.s2), 0.0f, cos(0.5f * angles.s2));
     
     // Change the orientation
-    ori = quat_mult(quat_mult(quat_mult(ra, rb), rc), u);
+//    ori = quat_mult(quat_mult(quat_mult(ra, rb), rc), u);
 //    ori = quat_mult(quat_mult(quat_mult(ra, rb), rc), ori);
 //    ori = quat_mult(rr, u);
 
@@ -556,15 +557,19 @@ __kernel void dummy(__read_only __global float4 *p,
     float beta_arg = quat_rel.w * quat_rel.w + quat_rel.z * quat_rel.z - quat_rel.y * quat_rel.y - quat_rel.x * quat_rel.x;
     // Lump everything to gamma when beta ~ 0.0f deg or 180.0 deg (< 1.0 deg or > 179.0 deg);
     if (beta_arg > 0.999847f || beta_arg < -0.999847f) {
-        gamma = sign(quat_rel.z) * acos(quat_rel.w) * 2.0f;
-        beta = 0.0f;
         alpha = 0.0f;
+        beta = 0.0f;
+        gamma = sign(quat_rel.z) * acos(quat_rel.w) * 2.0f;
     } else {
-        alpha =  atan2(quat_rel.y * quat_rel.z + quat_rel.w * quat_rel.x , quat_rel.w * quat_rel.y - quat_rel.x * quat_rel.z);
+        alpha = atan2(quat_rel.y * quat_rel.z - quat_rel.w * quat_rel.x , quat_rel.x * quat_rel.z + quat_rel.w * quat_rel.y);
         beta  =  acos(quat_rel.w * quat_rel.w + quat_rel.z * quat_rel.z - quat_rel.y * quat_rel.y - quat_rel.x * quat_rel.x);
-        gamma = atan2(quat_rel.y * quat_rel.z - quat_rel.w * quat_rel.x , quat_rel.x * quat_rel.z + quat_rel.w * quat_rel.y);
+        gamma = atan2(quat_rel.y * quat_rel.z + quat_rel.w * quat_rel.x , quat_rel.w * quat_rel.y - quat_rel.x * quat_rel.z);
     }
 
+//    if (i == 0) {
+//        printf("beam @ %.1f %.1f  q = [%6.3v4f]  abg = [%6.3f %6.3f %6.3f]\n", degrees(el_beam), degrees(az_beam), quat_rel, alpha, beta, gamma);
+//    }
+    
     // RCS values are stored as real(hh, vv, hv, __) + imag(hh, vv, hv, __)
     float2 rcs_coord = fma((float2)(alpha, beta), rcs_desc.s01, rcs_desc.s45);
     float4 real = read_imagef(rcs_real, sampler, rcs_coord);
@@ -594,7 +599,7 @@ __kernel void dummy(__read_only __global float4 *p,
 //               degrees(angles.s012), degrees(alpha), degrees(beta), degrees(gamma), cg, hh, vv, 10.0f * log10(hh / vv));
 //    }
     
-    o[i] = ori;
+//    o[i] = ori;
     x[i] = ss;
 }
 
@@ -943,7 +948,7 @@ __kernel void scat_clr(__global float4 *c,
         m = mix(range_weight[iidx_int.s0], range_weight[iidx_int.s1], fidx_dec.s0);
     } else if (draw_mode == 4) {
         // Magnitude of HH
-        m = length(rcs.s01) * 50.0f;
+        m = clamp(length(rcs.s01) * 50.0f, 0.0f, 1.0f);
         //m = 0.1f * log10(length(rcs.s01)) + 1.0f;
     } else if (draw_mode == 5) {
         //m = clamp(10.0f * log10(dot(rcs.s01, rcs.s01) / dot(rcs.s23, rcs.s23)), -1.0f, 1.0f) / 2.0f + 0.5f;

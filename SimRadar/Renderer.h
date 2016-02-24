@@ -16,7 +16,7 @@
 #define RENDERER_MAX_DEBRIS_TYPES           4
 #define RENDERER_MAX_VBO_GROUPS             8
 #define RENDERER_DEFAULT_BODY_COLOR_INDEX   21
-#define RENDERER_DEFAULT_BODY_OPACITY       0.001
+#define RENDERER_DEFAULT_BODY_OPACITY       0.03
 #define RENDERER_FBO_COUNT                  5
 
 enum hudConfig {
