@@ -158,11 +158,11 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     // Tie all kernels to the program
     C->kern_io = clCreateKernel(C->prog, "io", &ret);                                             CHECK_CL_CREATE_KERNEL
     C->kern_dummy = clCreateKernel(C->prog, "dummy", &ret);                                       CHECK_CL_CREATE_KERNEL
+    C->kern_db_rcs = clCreateKernel(C->prog, "db_rcs", &ret);                                     CHECK_CL_CREATE_KERNEL
     C->kern_bg_atts = clCreateKernel(C->prog, "bg_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
     C->kern_el_atts = clCreateKernel(C->prog, "el_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
     C->kern_db_atts = clCreateKernel(C->prog, "db_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
     C->kern_scat_clr = clCreateKernel(C->prog, "scat_clr", &ret);                                 CHECK_CL_CREATE_KERNEL
-//    C->kern_scat_rcs = clCreateKernel(C->prog, "scat_rcs", &ret);                                 CHECK_CL_CREATE_KERNEL
     C->kern_scat_sig_aux = clCreateKernel(C->prog, "scat_sig_aux", &ret);                         CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_1 = clCreateKernel(C->prog, "make_pulse_pass_1", &ret);               CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_2_group = clCreateKernel(C->prog, "make_pulse_pass_2_group", &ret);   CHECK_CL_CREATE_KERNEL
@@ -218,11 +218,11 @@ void RS_worker_free(RSWorker *C) {
     
     clReleaseKernel(C->kern_io);
     clReleaseKernel(C->kern_dummy);
+    clReleaseKernel(C->kern_db_rcs);
     clReleaseKernel(C->kern_bg_atts);
     clReleaseKernel(C->kern_el_atts);
     clReleaseKernel(C->kern_db_atts);
     clReleaseKernel(C->kern_scat_clr);
-//    clReleaseKernel(C->kern_scat_rcs);
     clReleaseKernel(C->kern_scat_sig_aux);
     clReleaseKernel(C->kern_make_pulse_pass_1);
     clReleaseKernel(C->kern_make_pulse_pass_2_group);
@@ -381,6 +381,19 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     }
 
     ret = CL_SUCCESS;
+    ret |= clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentOrientation,                   sizeof(cl_mem),     &C->scat_ori);
+    ret |= clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &C->scat_rcs);
+    ret |= clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &C->rcs_real[0]);
+    ret |= clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[0]);
+    ret |= clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[0]);
+    ret |= clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
+    if (ret != CL_SUCCESS) {
+        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_db_rcs().\n", now());
+        exit(EXIT_FAILURE);
+    }
+
+    ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &C->scat_rcs);
@@ -431,16 +444,6 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
         exit(EXIT_FAILURE);
     }
 
-//    ret = CL_SUCCESS;
-//    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentRadarCrossSection,     sizeof(cl_mem),     &C->scat_rcs);
-//    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentPosition,              sizeof(cl_mem),     &C->scat_pos);
-//    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentAuxiliary,             sizeof(cl_mem),     &C->scat_aux);
-//    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-//    if (ret != CL_SUCCESS) {
-//        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_rcs().\n", now());
-//        exit(EXIT_FAILURE);
-//    }
-    
     ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentColor,             sizeof(cl_mem),   &C->scat_clr);
     ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentPosition,          sizeof(cl_mem),   &C->scat_pos);
@@ -3383,8 +3386,14 @@ void RS_update_auxiliary_attributes(RSHandle *H) {
 
 void RS_update_colors(RSHandle *H) {
 
-    int i;
-    
+    int i, k;
+    int r, a;
+
+    if (!(H->status & RSStatusDomainPopulated)) {
+        rsprint("Error. Simulation domain not populated.");
+        return;
+    }
+
 #if defined(__APPLE__) &&  defined (_SHARE_OBJ_)
 
     for (i = 0; i < H->num_workers; i++) {
@@ -3414,23 +3423,54 @@ void RS_update_colors(RSHandle *H) {
     
 #else
     
-    cl_event events[RS_MAX_GPU_DEVICE][2];
+    cl_event events[RS_MAX_GPU_DEVICE][H->num_body_types];
     memset(events, 0, sizeof(events));
     
-    for (i = 0; i < H->num_workers; i++) {
-        RSWorker *C = &H->worker[i];
-        if (H->status & RSStatusScattererSignalsNeedsUpdate) {
+    if (H->status & RSStatusScattererSignalsNeedsUpdate) {
+        // Very similar to the RS_advance_time() function but only the debris RCS is updated
+        for (i = 0; i < H->num_workers; i++) {
+            r = 0;
+            a = 0;
+            RSWorker *C = &H->worker[i];
+            for (k = 1; k < H->num_body_types; k++) {
+                if (C->debris_population[k]) {
+                    clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &C->rcs_real[r]);
+                    clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[r]);
+                    clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[r]);
+                    clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
+                    clEnqueueNDRangeKernel(C->que, C->kern_db_rcs, 1, &C->debris_origin[k], &C->debris_population[k], NULL, 0, NULL, &events[i][k]);
+                }
+                r = r == H->rcs_count - 1 ? 0 : r + 1;
+                a = a == H->adm_count - 1 ? 0 : a + 1;
+            }
+        }
+        for (i = 0; i < H->num_workers; i++) {
+            clFlush(H->worker[i].que);
+        }
+        for (i = 0; i < H->num_workers; i++) {
+            for (k = 1; k < H->num_body_types; k++) {
+                if (H->worker[i].debris_population[k]) {
+                    clWaitForEvents(1, &events[i][k]);
+                    clReleaseEvent(events[i][k]);
+                }
+            }
+        }
+        for (i = 0; i < H->num_workers; i++) {
+            RSWorker *C = &H->worker[i];
             clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
             clEnqueueNDRangeKernel(C->que, C->kern_scat_sig_aux, 1, NULL, &C->num_scats, NULL, 0, NULL, &events[i][0]);
-
+            
             clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentDrawMode, sizeof(cl_uint4), &H->draw_mode);
             clEnqueueNDRangeKernel(C->que, C->kern_scat_clr, 1, NULL, &C->num_scats, NULL, 1, &events[i][0], &events[i][1]);
-        } else {
+        }
+    } else {
+        for (i = 0; i < H->num_workers; i++) {
+            RSWorker *C = &H->worker[i];
             clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentDrawMode, sizeof(cl_uint4), &H->draw_mode);
             clEnqueueNDRangeKernel(C->que, C->kern_scat_clr, 1, NULL, &C->num_scats, NULL, 0, NULL, &events[i][1]);
         }
     }
-    
+
     for (i = 0; i < H->num_workers; i++) {
         clFlush(H->worker[i].que);
     }
@@ -3946,7 +3986,7 @@ void RS_advance_time(RSHandle *H) {
     int r, a;
 
     if (!(H->status & RSStatusDomainPopulated)) {
-		fprintf(stderr, "%s : RS : Simulation domain not populated.\n", now());
+		fprintf(stderr, "%s : RS : Error. Simulation domain not populated.\n", now());
 		return;
 	}
 
@@ -3965,7 +4005,9 @@ void RS_advance_time(RSHandle *H) {
     #if defined (_DUMMY_)
     
     i = 0;
+    k = 0;
     r = 0;
+    a = 0;
     dispatch_async(H->worker[i].que, ^{
         dummy_kernel(&H->worker[i].ndrange_scat_all,
                      (cl_float4 *)H->worker[i].scat_pos,
@@ -4089,7 +4131,7 @@ void RS_advance_time(RSHandle *H) {
         r = 0;
         a = 0;
 
-        // Convenient pointer to reduce dereferencing
+        // A convenient pointer to reduce dereferencing
         RSWorker *C = &H->worker[i];
 
 //        clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->debris_origin[0], &C->num_scats, NULL, 0, NULL, &events[i][0]);
@@ -4097,8 +4139,6 @@ void RS_advance_time(RSHandle *H) {
         // Background: Need to refresh some parameters at each time update
         if (H->sim_concept & RSSimulationConceptDraggedBackground) {
             clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,      sizeof(cl_mem),     &C->vel[v]);
-//            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentEllipsoidRCS,            sizeof(cl_mem),     &C->rcs_ellipsoid);
-//            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentEllipsoidRCSDescription, sizeof(cl_float4),  &C->rcs_ellipsoid_desc);
             clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription,   sizeof(cl_float16), &H->sim_desc);
             clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->debris_origin[0], &C->debris_population[0], NULL, 0, NULL, &events[i][0]);
         } else {

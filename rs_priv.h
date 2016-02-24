@@ -8,6 +8,16 @@
 #ifndef rs_priv_h
 #define rs_priv_h
 
+enum RSDebrisRCSKernelArgument {
+    RSDebrisRCSKernelArgumentPosition,
+    RSDebrisRCSKernelArgumentOrientation,
+    RSDebrisRCSKernelArgumentRadarCrossSection,
+    RSDebrisRCSKernelArgumentRadarCrossSectionReal,
+    RSDebrisRCSKernelArgumentRadarCrossSectionImag,
+    RSDebrisRCSKernelArgumentRadarCrossSectionDescription,
+    RSDebrisRCSKernelArgumentSimulationDescription
+};
+
 enum RSBackgroundAttributeKernelArgument {
     RSBackgroundAttributeKernelArgumentPosition,
     RSBackgroundAttributeKernelArgumentVelocity,

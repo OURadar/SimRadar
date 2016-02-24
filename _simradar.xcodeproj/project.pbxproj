@@ -2900,7 +2900,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = (
 					"-D_SHARE_OBJ_",
-					"-D_DUMMY",
+					"-D_DUMMY_",
 				);
 				OTHER_LDFLAGS = (
 					"-L",
