@@ -43,6 +43,7 @@ typedef struct _rcs_table {
     RCSData   data;
     char      name[1024];
     char      path[1024];
+    float     lambda;
 } RCSTable;
 
 RCSHandle *RCS_init_with_path(const char *path);

@@ -499,9 +499,9 @@
 			children = (
 				B50A281717D7C2F400E4DE66 /* radarsim.c */,
 				B50A280617D7B1EC00E4DE66 /* cldemo.c */,
+				B5BAD55618B67E80007AC15D /* test_rs.c */,
 				B5760EA718A938F2008DAF83 /* test_clreduce.c */,
 				B5D1420A18AA72E90041566E /* test_make_pulse.c */,
-				B5BAD55618B67E80007AC15D /* test_rs.c */,
 				B5F3C31F18F2FD3800092A72 /* test_les.c */,
 				B567F8B41A6D635100F40660 /* test_adm.c */,
 				B5C2D1EE1ADC154900DD91B1 /* test_rcs.c */,
