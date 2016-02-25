@@ -22,10 +22,11 @@ enum {
     TEST_BG_ATTS                = 1 << 10,
     TEST_EL_ATTS                = 1 << 11,
     TEST_DB_ATTS                = 1 << 12,
-	TEST_GPU_SIMPLE             = TEST_ADVANCE_TIME_GPU | TEST_MAKE_PULSE_GPU | TEST_DOWNLOAD | TEST_IO,
-	TEST_GPU_ALL                = TEST_ADVANCE_TIME_GPU | TEST_MAKE_PULSE_GPU_PASS_1 | TEST_MAKE_PULSE_GPU_PASS_2 | TEST_DOWNLOAD | TEST_IO,
-	TEST_CPU_ALL                = TEST_ADVANCE_TIME_CPU | TEST_MAKE_PULSE_CPU,
-	TEST_ALL                    = TEST_GPU_ALL | TEST_CPU_ALL
+    TEST_KERNEL_MASK            = (TEST_IO | TEST_DUMMY | TEST_SIG_AUX | TEST_BG_ATTS | TEST_EL_ATTS | TEST_DB_ATTS),
+	TEST_GPU_SIMPLE             = (TEST_ADVANCE_TIME_GPU | TEST_MAKE_PULSE_GPU | TEST_DOWNLOAD | TEST_IO),
+	TEST_GPU_ALL                = (TEST_ADVANCE_TIME_GPU | TEST_MAKE_PULSE_GPU_PASS_1 | TEST_MAKE_PULSE_GPU_PASS_2 | TEST_DOWNLOAD | TEST_IO),
+	TEST_CPU_ALL                = (TEST_ADVANCE_TIME_CPU | TEST_MAKE_PULSE_CPU),
+	TEST_ALL                    = (TEST_GPU_ALL | TEST_CPU_ALL)
 };
 
 
@@ -41,7 +42,7 @@ int main(int argc, char **argv)
 	
 	struct timeval t1, t2;
 	
-	while ((c = getopt(argc, argv, "vac012igdn:s:tDh?")) != -1) {
+	while ((c = getopt(argc, argv, "vac012igdn:s:tkh?")) != -1) {
 		switch (c) {
             case 'v':
                 verb++;
@@ -73,8 +74,8 @@ int main(int argc, char **argv)
             case 't':
                 test |= TEST_DUMMY;
                 break;
-            case 'D':
-                test |= TEST_DB_ATTS;
+            case 'k':
+                test |= TEST_DB_ATTS | TEST_EL_ATTS;
                 break;
 			case 'n':
 				N = atoi(optarg);
@@ -150,13 +151,16 @@ int main(int argc, char **argv)
 	
 	RS_populate(H);
 	
-	printf("\nTest(s) using %s scatter bodies for %d iterations:\n\n", commaint(H->num_scats), N);
+	printf("\nTest(s) using %s scatterers and %s debris objects for %s iterations:\n\n",
+           commaint(H->num_scats), commaint(H->debris_population[0]), commaint(N));
 
 	RS_advance_time(H);
     
 #define FMT   "%30s  %8.4f ms\n"
 #define FMT2  "%30s  %8.4f ms  (%.2f GB/s)\n"
 	
+    printf("Framework functions:\n\n");
+
     //
     // RS_io_test()
     //
@@ -213,7 +217,9 @@ int main(int argc, char **argv)
     //
     //  Some kernels
     //
-    printf("\nTest(s) using %s debris objects for %d iterations:\n\n", commaint(H->debris_population[1]), N);
+    if (test & TEST_KERNEL_MASK) {
+        printf("\nInternal kernel functions:\n\n");
+    }
     
     //
     //  db_atts
@@ -239,6 +245,30 @@ int main(int argc, char **argv)
         printf(FMT2, "db_atts", 1.0e3f * dt, 1.0e-9f * byte_size / dt);
     }
     
+    //
+    //  el_atts
+    //
+    if (test & TEST_EL_ATTS) {
+        byte_size = 4 * H->debris_population[0] * sizeof(cl_float4);
+        gettimeofday(&t1, NULL);
+        for (i=0; i<N; i++) {
+            clEnqueueNDRangeKernel(H->worker[0].que,
+                                   H->worker[0].kern_el_atts,
+                                   1,
+                                   &H->worker[0].debris_origin[0],
+                                   &H->worker[0].debris_population[0],
+                                   NULL,
+                                   0,
+                                   NULL,
+                                   NULL);
+        }
+        clFinish(H->worker[0].que);
+        gettimeofday(&t2, NULL);
+        dt = DTIME(t1, t2) / (float)N;
+        printf(FMT2, "el_atts", 1.0e3f * dt, 1.0e-9f * byte_size / dt);
+    }
+    
+
     //
     //  make_pulse_pass_1
     //

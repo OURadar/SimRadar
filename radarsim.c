@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
     char accel_type = 0;
     char scan_mode = SCAN_MODE_PPI;
     char quiet_mode = true;
-    char output_file = true;
+    char output_file = false;
     int num_pulses = 5;
     float scan_az = 0.0f;
     float scan_el = 3.0f;

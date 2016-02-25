@@ -618,6 +618,8 @@ void rsprint(const char *format, ...) {
 	}
     if (!strncmp(str, "Error", 5)) {
         fprintf(stderr, "\033[1;31m%s\033[0m", str);
+    } else if (!strncmp(str, "WARNING", 7)) {
+        fprintf(stderr, "\033[1;33m%s\033[0m", str);
     } else {
         printf("%s", str);
     }
@@ -828,7 +830,7 @@ ReductionParams *make_reduction_params(cl_uint count, cl_uint user_max_groups, c
 	ReductionParams *params = (ReductionParams *)malloc(sizeof(ReductionParams));
 	
 	if (params == NULL) {
-		fprintf(stderr, "%s : RS : Error creating ReductionParams.\n", now());
+		rsprint("Error. Unable to allocate memory for ReductionParams.");
 		return NULL;
 	}
 	
@@ -941,7 +943,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 	
 	// Allocate
 	if (posix_memalign((void **)((uintptr_t)&H), RS_ALIGN_SIZE, sizeof(RSHandle))) {
-		fprintf(stderr, "%s : RS : Error initializing RSHandle.\n", now());
+		rsprint("Error. Unable to initialize RS Framework.");
 		return NULL;
 	}
 	memset(H, 0, sizeof(RSHandle));
@@ -975,7 +977,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 		get_device_info(CL_DEVICE_TYPE_CPU, &H->num_devs, H->devs, H->num_cus, H->vendors, 0);
 	}
     if (H->num_devs == 0 || H->num_cus[0] == 0) {
-        fprintf(stderr, "%s : RS : Error. No OpenCL devices found.\n", now());
+        rsprint("Error. No OpenCL devices found.");
         return NULL;
     }
 
@@ -1108,7 +1110,7 @@ void RS_free_scat_memory(RSHandle *H) {
 	
 	for (i = 0; i < H->num_workers; i++) {
 		if (H->worker[i].vbo_scat_pos == 0) {
-			fprintf(stderr, "%s : RS : Unexpected error. VBO was not shared.\n", now());
+			rsprint("Error. Unexpected conditions. VBOs were not shared.");
 			return;
 		}
 		gcl_free(H->worker[i].scat_pos);
@@ -1629,7 +1631,7 @@ void RS_set_scan_box(RSHandle *H,
 	}
 	H->anchor_pos = (cl_float4 *)malloc(H->num_anchors * sizeof(cl_float4));
 	if (H->anchor_pos == NULL) {
-		rsprint("Error in allocating anchors.");
+		rsprint("Error. Unable to allocate memory for anchors.");
 		return;
 	}
 	
@@ -1747,7 +1749,7 @@ void RS_set_scan_box(RSHandle *H,
 	}
 	H->anchor_lines = (cl_float4 *)malloc(H->num_anchor_lines * sizeof(cl_float4));
 	if (H->anchor_lines == NULL) {
-		fprintf(stderr, "%s : RS : Error in allocating anchor_lines.\n", now());
+		rsprint("Error. Unable to allocate memory for anchor_lines.");
 		return;
 	}
 	ii = 0;
@@ -2150,7 +2152,7 @@ void RS_set_dsd(RSHandle *H, const float *pdf, const float *diameters, const int
     H->dsd_cdf = (RSfloat *)malloc(count * sizeof(RSfloat));
     
     if (H->dsd_r == NULL || H->dsd_pdf == NULL || H->dsd_cdf == NULL) {
-        fprintf(stderr, "%s : RS : Error allocating resources for DSD parameterization.\n", now());
+        rsprint("Error. Unable to allocate memory for DSD parameterization.");
         return;
     }
     
@@ -2355,11 +2357,11 @@ void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const flo
         }
         H->worker[i].rcs_ellipsoid = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(cl_float4), table.data, &ret);
         if (ret != CL_SUCCESS) {
-            rsprint("Error creating RCS of ellipsoid table on CL device.");
+            rsprint("Error. Unable to create RCS of ellipsoid table on CL device.");
             return;
         }
         if (H->verb > 2) {
-            printf("worker[%d] created RCS of ellipsoid @ %p.\n", i, H->worker[i].rcs_ellipsoid);
+            printf("worker[%d] created RCS of ellipsoid table @ %p.\n", i, H->worker[i].rcs_ellipsoid);
         }
     }
     
@@ -2411,7 +2413,7 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
         }
         H->worker[i].range_weight = gcl_malloc(table_size * sizeof(float), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
         if (H->worker[i].range_weight == NULL) {
-            fprintf(stderr, "%s : RS : Error creating range weight table on CL device.\n", now());
+            fprintf(stderr, "%s : RS : Error. Unable to create range weight table on CL device.\n", now());
             return;
         }
     }
@@ -2431,7 +2433,7 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
         }
         H->worker[i].range_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), table.data, &ret);
         if (ret != CL_SUCCESS) {
-            fprintf(stderr, "%s : RS : Error creating range weight table on CL device.\n", now());
+            fprintf(stderr, "%s : RS : Error. Unable to create range weight table on CL device.\n", now());
             return;
         }
         if (H->verb > 2) {
@@ -2492,7 +2494,7 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
 //        }
         H->worker[i].angular_weight = gcl_malloc(table_size * sizeof(float), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
         if (H->worker[i].angular_weight == NULL) {
-            fprintf(stderr, "%s : RS : Error creating angular weight table on CL device.\n", now());
+            fprintf(stderr, "%s : RS : Error. Unable to create angular weight table on CL device.\n", now());
             return;
         }
     }
@@ -2512,7 +2514,7 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
         }
         H->worker[i].angular_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), table.data, &ret);
         if (ret != CL_SUCCESS) {
-            fprintf(stderr, "%s : RS : Error creating angular weight table on CL device.\n", now());
+            fprintf(stderr, "%s : RS : Error. Unable to create angular weight table on CL device.\n", now());
             return;
         }
         if (H->verb > 2) {
@@ -2633,10 +2635,10 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 #endif
         
         if (H->worker[i].vel[t] == NULL) {
-			fprintf(stderr, "%s : RS : worker[%d] encountered error creating wind table on CL device.\n", now(), i);
+			rsprint("Error. worker[%d] unable to create wind table on CL device.\n", i);
 			return;
         } else if (H->verb > 2) {
-            printf("%s : RS : worker[%d] created vel[%d] @ %p\n", now(), i, t, &H->worker[i].vel[t]);
+            rsprint("worker[%d] created wind table vel[%d] @ %p\n", i, t, &H->worker[i].vel[t]);
         }
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
@@ -2979,7 +2981,7 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
             fprintf(stderr, "%s : RS : worker[%d] encountered error creating ADM tables on CL device(s).\n", now(), i);
             return;
         } else if (H->verb > 2) {
-            printf("%s : RS : worker[%d] created adm_cd[%d] & adm_cd[%d] @ %p & %p\n", now(), i, t, t, &H->worker[i].adm_cd[t], &H->worker[i].adm_cm[t]);
+            printf("%s : RS : worker[%d] created ADM tables adm_cd[%d] & adm_cd[%d] @ %p & %p\n", now(), i, t, t, &H->worker[i].adm_cd[t], &H->worker[i].adm_cm[t]);
         }
         
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
@@ -3193,7 +3195,7 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
             fprintf(stderr, "%s : RS : worker[%d] encountered error creating RCS tables on CL device(s).\n", now(), i);
             return;
         } else if (H->verb > 2) {
-            printf("%s : RS : worker[%d] created rcs_real[%d] & rcs_imag[%d] @ %p & %p\n", now(), i, t, t, &H->worker[i].rcs_real[t], &H->worker[i].rcs_imag[t]);
+            printf("%s : RS : worker[%d] created RCS tables rcs_real[%d] & rcs_imag[%d] @ %p & %p\n", now(), i, t, t, &H->worker[i].rcs_real[t], &H->worker[i].rcs_imag[t]);
         }
         
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
@@ -3406,7 +3408,7 @@ void RS_update_colors(RSHandle *H) {
 
 #if defined(__APPLE__) &&  defined (_SHARE_OBJ_)
 
-    if (H->status & RSStatusScattererSignalsNeedsUpdate) {
+    if (H->status & RSStatusScattererSignalNeedsUpdate) {
         for (i = 0; i < H->num_workers; i++) {
             r = 0;
             a = 0;
