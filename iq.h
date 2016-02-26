@@ -23,6 +23,7 @@ typedef union fileheader {
     struct {
         RSParams  params;
         uint32_t  debris_population[RS_MAX_DEBRIS_TYPES];
+        char      scan_mode[16];
     };
 } IQFileHeader;
 

@@ -77,6 +77,27 @@ int get_next_scan_angles(ScanParams *params) {
     return 0;
 }
 
+static char *scan_mode_str(char scan_mode) {
+    static char str[16];
+    switch (scan_mode) {
+        case SCAN_MODE_PPI:
+        snprintf(str, sizeof(str), "PPI");
+        break;
+        
+        case SCAN_MODE_RHI:
+        snprintf(str, sizeof(str), "RHI");
+        break;
+
+        case SCAN_MODE_STARE:
+        snprintf(str, sizeof(str), "STARE");
+        break;
+
+        default:
+        break;
+    }
+    return str;
+}
+
 //
 //
 //  M A I N
@@ -89,7 +110,7 @@ int main(int argc, char *argv[]) {
     char accel_type = 0;
     char scan_mode = SCAN_MODE_PPI;
     char quiet_mode = true;
-    char preview_only = true;
+    char preview_only = false;
     char output_file = false;
     int num_pulses = 5;
 
@@ -228,7 +249,7 @@ int main(int argc, char *argv[]) {
     // Preview only
     if (preview_only) {
         #define FLT_FMT  "\033[1;33m%+6.2f\033[0m"
-        printf("Scan mode: \033[1;32m%s\033[0m", scan.mode == SCAN_MODE_PPI ? "PPI" : (scan.mode == SCAN_MODE_RHI ? "RHI" : "SPOTLIGHT"));
+        printf("Scan mode: \033[1;32m%s\033[0m", scan_mode_str(scan.mode));
         if (scan.mode == SCAN_MODE_RHI) {
             printf("   AZ: " FLT_FMT " deg", scan.az);
         } else {
@@ -461,6 +482,7 @@ int main(int argc, char *argv[]) {
         for (k = 0; k < S->num_body_types; k++) {
             file_header.debris_population[k] = (uint32_t)S->debris_population[k];
         }
+        snprintf(file_header.scan_mode, sizeof(file_header.scan_mode), "%s", scan_mode_str(scan.mode));
         
         if (output_file) {
             char filename[4096];
