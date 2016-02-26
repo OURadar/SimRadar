@@ -187,7 +187,7 @@ enum RendererLineSegment {
 @property (nonatomic, retain) id<RendererDelegate> delegate;
 @property (nonatomic, readonly) GLsizei width, height;
 @property (nonatomic) GLfloat beamAzimuth, beamElevation;
-@property (nonatomic) BOOL showDebrisAttributes;
+@property (nonatomic) BOOL showDebrisAttributes, blurSmallScatterers;
 
 - (id)initWithDevicePixelRatio:(GLfloat)pixelRatio;
 

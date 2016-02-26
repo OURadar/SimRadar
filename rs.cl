@@ -921,20 +921,21 @@ __kernel void scat_clr(__global float4 *c,
     const uint draw_mode = mode.s0;
     
     float m = 0.0f;
+    float w = 1.0f;
     
     float4 aux = a[i];
     float4 rcs = x[i];
     
-    if (draw_mode == 0) {
+    if (draw_mode == 'S') {
         // DSD bin index
         m = clamp(aux.s2, 0.0f, 1.0f);
-    } else if (draw_mode == 1) {
+    } else if (draw_mode == 'A') {
         // Angular weight (antenna pattern)
         m = aux.s3;
-    } else if (draw_mode == 2) {
+    } else if (draw_mode == 'B') {
         // Angular weight in log scale
         m = clamp(fma(native_log10(100.0f * aux.s3), 0.1f, 0.8f), 0.0f, 1.0f);
-    } else if (draw_mode == 3) {
+    } else if (draw_mode == 'R') {
         // Range weight
         m = clamp((aux.s0 - 2000.0f) * 0.0005f, 0.0f, 1.0f);
         
@@ -952,20 +953,21 @@ __kernel void scat_clr(__global float4 *c,
         
         // Actual range weight
         m = mix(range_weight[iidx_int.s0], range_weight[iidx_int.s1], fidx_dec.s0);
-    } else if (draw_mode == 4) {
+    } else if (draw_mode == 'H') {
         // Magnitude of HH
         m = clamp(length(rcs.s01) * 20.0f, 0.0f, 1.0f);
-    } else if (draw_mode == 5) {
+    } else if (draw_mode == 'V') {
         // Magnitude of VV
         m = clamp(length(rcs.s23) * 20.0f, 0.0f, 1.0f);
-    } else if (draw_mode == 6) {
-        //m = clamp(10.0f * native_log10(dot(rcs.s01, rcs.s01) / dot(rcs.s23, rcs.s23)), -1.0f, 1.0f) / 2.0f + 0.5f;
+    } else if (draw_mode == 'D') {
         m = clamp(10.0f * native_log10(dot(rcs.s01, rcs.s01) / dot(rcs.s23, rcs.s23)), -3.0f, 3.0f) / 6.0f + 0.5f;
+        w = clamp(length(rcs) * 25.0f, 0.0f, 1.0f);
     } else {
         m = 0.5f;
     }
     
     c[i].x = m;
+    c[i].w = w;
 }
 
 //

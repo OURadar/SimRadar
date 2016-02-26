@@ -275,14 +275,18 @@
 	[NSThread detachNewThreadSelector:@selector(runInBackground) toTarget:self withObject:nil];
 }
 
-- (int)cycleScattererColorMode {
-    S->draw_mode.s0 = S->draw_mode.s0 >= 6 ? 0 : S->draw_mode.s0 + 1;
-    return (int)S->draw_mode.s0;
-}
+//- (int)cycleScattererColorMode {
+//    S->draw_mode.s0 = S->draw_mode.s0 >= 6 ? 0 : S->draw_mode.s0 + 1;
+//    return (int)S->draw_mode.s0;
+//}
+//
+//- (int)cycleReverseScattererColorMode {
+//    S->draw_mode.s0 = S->draw_mode.s0 <= 0 ? 6 : S->draw_mode.s0 - 1;
+//    return (int)S->draw_mode.s0;
+//}
 
-- (int)cycleReverseScattererColorMode {
-    S->draw_mode.s0 = S->draw_mode.s0 <= 0 ? 6 : S->draw_mode.s0 - 1;
-    return (int)S->draw_mode.s0;
+- (void)setScattererColorMode:(int)mode {
+    S->draw_mode.s0 = mode;
 }
 
 #pragma mark -

@@ -65,8 +65,9 @@
 - (void)randomBeamPosition;
 - (void)homeBeamPosition;
 - (void)run;
-- (int)cycleScattererColorMode;
-- (int)cycleReverseScattererColorMode;
+//- (int)cycleScattererColorMode;
+//- (int)cycleReverseScattererColorMode;
+- (void)setScattererColorMode:(int)mode;
 
 - (NSInteger)deviceCount;
 
