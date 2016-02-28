@@ -30,10 +30,6 @@ enum SCAN_MODE {
     SCAN_MODE_RHI
 };
 
-void show_help(void) {
-    printf("I'll do this later\n");
-}
-
 typedef struct scan_params {
     char mode;
     float start;
@@ -99,6 +95,29 @@ static char *scan_mode_str(char scan_mode) {
 }
 
 //
+//   s h o w _ h e l p
+//
+#define CLEAR        "\033[0m"
+#define UNDERLINE    "\033[4m"
+#define PROGNAME     "radarsim"
+
+void show_help() {
+    printf("Radar simulation\n\n"
+           PROGNAME " [options]\n"
+           "OPTIONS\n"
+           "     Unless specifically stated, all options are interpreted in sequence\n"
+           "  --alarm\n"
+           "             Make a sound when the simulation is complete.\n\n"
+           "  --density " UNDERLINE "D" CLEAR "\n"
+           "             Set the density of particles to " UNDERLINE "D" CLEAR " scatterers per resolution volume\n\n"
+           "EXAMPLES\n"
+           "     The following simulates a vortex and creates a PPI scan data using default scan values\n"
+           "           " PROGNAME " -o"
+           "\n"
+           );
+}
+
+//
 //
 //  M A I N
 //
@@ -149,6 +168,7 @@ int main(int argc, char *argv[]) {
         {"cpu"        , no_argument      , 0, 'c'},
         {"debris"     , required_argument, 0, 'd'},
         {"elevation"  , required_argument, 0, 'e'},
+        {"help"       , no_argument      , 0, 'h'},
         {"gpu"        , no_argument      , 0, 'g'},
         {"frames"     , required_argument, 0, 'f'},
         {"lambda"     , required_argument, 0, 'l'},
@@ -161,11 +181,19 @@ int main(int argc, char *argv[]) {
         {0, 0, 0, 0}
     };
     
+    // Construct short_options from long_options
+    char str[1024] = "";
+    for (k = 0; k < sizeof(long_options) / sizeof(struct option); k++) {
+        struct option *o = &long_options[k];
+        snprintf(str + strlen(str), 1024, "%c%s", o->val, o->has_arg ? ":" : "");
+    }
+    //printf("str = '%s'\n", str);
+    
     char c1;
     float f1, f2, f3;
     // Process the input arguments and set the simulator parameters
     int opt, long_index = 0;
-    while ((opt = getopt_long(argc, argv, "AD:NPRS:Wa:cd:e:gp:f:l:op:qt:vw:W:", long_options, &long_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, str, long_options, &long_index)) != -1) {
         switch (opt) {
             case 'a':
                 scan.az = atof(optarg);
@@ -184,6 +212,10 @@ int main(int argc, char *argv[]) {
                 break;
             case 'g':
                 accel_type = ACCEL_TYPE_GPU;
+                break;
+            case 'h':
+                show_help();
+                exit(EXIT_SUCCESS);
                 break;
             case 'f':
                 num_pulses = atoi(optarg);
