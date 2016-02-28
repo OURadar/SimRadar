@@ -107,9 +107,26 @@ void show_help() {
            "OPTIONS\n"
            "     Unless specifically stated, all options are interpreted in sequence\n"
            "  --alarm\n"
-           "             Make a sound when the simulation is complete.\n\n"
-           "  --density " UNDERLINE "D" CLEAR "\n"
-           "             Set the density of particles to " UNDERLINE "D" CLEAR " scatterers per resolution volume\n\n"
+           "         Make a sound when the simulation is complete.\n\n"
+           "  -D (--density) " UNDERLINE "D" CLEAR "\n"
+           "         Set the density of particles to " UNDERLINE "D" CLEAR " scatterers per resolution volume\n\n"
+           "  -N (--preview)\n"
+           "         No simulation. Previews the scanning angles of the setup. No data will be generated.\n\n"
+           "  --sweep " UNDERLINE "M:S:E:D" CLEAR "\n"
+           "         Sets the beam to scan mode\n\n"
+           "         The argument " UNDERLINE "M:S:E:D" CLEAR " are parameters for mode, start, end, and delta.\n"
+           "            M = R for RHI (range height indicator) mode\n"
+           "            M = P for RHI (range height indicator) mode\n"
+           "         Examples:\n"
+           "            --sweep P:-12:12:0.1\n"
+           "                sets the scan mode in PPI, start from azimuth -12-deg and ends\n"
+           "                at azimuth +12-deg. The beam. Position delta is 0.1-deg, which\n"
+           "                means the azimuth changes by 0.1-deg at every pulse.\n"
+           "            --sweep R:0.5:12.0:0.2\n"
+           "                sets the scan mode in RHI, start from elevation 0.5-deg and ends\n"
+           "                at elevation 12.0-deg. The beam position delta is 0.2-deg, which\n"
+           "                means the elevation changes by 0.5-deg at every pulse.\n"
+           "\n"
            "EXAMPLES\n"
            "     The following simulates a vortex and creates a PPI scan data using default scan values\n"
            "           " PROGNAME " -o"
@@ -127,7 +144,6 @@ int main(int argc, char *argv[]) {
     int k = 0;
     char verb = 0;
     char accel_type = 0;
-    char scan_mode = SCAN_MODE_PPI;
     char quiet_mode = true;
     char preview_only = false;
     char output_file = false;
@@ -160,8 +176,6 @@ int main(int argc, char *argv[]) {
         {"alarm"      , no_argument      , 0, 'A'}, // ASCII 65 - 90 : A - Z
         {"density"    , required_argument, 0, 'D'},
         {"preview"    , no_argument      , 0, 'N'},
-        {"ppi"        , no_argument      , 0, 'P'},
-        {"rhi"        , no_argument      , 0, 'R'},
         {"sweep"      , required_argument, 0, 'S'},
         {"warmup"     , required_argument, 0, 'W'},
         {"azimuth"    , required_argument, 0, 'a'}, // ASCII 97 - 122 : a - z
@@ -246,12 +260,6 @@ int main(int argc, char *argv[]) {
                 break;
             case 'N':
                 preview_only = true;
-                break;
-            case 'P':
-                scan_mode = SCAN_MODE_PPI;
-                break;
-            case 'R':
-                scan_mode = SCAN_MODE_RHI;
                 break;
             case 'S':
                 k = sscanf(optarg, "%c:%f:%f:%f", &c1, &f1, &f2, &f3);
