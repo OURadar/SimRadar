@@ -1433,9 +1433,11 @@ void RS_init_scat_pos(RSHandle *H) {
         }
         
         // Replace a few for debugging purpose
+        #if defined(DEBUG_DSD)
         H->scat_pos[0].w = 0.0025f;
         H->scat_pos[1].w = 0.001f;
         H->scat_pos[2].w = 0.0005f;
+        #endif
         
         if (H->verb > 1) {
             rsprint("Actual DSD Specifications:");
@@ -1454,12 +1456,14 @@ void RS_init_scat_pos(RSHandle *H) {
     }
 	
     // Replace a few points for debugging purpose.
+    #if defined(DEBUG_RCS)
 	H->scat_pos[0].x = domain.origin.x + 0.5f * domain.size.x;
     H->scat_pos[0].y = domain.origin.y + 0.5f * domain.size.y;
-    //H->scat_pos[0].z = 0.0f; // domain.origin.z + 0.5f * domain.size.z;
     H->scat_pos[0].z = H->scat_pos[0].y * tanf(5.0f / 180.0f * M_PI);
+    #endif
 	
     // Replace the very first debris particle
+    #if defined(DEBUG_DEBRIS)
     if (H->debris_population[1] > 0) {
         k = (int)H->debris_population[0];
         //printf("k = %d\n", k);
@@ -1469,6 +1473,7 @@ void RS_init_scat_pos(RSHandle *H) {
         
         H->scat_aux[k].s0 = H->params.range_start + floorf(H->params.range_count * 0.5f) * H->params.range_delta;
     }
+    #endif
 	
 	// Restore simulation time, default beam position at unit vector (0, 1, 0)
 	H->sim_tic = 0;
