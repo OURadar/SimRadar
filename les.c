@@ -305,7 +305,7 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
     int file_ret;
     int found_dir = 0;
     
-    for (int i=0; i<sizeof(search_paths) / sizeof(search_paths[0]); i++) {
+    for (int i = 0; i < sizeof(search_paths) / sizeof(search_paths[0]); i++) {
         les_path = search_paths[i];
 		snprintf(les_file_path, 1024, "%s/%s/fort.10_2", les_path, config);
         dir_ret = stat(les_path, &path_stat);
@@ -533,6 +533,12 @@ LESTable *LES_get_frame(const LESHandle *i, const int n) {
 char *LES_data_path(const LESHandle *i) {
     LESMem *h = (LESMem *)i;
     return h->data_path;
+}
+
+
+float LES_get_table_period(const LESHandle *i) {
+    LESMem *h = (LESMem *)i;
+    return h->tp;
 }
 
 

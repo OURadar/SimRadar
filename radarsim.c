@@ -411,7 +411,9 @@ int main(int argc, char *argv[]) {
         RS_set_lambda(S, lambda);
     }
 
-    for (int k = 0; k < RS_MAX_VEL_TABLES; k++) {
+    // Number of LES entries needed based on the number of pulses to be simulated
+    int nvel = (int)ceilf(((float)num_pulses * S->params.prt + (float)warm_up_pulses * 1.0f / 60.0f) / LES_get_table_period(L));
+    for (int k = 0; k < MIN(RS_MAX_VEL_TABLES, nvel); k++) {
         RS_set_vel_data_to_LES_table(S, LES_get_frame(L, k));
     }
     

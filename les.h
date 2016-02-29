@@ -69,6 +69,7 @@ void LES_free(LESHandle *);
 
 LESTable *LES_get_frame(const LESHandle *, const int n);
 char *LES_data_path(const LESHandle *);
+float LES_get_table_period(const LESHandle *);
 
 void LES_show_table_summary(const LESTable *table);
 
