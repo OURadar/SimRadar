@@ -145,9 +145,29 @@ void show_help() {
            "  -t " UNDERLINE("period") "\n"
            "         Sets the pulse repetition time to " UNDERLINE("period") " seconds.\n"
            "\n"
+           "  -o"
+           "         Sets the program to generate an output file.\n"
+           "\n"
+           "  -p " UNDERLINE("count") "\n"
+           "         Sets the number of pulses to " UNDERLINE("count") ". There is no\n"
+           "         hard boundaries on which pulse marks the end of a sweep. If user wants\n"
+           "         a sweep that contain 2400 pulses, it can be accomplished by setting the\n"
+           "         sweep start = -12 end = +12, delta = 0.01, and combine with this option\n"
+           "         -p 2400 for a sweep of 2400 pulses.\n"
+           "\n"
+           "  -f " UNDERLINE("count") "\n"
+           "         Sets the number of frames to " UNDERLINE("count") ". This option is\n"
+           "         identical -p. See -p for more information.\n"
+           "\n"
            "EXAMPLES\n"
-           "     The following simulates a vortex and creates a PPI scan data using default scan values\n"
-           "           " PROGNAME " -o"
+           "     The following simulates a vortex and creates a PPI scan data using default\n"
+           "     scan parameters. This allows you quickly check if the tools works.\n"
+           "           " PROGNAME " -o\n"
+           "\n"
+           "     The following simulates a vortex and creates a PPI scan data using default\n"
+           "     scan parameter: mode = 'P' (PPI), start = -12, end = +12, delta = 0.01,\n"
+           "     prt = 0.001, el = 3.0, p = 2400 (number of pulses)\n"
+           "           " PROGNAME " -e 3.0 --sweep P:-12:12:0.01 -p 2400 -o\n"
            "\n"
            );
 }
@@ -407,18 +427,18 @@ int main(int argc, char *argv[]) {
     }
     RS_revise_debris_counts_to_gpu_preference(S);
     
-    // No need to go all the way up if we are looking low
-    box.size.e = MIN(box.size.e, scan.el + RS_DOMAIN_PAD);
+    if (scan.mode == SCAN_MODE_PPI) {
+        // No need to go all the way up if we are looking low
+        box.size.e = MIN(box.size.e, scan.el + RS_DOMAIN_PAD);
+    } else if (scan.mode == SCAN_MODE_RHI) {
+        // Need to make sure we cover the very top
+        box.size.e = MAX(scan.start, scan.end) + RS_DOMAIN_PAD;
+    }
     
     RS_set_scan_box(S,
                     box.origin.r, box.origin.r + box.size.r, 15.0f,   // Range
                     box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
                     box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
-    
-    //    RS_set_scan_box(S,
-    //                    10.0e3, 14.0e3, 150.0f,                     // Range
-    //                    -10.0f, 10.0f, 1.0f,                        // Azimuth
-    //                    0.0f, 8.0f, 1.0f);                          // Elevation
     
     RS_set_dsd_to_mp(S);
 
@@ -434,7 +454,7 @@ int main(int argc, char *argv[]) {
     // At this point, we are ready to bake
 
     // Some warm up if we are going for real
-    if (num_pulses > 1200) {
+    if (num_pulses >= 1200) {
         RS_set_prt(S, 1.0f / 60.0f);
         for (k = 0; k < warm_up_pulses; k++) {
             if (k % 100 == 0) {
@@ -448,8 +468,6 @@ int main(int argc, char *argv[]) {
     RS_set_prt(S, prt);
 
     // ---------------------------------------------------------------------------------------------------------------
-    
-//    float az_deg = -12.0f, el_deg = scan_el;
     
     gettimeofday(&t1, NULL);
     
@@ -473,7 +491,7 @@ int main(int argc, char *argv[]) {
                 eta = (float)(num_pulses - k) / fps;
                 fprintf(stderr, "k = %d    el = %6.2f deg   az = %5.2f deg   %.2f fps  progress: \033[1;33m%.2f%%\033[0m   eta = %.0f second%s   \r", k, scan.el, scan.az, fps, prog, eta, eta > 1.5f ? "s" : "");
             } else {
-                fprintf(stderr, "k = %4d   el = %6.2f deg   az = %5.2f deg\n", k, scan.el, scan.az);
+                fprintf(stderr, "k = %4d   el = %6.2f deg   az = %5.2f deg\r", k, scan.el, scan.az);
             }
         }
         RS_set_beam_pos(S, scan.az, scan.el);
@@ -483,22 +501,20 @@ int main(int argc, char *argv[]) {
         // Only download the necessary data
         if (verb > 2) {
             RS_download(S);
+
+            RS_show_scat_sig(S);
+    
+            printf("signal:\n");
+            for (int r = 0; r < S->params.range_count; r++) {
+                printf("sig[%d] = (%.4f %.4f %.4f %.4f)\n", r, S->pulse[r].s0, S->pulse[r].s1, S->pulse[r].s2, S->pulse[r].s3);
+            }
+            printf("\n");
         } else if (output_file) {
             RS_download_pulse_only(S);
         }
 
-//        if (verb > 2) {
-//            RS_show_scat_sig(S);
-//            
-//            printf("signal:\n");
-//            for (int r = 0; r < S->params.range_count; r++) {
-//                printf("sig[%d] = (%.4f %.4f %.4f %.4f)\n", r, S->pulse[r].s0, S->pulse[r].s1, S->pulse[r].s2, S->pulse[r].s3);
-//            }
-//            printf("\n");
-//        }
-        
+        // Gather information for the  pulse header
         if (output_file) {
-            // Gather information for the  pulse header
             pulse_headers[k].time = S->sim_time;
             pulse_headers[k].az_deg = scan.az;
             pulse_headers[k].el_deg = scan.el;
@@ -545,7 +561,11 @@ int main(int argc, char *argv[]) {
         if (output_file) {
             char filename[4096];
             memset(filename, 0, 4096);
-            snprintf(filename, 256, "%s/Downloads/sim-%s-E%04.1f.iq", getenv("HOME"), nowlong(), scan.el);
+            snprintf(filename, 256, "%s/Downloads/sim-%s-%s%04.1f.iq",
+                     getenv("HOME"),
+                     nowlong(),
+                     scan.mode == SCAN_MODE_PPI ? "E": (scan.mode == SCAN_MODE_RHI ? "A" : "S"),
+                     scan.mode == SCAN_MODE_PPI ? scan.el: (scan.mode == SCAN_MODE_RHI ? scan.az : (float)num_pulses));
             printf("%s : Output file : \033[1;32m%s\033[0m\n", now(), filename);
             fid = fopen(filename, "wb");
             if (fid == NULL) {

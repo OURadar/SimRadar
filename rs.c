@@ -4632,8 +4632,10 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
     // Coefficient 1.0e-9 for scaling the volume to unit of m^3
     // Drop concentration scale derived based on ~2,500 drops / m^3
     //
-    rsprint("RS_compute_rcs_ellipsoids()");
-    rsprint("Drop concentration scaling = %s  (k_0 = %.4f)", commafloat(H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale]), k_0);
+    if (H->verb) {
+        rsprint("RS_compute_rcs_ellipsoids()");
+        rsprint("Drop concentration scaling = %s  (k_0 = %.4f)", commafloat(H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale]), k_0);
+    }
     const cl_double sc = k_0 * k_0 / (4.0f * M_PI * epsilon_0) * 1.0e-9f * H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale];
     
     // Make table with D = 0.05mm, 0.06mm, ... 10.0mm (96 entries)
