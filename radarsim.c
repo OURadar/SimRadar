@@ -195,10 +195,11 @@ int main(int argc, char *argv[]) {
     float pw = 0.2e-6f;   // pulse width in seconds
     float prt = 1.0e-3f;
     
+    // A structure unit that encapsulates the scan strategy
     ScanParams scan;
     scan.mode = SCAN_MODE_PPI;
     scan.start = - 12.0f;
-    scan.end = +12.0f;
+    scan.end   = +12.0f;
     scan.delta = 0.01f;
     scan.az = scan.start;
     scan.el = 3.0f;
@@ -432,10 +433,10 @@ int main(int argc, char *argv[]) {
     
     if (scan.mode == SCAN_MODE_PPI) {
         // No need to go all the way up if we are looking low
-        box.size.e = MIN(box.size.e, scan.el + RS_DOMAIN_PAD);
+        box.size.e = MIN(box.size.e, scan.el);
     } else if (scan.mode == SCAN_MODE_RHI) {
         // Need to make sure we cover the very top
-        box.size.e = MAX(scan.start, scan.end) + RS_DOMAIN_PAD;
+        box.size.e = MAX(scan.start, scan.end);
     }
     
     RS_set_scan_box(S,
@@ -560,6 +561,9 @@ int main(int argc, char *argv[]) {
             file_header.debris_population[k] = (uint32_t)S->debris_population[k];
         }
         snprintf(file_header.scan_mode, sizeof(file_header.scan_mode), "%s", scan_mode_str(scan.mode));
+        file_header.scan_start = scan.start;
+        file_header.scan_end   = scan.end;
+        file_header.scan_delta = scan.delta;
         
         if (output_file) {
             char filename[4096];
