@@ -18,10 +18,15 @@ enum {
 	TEST_DOWNLOAD               = 1 << 6,
     TEST_IO                     = 1 << 7,
     TEST_DUMMY                  = 1 << 8,
-	TEST_GPU_SIMPLE             = TEST_ADVANCE_TIME_GPU | TEST_MAKE_PULSE_GPU | TEST_DOWNLOAD | TEST_IO,
-	TEST_GPU_ALL                = TEST_ADVANCE_TIME_GPU | TEST_MAKE_PULSE_GPU_PASS_1 | TEST_MAKE_PULSE_GPU_PASS_2 | TEST_DOWNLOAD | TEST_IO,
-	TEST_CPU_ALL                = TEST_ADVANCE_TIME_CPU | TEST_MAKE_PULSE_CPU,
-	TEST_ALL                    = TEST_GPU_ALL | TEST_CPU_ALL
+    TEST_SIG_AUX                = 1 << 9,
+    TEST_BG_ATTS                = 1 << 10,
+    TEST_EL_ATTS                = 1 << 11,
+    TEST_DB_ATTS                = 1 << 12,
+    TEST_KERNEL_MASK            = (TEST_BG_ATTS | TEST_EL_ATTS | TEST_DB_ATTS | TEST_SIG_AUX | TEST_MAKE_PULSE_GPU_PASS_1 | TEST_MAKE_PULSE_GPU_PASS_2),
+	TEST_GPU_SIMPLE             = (TEST_ADVANCE_TIME_GPU | TEST_MAKE_PULSE_GPU | TEST_DOWNLOAD | TEST_IO),
+	TEST_GPU_ALL                = (TEST_ADVANCE_TIME_GPU | TEST_MAKE_PULSE_GPU_PASS_1 | TEST_MAKE_PULSE_GPU_PASS_2 | TEST_DOWNLOAD | TEST_IO),
+	TEST_CPU_ALL                = (TEST_ADVANCE_TIME_CPU | TEST_MAKE_PULSE_CPU),
+	TEST_ALL                    = (TEST_GPU_ALL | TEST_CPU_ALL)
 };
 
 
@@ -37,7 +42,7 @@ int main(int argc, char **argv)
 	
 	struct timeval t1, t2;
 	
-	while ((c = getopt(argc, argv, "vac012igdn:s:th?")) != -1) {
+	while ((c = getopt(argc, argv, "vac012igdn:s:tkh?")) != -1) {
 		switch (c) {
             case 'v':
                 verb++;
@@ -68,6 +73,9 @@ int main(int argc, char **argv)
 				break;
             case 't':
                 test |= TEST_DUMMY;
+                break;
+            case 'k':
+            test |= TEST_KERNEL_MASK;
                 break;
 			case 'n':
 				N = atoi(optarg);
@@ -109,7 +117,17 @@ int main(int argc, char **argv)
 		fprintf(stderr, "%s : Some errors occurred.\n", now());
 		return EXIT_FAILURE;
 	}
-	
+    ADMHandle *A = ADM_init();
+    if (A == NULL) {
+        fprintf(stderr, "%s : Some errors occurred during ADM_init().\n", now());
+        return EXIT_FAILURE;
+    }
+    RCSHandle *R = RCS_init();
+    if (R == NULL) {
+        fprintf(stderr, "%s : Some errors occurred during RCS_init().\n", now());
+        return EXIT_FAILURE;
+    }
+
     if (density > 0) {
         RS_set_density(H, density);
     }
@@ -122,16 +140,27 @@ int main(int argc, char **argv)
 	RS_set_range_weight_to_triangle(H, 250.0f);
 	
 	RS_set_angular_weight_to_standard(H, 2.0f / 180.0f * M_PI);
+    
+    RS_set_adm_data_to_ADM_table(H, ADM_get_table(A, ADMConfigModelPlate));
+    
+    RS_set_rcs_data_to_RCS_table(H, RCS_get_table(R, RCSConfigLeaf));
+
+    RS_set_debris_count(H, 1, 100000);
+    
+    RS_revise_debris_counts_to_gpu_preference(H);
 	
 	RS_populate(H);
 	
-	printf("Test using %s scatter bodies for %d iterations.\n", commaint(H->num_scats), N);
-	
+	printf("\nTest(s) using %s scatterers and %s debris objects for %s iterations:\n\n",
+           commaint(H->num_scats), commaint(H->debris_population[0]), commaint(N));
+
 	RS_advance_time(H);
     
 #define FMT   "%30s  %8.4f ms\n"
-#define FMT2  "%30s  %8.4f ms  (%.2f GB/s)\n"
+#define FMT2  "%30s  %8.4f ms   %6.2f GB/s\n"
 	
+    printf("Framework functions:\n\n");
+
     //
     // RS_io_test()
     //
@@ -172,48 +201,6 @@ int main(int argc, char **argv)
 	}
 
 	//
-	//  RS_make_pulse()'s pass 1
-	//
-	if (test & TEST_MAKE_PULSE_GPU_PASS_1) {
-		gettimeofday(&t1, NULL);
-		for (i=0; i<N; i++) {
-			clEnqueueNDRangeKernel(H->worker[0].que,
-								   H->worker[0].kern_make_pulse_pass_1,
-								   1,
-								   NULL,
-								   &H->worker[0].make_pulse_params.global[0],
-								   &H->worker[0].make_pulse_params.local[0],
-								   0,
-								   NULL,
-								   NULL);
-		}
-		clFinish(H->worker[0].que);
-		gettimeofday(&t2, NULL);
-		printf(FMT, "RS_make_pulse()'s pass 1", 1.0e3f * DTIME(t1, t2) / (float)N);
-	}
-	
-	//
-	//  RS_make_pulse_cpu()'s pass 2
-	//
-	if (test & TEST_MAKE_PULSE_GPU_PASS_2) {
-		gettimeofday(&t1, NULL);
-		for (i=0; i<N; i++) {
-			clEnqueueNDRangeKernel(H->worker[0].que,
-								   H->worker[0].kern_make_pulse_pass_2,
-								   1,
-								   NULL,
-								   &H->worker[0].make_pulse_params.global[1],
-								   &H->worker[0].make_pulse_params.local[1],
-								   0,
-								   NULL,
-								   NULL);
-		}
-		clFinish(H->worker[0].que);
-		gettimeofday(&t2, NULL);
-		printf(FMT, "RS_make_pulse()'s pass 2", 1.0e3f * DTIME(t1, t2) / (float)N);
-	}
-	
-	//
 	//  RS_download()
 	//
 	if (test & TEST_DOWNLOAD) {
@@ -227,32 +214,130 @@ int main(int argc, char **argv)
 		printf(FMT2, "RS_download()", 1.0e3f * dt, 1.0e-9f * byte_size / dt);
 	}
 	
+    //
+    //  Some kernels
+    //
+    if (test & TEST_KERNEL_MASK) {
+        printf("\nInternal kernel functions:\n\n");
+    }
+    
+    //
+    //  make_pulse_pass_1
+    //
+    if (test & TEST_MAKE_PULSE_GPU_PASS_1) {
+        byte_size = H->worker[0].make_pulse_params.entry_counts[0] * 2 * sizeof(cl_float4);
+        gettimeofday(&t1, NULL);
+        for (i=0; i<N; i++) {
+            clEnqueueNDRangeKernel(H->worker[0].que,
+                                   H->worker[0].kern_make_pulse_pass_1,
+                                   1,
+                                   NULL,
+                                   &H->worker[0].make_pulse_params.global[0],
+                                   &H->worker[0].make_pulse_params.local[0],
+                                   0,
+                                   NULL,
+                                   NULL);
+        }
+        clFinish(H->worker[0].que);
+        gettimeofday(&t2, NULL);
+        dt = DTIME(t1, t2) / (float)N;
+        printf(FMT2, "make_pulse_pass_2", 1.0e3f * dt, 1.0e-9f * byte_size / dt);
+    }
+    
+    //
+    //  make_pulse_pass_2
+    //
+    if (test & TEST_MAKE_PULSE_GPU_PASS_2) {
+        byte_size = H->worker[0].make_pulse_params.entry_counts[1] * sizeof(cl_float4);
+        gettimeofday(&t1, NULL);
+        for (i=0; i<N; i++) {
+            clEnqueueNDRangeKernel(H->worker[0].que,
+                                   H->worker[0].kern_make_pulse_pass_2,
+                                   1,
+                                   NULL,
+                                   &H->worker[0].make_pulse_params.global[1],
+                                   &H->worker[0].make_pulse_params.local[1],
+                                   0,
+                                   NULL,
+                                   NULL);
+        }
+        clFinish(H->worker[0].que);
+        gettimeofday(&t2, NULL);
+        dt = DTIME(t1, t2) / (float)N;
+        printf(FMT2, "make_pulse_pass_2", 1.0e3f * dt, 1.0e-9f * byte_size / dt);
+    }
+    
+    //
+    //  db_atts
+    //
+    if (test & TEST_DB_ATTS) {
+        byte_size = 6 * H->debris_population[1] * sizeof(cl_float4);
+        gettimeofday(&t1, NULL);
+        int k = 1;
+        for (i=0; i<N; i++) {
+            clEnqueueNDRangeKernel(H->worker[0].que,
+                                   H->worker[0].kern_db_atts,
+                                   1,
+                                   &H->worker[0].debris_origin[k],
+                                   &H->worker[0].debris_population[k],
+                                   NULL,
+                                   0,
+                                   NULL,
+                                   NULL);
+        }
+        clFinish(H->worker[0].que);
+        gettimeofday(&t2, NULL);
+        dt = DTIME(t1, t2) / (float)N;
+        printf(FMT2, "db_atts", 1.0e3f * dt, 1.0e-9f * byte_size / dt);
+    }
+    
+    //
+    //  el_atts
+    //
+    if (test & TEST_EL_ATTS) {
+        byte_size = 4 * H->debris_population[0] * sizeof(cl_float4);
+        gettimeofday(&t1, NULL);
+        for (i=0; i<N; i++) {
+            clEnqueueNDRangeKernel(H->worker[0].que,
+                                   H->worker[0].kern_el_atts,
+                                   1,
+                                   &H->worker[0].debris_origin[0],
+                                   &H->worker[0].debris_population[0],
+                                   NULL,
+                                   0,
+                                   NULL,
+                                   NULL);
+        }
+        clFinish(H->worker[0].que);
+        gettimeofday(&t2, NULL);
+        dt = DTIME(t1, t2) / (float)N;
+        printf(FMT2, "el_atts", 1.0e3f * dt, 1.0e-9f * byte_size / dt);
+    }
+    
+    //
+    //  scat_sig_aux
+    //
+    if (test & TEST_SIG_AUX) {
+        byte_size = 4 * H->num_scats * sizeof(cl_float4);
+        gettimeofday(&t1, NULL);
+        for (i=0; i<N; i++) {
+            clEnqueueNDRangeKernel(H->worker[0].que,
+                                   H->worker[0].kern_scat_sig_aux,
+                                   1,
+                                   NULL,
+                                   &H->num_scats,
+                                   NULL,
+                                   0,
+                                   NULL,
+                                   NULL);
+        }
+        clFinish(H->worker[0].que);
+        gettimeofday(&t2, NULL);
+        dt = DTIME(t1, t2) / (float)N;
+        printf(FMT2, "scat_sig_aux", 1.0e3f * dt, 1.0e-9f * byte_size / dt);
+    }
 
-//	if (test & TEST_MAKE_PULSE_CPU) {
-//		//
-//		//  RS_advance_time_cpu()
-//		//
-//		gettimeofday(&t1, NULL);
-//		for (i=0; i<N; i++)
-//			RS_advance_time_cpu(H);
-//		gettimeofday(&t2, NULL);
-//		dt = DTIME(t1, t2) / (float)N;
-//		printf(FMT2, "RS_advance_time_cpu()",  1.0e3f * dt, 1.0e-9 * byte_size / dt);
-//
-//		//
-//		//  RS_make_pulse_cpu()
-//		//
-//		gettimeofday(&t1, NULL);
-//		for (i=0; i<N; i++)
-//			RS_make_pulse_cpu(H);
-//		gettimeofday(&t2, NULL);
-//		printf(FMT, "RS_make_pulse_cpu()", 1.0e3f * DTIME(t1, t2) / (float)N);
-//	}
-	
-//	RS_download_position_only(H);
-//	RS_show_scat_pos(H);
-
-	RS_free(H);
+    RS_free(H);
 
 	return EXIT_SUCCESS;
 }

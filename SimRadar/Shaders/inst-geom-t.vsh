@@ -35,6 +35,7 @@ void main (void)
 
     if (pingPong) {
         varColor = texture(colormapTexture, vec2(inColor.x, drawColor.x));
+        varColor.a = inColor.a;
     } else {
         varColor = drawColor;
     }

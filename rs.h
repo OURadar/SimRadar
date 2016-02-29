@@ -320,11 +320,11 @@ typedef struct _rs_worker {
     cl_program             prog;
     
     cl_kernel              kern_io;
+    cl_kernel              kern_db_rcs;
     cl_kernel              kern_bg_atts;
     cl_kernel              kern_el_atts;
     cl_kernel              kern_db_atts;
     cl_kernel              kern_scat_clr;
-    cl_kernel              kern_scat_rcs;
     cl_kernel              kern_scat_sig_aux;
     cl_kernel              kern_make_pulse_pass_1;
     cl_kernel              kern_make_pulse_pass_2;

@@ -25,12 +25,131 @@ enum ACCEL_TYPE {
 };
 
 enum SCAN_MODE {
+    SCAN_MODE_STARE,
     SCAN_MODE_PPI,
     SCAN_MODE_RHI
 };
 
-void show_help(void) {
-    printf("I'll do this later\n");
+typedef struct scan_params {
+    char mode;
+    float start;
+    float end;
+    float delta;
+    float az;
+    float el;
+} ScanParams;
+
+int get_next_scan_angles(ScanParams *params) {
+    if (params->mode == SCAN_MODE_PPI) {
+        params->az += params->delta;
+        if (params->delta > 0.0f) {
+            if (params->az > params->end) {
+                params->az = params->start;
+            } else if (params->az < params->start) {
+                params->az = params->end;
+            }
+        } else {
+            if (params->az > params->start) {
+                params->az = params->end;
+            } else if (params->az < params->end) {
+                params->az = params->start;
+            }
+
+        }
+        if (params->az < params->start || params->az > params->end) {
+            return 1;
+        }
+    } else if (params->mode == SCAN_MODE_RHI) {
+        params->el += params->delta;
+        if (params->el > params->end) {
+            params->el = params->start;
+        } else if (params->el < params->start) {
+            params->el = params->end;
+        }
+        if (params->el < params->start || params->el > params->end) {
+            return 2;
+        }
+    }
+    return 0;
+}
+
+static char *scan_mode_str(char scan_mode) {
+    static char str[16];
+    switch (scan_mode) {
+        case SCAN_MODE_PPI:
+        snprintf(str, sizeof(str), "PPI");
+        break;
+        
+        case SCAN_MODE_RHI:
+        snprintf(str, sizeof(str), "RHI");
+        break;
+
+        case SCAN_MODE_STARE:
+        snprintf(str, sizeof(str), "STARE");
+        break;
+
+        default:
+        break;
+    }
+    return str;
+}
+
+//
+//   s h o w _ h e l p
+//
+#define CLEAR         "\033[0m"
+#define UNDERLINE(x)  "\033[4m" x "\033[0m"
+#define PROGNAME      "radarsim"
+
+void show_help() {
+    printf("Radar simulation\n\n"
+           PROGNAME " [options]\n\n"
+           "OPTIONS\n"
+           "     Unless specifically stated, all options are interpreted in sequence\n"
+           "  --alarm\n"
+           "         Make a sound when the simulation is complete.\n"
+           "\n"
+           "  -D (--density) " UNDERLINE("D") "\n"
+           "         Set the density of particles to " UNDERLINE("D") " scatterers per resolution volume\n"
+           "\n"
+           "  -N (--preview)\n"
+           "         No simulation. Previews the scanning angles of the setup. No data will\n"
+           "         be generated.\n"
+           "\n"
+           "  --sweep " UNDERLINE("M:S:E:D") "\n"
+           "         Sets the beam to scan mode\n\n"
+           "         The argument " UNDERLINE("M:S:E:D") " are parameters for mode, start, end, and delta.\n"
+           "            M = R for RHI (range height indicator) mode\n"
+           "            M = P for RHI (range height indicator) mode\n"
+           "         Examples:\n"
+           "            --sweep P:-12:12:0.1\n"
+           "                sets the scan mode in PPI, start from azimuth -12-deg and ends\n"
+           "                at azimuth +12-deg. The beam. Position delta is 0.1-deg, which\n"
+           "                means the azimuth changes by 0.1-deg at every pulse.\n"
+           "            --sweep R:0.5:12.0:0.2\n"
+           "                sets the scan mode in RHI, start from elevation 0.5-deg and ends\n"
+           "                at elevation 12.0-deg. The beam position delta is 0.2-deg, which\n"
+           "                means the elevation changes by 0.5-deg at every pulse.\n"
+           "\n"
+           "  -W (--warmup) " UNDERLINE("count") "\n"
+           "         Sets the warm up stage to use " UNDERLINE("count") " pulses.\n"
+           "\n"
+           "  -a (--azimuth) " UNDERLINE("angle") "\n"
+           "         Sets the scan azimuth to " UNDERLINE("angle") " degrees.\n"
+           "         See --sweep for more information.\n"
+           "\n"
+           "  -e (--elevation) " UNDERLINE("angle") "\n"
+           "         Sets the scan elevation to " UNDERLINE("angle") " degrees.\n"
+           "         See --sweep for more information.\n"
+           "\n"
+           "  -t " UNDERLINE("period") "\n"
+           "         Sets the pulse repetition time to " UNDERLINE("period") " seconds.\n"
+           "\n"
+           "EXAMPLES\n"
+           "     The following simulates a vortex and creates a PPI scan data using default scan values\n"
+           "           " PROGNAME " -o"
+           "\n"
+           );
 }
 
 //
@@ -40,16 +159,27 @@ void show_help(void) {
 //
 int main(int argc, char *argv[]) {
     
+    int k = 0;
     char verb = 0;
     char accel_type = 0;
-    char scan_mode = SCAN_MODE_PPI;
-    char quiet_mode = FALSE;
-    char output_file = FALSE;
+    char quiet_mode = true;
+    char preview_only = false;
+    char output_file = false;
     int num_pulses = 5;
-    float scan_az = 0.0f, scan_el = 3.0f, density = 0.0f, lambda = 0.0f;
-    
-    float prt = 1.0e-3f;
 
+    float density = 0.0f;
+    float lambda = 0.0f;
+    float pw = 0.2e-6f;   // pulse width in seconds
+    float prt = 1.0e-3f;
+    
+    ScanParams scan;
+    scan.mode = SCAN_MODE_PPI;
+    scan.start = - 12.0f;
+    scan.end = +12.0f;
+    scan.delta = 0.01f;
+    scan.az = scan.start;
+    scan.el = 3.0f;
+    
     struct timeval t0, t1, t2;
     
     gettimeofday(&t0, NULL);
@@ -61,31 +191,47 @@ int main(int argc, char *argv[]) {
     memset(debris_count, 0, RS_MAX_DEBRIS_TYPES * sizeof(int));
 
     static struct option long_options[] = {
-        {"azimuth"    , required_argument, 0, 'a'},
+        {"alarm"      , no_argument      , 0, 'A'}, // ASCII 65 - 90 : A - Z
+        {"density"    , required_argument, 0, 'D'},
+        {"preview"    , no_argument      , 0, 'N'},
+        {"sweep"      , required_argument, 0, 'S'},
+        {"warmup"     , required_argument, 0, 'W'},
+        {"azimuth"    , required_argument, 0, 'a'}, // ASCII 97 - 122 : a - z
         {"cpu"        , no_argument      , 0, 'c'},
         {"debris"     , required_argument, 0, 'd'},
-        {"density"    , required_argument, 0, 'D'},
         {"elevation"  , required_argument, 0, 'e'},
+        {"help"       , no_argument      , 0, 'h'},
         {"gpu"        , no_argument      , 0, 'g'},
         {"frames"     , required_argument, 0, 'f'},
         {"lambda"     , required_argument, 0, 'l'},
         {"output"     , no_argument      , 0, 'o'},
         {"pulses"     , required_argument, 0, 'p'},
-        {"ppi"        , no_argument      , 0, 'P'},
         {"prt"        , required_argument, 0, 't'},
+        {"pulsewidth" , required_argument, 0, 'w'},
         {"quiet"      , no_argument      , 0, 'q'},
-        {"rhi"        , no_argument      , 0, 'R'},
         {"verbose"    , no_argument      , 0, 'v'},
-        {"warmup"     , required_argument, 0, 'W'},
         {0, 0, 0, 0}
     };
     
+    // Construct short_options from long_options
+    char str[1024] = "";
+    for (k = 0; k < sizeof(long_options) / sizeof(struct option); k++) {
+        struct option *o = &long_options[k];
+        snprintf(str + strlen(str), 1024, "%c%s", o->val, o->has_arg ? ":" : "");
+    }
+    //printf("str = '%s'\n", str);
+    
+    char c1;
+    float f1, f2, f3;
     // Process the input arguments and set the simulator parameters
     int opt, long_index = 0;
-    while ((opt = getopt_long(argc, argv, "a:cd:D:e:gp:f:l:op:PqRt:vW:", long_options, &long_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, str, long_options, &long_index)) != -1) {
         switch (opt) {
             case 'a':
-                scan_az = atof(optarg);
+                scan.az = atof(optarg);
+                break;
+            case 'A':
+                quiet_mode = false;
                 break;
             case 'c':
                 accel_type = ACCEL_TYPE_CPU;
@@ -94,13 +240,14 @@ int main(int argc, char *argv[]) {
                 debris_count[debris_types++] = atoi(optarg);
                 break;
             case 'e':
-                scan_el = atof(optarg);
-                break;
-            case 'D':
-                density = atof(optarg);
+                scan.el = atof(optarg);
                 break;
             case 'g':
                 accel_type = ACCEL_TYPE_GPU;
+                break;
+            case 'h':
+                show_help();
+                exit(EXIT_SUCCESS);
                 break;
             case 'f':
                 num_pulses = atoi(optarg);
@@ -114,12 +261,6 @@ int main(int argc, char *argv[]) {
             case 'p':
                 num_pulses = atoi(optarg);
                 break;
-            case 'P':
-                scan_mode = SCAN_MODE_PPI;
-                break;
-            case 'R':
-                scan_mode = SCAN_MODE_RHI;
-                break;
             case 'q':
                 quiet_mode = true;
                 break;
@@ -127,15 +268,63 @@ int main(int argc, char *argv[]) {
                 prt = atof(optarg);
                 break;
             case 'v':
-                printf("verb++\n");
                 verb++;
+                break;
+            case 'w':
+                pw = atof(optarg);
+                break;
+            case 'D':
+                density = atof(optarg);
+                break;
+            case 'N':
+                preview_only = true;
+                break;
+            case 'S':
+                k = sscanf(optarg, "%c:%f:%f:%f", &c1, &f1, &f2, &f3);
+                if (k < 4) {
+                    fprintf(stderr, "Error in scanmode argument.\n");
+                    exit(EXIT_FAILURE);
+                }
+                scan.mode = c1 == 'P' ? SCAN_MODE_PPI : ( c1 == 'R' ? SCAN_MODE_RHI : SCAN_MODE_STARE);
+                scan.start = f1;
+                scan.end = f2;
+                scan.delta = f3;
+                if (scan.mode == SCAN_MODE_PPI) {
+                    scan.az = f1;
+                } else if (scan.mode == SCAN_MODE_RHI) {
+                    scan.el = f1;
+                }
                 break;
             case 'W':
                 warm_up_pulses = atoi(optarg);
                 break;
             default:
+                exit(EXIT_FAILURE);
                 break;
         }
+    }
+
+    // Preview only
+    if (preview_only) {
+        #define FLT_FMT  "\033[1;33m%+6.2f\033[0m"
+        printf("Scan mode: \033[1;32m%s\033[0m", scan_mode_str(scan.mode));
+        if (scan.mode == SCAN_MODE_RHI) {
+            printf("   AZ: " FLT_FMT " deg", scan.az);
+        } else {
+            printf("   EL: " FLT_FMT " deg", scan.el);
+        }
+        if (scan.mode == SCAN_MODE_RHI) {
+            printf("   EL: " FLT_FMT " -- " FLT_FMT " deg    delta: " FLT_FMT " deg\n", scan.start, scan.end, scan.delta);
+        } else if (scan.mode == SCAN_MODE_PPI) {
+            printf("   AZ: " FLT_FMT " -- " FLT_FMT " deg    delta: " FLT_FMT " deg\n", scan.start, scan.end, scan.delta);
+        } else {
+            printf("   EL: " FLT_FMT " deg\n", scan.el);
+        }
+        for (k = 0; k < num_pulses; k++) {
+            fprintf(stderr, "k = %4d   el = %6.2f deg   az = %5.2f deg\n", k, scan.el, scan.az);
+            get_next_scan_angles(&scan);
+        }
+        return EXIT_SUCCESS;
     }
 
     // Initialize the RS framework
@@ -188,7 +377,7 @@ int main(int argc, char *argv[]) {
     
     RS_set_antenna_params(S, 1.0f, 44.5f);
     
-    RS_set_tx_params(S, 0.2e-6, 50.0e3f);
+    RS_set_tx_params(S, pw, 50.0e3f);
     
     if (density > 0.0f) {
         RS_set_density(S, density);
@@ -211,7 +400,7 @@ int main(int argc, char *argv[]) {
     RSBox box = RS_suggest_scan_domain(S, 16);
     
     // Set debris population
-    for (int k = 0; k < debris_types; k++) {
+    for (k = 0; k < debris_types; k++) {
         if (debris_count[k]) {
             RS_set_debris_count(S, k + 1, debris_count[k]);
         }
@@ -219,7 +408,7 @@ int main(int argc, char *argv[]) {
     RS_revise_debris_counts_to_gpu_preference(S);
     
     // No need to go all the way up if we are looking low
-    box.size.e = MIN(box.size.e, scan_el + RS_DOMAIN_PAD);
+    box.size.e = MIN(box.size.e, scan.el + RS_DOMAIN_PAD);
     
     RS_set_scan_box(S,
                     box.origin.r, box.origin.r + box.size.r, 15.0f,   // Range
@@ -242,8 +431,7 @@ int main(int argc, char *argv[]) {
     printf("%s : Emulating %s frame%s with %s scatter bodies\n",
            now(), commaint(num_pulses), num_pulses>1?"s":"", commaint(S->num_scats));
 
-    // Now, we are ready to bake
-    int k = 0;
+    // At this point, we are ready to bake
 
     // Some warm up if we are going for real
     if (num_pulses > 1200) {
@@ -261,7 +449,7 @@ int main(int argc, char *argv[]) {
 
     // ---------------------------------------------------------------------------------------------------------------
     
-    float az_deg = -12.0f, el_deg = scan_el;
+//    float az_deg = -12.0f, el_deg = scan_el;
     
     gettimeofday(&t1, NULL);
     
@@ -283,12 +471,12 @@ int main(int argc, char *argv[]) {
                 prog =  (float)k / num_pulses * 100.0f;
                 fps = 100.0f / dt;
                 eta = (float)(num_pulses - k) / fps;
-                fprintf(stderr, "k = %d  az_deg = %.2f  el_deg = %.2f   %.2f fps  progress: \033[1;33m%.2f%%\033[0m   eta = %.0f second%s   \r", k, az_deg, el_deg, fps, prog, eta, eta > 1.5f ? "s" : "");
+                fprintf(stderr, "k = %d    el = %6.2f deg   az = %5.2f deg   %.2f fps  progress: \033[1;33m%.2f%%\033[0m   eta = %.0f second%s   \r", k, scan.el, scan.az, fps, prog, eta, eta > 1.5f ? "s" : "");
             } else {
-                fprintf(stderr, "k = %d  az_deg = %.2f  el_deg = %.2f             \r", k, az_deg, el_deg);
+                fprintf(stderr, "k = %4d   el = %6.2f deg   az = %5.2f deg\n", k, scan.el, scan.az);
             }
         }
-        RS_set_beam_pos(S, az_deg, el_deg);
+        RS_set_beam_pos(S, scan.az, scan.el);
         RS_make_pulse(S);
         RS_advance_time(S);
 
@@ -312,13 +500,13 @@ int main(int argc, char *argv[]) {
         if (output_file) {
             // Gather information for the  pulse header
             pulse_headers[k].time = S->sim_time;
-            pulse_headers[k].az_deg = az_deg;
-            pulse_headers[k].el_deg = el_deg;
+            pulse_headers[k].az_deg = scan.az;
+            pulse_headers[k].el_deg = scan.el;
             memcpy(&pulse_cache[k * S->params.range_count], S->pulse, S->params.range_count * sizeof(cl_float4));
         }
 
         // Update scan angles for the next pulse
-        az_deg = fmodf(az_deg + 0.01f + 12.0f, 24.0f) - 12.0f;
+        get_next_scan_angles(&scan);
     }
     
     // Clear the last line and beep five times
@@ -352,11 +540,12 @@ int main(int argc, char *argv[]) {
         for (k = 0; k < S->num_body_types; k++) {
             file_header.debris_population[k] = (uint32_t)S->debris_population[k];
         }
+        snprintf(file_header.scan_mode, sizeof(file_header.scan_mode), "%s", scan_mode_str(scan.mode));
         
         if (output_file) {
             char filename[4096];
             memset(filename, 0, 4096);
-            snprintf(filename, 256, "%s/Downloads/sim-%s-E%04.1f.iq", getenv("HOME"), nowlong(), el_deg);
+            snprintf(filename, 256, "%s/Downloads/sim-%s-E%04.1f.iq", getenv("HOME"), nowlong(), scan.el);
             printf("%s : Output file : \033[1;32m%s\033[0m\n", now(), filename);
             fid = fopen(filename, "wb");
             if (fid == NULL) {

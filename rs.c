@@ -158,11 +158,11 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     // Tie all kernels to the program
     C->kern_io = clCreateKernel(C->prog, "io", &ret);                                             CHECK_CL_CREATE_KERNEL
     C->kern_dummy = clCreateKernel(C->prog, "dummy", &ret);                                       CHECK_CL_CREATE_KERNEL
+    C->kern_db_rcs = clCreateKernel(C->prog, "db_rcs", &ret);                                     CHECK_CL_CREATE_KERNEL
     C->kern_bg_atts = clCreateKernel(C->prog, "bg_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
     C->kern_el_atts = clCreateKernel(C->prog, "el_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
     C->kern_db_atts = clCreateKernel(C->prog, "db_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
     C->kern_scat_clr = clCreateKernel(C->prog, "scat_clr", &ret);                                 CHECK_CL_CREATE_KERNEL
-//    C->kern_scat_rcs = clCreateKernel(C->prog, "scat_rcs", &ret);                                 CHECK_CL_CREATE_KERNEL
     C->kern_scat_sig_aux = clCreateKernel(C->prog, "scat_sig_aux", &ret);                         CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_1 = clCreateKernel(C->prog, "make_pulse_pass_1", &ret);               CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_2_group = clCreateKernel(C->prog, "make_pulse_pass_2_group", &ret);   CHECK_CL_CREATE_KERNEL
@@ -218,11 +218,11 @@ void RS_worker_free(RSWorker *C) {
     
     clReleaseKernel(C->kern_io);
     clReleaseKernel(C->kern_dummy);
+    clReleaseKernel(C->kern_db_rcs);
     clReleaseKernel(C->kern_bg_atts);
     clReleaseKernel(C->kern_el_atts);
     clReleaseKernel(C->kern_db_atts);
     clReleaseKernel(C->kern_scat_clr);
-//    clReleaseKernel(C->kern_scat_rcs);
     clReleaseKernel(C->kern_scat_sig_aux);
     clReleaseKernel(C->kern_make_pulse_pass_1);
     clReleaseKernel(C->kern_make_pulse_pass_2_group);
@@ -381,6 +381,19 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     }
 
     ret = CL_SUCCESS;
+    ret |= clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentOrientation,                   sizeof(cl_mem),     &C->scat_ori);
+    ret |= clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &C->scat_rcs);
+    ret |= clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &C->rcs_real[0]);
+    ret |= clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[0]);
+    ret |= clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[0]);
+    ret |= clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
+    if (ret != CL_SUCCESS) {
+        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_db_rcs().\n", now());
+        exit(EXIT_FAILURE);
+    }
+
+    ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &C->scat_rcs);
@@ -431,16 +444,6 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
         exit(EXIT_FAILURE);
     }
 
-//    ret = CL_SUCCESS;
-//    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentRadarCrossSection,     sizeof(cl_mem),     &C->scat_rcs);
-//    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentPosition,              sizeof(cl_mem),     &C->scat_pos);
-//    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentAuxiliary,             sizeof(cl_mem),     &C->scat_aux);
-//    ret |= clSetKernelArg(C->kern_scat_rcs, RSScattererSignalDropSizeDistributionKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-//    if (ret != CL_SUCCESS) {
-//        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_scat_rcs().\n", now());
-//        exit(EXIT_FAILURE);
-//    }
-    
     ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentColor,             sizeof(cl_mem),   &C->scat_clr);
     ret |= clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentPosition,          sizeof(cl_mem),   &C->scat_pos);
@@ -615,6 +618,8 @@ void rsprint(const char *format, ...) {
 	}
     if (!strncmp(str, "Error", 5)) {
         fprintf(stderr, "\033[1;31m%s\033[0m", str);
+    } else if (!strncmp(str, "WARNING", 7)) {
+        fprintf(stderr, "\033[1;33m%s\033[0m", str);
     } else {
         printf("%s", str);
     }
@@ -825,7 +830,7 @@ ReductionParams *make_reduction_params(cl_uint count, cl_uint user_max_groups, c
 	ReductionParams *params = (ReductionParams *)malloc(sizeof(ReductionParams));
 	
 	if (params == NULL) {
-		fprintf(stderr, "%s : RS : Error creating ReductionParams.\n", now());
+		rsprint("Error. Unable to allocate memory for ReductionParams.");
 		return NULL;
 	}
 	
@@ -938,7 +943,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 	
 	// Allocate
 	if (posix_memalign((void **)((uintptr_t)&H), RS_ALIGN_SIZE, sizeof(RSHandle))) {
-		fprintf(stderr, "%s : RS : Error initializing RSHandle.\n", now());
+		rsprint("Error. Unable to initialize RS Framework.");
 		return NULL;
 	}
 	memset(H, 0, sizeof(RSHandle));
@@ -972,7 +977,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 		get_device_info(CL_DEVICE_TYPE_CPU, &H->num_devs, H->devs, H->num_cus, H->vendors, 0);
 	}
     if (H->num_devs == 0 || H->num_cus[0] == 0) {
-        fprintf(stderr, "%s : RS : Error. No OpenCL devices found.\n", now());
+        rsprint("Error. No OpenCL devices found.");
         return NULL;
     }
 
@@ -1105,7 +1110,7 @@ void RS_free_scat_memory(RSHandle *H) {
 	
 	for (i = 0; i < H->num_workers; i++) {
 		if (H->worker[i].vbo_scat_pos == 0) {
-			fprintf(stderr, "%s : RS : Unexpected error. VBO was not shared.\n", now());
+			rsprint("Error. Unexpected conditions. VBOs were not shared.");
 			return;
 		}
 		gcl_free(H->worker[i].scat_pos);
@@ -1451,7 +1456,8 @@ void RS_init_scat_pos(RSHandle *H) {
     // Replace a few points for debugging purpose.
 	H->scat_pos[0].x = domain.origin.x + 0.5f * domain.size.x;
     H->scat_pos[0].y = domain.origin.y + 0.5f * domain.size.y;
-    H->scat_pos[0].z = 0.0f; // domain.origin.z + 0.5f * domain.size.z;
+    //H->scat_pos[0].z = 0.0f; // domain.origin.z + 0.5f * domain.size.z;
+    H->scat_pos[0].z = H->scat_pos[0].y * tanf(5.0f / 180.0f * M_PI);
 	
     // Replace the very first debris particle
     if (H->debris_population[1] > 0) {
@@ -1625,7 +1631,7 @@ void RS_set_scan_box(RSHandle *H,
 	}
 	H->anchor_pos = (cl_float4 *)malloc(H->num_anchors * sizeof(cl_float4));
 	if (H->anchor_pos == NULL) {
-		rsprint("Error in allocating anchors.");
+		rsprint("Error. Unable to allocate memory for anchors.");
 		return;
 	}
 	
@@ -1675,8 +1681,8 @@ void RS_set_scan_box(RSHandle *H,
 	
 	//printf("H->num_anchors = %zu   ii = %d\n", H->num_anchors, ii);
 	
-	// Volume of a single resolution cell at the middle of the domain
-	r = 0.5f * (H->params.range_start + H->params.range_end);
+	// Volume of a single resolution cell at the start of the domain
+	r = H->params.range_start;
 	RSfloat vol = (H->params.antenna_bw_rad * r) * (H->params.antenna_bw_rad * r) * (H->params.c * H->params.tau * 0.5f);
 	RSfloat nvol = ((xmax - xmin) * (ymax - ymin) * (zmax - zmin)) / vol;
 	
@@ -1699,6 +1705,8 @@ void RS_set_scan_box(RSHandle *H,
 	while (preferred_n < H->params.body_per_cell * 9 / 10) {
 		preferred_n += mul;
 	}
+    // Drop concentration scaling factor
+    // Typical volume is about 2500 drops per m^2, each scatterer represents N drops (Radar Equation document example)
     float concentration_scale = sqrtf((nvol * vol * 2500.0f) / (float)preferred_n);
     
 	if (H->verb) {
@@ -1718,17 +1726,16 @@ void RS_set_scan_box(RSHandle *H,
                zmin, zmax);
         rsprint("              = ( %.2f m x %.2f m x %.2f m )\n",
                xmax - xmin, ymax - ymin, zmax - zmin);
-        rsprint("nvol = %s.%02d x %s.%02d m^3\n", commaint(floor(nvol)), (int)(100 * (nvol - floor(nvol))), commaint(floor(vol)), (int)(100 * (vol - floor(vol))));
-		rsprint("Suggested %s bodies\n", commaint(preferred_n));
+        rsprint("nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(vol));
+		rsprint("Suggest %s bodies\n", commaint(preferred_n));
 		rsprint("Set to GPU preferred %s (%.2f bodies / resolution cell)", commaint(preferred_n), (float)preferred_n / nvol);
         rsprint("Drop concentration scale to be used later = %s", commafloat(concentration_scale));
 	}
 	
     // Now, we actually set it to suggested debris count
 	H->num_scats = preferred_n;
-	
-    // Drop concentration scaling factor
-    // Typical volume is about 2500 drops per m^2, each scatterer represents N drops (Radar Equation document example)
+
+    // Store a copy of concentration scale in simulation description
     H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] = concentration_scale;
 
     // Anchor lines to show the volume of interest, which was set by the user. The number is well more than enough
@@ -1742,7 +1749,7 @@ void RS_set_scan_box(RSHandle *H,
 	}
 	H->anchor_lines = (cl_float4 *)malloc(H->num_anchor_lines * sizeof(cl_float4));
 	if (H->anchor_lines == NULL) {
-		fprintf(stderr, "%s : RS : Error in allocating anchor_lines.\n", now());
+		rsprint("Error. Unable to allocate memory for anchor_lines.");
 		return;
 	}
 	ii = 0;
@@ -1951,7 +1958,8 @@ void RS_set_beam_pos(RSHandle *H, RSfloat az_deg, RSfloat el_deg) {
     H->sim_desc.s[RSSimulationDescriptionBeamUnitY] = cosf(el_deg / 180.0f * M_PI) * cosf(az_deg / 180.0f * M_PI);
     H->sim_desc.s[RSSimulationDescriptionBeamUnitZ] = sinf(el_deg / 180.0f * M_PI);
 
-    H->status |= RSStatusScattererSignalsNeedsUpdate;
+    H->status |= RSStatusDebrisRCSNeedsUpdate;
+    H->status |= RSStatusScattererSignalNeedsUpdate;
 }
 
 
@@ -1971,6 +1979,7 @@ void RS_set_debris_count(RSHandle *H, const int debris_id, const size_t count) {
 
     H->debris_population[debris_id] = count;
 
+    // Always start with one as the background scatterers are always there
     H->num_body_types = 1;
     for (i = 1; i < RS_MAX_DEBRIS_TYPES; i++) {
         if (H->debris_population[i] > 0) {
@@ -2143,7 +2152,7 @@ void RS_set_dsd(RSHandle *H, const float *pdf, const float *diameters, const int
     H->dsd_cdf = (RSfloat *)malloc(count * sizeof(RSfloat));
     
     if (H->dsd_r == NULL || H->dsd_pdf == NULL || H->dsd_cdf == NULL) {
-        fprintf(stderr, "%s : RS : Error allocating resources for DSD parameterization.\n", now());
+        rsprint("Error. Unable to allocate memory for DSD parameterization.");
         return;
     }
     
@@ -2183,9 +2192,9 @@ void RS_set_dsd_to_mp(RSHandle *H) {
     
     float d, sum = 0.0f;
     
-//    float ds[] = {0.0001f, 0.0002f, 0.0005f, 0.001f, 0.002f, 0.003f, 0.004f, 0.005f};
+    float ds[] = {0.001f, 0.002f, 0.003f, 0.004f, 0.005f};
 //    float ds[] = {0.001f, 0.003f, 0.005f};
-    float ds[] = {0.003f, 0.004f, 0.005f, 0.006f};
+    //float ds[] = {0.003f, 0.004f, 0.005f, 0.006f};
     
     const int count = sizeof(ds) / sizeof(float);
     
@@ -2348,11 +2357,11 @@ void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const flo
         }
         H->worker[i].rcs_ellipsoid = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(cl_float4), table.data, &ret);
         if (ret != CL_SUCCESS) {
-            rsprint("Error creating RCS of ellipsoid table on CL device.");
+            rsprint("Error. Unable to create RCS of ellipsoid table on CL device.");
             return;
         }
         if (H->verb > 2) {
-            printf("worker[%d] created RCS of ellipsoid @ %p.\n", i, H->worker[i].rcs_ellipsoid);
+            printf("worker[%d] created RCS of ellipsoid table @ %p.\n", i, H->worker[i].rcs_ellipsoid);
         }
     }
     
@@ -2404,7 +2413,7 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
         }
         H->worker[i].range_weight = gcl_malloc(table_size * sizeof(float), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
         if (H->worker[i].range_weight == NULL) {
-            fprintf(stderr, "%s : RS : Error creating range weight table on CL device.\n", now());
+            fprintf(stderr, "%s : RS : Error. Unable to create range weight table on CL device.\n", now());
             return;
         }
     }
@@ -2424,7 +2433,7 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
         }
         H->worker[i].range_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), table.data, &ret);
         if (ret != CL_SUCCESS) {
-            fprintf(stderr, "%s : RS : Error creating range weight table on CL device.\n", now());
+            fprintf(stderr, "%s : RS : Error. Unable to create range weight table on CL device.\n", now());
             return;
         }
         if (H->verb > 2) {
@@ -2485,7 +2494,7 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
 //        }
         H->worker[i].angular_weight = gcl_malloc(table_size * sizeof(float), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
         if (H->worker[i].angular_weight == NULL) {
-            fprintf(stderr, "%s : RS : Error creating angular weight table on CL device.\n", now());
+            fprintf(stderr, "%s : RS : Error. Unable to create angular weight table on CL device.\n", now());
             return;
         }
     }
@@ -2505,7 +2514,7 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
         }
         H->worker[i].angular_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), table.data, &ret);
         if (ret != CL_SUCCESS) {
-            fprintf(stderr, "%s : RS : Error creating angular weight table on CL device.\n", now());
+            fprintf(stderr, "%s : RS : Error. Unable to create angular weight table on CL device.\n", now());
             return;
         }
         if (H->verb > 2) {
@@ -2626,10 +2635,10 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 #endif
         
         if (H->worker[i].vel[t] == NULL) {
-			fprintf(stderr, "%s : RS : worker[%d] encountered error creating wind table on CL device.\n", now(), i);
+			rsprint("Error. worker[%d] unable to create wind table on CL device.\n", i);
 			return;
         } else if (H->verb > 2) {
-            printf("%s : RS : worker[%d] created vel[%d] @ %p\n", now(), i, t, &H->worker[i].vel[t]);
+            rsprint("worker[%d] created wind table vel[%d] @ %p\n", i, t, &H->worker[i].vel[t]);
         }
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
@@ -2972,7 +2981,7 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
             fprintf(stderr, "%s : RS : worker[%d] encountered error creating ADM tables on CL device(s).\n", now(), i);
             return;
         } else if (H->verb > 2) {
-            printf("%s : RS : worker[%d] created adm_cd[%d] & adm_cd[%d] @ %p & %p\n", now(), i, t, t, &H->worker[i].adm_cd[t], &H->worker[i].adm_cm[t]);
+            printf("%s : RS : worker[%d] created ADM tables adm_cd[%d] & adm_cd[%d] @ %p & %p\n", now(), i, t, t, &H->worker[i].adm_cd[t], &H->worker[i].adm_cm[t]);
         }
         
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
@@ -3025,7 +3034,7 @@ void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *adam) {
     RSTable2D cm = RS_table2d_init(adam->nn);
     
     if (cd.data == NULL || cm.data == NULL) {
-        printf("%s : RS : ADM input data cannot be NULL.", now());
+        rsprint("ADM input data cannot be NULL.");
         return;
     }
 
@@ -3055,8 +3064,8 @@ void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *adam) {
 
     if (H->verb > 1) {
         const int t = H->adm_count;
-        printf("%s : RS : GPU ADM[%d]   Ta = %.4f  inv_inln = [%.4f %.4f %.4f]   mass = %.4f kg\n",
-               now(), t, H->adm_desc[t].phys.Ta, H->adm_desc[t].phys.inv_inln_x, H->adm_desc[t].phys.inv_inln_y, H->adm_desc[t].phys.inv_inln_z, H->adm_desc[t].phys.mass);
+        rsprint("GPU ADM[%d]   Ta = %.4f  inv_inln = [%.4f %.4f %.4f]   mass = %.4f kg",
+               t, H->adm_desc[t].phys.Ta, H->adm_desc[t].phys.inv_inln_x, H->adm_desc[t].phys.inv_inln_y, H->adm_desc[t].phys.inv_inln_z, H->adm_desc[t].phys.mass);
     }
 
     RS_set_adm_data(H, cd, cm);
@@ -3072,7 +3081,7 @@ void RS_set_adm_data_to_unity(RSHandle *H) {
     RSTable2D table = RS_table2d_init(9);
     
     if (H->verb > 1) {
-        printf("%s : RS : ADM to unity @ X:[ -M_PI - M_PI ]  Y:[ 0 - M_PI ]\n", now());
+        rsprint("ADM to unity @ X:[ -M_PI - M_PI ]  Y:[ 0 - M_PI ]");
     }
     
     table.x_ = 3;    table.xm = 2.0f;    table.xs = 3.0f / (2.0f * M_PI);    table.xo = -(-M_PI) * table.xs;
@@ -3186,7 +3195,7 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
             fprintf(stderr, "%s : RS : worker[%d] encountered error creating RCS tables on CL device(s).\n", now(), i);
             return;
         } else if (H->verb > 2) {
-            printf("%s : RS : worker[%d] created rcs_real[%d] & rcs_imag[%d] @ %p & %p\n", now(), i, t, t, &H->worker[i].rcs_real[t], &H->worker[i].rcs_imag[t]);
+            printf("%s : RS : worker[%d] created RCS tables rcs_real[%d] & rcs_imag[%d] @ %p & %p\n", now(), i, t, t, &H->worker[i].rcs_real[t], &H->worker[i].rcs_imag[t]);
         }
         
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
@@ -3228,22 +3237,23 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
 
 
 void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *rosie) {
+
     int i;
     
     RSTable2D real = RS_table2d_init(rosie->nn);
     RSTable2D imag = RS_table2d_init(rosie->nn);
     
     if (real.data == NULL || imag.data == NULL) {
-        printf("%s : RS : RCS input data cannot be NULL.", now());
+        rsprint("Error. RCS input data cannot be NULL.");
         return;
     }
     // Set up the mapping coefficients
     // Assumptions: maps are always in alpha in [-180deg, +180deg] and beta in [0, +180deg]
-    real.x_ = rosie->na;    real.xm = (float)(real.x_ - 1);    real.xs = (float)rosie->na / (2.0f * M_PI);    real.xo = -(-M_PI) * real.xs;
-    real.y_ = rosie->nb;    real.ym = (float)(real.y_ - 1);    real.ys = (float)rosie->nb / M_PI;             real.yo = 0.0f;
+    real.x_ = rosie->na;    real.xm = (float)(real.x_ - 1);    real.xs = (float)(rosie->na - 1) / (2.0f * M_PI);    real.xo = -(-M_PI) * real.xs;
+    real.y_ = rosie->nb;    real.ym = (float)(real.y_ - 1);    real.ys = (float)(rosie->nb - 1) / M_PI;             real.yo = 0.0f;
     
-    imag.x_ = rosie->na;    imag.xm = (float)(imag.x_ - 1);    imag.xs = (float)rosie->na / (2.0f * M_PI);    imag.xo = -(-M_PI) * real.xs;
-    imag.y_ = rosie->nb;    imag.ym = (float)(imag.y_ - 1);    imag.ys = (float)rosie->nb / M_PI;             imag.yo = 0.0f;
+    imag.x_ = rosie->na;    imag.xm = (float)(imag.x_ - 1);    imag.xs = (float)(rosie->na - 1) / (2.0f * M_PI);    imag.xo = -(-M_PI) * real.xs;
+    imag.y_ = rosie->nb;    imag.ym = (float)(imag.y_ - 1);    imag.ys = (float)(rosie->nb - 1) / M_PI;             imag.yo = 0.0f;
     
     // Arrange RCS values into float4, getting ready for GPU's global memory
     for (i = 0; i < rosie->nn; i++) {
@@ -3261,6 +3271,12 @@ void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *rosie) {
     H->rcs_desc[H->rcs_count] = *rosie;
     memset(&H->rcs_desc[H->rcs_count].data, 0, sizeof(RCSData));
 
+    if (H->verb > 1) {
+        const int t = H->rcs_count;
+        rsprint("GPU RCS[%d]   lambda = %.2f m",
+               t, H->rcs_desc[t].lambda);
+    }
+
     RS_set_rcs_data(H, real, imag);
     
     RS_table2d_free(real);
@@ -3277,7 +3293,7 @@ void RS_set_rcs_data_to_unity(RSHandle *H) {
     RSTable2D table_imag = RS_table2d_init(9);
     
     if (H->verb > 1) {
-        printf("%s : RS : RCS to unity @ X:[ -M_PI - M_PI ]  Y:[ 0 - M_PI ]\n", now());
+        rsprint("RCS to unity @ X:[ -M_PI - M_PI ]  Y:[ 0 - M_PI ]");
     }
     
     table_real.x_ = 3;    table_real.xm = 2.0f;    table_real.xs = 3.0f / (2.0f * M_PI);    table_real.xo = -(-M_PI) * table_real.xs;
@@ -3374,7 +3390,7 @@ void RS_update_auxiliary_attributes(RSHandle *H) {
         clReleaseEvent(events[i]);
     }
     
-    H->status &= ~RSStatusScattererSignalsNeedsUpdate;
+    H->status &= ~RSStatusScattererSignalNeedsUpdate;
     
 #endif
     
@@ -3382,58 +3398,132 @@ void RS_update_auxiliary_attributes(RSHandle *H) {
 
 void RS_update_colors(RSHandle *H) {
 
-    int i;
-    
+    int i, k;
+    int r, a;
+
+    if (!(H->status & RSStatusDomainPopulated)) {
+        rsprint("Error. Simulation domain not populated.");
+        return;
+    }
+
 #if defined(__APPLE__) &&  defined (_SHARE_OBJ_)
 
-    for (i = 0; i < H->num_workers; i++) {
-        dispatch_async(H->worker[i].que, ^{
-            if (H->status & RSStatusScattererSignalsNeedsUpdate) {
-                // Compute the attributes
-                scat_sig_aux_kernel(&H->worker[i].ndrange_scat_all,
-                                    (cl_float4 *)H->worker[i].scat_sig,
-                                    (cl_float4 *)H->worker[i].scat_aux,
-                                    (cl_float4 *)H->worker[i].scat_pos,
-                                    (cl_float4 *)H->worker[i].scat_rcs,
-                                    (cl_float *)H->worker[i].angular_weight,
-                                    H->worker[i].angular_weight_desc,
-                                    H->sim_desc);
+    if (H->status & RSStatusScattererSignalNeedsUpdate) {
+        for (i = 0; i < H->num_workers; i++) {
+            r = 0;
+            a = 0;
+            RSWorker *C = &H->worker[i];
+            for (k = 1; k < H->num_body_types; k++) {
+                if (C->debris_population[k]) {
+                    dispatch_async(C->que, ^{
+                        db_rcs_kernel(&C->ndrange_scat[k],
+                                      (cl_float4 *)C->scat_pos,
+                                      (cl_float4 *)C->scat_ori,
+                                      (cl_float4 *)C->scat_rcs,
+                                      (cl_image)H->worker[i].rcs_real[r],
+                                      (cl_image)H->worker[i].rcs_imag[r],
+                                      H->worker[i].rcs_desc[r],
+                                      H->sim_desc);
+                        dispatch_semaphore_signal(C->sem);
+                    });
+                }
+                r = r == H->rcs_count - 1 ? 0 : r + 1;
+                a = a == H->adm_count - 1 ? 0 : a + 1;
             }
-            // Set individual color based on draw mode
-            scat_clr_kernel(&H->worker[i].ndrange_scat_all,
-                            (cl_float4 *)H->worker[i].scat_clr,
-                            (cl_float4 *)H->worker[i].scat_pos,
-                            (cl_float4 *)H->worker[i].scat_aux,
-                            (cl_float4 *)H->worker[i].scat_rcs,
-                            H->draw_mode);
-            dispatch_semaphore_signal(H->worker[i].sem);
-        });
-        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+            for (k = 1; k < H->num_body_types; k++) {
+                if (C->debris_population[k]) {
+                    dispatch_semaphore_wait(C->sem, DISPATCH_TIME_FOREVER);
+                }
+            }
+            dispatch_async(C->que, ^{
+                scat_sig_aux_kernel(&C->ndrange_scat_all,
+                                    (cl_float4 *)C->scat_sig,
+                                    (cl_float4 *)C->scat_aux,
+                                    (cl_float4 *)C->scat_pos,
+                                    (cl_float4 *)C->scat_rcs,
+                                    (cl_float *)C->angular_weight,
+                                    C->angular_weight_desc,
+                                    H->sim_desc);
+                scat_clr_kernel(&C->ndrange_scat_all,
+                                (cl_float4 *)C->scat_clr,
+                                (cl_float4 *)C->scat_pos,
+                                (cl_float4 *)C->scat_aux,
+                                (cl_float4 *)C->scat_rcs,
+                                H->draw_mode);
+                dispatch_semaphore_signal(C->sem);
+            });
+            dispatch_semaphore_wait(C->sem, DISPATCH_TIME_FOREVER);
+        }
+    } else {
+        for (i = 0; i < H->num_workers; i++) {
+            RSWorker *C = &H->worker[i];
+            dispatch_async(H->worker[i].que, ^{
+                // Set individual color based on draw mode
+                scat_clr_kernel(&C->ndrange_scat_all,
+                                (cl_float4 *)C->scat_clr,
+                                (cl_float4 *)C->scat_pos,
+                                (cl_float4 *)C->scat_aux,
+                                (cl_float4 *)C->scat_rcs,
+                                H->draw_mode);
+                dispatch_semaphore_signal(C->sem);
+            });
+            dispatch_semaphore_wait(C->sem, DISPATCH_TIME_FOREVER);
+        }
     }
-    
+
 #else
     
-    cl_event events[RS_MAX_GPU_DEVICE][2];
+    cl_event events[RS_MAX_GPU_DEVICE][H->num_body_types];
     memset(events, 0, sizeof(events));
     
+    if (H->status & RSStatusDebrisRCSNeedsUpdate) {
+        // Very similar to the RS_advance_time() function but only the debris RCS is updated
+        for (i = 0; i < H->num_workers; i++) {
+            r = 0;
+            a = 0;
+            RSWorker *C = &H->worker[i];
+            for (k = 1; k < H->num_body_types; k++) {
+                if (C->debris_population[k]) {
+                    clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &C->rcs_real[r]);
+                    clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[r]);
+                    clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[r]);
+                    clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
+                    clEnqueueNDRangeKernel(C->que, C->kern_db_rcs, 1, &C->debris_origin[k], &C->debris_population[k], NULL, 0, NULL, &events[i][k]);
+                }
+                r = r == H->rcs_count - 1 ? 0 : r + 1;
+                a = a == H->adm_count - 1 ? 0 : a + 1;
+            }
+        }
+        for (i = 0; i < H->num_workers; i++) {
+            clFlush(H->worker[i].que);
+        }
+        for (i = 0; i < H->num_workers; i++) {
+            for (k = 1; k < H->num_body_types; k++) {
+                if (H->worker[i].debris_population[k]) {
+                    clWaitForEvents(1, &events[i][k]);
+                    clReleaseEvent(events[i][k]);
+                }
+            }
+        }
+        H->status |= RSStatusScattererSignalNeedsUpdate;
+    }
     for (i = 0; i < H->num_workers; i++) {
-        RSWorker *C = &H->worker[i];
-        if (H->status & RSStatusScattererSignalsNeedsUpdate) {
+        if (H->status & RSStatusScattererSignalNeedsUpdate) {
+            RSWorker *C = &H->worker[i];
             clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
             clEnqueueNDRangeKernel(C->que, C->kern_scat_sig_aux, 1, NULL, &C->num_scats, NULL, 0, NULL, &events[i][0]);
-
+            
             clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentDrawMode, sizeof(cl_uint4), &H->draw_mode);
             clEnqueueNDRangeKernel(C->que, C->kern_scat_clr, 1, NULL, &C->num_scats, NULL, 1, &events[i][0], &events[i][1]);
         } else {
+            RSWorker *C = &H->worker[i];
             clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentDrawMode, sizeof(cl_uint4), &H->draw_mode);
             clEnqueueNDRangeKernel(C->que, C->kern_scat_clr, 1, NULL, &C->num_scats, NULL, 0, NULL, &events[i][1]);
         }
     }
-    
     for (i = 0; i < H->num_workers; i++) {
         clFlush(H->worker[i].que);
     }
-    
     for (i = 0; i < H->num_workers; i++) {
         clWaitForEvents(1, &events[i][1]);
         clReleaseEvent(events[i][0]);
@@ -3442,7 +3532,8 @@ void RS_update_colors(RSHandle *H) {
     
 #endif
     
-    H->status &= ~RSStatusScattererSignalsNeedsUpdate;
+    H->status &= ~RSStatusDebrisRCSNeedsUpdate;
+    H->status &= ~RSStatusScattererSignalNeedsUpdate;
 }
 
 void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[][n]) {
@@ -3674,7 +3765,8 @@ void RS_populate(RSHandle *H) {
         printf("%s : RS : CL domain synchronized.\n", now());
     }
     
-	H->status |= RSStatusDomainPopulated | RSStatusScattererSignalsNeedsUpdate;
+	H->status |= RSStatusDomainPopulated;
+    H->status |= RSStatusScattererSignalNeedsUpdate;
 
 	return;
 }
@@ -3889,12 +3981,6 @@ void RS_upload(RSHandle *H) {
 
 #endif
 
-//    if (H->dsd_name != RSDropSizeDistributionUndefined) {
-//        RS_rcs_from_dsd(H);
-//        if (H->verb) {
-//            printf("%s : RS : Drop-size derived RCS computed.\n", now());
-//        }
-//    }
 }
 
 
@@ -3945,7 +4031,7 @@ void RS_advance_time(RSHandle *H) {
     int r, a;
 
     if (!(H->status & RSStatusDomainPopulated)) {
-		fprintf(stderr, "%s : RS : Simulation domain not populated.\n", now());
+		fprintf(stderr, "%s : RS : Error. Simulation domain not populated.\n", now());
 		return;
 	}
 
@@ -3964,7 +4050,9 @@ void RS_advance_time(RSHandle *H) {
     #if defined (_DUMMY_)
     
     i = 0;
+    k = 0;
     r = 0;
+    a = 0;
     dispatch_async(H->worker[i].que, ^{
         dummy_kernel(&H->worker[i].ndrange_scat_all,
                      (cl_float4 *)H->worker[i].scat_pos,
@@ -4088,7 +4176,7 @@ void RS_advance_time(RSHandle *H) {
         r = 0;
         a = 0;
 
-        // Convenient pointer to reduce dereferencing
+        // A convenient pointer to reduce dereferencing
         RSWorker *C = &H->worker[i];
 
 //        clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->debris_origin[0], &C->num_scats, NULL, 0, NULL, &events[i][0]);
@@ -4096,8 +4184,6 @@ void RS_advance_time(RSHandle *H) {
         // Background: Need to refresh some parameters at each time update
         if (H->sim_concept & RSSimulationConceptDraggedBackground) {
             clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,      sizeof(cl_mem),     &C->vel[v]);
-//            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentEllipsoidRCS,            sizeof(cl_mem),     &C->rcs_ellipsoid);
-//            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentEllipsoidRCSDescription, sizeof(cl_float4),  &C->rcs_ellipsoid_desc);
             clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription,   sizeof(cl_float16), &H->sim_desc);
             clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->debris_origin[0], &C->debris_population[0], NULL, 0, NULL, &events[i][0]);
         } else {
@@ -4143,90 +4229,172 @@ void RS_advance_time(RSHandle *H) {
 	
     H->sim_time += H->params.prt;
     H->sim_desc.s[RSSimulationDescriptionSimTic] = ++H->sim_tic;
-    H->status |= RSStatusScattererSignalsNeedsUpdate;
+    H->status |= RSStatusScattererSignalNeedsUpdate;
 }
 
 
 void RS_make_pulse(RSHandle *H) {
 	
-	int i;
+    int i, k;
+    int r, a;
 	
 	if (!(H->status & RSStatusDomainPopulated)) {
-		fprintf(stderr, "%s : RS : Simulation domain not populated.\n", now());
+		rsprint("Error. Simulation domain not populated.");
 		return;
 	}
 
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
 
+    if (H->status & RSStatusDebrisRCSNeedsUpdate) {
+        for (i = 0; i < H->num_workers; i++) {
+            r = 0;
+            a = 0;
+            RSWorker *C = &H->worker[i];
+            for (k = 1; k < H->num_body_types; k++) {
+                if (C->debris_population[k]) {
+                    dispatch_async(C->que, ^{
+                        db_rcs_kernel(&C->ndrange_scat[k],
+                                      (cl_float4 *)C->scat_pos,
+                                      (cl_float4 *)C->scat_ori,
+                                      (cl_float4 *)C->scat_rcs,
+                                      (cl_image)H->worker[i].rcs_real[r],
+                                      (cl_image)H->worker[i].rcs_imag[r],
+                                      H->worker[i].rcs_desc[r],
+                                      H->sim_desc);
+                        dispatch_semaphore_signal(C->sem);
+                    });
+                }
+                r = r == H->rcs_count - 1 ? 0 : r + 1;
+                a = a == H->adm_count - 1 ? 0 : a + 1;
+            }
+        }
+        for (i = 0; i < H->num_workers; i++) {
+            RSWorker *C = &H->worker[i];
+            for (k = 1; k < H->num_body_types; k++) {
+                if (C->debris_population[k]) {
+                    dispatch_semaphore_wait(C->sem, DISPATCH_TIME_FOREVER);
+                }
+            }
+        }
+        for (i = 0; i < H->num_workers; i++) {
+            RSWorker *C = &H->worker[i];
+            dispatch_async(C->que, ^{
+                scat_sig_aux_kernel(&C->ndrange_scat_all,
+                                    (cl_float4 *)C->scat_sig,
+                                    (cl_float4 *)C->scat_aux,
+                                    (cl_float4 *)C->scat_pos,
+                                    (cl_float4 *)C->scat_rcs,
+                                    (cl_float *)C->angular_weight,
+                                    C->angular_weight_desc,
+                                    H->sim_desc);
+                dispatch_semaphore_signal(C->sem);
+            });
+        }
+        for (i = 0; i < H->num_workers; i++) {
+            dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+        }
+    }
     for (i = 0; i < H->num_workers; i++) {
-        dispatch_async(H->worker[i].que, ^{
-            if (H->status & RSStatusScattererSignalsNeedsUpdate) {
+        RSWorker *C = &H->worker[i];
+        dispatch_async(C->que, ^{
+            if (H->status & RSStatusScattererSignalNeedsUpdate) {
                 //printf("RS_make_pulse: kern_scat_sig_aux\n");
-                scat_sig_aux_kernel(&H->worker[i].ndrange_scat_all,
-                                    (cl_float4 *)H->worker[i].scat_sig,
-                                    (cl_float4 *)H->worker[i].scat_aux,
-                                    (cl_float4 *)H->worker[i].scat_pos,
-                                    (cl_float4 *)H->worker[i].scat_rcs,
-                                    (cl_float *)H->worker[i].angular_weight,
-                                    H->worker[i].angular_weight_desc,
+                scat_sig_aux_kernel(&C->ndrange_scat_all,
+                                    (cl_float4 *)C->scat_sig,
+                                    (cl_float4 *)C->scat_aux,
+                                    (cl_float4 *)C->scat_pos,
+                                    (cl_float4 *)C->scat_rcs,
+                                    (cl_float *)C->angular_weight,
+                                    C->angular_weight_desc,
                                     H->sim_desc);
             }
-            make_pulse_pass_1_kernel(&H->worker[i].ndrange_pulse_pass_1,
-                                     (cl_float4 *)H->worker[i].work,
-                                     (cl_float4 *)H->worker[i].scat_sig,
-                                     (cl_float4 *)H->worker[i].scat_aux,
-                                     H->worker[i].make_pulse_params.local_mem_size[0],
-                                     (cl_float *)H->worker[i].range_weight,
-                                     H->worker[i].range_weight_desc,
-                                     H->worker[i].make_pulse_params.range_start,
-                                     H->worker[i].make_pulse_params.range_delta,
-                                     H->worker[i].make_pulse_params.range_count,
-                                     H->worker[i].make_pulse_params.group_counts[0],
-                                     H->worker[i].make_pulse_params.entry_counts[0]);
-            switch (H->worker[i].make_pulse_params.cl_pass_2_method) {
-				case RS_CL_PASS_2_IN_LOCAL:
-					make_pulse_pass_2_local_kernel(&H->worker[i].ndrange_pulse_pass_2,
-												   (cl_float4 *)H->worker[i].pulse,
-												   (cl_float4 *)H->worker[i].work,
-												   H->worker[i].make_pulse_params.local_mem_size[1],
-												   H->worker[i].make_pulse_params.range_count,
-												   H->worker[i].make_pulse_params.entry_counts[1]);
-					break;
-				case RS_CL_PASS_2_IN_RANGE:
-					make_pulse_pass_2_range_kernel(&H->worker[i].ndrange_pulse_pass_2,
-												   (cl_float4 *)H->worker[i].pulse,
-												   (cl_float4 *)H->worker[i].work,
-												   H->worker[i].make_pulse_params.local_mem_size[1],
-												   H->worker[i].make_pulse_params.range_count,
-												   H->worker[i].make_pulse_params.entry_counts[1]);
-					break;
-				default:
-					make_pulse_pass_2_group_kernel(&H->worker[i].ndrange_pulse_pass_2,
-												   (cl_float4 *)H->worker[i].pulse,
-												   (cl_float4 *)H->worker[i].work,
-												   H->worker[i].make_pulse_params.local_mem_size[1],
-												   H->worker[i].make_pulse_params.range_count,
-												   H->worker[i].make_pulse_params.entry_counts[1]);
-					break;
-			}
-			dispatch_semaphore_signal(H->worker[i].sem);
-		});
-	}
-	
-	for (i = 0; i < H->num_workers; i++) {
-		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
-	}
-	
+            make_pulse_pass_1_kernel(&C->ndrange_pulse_pass_1,
+                                     (cl_float4 *)C->work,
+                                     (cl_float4 *)C->scat_sig,
+                                     (cl_float4 *)C->scat_aux,
+                                     C->make_pulse_params.local_mem_size[0],
+                                     (cl_float *)C->range_weight,
+                                     C->range_weight_desc,
+                                     C->make_pulse_params.range_start,
+                                     C->make_pulse_params.range_delta,
+                                     C->make_pulse_params.range_count,
+                                     C->make_pulse_params.group_counts[0],
+                                     C->make_pulse_params.entry_counts[0]);
+            switch (C->make_pulse_params.cl_pass_2_method) {
+                case RS_CL_PASS_2_IN_LOCAL:
+                make_pulse_pass_2_local_kernel(&C->ndrange_pulse_pass_2,
+                                               (cl_float4 *)C->pulse,
+                                               (cl_float4 *)C->work,
+                                               C->make_pulse_params.local_mem_size[1],
+                                               C->make_pulse_params.range_count,
+                                               C->make_pulse_params.entry_counts[1]);
+                break;
+                case RS_CL_PASS_2_IN_RANGE:
+                make_pulse_pass_2_range_kernel(&C->ndrange_pulse_pass_2,
+                                               (cl_float4 *)C->pulse,
+                                               (cl_float4 *)C->work,
+                                               C->make_pulse_params.local_mem_size[1],
+                                               C->make_pulse_params.range_count,
+                                               C->make_pulse_params.entry_counts[1]);
+                break;
+                default:
+                make_pulse_pass_2_group_kernel(&C->ndrange_pulse_pass_2,
+                                               (cl_float4 *)C->pulse,
+                                               (cl_float4 *)C->work,
+                                               C->make_pulse_params.local_mem_size[1],
+                                               C->make_pulse_params.range_count,
+                                               C->make_pulse_params.entry_counts[1]);
+                break;
+            }
+            dispatch_semaphore_signal(C->sem);
+        });
+    }
+    for (i = 0; i < H->num_workers; i++) {
+        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+    }
+    
+
 #else
 
-    cl_event events[H->num_workers][3];
+    cl_event events[H->num_workers][MAX(H->num_body_types, 3)];
     memset(events, 0, sizeof(events));
 
     // In this implementation, kern_make_pulse_pass_2 should point to kern_make_pulse_pass_2_group, kern_make_pulse_pass_2_local or kern_make_pulse_pass_2_range,
     // which had been selected based on the group size in RS_make_pulse_params()
+    if (H->status & RSStatusDebrisRCSNeedsUpdate) {
+        // Update all the debris RCS
+        for (i = 0; i < H->num_workers; i++) {
+            r = 0;
+            a = 0;
+            RSWorker *C = &H->worker[i];
+            for (k = 1; k < H->num_body_types; k++) {
+                if (C->debris_population[k]) {
+                    clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &C->rcs_real[r]);
+                    clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[r]);
+                    clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[r]);
+                    clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
+                    clEnqueueNDRangeKernel(C->que, C->kern_db_rcs, 1, &C->debris_origin[k], &C->debris_population[k], NULL, 0, NULL, &events[i][k]);
+                }
+                r = r == H->rcs_count - 1 ? 0 : r + 1;
+                a = a == H->adm_count - 1 ? 0 : a + 1;
+            }
+        }
+        for (i = 0; i < H->num_workers; i++) {
+            clFlush(H->worker[i].que);
+        }
+        for (i = 0; i < H->num_workers; i++) {
+            for (k = 1; k < H->num_body_types; k++) {
+                if (H->worker[i].debris_population[k]) {
+                    clWaitForEvents(1, &events[i][k]);
+                    clReleaseEvent(events[i][k]);
+                }
+            }
+        }
+        H->status |= RSStatusScattererSignalNeedsUpdate;
+    }
     for (i = 0; i < H->num_workers; i++) {
         RSWorker *C = &H->worker[i];
-        if (H->status & RSStatusScattererSignalsNeedsUpdate) {
+        if (H->status & RSStatusScattererSignalNeedsUpdate) {
             //printf("RS_make_pulse: kern_scat_sig_aux : %zu\n", C->num_scats);
             clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
             clEnqueueNDRangeKernel(C->que, C->kern_scat_sig_aux, 1, NULL, &C->num_scats, NULL, 0, NULL, &events[i][0]);
@@ -4235,7 +4403,9 @@ void RS_make_pulse(RSHandle *H) {
             clEnqueueNDRangeKernel(C->que, C->kern_make_pulse_pass_1, 1, NULL, &C->make_pulse_params.global[0], &C->make_pulse_params.local[0], 0, NULL, &events[i][1]);
         }
         clEnqueueNDRangeKernel(C->que, C->kern_make_pulse_pass_2, 1, NULL, &C->make_pulse_params.global[1], &C->make_pulse_params.local[1], 1, &events[i][1], &events[i][2]);
-        clFlush(C->que);
+    }
+    for (i = 0; i < H->num_workers; i++) {
+        clFlush(H->worker[i].que);
     }
     for (i = 0; i < H->num_workers; i++) {
         clWaitForEvents(1, &events[i][2]);
@@ -4243,10 +4413,11 @@ void RS_make_pulse(RSHandle *H) {
         clReleaseEvent(events[i][1]);
         clReleaseEvent(events[i][2]);
     }
-	
+
 #endif
 	
-    H->status &= ~RSStatusScattererSignalsNeedsUpdate;
+    H->status &= ~RSStatusDebrisRCSNeedsUpdate;
+    H->status &= ~RSStatusScattererSignalNeedsUpdate;
 }
 
 

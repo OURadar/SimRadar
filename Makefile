@@ -7,7 +7,7 @@ OBJS = rs.o les.o adm.o rcs.o
 
 MYLIB = lib/librs.a
 
-PROGS = cldemo radarsim test_clreduce test_make_pulse test_rs test_les test_adm test_rcs
+PROGS = cldemo radarsim test_clreduce test_make_pulse test_rs test_les test_adm test_rcs simple_ppi
 
 ifeq ($(UNAME), Darwin)
 CC = clang

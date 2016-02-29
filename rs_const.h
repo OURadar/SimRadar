@@ -38,7 +38,8 @@
 enum RSStatus {
     RSStatusDomainNull                   = 0,
     RSStatusDomainPopulated              = 1,
-    RSStatusScattererSignalsNeedsUpdate  = 1 << 1
+    RSStatusScattererSignalNeedsUpdate   = 1 << 1,
+    RSStatusDebrisRCSNeedsUpdate         = 1 << 2
 };
 
 enum RS_CL_PASS_2 {

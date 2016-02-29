@@ -15,8 +15,8 @@
 #define RENDERER_TIC_COUNT                  10
 #define RENDERER_MAX_DEBRIS_TYPES           4
 #define RENDERER_MAX_VBO_GROUPS             8
-#define RENDERER_DEFAULT_BODY_COLOR_INDEX   29
-#define RENDERER_DEFAULT_BODY_OPACITY       0.3
+#define RENDERER_DEFAULT_BODY_COLOR_INDEX   21
+#define RENDERER_DEFAULT_BODY_OPACITY       0.03
 #define RENDERER_FBO_COUNT                  5
 
 enum hudConfig {
@@ -187,7 +187,7 @@ enum RendererLineSegment {
 @property (nonatomic, retain) id<RendererDelegate> delegate;
 @property (nonatomic, readonly) GLsizei width, height;
 @property (nonatomic) GLfloat beamAzimuth, beamElevation;
-@property (nonatomic) BOOL showDebrisAttributes;
+@property (nonatomic) BOOL showDebrisAttributes, blurSmallScatterers;
 
 - (id)initWithDevicePixelRatio:(GLfloat)pixelRatio;
 

@@ -48,7 +48,7 @@ unsigned int grayToBinary(unsigned int num)
 @synthesize resetModelRotate;
 @synthesize width, height;
 @synthesize beamAzimuth, beamElevation;
-@synthesize showDebrisAttributes;
+@synthesize showDebrisAttributes, blurSmallScatterers;
 
 #pragma mark -
 #pragma mark Properties

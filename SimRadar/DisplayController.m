@@ -93,6 +93,10 @@ NSWindow *standardWindow;
     
     [glView.renderer resetViewParameters];
     
+    // Set mkey to some big number so the next selection will be 0
+    mkey = 999;
+    [self chooseNextDrawModeForward:TRUE];
+    
 #ifdef DEBUG
     NSLog(@"Recommend viewing at %.2f m", sim.recommendedViewRange);
 	NSLog(@"Particles wired to view renderer (%d)", (int)sim.pointCount);
@@ -114,8 +118,6 @@ NSWindow *standardWindow;
 {
 	// Initialization code here.
 	[glView.renderer setDelegate:rootSender];
-    
-    mkey = 0;
     
     [self becomeFirstResponder];
 }
@@ -209,10 +211,10 @@ NSWindow *standardWindow;
 //{
 //}
 
-- (void)mouseDragged:(NSEvent *)event
-{
-    [glView.renderer panX:event.locationInWindow.x Y:event.locationInWindow.y dx:event.deltaX dy:event.deltaY];
-}
+//- (void)mouseDragged:(NSEvent *)event
+//{
+//    [glView.renderer panX:event.locationInWindow.x Y:event.locationInWindow.y dx:event.deltaX dy:event.deltaY];
+//}
 
 - (void)mouseUp:(NSEvent *)event
 {
@@ -385,20 +387,12 @@ NSWindow *standardWindow;
             [glView.renderer cycleVFX];
             break;
             
+        case 'M':
+            [self chooseNextDrawModeForward:FALSE];
+            break;
+
         case 'm':
-            mkey = mkey >= 11 ? 0 : mkey + 1;
-            if (mkey % 2 == 0) {
-                ret = [sim cycleScattererColorMode];
-            } else {
-                ret = mkey / 2;
-            }
-            [glView.renderer setSubtitleString:[NSString stringWithFormat:@"Draw mode %d%d", ret, mkey % 2]];
-            [glView.renderer toggleBlurSmallScatterer];
-            if (ret >= 4) {
-                [glView.renderer setShowDebrisAttributes:TRUE];
-            } else {
-                [glView.renderer setShowDebrisAttributes:FALSE];
-            }
+            [self chooseNextDrawModeForward:TRUE];
             break;
             
 		default:
@@ -406,6 +400,86 @@ NSWindow *standardWindow;
 			[super keyDown:event];
 			break;
 	}
+}
+
+- (void)chooseNextDrawModeForward:(BOOL)forward
+{
+    char ind = 'U';   // individual attribute for debris: U = uniform, I = individual
+    char mode = 'S';  // S = standard drop bin
+    char trans = 'T'; // T = transparent or O = opaque
+    
+    const int max_mkey = 7;
+    
+    if (forward) {
+        mkey = mkey >= max_mkey ? 0 : mkey + 1;
+    } else {
+        mkey = mkey <= 0 ? max_mkey : mkey - 1;
+    }
+    switch (mkey) {
+        case 0:
+        ind = 'U';
+        mode = 'S';
+        trans = 'O';
+        break;
+        
+        case 1:
+        ind = 'U';
+        mode = 'S';
+        trans = 'T';
+        break;
+        
+        case 2:
+        ind = 'U';
+        mode = 'A';
+        trans = 'O';
+        break;
+        
+        case 3:
+        ind = 'U';
+        mode = 'B';
+        trans = 'O';
+        break;
+        
+        case 4:
+        ind = 'U';
+        mode = 'R';
+        trans = 'O';
+        break;
+        
+        case 5:
+        ind = 'I';
+        mode = 'H';
+        trans = 'O';
+        break;
+        
+        case 6:
+        ind = 'I';
+        mode = 'V';
+        trans = 'O';
+        break;
+        
+        case 7:
+        ind = 'I';
+        mode = 'D';
+        trans = 'O';
+        break;
+        
+        default:
+        break;
+    }
+    
+    [sim setScattererColorMode:mode];
+    if (ind == 'I') {
+        [glView.renderer setShowDebrisAttributes:TRUE];
+    } else {
+        [glView.renderer setShowDebrisAttributes:FALSE];
+    }
+    if (trans == 'T') {
+        [glView.renderer setBlurSmallScatterers:TRUE];
+    } else {
+        [glView.renderer setBlurSmallScatterers:FALSE];
+    }
+    [glView.renderer setSubtitleString:[NSString stringWithFormat:@"Draw mode %c%c%c (%d)", ind, trans, mode, mkey]];
 }
 
 - (void)scrollWheel:(NSEvent *)event
