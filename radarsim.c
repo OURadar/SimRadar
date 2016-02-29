@@ -117,7 +117,7 @@ void show_help() {
            "         be generated.\n"
            "\n"
            "  --sweep " UNDERLINE("M:S:E:D") "\n"
-           "         Sets the beam to scan mode\n\n"
+           "         Sets the beam to scan mode.\n"
            "         The argument " UNDERLINE("M:S:E:D") " are parameters for mode, start, end, and delta.\n"
            "            M = R for RHI (range height indicator) mode\n"
            "            M = P for RHI (range height indicator) mode\n"
@@ -145,36 +145,39 @@ void show_help() {
            "  -t " UNDERLINE("period") "\n"
            "         Sets the pulse repetition time to " UNDERLINE("period") " seconds.\n"
            "\n"
-           "  -o     Sets the program to produce an output file. The filename is automatically\n"
-           "         derived based on the current time and an output file with name like\n"
+           "  -o     Sets the program to produce an output file. The filename is derived\n"
+           "         based on the current date and time and an output file with name like\n"
            "         sim-20160229-143941-E03.0.iq will be placed in the ~/Downloads folder.\n"
            "\n"
            "  -p " UNDERLINE("count") "\n"
            "         Sets the number of pulses to " UNDERLINE("count") ". There is no\n"
            "         hard boundaries on which pulse marks the end of a sweep. If user wants\n"
-           "         a sweep that contain 2400 pulses, it can be accomplished by setting the\n"
-           "         sweep start = -12 end = +12, delta = 0.01, and combine with this option\n"
-           "         -p 2400 for a sweep of 2400 pulses.\n"
+           "         a sweep that contain 2400 pulses, it can be accomplished by setting\n"
+           "         sweep mode = P, start = -12, end = +12, delta = 0.01, and combine with\n"
+           "         option -p 2400 for a simulation session of 2400 pulses.\n"
            "\n"
            "  -f " UNDERLINE("count") "\n"
-           "         Sets the number of frames to " UNDERLINE("count") ". This option is\n"
-           "         identical -p. See -p for more information.\n"
+           "         Sets the number of frames to " UNDERLINE("count") ". This option is identical -p.\n"
+           "         See -p for more information.\n"
            "\n"
            "  --lambda " UNDERLINE("wavelength") "\n"
            "         Sets the radar wavelength to " UNDERLINE("wavelength") " meters.\n"
            "\n\n"
            "EXAMPLES\n"
            "     The following simulates a vortex and creates a PPI scan data using default\n"
-           "     scan parameters. This allows you quickly check if the tools works.\n"
+           "     scan parameters. This allows you quickly check if the tools works. An\n"
+           "     output file will be generated in the ~/Downloads folder.\n"
            "           " PROGNAME " -o\n"
            "\n"
-           "     The following simulates a vortex and creates a PPI scan data using default\n"
+           "     The following simulates a vortex and creates a PPI scan data using\n"
            "     scan parameter: mode = 'P' (PPI), start = -12, end = +12, delta = 0.01,\n"
-           "     prt = 0.001, el = 3.0, p = 2400 (number of pulses)\n"
+           "     el = 3.0 deg, p = 2400 (number of pulses).\n"
            "           " PROGNAME " -e 3.0 --sweep P:-12:12:0.01 -p 2400 -o\n"
            "\n"
-           "     The following simulates a vortex and creates a RHI scan in [0, 12] degrees\n"
-           "           " PROGNAME " -a 1.0 --sweep R:0:12:0.01 -p 2400 -o\n"
+           "     The following simulates a vortex and creates an RHI scan data using\n"
+           "     scan parameters: mode = 'R' (RHI), start = 0, end = 12, delta = 0.01,\n"
+           "     az = 1.0 deg, p = 1200.\n"
+           "           " PROGNAME " -a 1.0 --sweep R:0:12:0.01 -p 1200 -o\n"
            "\n"
            );
 }
@@ -217,6 +220,8 @@ int main(int argc, char *argv[]) {
     int warm_up_pulses = 2000;
     
     memset(debris_count, 0, RS_MAX_DEBRIS_TYPES * sizeof(int));
+
+    // ---------------------------------------------------------------------------------------------------------------
 
     static struct option long_options[] = {
         {"alarm"      , no_argument      , 0, 'A'}, // ASCII 65 - 90 : A - Z
@@ -332,6 +337,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    // ---------------------------------------------------------------------------------------------------------------
+
     // Preview only
     if (preview_only) {
         #define FLT_FMT  "\033[1;33m%+6.2f\033[0m"
@@ -354,6 +361,8 @@ int main(int argc, char *argv[]) {
         }
         return EXIT_SUCCESS;
     }
+
+    // ---------------------------------------------------------------------------------------------------------------
 
     // Initialize the RS framework
     RSHandle *S;
@@ -499,9 +508,9 @@ int main(int argc, char *argv[]) {
                 prog =  (float)k / num_pulses * 100.0f;
                 fps = 100.0f / dt;
                 eta = (float)(num_pulses - k) / fps;
-                fprintf(stderr, "k = %d    el = %6.2f deg   az = %5.2f deg   %.2f fps  progress: \033[1;33m%.2f%%\033[0m   eta = %.0f second%s   \r", k, scan.el, scan.az, fps, prog, eta, eta > 1.5f ? "s" : "");
+                fprintf(stderr, "k %5d   e%6.2f, a%5.2f   %.2f fps  \033[1;33m%.2f%%\033[0m   eta %.0f second%s   \r", k, scan.el, scan.az, fps, prog, eta, eta > 1.5f ? "s" : "");
             } else {
-                fprintf(stderr, "k = %4d   el = %6.2f deg   az = %5.2f deg\r", k, scan.el, scan.az);
+                fprintf(stderr, "k %5d   e%6.2f, az%5.2f\r", k, scan.el, scan.az);
             }
         }
         RS_set_beam_pos(S, scan.az, scan.el);
