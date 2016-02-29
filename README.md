@@ -60,11 +60,13 @@ The extracted folder `tables` can be placed in one of the following locations:
 
 ### Using the Radar Simulation (RS) Framework ###
 
-The simulation framework is written is plain C for performance and portability. All calculations are implemented within RS framework with functions prefix RS. To include the RS framework, there is only one header, i.e., `rs.h` is needed. The following codes create a simple simulation domain:
+The simulation framework is written is plain C for performance and portability. All calculations are implemented within RS framework with functions prefix RS. To include the RS framework, there is only one header, i.e., `rs.h` is needed. The following example codes create a simple simulation domain and emulate a PPI scan:
 
     #include "rs.h"
 
     int main(int argc, char *argv[]) {
+
+        int k = 0;
 
         RSHandle  *S;
         ADMHandle *A;
@@ -100,49 +102,91 @@ The simulation framework is written is plain C for performance and portability. 
         }
 
         // Set up the parameters: use the setter functions to change the state.
-        RS_set_prt(S, 0.05f);
+        RS_set_antenna_params(S, 1.0f, 44.5f);
 
-        RS_set_antenna_params(S, 1.0f, 44.5f);                // 1.0-deg, 44.5 dBi gain
+        RS_set_tx_params(S, 0.2e-6f, 50.0e3f);
 
-        RS_set_tx_params(S, 30.0f * 2.0f / 3.0e8f, 10.0e3);   // Resolution in m, power in W
+        RS_set_prt(S, 1.0e-3f);
 
+        // Set one wind table
+        RS_set_vel_data_to_LES_table(S, LES_get_frame(L, k));
+
+        // Set the first debris type to be square plate
+        RS_set_adm_data_to_ADM_table(S, ADM_get_table(A, ADMConfigSquarePlate));
+
+        // Set the first debris type to have RCS of a leaf
+        RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigLeaf));
+
+        // Set the first debris type to have a population of 1024
+        RS_set_debris_count(S, 1, 1024);
+
+        // After the wind table is set, we can use the API to suggest the optimal scan box
+        RSBox box = RS_suggest_scan_domain(S, 16);
+
+        // Revise to the GPU preferred counts if there is no strict requirements on the debris count
+        RS_revise_debris_counts_to_gpu_preference(S);
+
+        // Set the scan box
         RS_set_scan_box(S,
-            10.0e3, 15.0e3, 250.0f,  // Range in between 10,000 and 15,000 m, 250-m spacing
-            -10.0f, 10.0f, 1.0f,     // Azimuth in between -10.0 and +10.0 deg, 1.0-deg spacing
-            0.0f, 8.0f, 1.0f);       // Elevation in between 0.0 and 8.0 deg, 1.0-deg spacing
+            box.origin.r, box.origin.r + box.size.r, 15.0f,   // Range
+            box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
+            box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
 
-        RS_set_vel_data_to_LES_table(S, LES_get_frame(L, 0));
-
-        RS_set_adm_data_to_ADM_table(S, ADM_get_table(A, ADMModelPlate));
-
-        RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSLeaf));
+        // Set the DSD profile
+        RS_set_dsd_to_mp(S);
 
         // Populate the domain with scatter bodies.
         // This is also the function that triggers kernel compilation, GPU memory allocation and
         // upload all the parameters to the GPU.
         RS_populate(S);
 
-        // Now, we are ready to make pulse(s)
-        for (int k=0; k<10; k++) {
-            RS_set_beam_pos(S, 15.0f, 10.0f);
-            RS_advance_time(S);
+        // Show some basic info
+        const int num_pulses = 1200;
+        printf("%s : Emulating %s frame%s with %s scatter bodies\n",
+            now(), commaint(num_pulses), num_pulses>1?"s":"", commaint(S->num_scats));
+
+        // At this point, we are ready to bake
+
+        // ---------------------------------------------------------------------------------------------------------------
+
+        float el = 3.0f;
+        float az = -12.0f;
+
+        // Now we bake
+        for (k = 0; k < num_pulses; k++) {
+            RS_set_beam_pos(S, az, el);
             RS_make_pulse(S);
-            RS_download_pulse_only(S);
+            RS_advance_time(S);
+
+            // This makes az go from -12 to +12.
+            az = az + 0.02f;
+
+            // Show some output to the screen so we know everything is okay.
+            if (k % 300 == 0) {
+                fprintf(stderr, "Pulse %d\n", k);
+            }
         }
 
         // Retrieve the results from the GPUs
-        RS_download(S);        
+        RS_download(S);
 
-        printf("Final scatter body positions:\n");
+        printf("%s : Final scatter body positions, velocities and orientations:\n", now());
 
         RS_show_scat_pos(S);
+
+        RS_show_scat_sig(S);
 
         RS_free(S);
 
         LES_free(L);
 
+        ADM_free(A);
+
+        RCS_free(R);
+
         return EXIT_SUCCESS;
     }
+
 
 Assuming you already have the library compile successfully and the archived library is placed under `lib/librs.a`, this example can be compiled on a Mac using the following command:
 
