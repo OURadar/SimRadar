@@ -22,6 +22,7 @@ typedef struct _les_mem {
 	LESGrid   *data_grid;
 	int       ibuf;
 	float     tr;
+    float     tp;
     float     v0;
     float     ax;             // Base value "a" in geometric series a r ^ n in x direction
     float     ay;             // Base value "a" in geometric series a r ^ n in y direction
@@ -205,7 +206,8 @@ LESTable *LES_table_create(const LESGrid *grid) {
 	table->nz = grid->nz;
 	table->nn = grid->nz * grid->ny * grid->nx;
 	table->nt = LES_file_nblock;
-    table->tr = 0.0f;
+    table->tr = 1.0f;
+    table->tp = 5.0f;
 	table->data.x = grid->x;
 	table->data.y = grid->y;
 	table->data.z = grid->z;
@@ -344,6 +346,7 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
         h->rx = 1.0212f;
         h->ry = 1.0212f;
         h->rz = 1.05f;
+        h->tp = 2.0f;
     } else if (!strcmp(config, LESConfigTwoCell)) {
         h->v0 = 225.0f;
         h->ax = 1.0f;
@@ -352,6 +355,7 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
         h->rx = 1.0f;
         h->ry = 1.0f;
         h->rz = 1.0f;
+        h->tp = 5.0f;
     }
     
 //    char grid_file[1024];
@@ -405,7 +409,7 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
     // printf("file count = %zu    nvol = %zu\n", h->nfiles, h->nvol);
     
 	// Allocate data boxes
-	for (int i=0; i<LES_num; i++) {
+	for (int i = 0; i < LES_num; i++) {
 		h->data_boxes[i] = LES_table_create(h->data_grid);
         if (h->data_boxes[i] == NULL) {
             fprintf(stderr, "[LES] LES_table_create() returned a NULL.\n");
@@ -463,7 +467,7 @@ LESTable *LES_get_frame(const LESHandle *i, const int n) {
 		int saved_ibuf = h->ibuf;
 
 		// Read in all blocks since there is only a small number of them.
-		for (int b=0; b<LES_file_nblock; b++) {
+		for (int b = 0; b < LES_file_nblock; b++) {
 
             #ifdef DEBUG
 			printf("LES DEBUG : Reading new LES table in data_boxes[%d] ...\n", h->ibuf);
@@ -480,6 +484,8 @@ LESTable *LES_get_frame(const LESHandle *i, const int n) {
             table->rx = h->rx;
             table->ry = h->ry;
             table->rz = h->rz;
+            table->tp = h->tp;
+            table->tr = h->tr;
             
             // Timestamp from the file
 			fread(&time, sizeof(float), 1, fid);
@@ -488,7 +494,6 @@ LESTable *LES_get_frame(const LESHandle *i, const int n) {
 			// printf("time = %.4f\n", time * v0 / g);
 
 			//LES_show_grid_summary(h->data_grid);
-			
 
 			fread(table->data.u, sizeof(float), table->nn, fid);
 			fseek(fid, 2 * sizeof(int32_t), SEEK_CUR);

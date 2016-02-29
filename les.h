@@ -52,6 +52,7 @@ typedef struct _les_table {
 	uint32_t  nn;             // Number of cells in all directions combined
 	uint32_t  nt;             // Number of time steps
 	float     tr;             // Replenishing time constant
+    float     tp;             // Time period of a table entry
     float     ax;             // Base value "a" in geometric series a r ^ n in x direction
     float     ay;             // Base value "a" in geometric series a r ^ n in y direction
     float     az;             // Base value "a" in geometric series a r ^ n in z direction

@@ -4037,15 +4037,16 @@ void RS_advance_time(RSHandle *H) {
 
     const int v = H->vel_idx;
 
-#if defined (__APPLE__) && defined (_SHARE_OBJ_)
-
+    // Advance to next wind table when the time comes
     if (H->sim_tic >= H->sim_toc) {
-		H->sim_toc = H->sim_tic + (size_t)(5.0f / H->params.prt);
+        H->sim_toc = H->sim_tic + (size_t)(H->vel_desc.tp / H->params.prt);
         H->vel_idx = H->vel_idx == H->vel_count - 1 ? 0 : H->vel_idx + 1;
         if (H->verb > 2) {
-            rsprint("Wind table advanced. vel_idx = %d", H->vel_idx);
+            rsprint("Wind table advanced. vel_idx = %d   ( %.2f / %.4f )", H->vel_idx, H->vel_desc.tp, H->params.prt);
         }
     }
+    
+#if defined (__APPLE__) && defined (_SHARE_OBJ_)
 
     #if defined (_DUMMY_)
     
