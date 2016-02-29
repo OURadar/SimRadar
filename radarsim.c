@@ -169,6 +169,9 @@ void show_help() {
            "     prt = 0.001, el = 3.0, p = 2400 (number of pulses)\n"
            "           " PROGNAME " -e 3.0 --sweep P:-12:12:0.01 -p 2400 -o\n"
            "\n"
+           "     The following simulates a vortex and creates a RHI scan in [0, 12] degrees\n"
+           "           " PROGNAME " -a 1.0 --sweep R:0:12:0.01 -p 2400 -o\n"
+           "\n"
            );
 }
 
