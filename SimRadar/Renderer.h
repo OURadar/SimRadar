@@ -7,8 +7,8 @@
 
 #import <Foundation/Foundation.h>
 #import <OpenCL/OpenCL.h>
-//#import "glUtil.h"
 #import "GLText.h"
+#import "GLOverlay.h"
 
 #define RENDERER_NEAR_RANGE                 100.0f
 #define RENDERER_FAR_RANGE                  100000.0f
@@ -138,7 +138,7 @@ enum RendererLineSegment {
     
     BOOL applyVFX;
     BOOL colorbarNeedsUpdate;
-    BOOL blurSmallScatterers;
+    BOOL fadeSmallScatterers;
     BOOL showDebrisAttributes;
 	
 	@private
@@ -169,6 +169,8 @@ enum RendererLineSegment {
     GLfloat theta, phase;
 
     GLText *textRenderer;
+    
+    GLOverlay *overlayRenderer;
 
     char statusMessage[16][256];
 
@@ -187,7 +189,7 @@ enum RendererLineSegment {
 @property (nonatomic, retain) id<RendererDelegate> delegate;
 @property (nonatomic, readonly) GLsizei width, height;
 @property (nonatomic) GLfloat beamAzimuth, beamElevation;
-@property (nonatomic) BOOL showDebrisAttributes, blurSmallScatterers;
+@property (nonatomic) BOOL showDebrisAttributes, fadeSmallScatterers;
 
 - (id)initWithDevicePixelRatio:(GLfloat)pixelRatio;
 

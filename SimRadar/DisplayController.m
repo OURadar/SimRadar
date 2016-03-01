@@ -475,9 +475,9 @@ NSWindow *standardWindow;
         [glView.renderer setShowDebrisAttributes:FALSE];
     }
     if (trans == 'T') {
-        [glView.renderer setBlurSmallScatterers:TRUE];
+        [glView.renderer setFadeSmallScatterers:TRUE];
     } else {
-        [glView.renderer setBlurSmallScatterers:FALSE];
+        [glView.renderer setFadeSmallScatterers:FALSE];
     }
     [glView.renderer setSubtitleString:[NSString stringWithFormat:@"Draw mode %c%c%c (%d)", ind, trans, mode, mkey]];
 }

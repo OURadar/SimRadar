@@ -48,7 +48,7 @@ unsigned int grayToBinary(unsigned int num)
 @synthesize resetModelRotate;
 @synthesize width, height;
 @synthesize beamAzimuth, beamElevation;
-@synthesize showDebrisAttributes, blurSmallScatterers;
+@synthesize showDebrisAttributes, fadeSmallScatterers;
 
 #pragma mark -
 #pragma mark Properties
@@ -817,6 +817,8 @@ unsigned int grayToBinary(unsigned int num)
 
     textRenderer = [GLText new];
     
+    overlayRenderer = [GLOverlay new];
+    
 #ifdef DEBUG_GL
 	NSLog(@"VAOs = bodyRenderer:%d  instancedGeometryRenderer = %d  lineRenderer %d  anchorRenderer %d",
 		  bodyRenderer[0].vao, instancedGeometryRenderer.vao, lineRenderer.vao, anchorRenderer.vao);
@@ -826,7 +828,6 @@ unsigned int grayToBinary(unsigned int num)
     
     // Some OpenGL features
 	glEnable(GL_BLEND);
-//    glEnable(GL_DEPTH_TEST);
     glEnable(GL_TEXTURE_2D);
     glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
@@ -1151,12 +1152,7 @@ unsigned int grayToBinary(unsigned int num)
         glUniform4f(bodyRenderer[i].sizeUI, pixelsPerUnit * devicePixelRatio, 1.0f, 1.0f, 1.0f);
         glUniform4f(bodyRenderer[i].colorUI, bodyRenderer[i].colormapIndexNormalized, 1.0f, 1.0f, backgroundOpacity);
         glUniformMatrix4fv(bodyRenderer[i].mvpUI, 1, GL_FALSE, modelViewProjection.m);
-//        if (debrisRenderer[0].count > 100000) {
-//            glUniform1i(bodyRenderer[i].pingPongUI, 1);
-//        } else {
-//            glUniform1i(bodyRenderer[i].pingPongUI, 0);
-//        }
-        glUniform1i(bodyRenderer[i].pingPongUI, blurSmallScatterers);
+        glUniform1i(bodyRenderer[i].pingPongUI, fadeSmallScatterers);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, bodyRenderer[i].textureID);
         glActiveTexture(GL_TEXTURE1);
@@ -1664,7 +1660,7 @@ unsigned int grayToBinary(unsigned int num)
 
 
 - (void)toggleBlurSmallScatterer {
-    blurSmallScatterers = !blurSmallScatterers;
+    fadeSmallScatterers = !fadeSmallScatterers;
 }
 
 

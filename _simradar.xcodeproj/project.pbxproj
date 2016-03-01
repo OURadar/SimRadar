@@ -15,6 +15,7 @@
 		B518D42E1C84A0DF00BAF67D /* les.c in Sources */ = {isa = PBXBuildFile; fileRef = B5F3C31C18F2F86700092A72 /* les.c */; };
 		B518D42F1C84A0E200BAF67D /* adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B11A6D522F00F40660 /* adm.c */; };
 		B518D4301C84A0E500BAF67D /* rcs.c in Sources */ = {isa = PBXBuildFile; fileRef = B55716851AB7519D001984E0 /* rcs.c */; };
+		B518D4311C85DBED00BAF67D /* GLOverlay.m in Sources */ = {isa = PBXBuildFile; fileRef = B500A4871C2F418F00CCA108 /* GLOverlay.m */; };
 		B5201C6F1C22396A00EACF53 /* SplashController.m in Sources */ = {isa = PBXBuildFile; fileRef = B5201C6E1C22396A00EACF53 /* SplashController.m */; };
 		B5201C701C22396A00EACF53 /* SplashController.m in Sources */ = {isa = PBXBuildFile; fileRef = B5201C6E1C22396A00EACF53 /* SplashController.m */; };
 		B5201C721C2239D100EACF53 /* Splash.xib in Resources */ = {isa = PBXBuildFile; fileRef = B5201C711C2239D100EACF53 /* Splash.xib */; };
@@ -972,6 +973,7 @@
 				B57241C01C0CA21C00B76BCB /* SimPoint.m in Sources */,
 				B57241C11C0CA21F00B76BCB /* FullscreenWindow.m in Sources */,
 				B57241C21C0CA22200B76BCB /* GLText.m in Sources */,
+				B518D4311C85DBED00BAF67D /* GLOverlay.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1022,7 +1024,6 @@
 				B56C7FA31ADC221500552B1E /* rcs.c in Sources */,
 				B5EF317E18204B5C002DDEFC /* main.m in Sources */,
 				B5EF318518204B5C002DDEFC /* AppDelegate.m in Sources */,
-				B500A4881C2F418F00CCA108 /* GLOverlay.m in Sources */,
 				B5EF31C51820619E002DDEFC /* RootController.m in Sources */,
 				B50CD9EE1BE8117E0034B5BB /* Recorder.m in Sources */,
 				B5576B8B18315B3B0012E6F5 /* SimPoint.m in Sources */,
@@ -1031,6 +1032,7 @@
 				B5201C6F1C22396A00EACF53 /* SplashController.m in Sources */,
 				B5EF31AE1820526F002DDEFC /* SimGLView.m in Sources */,
 				B5FDCAE519D453B10016C2F7 /* GLText.m in Sources */,
+				B500A4881C2F418F00CCA108 /* GLOverlay.m in Sources */,
 				B5A5142718328A2F00921ACE /* FullscreenWindow.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

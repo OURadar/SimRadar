@@ -25,10 +25,22 @@
         bitmapHeight = 1024 * devicePixelRatio;
         bitmap = (GLubyte *)malloc(bitmapWidth * bitmapHeight * 4);
         
-        
+        NSLog(@"GLOverlay allocated");
     }
     return self;
 }
+
+
+- (id)init {
+    return [self initWithSize:NSMakeSize(300.0f, 500.0f)];
+}
+
+
+- (void)dealloc {
+    free(bitmap);
+    [super dealloc];
+}
+
 
 - (int)updateGLTexture {
     // Include vertex & fragment shader GLSL here
