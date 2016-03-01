@@ -93,4 +93,6 @@
 - (void)increaseDemoRange;
 - (void)decreaseDemoRange;
 
+- (NSString *)simulationDescription;
+
 @end

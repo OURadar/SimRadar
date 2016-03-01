@@ -439,4 +439,9 @@
     S->draw_mode.s1 -= 5;
 }
 
+- (NSString *)simulationDescription
+{
+    return [NSString stringWithFormat:@"%s", RS_simulation_description(S)];
+}
+
 @end

@@ -1422,15 +1422,12 @@ unsigned int grayToBinary(unsigned int num)
 
     glClear(GL_DEPTH_BUFFER_BIT);
 
-    //glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
-
     if (hudConfigGray & hudConfigShowAnchors) {
         // Anchors
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glBindVertexArray(anchorRenderer.vao);
         glUseProgram(anchorRenderer.program);
         glUniform4f(anchorRenderer.colorUI, 0.4f, 1.0f, 1.0f, phase);
-        //glUniformMatrix4fv(anchorRenderer.mvUI, 1, GL_FALSE, modelView.m);
         glUniformMatrix4fv(anchorRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, anchorRenderer.textureID);
@@ -1466,6 +1463,8 @@ unsigned int grayToBinary(unsigned int num)
 #endif
     
     if (hudConfigGray & hudConfigShowRadarView) {
+        [overlayRenderer draw];
+    
         snprintf(statusMessage[4], 128, "EL %.2f   AZ %.2f", beamElevation / M_PI * 180.0f, beamAzimuth / M_PI * 180.0f);
         [textRenderer drawText:statusMessage[4] origin:NSMakePoint(hudOrigin.x + 15.0f, hudOrigin.y + 15.0f) scale:0.25f];
     }
@@ -1569,6 +1568,8 @@ unsigned int grayToBinary(unsigned int num)
     frameRenderer.modelViewProjectionOffOne = GLKMatrix4Multiply(frameRenderer.modelViewProjection, mat);
     
     [textRenderer setModelViewProjection:hudProjection];
+    
+    [overlayRenderer setModelViewProjection:hudProjection];
 }
 
 
@@ -1738,6 +1739,24 @@ unsigned int grayToBinary(unsigned int num)
 
 - (void)cycleFBOReverse {
     ifbo = ifbo == 0 ? 4 : ifbo - 1;
+}
+
+
+- (void)setOverlayString:(NSString *)string {
+    [overlayRenderer beginCanvas];
+    
+    NSDictionary *labelAtts = [NSDictionary dictionaryWithObjectsAndKeys:
+                               [NSFont fontWithName:@"Menlo Bold" size:11.0f], NSFontAttributeName,
+                               [NSColor colorWithRed:0.5f green:0.9f blue:1.0f alpha:1.0f], NSForegroundColorAttributeName,
+                               nil];
+    
+    //[string sizeWithAttributes:labelAtts];
+    
+    [string drawAtPoint:CGPointMake(15.0, 15.0) withAttributes:labelAtts];
+    
+    [overlayRenderer endCanvas];
+    
+    overlayNeedsUpdate = true;
 }
 
 @end

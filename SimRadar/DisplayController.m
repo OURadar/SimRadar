@@ -103,6 +103,7 @@ NSWindow *standardWindow;
 	NSLog(@"Domain center @ [ X %.2f  Y %.2f  Z %.2f ]", domain.origin.x + 0.5f * domain.size.x,
 		  domain.origin.y + 0.5f * domain.size.y, domain.origin.z + 0.5f * domain.size.z);
 #endif
+    
 }
 
 - (SimPoint *)sim

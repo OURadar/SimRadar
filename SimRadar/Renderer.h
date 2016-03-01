@@ -104,7 +104,7 @@ enum RendererLineSegment {
 
 @interface Renderer : NSObject {
 	
-    NSString *titleString;
+    NSString *titleString, *subtitleString, *overlayString;
     
 	float GLSLVersion;
 	
@@ -151,6 +151,7 @@ enum RendererLineSegment {
     BOOL vbosNeedUpdate;
     BOOL viewParametersNeedUpdate;
     BOOL statusMessageNeedsUpdate;
+    BOOL overlayNeedsUpdate;
     GLchar spinModel;
     
     RenderResource bodyRenderer[8];
@@ -233,5 +234,7 @@ enum RendererLineSegment {
 - (void)cycleReverseHUDConfig;
 
 - (void)cycleVFX;
+
+- (void)setOverlayString:(NSString *)string;
 
 @end

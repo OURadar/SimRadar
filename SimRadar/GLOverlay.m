@@ -14,25 +14,38 @@
 
 #import "GLOverlay.h"
 
+// Some private functions
+@interface GLOverlay()
+- (void)buildShaders;
+@end
+
+
 @implementation GLOverlay
 
-- (id)initWithSize:(NSSize)size {
+@synthesize modelViewProjection;
+
+- (id)initWithRect:(NSRect)rect {
     self = [super init];
     if (self) {
         // Initialize a Core-graphic context of given size
+        drawRect = rect;
         devicePixelRatio = [[NSScreen mainScreen] backingScaleFactor];
-        bitmapWidth = 1024 * devicePixelRatio;
-        bitmapHeight = 1024 * devicePixelRatio;
+        bitmapWidth = rect.size.width * devicePixelRatio;
+        bitmapHeight = rect.size.height * devicePixelRatio;
         bitmap = (GLubyte *)malloc(bitmapWidth * bitmapHeight * 4);
+                
+        [self buildShaders];
         
-        NSLog(@"GLOverlay allocated");
+//        [self beginCanvas];
+//        [self drawSomething];
+//        [self endCanvas];
     }
     return self;
 }
 
 
 - (id)init {
-    return [self initWithSize:NSMakeSize(300.0f, 500.0f)];
+    return [self initWithRect:NSMakeRect(20.0f, 60.0f, 410.0f, 340.0f)];
 }
 
 
@@ -48,45 +61,114 @@
 }
 
 
-- (void)drawSomething {
-    NSAutoreleasePool *pool = [NSAutoreleasePool new];
+- (void)beginCanvas {
+    // Create a separate pool for resources in this class so all of them are released when we are done drawing
+    drawPool = [NSAutoreleasePool new];
 
-    // Create a bitmap canvas, draw all the symbols
-    //const float w = (float)bitmapWidth / devicePixelRatio;
-    //const float h = (float)bitmapHeight / devicePixelRatio;
-    
     // Use Core Graphics to draw a texture atlas
     CGRect rect = CGRectMake(0.0f, 0.0f, (CGFloat)bitmapWidth, (CGFloat)bitmapHeight);
-    NSImage *image = [[NSImage alloc] initWithSize:rect.size];
+    image = [[NSImage alloc] initWithSize:rect.size];
     [image lockFocus];
     
     CGContextRef context = (CGContextRef)[[NSGraphicsContext currentContext] graphicsPort];
-
+    
     // Black background
-    CGContextSetFillColorWithColor(context, [NSColor blackColor].CGColor);
+    CGContextSetFillColorWithColor(context, [NSColor colorWithWhite:0.0f alpha:0.6f].CGColor);
     CGContextFillRect(context, rect);
-    
+}
+
+- (void)endCanvas {
+    CGRect rect = CGRectMake(0.5f, 0.5f, (CGFloat)bitmapWidth - 1.0f, (CGFloat)bitmapHeight - 1.0f);
+    CGContextRef context = (CGContextRef)[[NSGraphicsContext currentContext] graphicsPort];
+
+    CGContextSetStrokeColorWithColor(context, [NSColor whiteColor].CGColor);
     CGContextSetLineWidth(context, 1.0f);
+
+    CGContextStrokeRect(context, rect);
     
+
+    [image unlockFocus];
+    
+    // A bunch of filtering / composing, like Photoshop can be inserted here
+    
+    CIImage *result = [[CIImage alloc] initWithBitmapImageRep:[NSBitmapImageRep imageRepWithData:[image TIFFRepresentation]]];
+    NSBitmapImageRep *bitmapImageRep = [[NSBitmapImageRep alloc] initWithCIImage:result];
+    memcpy(bitmap, [bitmapImageRep bitmapData], bitmapWidth * bitmapHeight * 4);
+    [bitmapImageRep release];
+    [result release];
+    
+    // All the CG resources are no longer needed from here on
+    [drawPool release];
+    
+    // Allocate the texture to GPU
+    float pos[] = {
+        0.0f, 0.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 1.0f,
+        1.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, 1.0f, 1.0f
+    };
+    for (int k = 0; k < 24; k += 4) {
+        pos[k    ] = pos[k    ] * drawRect.size.width + drawRect.origin.x;        // x
+        pos[k + 1] = pos[k + 1] * drawRect.size.height + drawRect.origin.y;       // y
+        pos[k + 3] = (1.0f - pos[k + 3]);                                         // t
+    }
+    memcpy(textureAnchors, pos, 24 * sizeof(float));
+    
+    canvasNeedsUpdate = true;
+}
+
+
+- (void)drawSomething {
     NSDictionary *labelAtts = [NSDictionary dictionaryWithObjectsAndKeys:
-                               [NSFont systemFontOfSize:10.0f], NSFontAttributeName,
-                               [NSColor colorWithRed:0.0f green:0.0f blue:1.0f alpha:1.0f], NSForegroundColorAttributeName,
+                               [NSFont systemFontOfSize:18.0f], NSFontAttributeName,
+                               [NSColor colorWithRed:0.0f green:1.0f blue:1.0f alpha:1.0f], NSForegroundColorAttributeName,
                                nil];
 
-    NSString *label = @"Hello There";
+    NSString *label = @"Hello There\nI'm the new overlay for the renderer.";
     
     [label sizeWithAttributes:labelAtts];
     
     [label drawAtPoint:CGPointMake(10.0, 10.0) withAttributes:labelAtts];
-
-
-    [pool release];
-}
-- (void)drawAtRect:(NSRect)rect {
-    
 }
 
-- (void)buildTexture {
+
+- (void)draw {
+    glBindVertexArray(vao);
+    glUseProgram(program);
+    if (canvasNeedsUpdate) {
+        canvasNeedsUpdate = false;
+        if (textureName) {
+            glDeleteTextures(1, &textureName);
+        }
+        glGenTextures(1, &textureName);
+        glBindTexture(GL_TEXTURE_2D, textureName);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bitmapWidth, bitmapHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, bitmap);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        
+        if (vbo[0]) {
+            glDeleteBuffers(1, vbo);
+        }
+        glGenBuffers(1, vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+        glBufferData(GL_ARRAY_BUFFER, 24 * sizeof(float), textureAnchors, GL_STATIC_DRAW);
+        glVertexAttribPointer(positionAI, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), NULL);
+        glEnableVertexAttribArray(positionAI);
+        glVertexAttribPointer(textureCoordAI, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
+        glEnableVertexAttribArray(textureCoordAI);
+    }
+    glUniformMatrix4fv(mvpUI, 1, GL_FALSE, modelViewProjection.m);
+    glBindTexture(GL_TEXTURE_2D, textureName);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
+
+- (void)buildShaders {
     GLint ret;
     GLuint shader;
     
@@ -99,7 +181,6 @@
     char *vertexShaderSource =
     "#version 410\n"
     "uniform mat4 uMVP;\n"
-    "uniform vec4 uColor;\n"
     "layout(location = 0) in vec3 position;\n"
     "layout(location = 1) in vec2 texCoordV;\n"
     "out vec4 color;\n"
@@ -107,18 +188,16 @@
     "void main() {\n"
     "    gl_Position = uMVP * vec4(position, 1.0);\n"
     "    texCoord = texCoordV;\n"
-    "    color = uColor;\n"
     "}\n";
     
     // In-line source code of the fragment shader
     char *fragmentShaderSource =
     "#version 410\n"
-    "in vec4 color;\n"
     "in vec2 texCoord;\n"
     "out vec4 fragColor;\n"
     "uniform sampler2D uTexture;\n"
     "void main() {\n"
-    "    fragColor = color * texture(uTexture, texCoord);\n"
+    "    fragColor = texture(uTexture, texCoord);\n"
     "}\n";
     
     //	printf("-----------------\n%s\n-----------------\n", vertexShaderSource);
@@ -186,12 +265,8 @@
     // Now, we can use it
     glUseProgram(program);
 
-    // Get the uniforms
+    // Get the uniforms and attributes
     mvpUI = glGetUniformLocation(program, "uMVP");
-    colorUI = glGetUniformLocation(program, "uColor");
-    textureUI = glGetUniformLocation(program, "uTexture");
-    
-    // Get the attributes
     positionAI = glGetAttribLocation(program, "position");
     textureCoordAI = glGetAttribLocation(program, "texCoordV");
 }

@@ -418,6 +418,7 @@ typedef struct _rs_handle {
     RSfloat                dsd_lambda;       // DSD parameter for MP, gamma
     RSfloat                dsd_mu;           // DSD pameter for gamma
     int                    dsd_count;
+    size_t                 *dsd_pop;
     RSfloat                *dsd_pdf;
     RSfloat                *dsd_cdf;
     RSfloat                *dsd_r;           // DSD radii
@@ -553,5 +554,7 @@ void RS_show_pulse(RSHandle *H);
 
 RSBox RS_suggest_scan_domain(RSHandle *H, const int nbeams);
 void RS_revise_debris_counts_to_gpu_preference(RSHandle *H);
+
+char *RS_simulation_description(RSHandle *H);
 
 #endif

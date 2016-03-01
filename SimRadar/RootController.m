@@ -216,6 +216,10 @@
             GLuint pop = [sim populationForDebris:k];
             [dc.glView.renderer setPopulationTo:pop forDebris:k forDevice:0];
         }
+        
+        // Get some information from the simulator
+        [dc.glView.renderer setOverlayString:sim.simulationDescription];
+        
     } else {
         NSLog(@"No simulation yet.");
     }

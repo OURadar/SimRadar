@@ -1225,6 +1225,13 @@ void RS_free(RSHandle *H) {
 	
     free(H->anchor_pos);
     free(H->anchor_lines);
+
+    if (H->dsd_r != NULL) {
+        free(H->dsd_r);
+        free(H->dsd_pdf);
+        free(H->dsd_cdf);
+        free(H->dsd_pop);
+    }
     
     free(H);
     
@@ -1333,13 +1340,10 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint group_
 
 void RS_init_scat_pos(RSHandle *H) {
     
-    int counts[H->dsd_count];
     int i, k, bin;
     float a;
     
     srand(19760520);
-    
-    memset(counts, 0, H->dsd_count * sizeof(int));
     
     RSVolume domain = RS_get_domain(H);
 
@@ -1427,7 +1431,7 @@ void RS_init_scat_pos(RSHandle *H) {
                     break;
                 }
             }
-            counts[bin]++;
+            H->dsd_pop[bin]++;
             H->scat_pos[i].w = H->dsd_r[bin];                                  // set the drop radius
             H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // set the dsd bin index
         }
@@ -1442,7 +1446,7 @@ void RS_init_scat_pos(RSHandle *H) {
         if (H->verb > 1) {
             rsprint("Actual DSD Specifications:");
             for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
-                printf("                 o %.2f mm - PDF %.5f / %.5f / %d particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)counts[i] / (float)H->num_scats, counts[i]);
+                printf("                 o %.2f mm - PDF %.5f / %.5f / %zu particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->num_scats, H->dsd_pop[i]);
             }
             if (H->dsd_count > 8) {
                 printf("                 o  :      -      :     /  :     /\n");
@@ -1450,7 +1454,7 @@ void RS_init_scat_pos(RSHandle *H) {
                 i = MAX(4, H->dsd_count - 1);
             }
             for (; i < H->dsd_count; i++) {
-                printf("                 o %.2f mm - PDF %.5f / %.5f / %d particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)counts[i] / (float)H->num_scats, counts[i]);
+                printf("                 o %.2f mm - PDF %.5f / %.5f / %zu particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->num_scats, H->dsd_pop[i]);
             }
         }
     }
@@ -2151,12 +2155,14 @@ void RS_set_dsd(RSHandle *H, const float *pdf, const float *diameters, const int
         free(H->dsd_r);
         free(H->dsd_pdf);
         free(H->dsd_cdf);
+        free(H->dsd_pop);
     }
     H->dsd_r = (RSfloat *)malloc(count * sizeof(RSfloat));
     H->dsd_pdf = (RSfloat *)malloc(count * sizeof(RSfloat));
     H->dsd_cdf = (RSfloat *)malloc(count * sizeof(RSfloat));
+    H->dsd_pop = (size_t *)malloc(count * sizeof(size_t));
     
-    if (H->dsd_r == NULL || H->dsd_pdf == NULL || H->dsd_cdf == NULL) {
+    if (H->dsd_r == NULL || H->dsd_pdf == NULL || H->dsd_cdf == NULL || H->dsd_pop == NULL) {
         rsprint("Error. Unable to allocate memory for DSD parameterization.");
         return;
     }
@@ -2164,6 +2170,7 @@ void RS_set_dsd(RSHandle *H, const float *pdf, const float *diameters, const int
     memset(H->dsd_r, 0, count * sizeof(RSfloat));
     memset(H->dsd_pdf, 0, count * sizeof(RSfloat));
     memset(H->dsd_cdf, 0, count * sizeof(RSfloat));
+    memset(H->dsd_pop, 0, count * sizeof(size_t));
     
     RSfloat lo = 0.0f;
     
@@ -4687,4 +4694,37 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
     
     free(table);
     
+}
+
+char *RS_simulation_description(RSHandle *H) {
+    static char msg[2048];
+    
+    sprintf(msg, "User domain @\n  R:[ %5.2f ~ %5.2f ] km\n  E:[ %5.2f ~ %5.2f ] deg\n  A:[ %+6.2f ~ %+6.2f ] deg\n",
+            1.0e-3*H->params.range_start, 1e-3*H->params.range_end,
+            H->params.elevation_start_deg, H->params.elevation_end_deg,
+            H->params.azimuth_start_deg, H->params.azimuth_end_deg);
+    sprintf(msg + strlen(msg), "Work domain @\n  X:[ %.2f ~ %.2f ] m\n  Y:[ %.2f ~ %.2f ] m\n  Z:[ %.2f ~ %.2f ] m\n",
+            H->sim_desc.s[RSSimulationDescriptionBoundOriginX], H->sim_desc.s[RSSimulationDescriptionBoundOriginX] + H->sim_desc.s[RSSimulationDescriptionBoundSizeX],
+            H->sim_desc.s[RSSimulationDescriptionBoundOriginY], H->sim_desc.s[RSSimulationDescriptionBoundOriginY] + H->sim_desc.s[RSSimulationDescriptionBoundSizeY],
+            H->sim_desc.s[RSSimulationDescriptionBoundOriginZ], H->sim_desc.s[RSSimulationDescriptionBoundOriginZ] + H->sim_desc.s[RSSimulationDescriptionBoundSizeZ]);
+    sprintf(msg + strlen(msg), "DSD (%d):\n", H->dsd_count);
+    int i;
+    for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
+        sprintf(msg + strlen(msg), "  o %.2f mm - PDF %.5f / %.5f / %s particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->num_scats, commaint(H->dsd_pop[i]));
+    }
+    if (H->dsd_count > 8) {
+        sprintf(msg + strlen(msg), "  o  :      -      :     /  :     /  :\n");
+        sprintf(msg + strlen(msg), "  o  :      -      :     /  :     /  :\n");
+        i = MAX(4, H->dsd_count - 1);
+    }
+    for (; i < H->dsd_count; i++) {
+        sprintf(msg + strlen(msg), "  o %.2f mm - PDF %.5f / %.5f / %s particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->num_scats, commaint(H->dsd_pop[i]));
+    }
+    
+    RSfloat r = H->params.range_start;
+    RSfloat vol = (H->params.antenna_bw_rad * r) * (H->params.antenna_bw_rad * r) * (H->params.c * H->params.tau * 0.5f);
+    RSfloat nvol = H->sim_desc.s[RSSimulationDescriptionBoundSizeX] * H->sim_desc.s[RSSimulationDescriptionBoundSizeY] * H->sim_desc.s[RSSimulationDescriptionBoundSizeZ] / vol;
+    sprintf(msg + strlen(msg), "nvol = %s x volumes of %s m^3", commafloat(nvol), commafloat(vol));
+
+    return msg;
 }
