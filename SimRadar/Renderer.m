@@ -635,7 +635,7 @@ unsigned int grayToBinary(unsigned int num)
              backgroundOpacity);
     snprintf(statusMessage[2],
              sizeof(statusMessage[2]),
-             "HUD %d%d%d / %d", (hudConfigGray & 0x04) >> 2, (hudConfigGray & 0x02) >> 1, hudConfigGray & 0x01, hudConfigDecimal);
+             "HUD %d%d%d%d / %d", (hudConfigGray & 0x08) >> 3, (hudConfigGray & 0x04) >> 2, (hudConfigGray & 0x02) >> 1, hudConfigGray & 0x01, hudConfigDecimal);
 }
 
 
@@ -706,7 +706,8 @@ unsigned int grayToBinary(unsigned int num)
         resetModelRotate = GLKMatrix4Identity;
         //resetModelRotate = GLKMatrix4MakeRotation(1.0, 0.0f, 1.0f, 1.0f);
         
-        hudConfigGray = hudConfigShowAnchors | hudConfigShowGrid;
+        hudConfigGray = hudConfigShowAnchors | hudConfigShowGrid | hudConfigShowOverlay;
+        hudConfigDecimal = grayToBinary(hudConfigGray);
         
         hudModelViewProjection = GLKMatrix4Identity;
         beamModelViewProjection = GLKMatrix4Identity;
@@ -1462,9 +1463,11 @@ unsigned int grayToBinary(unsigned int num)
     [textRenderer drawText:fpsString origin:NSMakePoint(width - 30.0f, 20.0f) scale:0.333f red:1.0f green:0.9f blue:0.2f alpha:1.0f align:GLTextAlignmentRight];
 #endif
     
-    if (hudConfigGray & hudConfigShowRadarView) {
+    if (hudConfigGray & hudConfigShowOverlay) {
         [overlayRenderer draw];
-    
+    }
+
+    if (hudConfigGray & hudConfigShowRadarView) {
         snprintf(statusMessage[4], 128, "EL %.2f   AZ %.2f", beamElevation / M_PI * 180.0f, beamAzimuth / M_PI * 180.0f);
         [textRenderer drawText:statusMessage[4] origin:NSMakePoint(hudOrigin.x + 15.0f, hudOrigin.y + 15.0f) scale:0.25f];
     }

@@ -1443,6 +1443,20 @@ void RS_init_scat_pos(RSHandle *H) {
         H->scat_pos[2].w = 0.0005f;
         #endif
         
+        sprintf(H->summary + strlen(H->summary),
+            "DSD Specifications:\n");
+        for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
+            sprintf(H->summary + strlen(H->summary), "  o %.2f mm - P %.5f / %s particles\n", 2000.0f * H->dsd_r[i], (float)H->dsd_pop[i] / (float)H->num_scats, commaint(H->dsd_pop[i]));
+        }
+        if (H->dsd_count > 8) {
+            sprintf(H->summary + strlen(H->summary), "  o  :      -      :     /  :     /\n");
+            sprintf(H->summary + strlen(H->summary), "  o  :      -      :     /  :     /\n");
+            i = MAX(4, H->dsd_count - 1);
+        }
+        for (; i < H->dsd_count; i++) {
+            sprintf(H->summary + strlen(H->summary), "  o %.2f mm - P %.5f / %s particles\n", 2000.0f * H->dsd_r[i], (float)H->dsd_pop[i] / (float)H->num_scats, commaint(H->dsd_pop[i]));
+        }
+        
         if (H->verb > 1) {
             rsprint("Actual DSD Specifications:");
             for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
@@ -1718,7 +1732,27 @@ void RS_set_scan_box(RSHandle *H,
     // Typical volume is about 2500 drops per m^2, each scatterer represents N drops (Radar Equation document example)
     float concentration_scale = sqrtf((nvol * vol * 2500.0f) / (float)preferred_n);
     
-	if (H->verb) {
+    sprintf(H->summary,
+            "User domain @\n  R:[ %6.2f ~ %6.2f ] km\n  E:[ %6.2f ~ %6.2f ] deg\n  A:[ %+6.2f ~ %+6.2f ] deg\n",
+            1.0e-3*H->params.range_start, 1e-3*H->params.range_end,
+            H->params.elevation_start_deg, H->params.elevation_end_deg,
+            H->params.azimuth_start_deg, H->params.azimuth_end_deg);
+    sprintf(H->summary + strlen(H->summary),
+            "Work domain @\n  R:[ %6.2f ~ %6.2f ] km  (%d gates)\n  E:[ %6.2f ~ %6.2f ] deg  (%d rays)\n  A:[ %+6.2f ~ %+6.2f ] deg  (%d rays)\n",
+            1.0e-3*r_lo, 1.0e-3*r_hi, H->params.range_count,
+            el_lo, el_hi, nel,
+            az_lo, az_hi, naz);
+    sprintf(H->summary + strlen(H->summary),
+            "==\n  X:[ %7.2f ~ %7.2f ]  (%.2f) m\n  Y:[ %7.2f ~ %7.2f ]  (%.2f) m\n  Z:[ %7.2f ~ %7.2f ]  (%.2f) m\n",
+            xmin, xmax, xmax - xmin,
+            ymin, ymax, ymax - ymin,
+            zmin, zmax, zmax - zmin);
+    sprintf(H->summary + strlen(H->summary),
+            "nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(vol));
+    sprintf(H->summary + strlen(H->summary),
+            "average density = %.2f particles / radar cell\n", (float)preferred_n / nvol);
+    
+    if (H->verb) {
         rsprint("User domain @ R:[ %5.2f ~ %5.2f ] km   E:[ %5.2f ~ %5.2f ] deg   A:[ %+6.2f ~ %+6.2f ] deg\n",
                1.0e-3*H->params.range_start, 1e-3*H->params.range_end,
                H->params.elevation_start_deg, H->params.elevation_end_deg,
@@ -1740,7 +1774,7 @@ void RS_set_scan_box(RSHandle *H,
 		rsprint("Set to GPU preferred %s (%.2f bodies / resolution cell)", commaint(preferred_n), (float)preferred_n / nvol);
         rsprint("Drop concentration scale to be used later = %s", commafloat(concentration_scale));
 	}
-	
+
     // Now, we actually set it to suggested debris count
 	H->num_scats = preferred_n;
 
@@ -4697,34 +4731,9 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
 }
 
 char *RS_simulation_description(RSHandle *H) {
-    static char msg[2048];
-    
-    sprintf(msg, "User domain @\n  R:[ %5.2f ~ %5.2f ] km\n  E:[ %5.2f ~ %5.2f ] deg\n  A:[ %+6.2f ~ %+6.2f ] deg\n",
-            1.0e-3*H->params.range_start, 1e-3*H->params.range_end,
-            H->params.elevation_start_deg, H->params.elevation_end_deg,
-            H->params.azimuth_start_deg, H->params.azimuth_end_deg);
-    sprintf(msg + strlen(msg), "Work domain @\n  X:[ %.2f ~ %.2f ] m\n  Y:[ %.2f ~ %.2f ] m\n  Z:[ %.2f ~ %.2f ] m\n",
-            H->sim_desc.s[RSSimulationDescriptionBoundOriginX], H->sim_desc.s[RSSimulationDescriptionBoundOriginX] + H->sim_desc.s[RSSimulationDescriptionBoundSizeX],
-            H->sim_desc.s[RSSimulationDescriptionBoundOriginY], H->sim_desc.s[RSSimulationDescriptionBoundOriginY] + H->sim_desc.s[RSSimulationDescriptionBoundSizeY],
-            H->sim_desc.s[RSSimulationDescriptionBoundOriginZ], H->sim_desc.s[RSSimulationDescriptionBoundOriginZ] + H->sim_desc.s[RSSimulationDescriptionBoundSizeZ]);
-    sprintf(msg + strlen(msg), "DSD (%d):\n", H->dsd_count);
-    int i;
-    for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
-        sprintf(msg + strlen(msg), "  o %.2f mm - PDF %.5f / %.5f / %s particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->num_scats, commaint(H->dsd_pop[i]));
+    char *c = H->summary + strlen(H->summary) - 1;
+    if (*c == '\n') {
+        *c = 0;
     }
-    if (H->dsd_count > 8) {
-        sprintf(msg + strlen(msg), "  o  :      -      :     /  :     /  :\n");
-        sprintf(msg + strlen(msg), "  o  :      -      :     /  :     /  :\n");
-        i = MAX(4, H->dsd_count - 1);
-    }
-    for (; i < H->dsd_count; i++) {
-        sprintf(msg + strlen(msg), "  o %.2f mm - PDF %.5f / %.5f / %s particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->num_scats, commaint(H->dsd_pop[i]));
-    }
-    
-    RSfloat r = H->params.range_start;
-    RSfloat vol = (H->params.antenna_bw_rad * r) * (H->params.antenna_bw_rad * r) * (H->params.c * H->params.tau * 0.5f);
-    RSfloat nvol = H->sim_desc.s[RSSimulationDescriptionBoundSizeX] * H->sim_desc.s[RSSimulationDescriptionBoundSizeY] * H->sim_desc.s[RSSimulationDescriptionBoundSizeZ] / vol;
-    sprintf(msg + strlen(msg), "nvol = %s x volumes of %s m^3", commafloat(nvol), commafloat(vol));
-
-    return msg;
+    return H->summary;
 }

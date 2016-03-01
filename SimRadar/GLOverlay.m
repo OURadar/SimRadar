@@ -45,7 +45,7 @@
 
 
 - (id)init {
-    return [self initWithRect:NSMakeRect(20.0f, 60.0f, 410.0f, 340.0f)];
+    return [self initWithRect:NSMakeRect(20.0f, 60.0f, 380.0f, 360.0f)];
 }
 
 

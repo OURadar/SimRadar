@@ -15,7 +15,7 @@
 #define RENDERER_TIC_COUNT                  10
 #define RENDERER_MAX_DEBRIS_TYPES           4
 #define RENDERER_MAX_VBO_GROUPS             8
-#define RENDERER_DEFAULT_BODY_COLOR_INDEX   21
+#define RENDERER_DEFAULT_BODY_COLOR_INDEX   20
 #define RENDERER_DEFAULT_BODY_OPACITY       0.03
 #define RENDERER_FBO_COUNT                  5
 
@@ -24,7 +24,8 @@ enum hudConfig {
     hudConfigShowAnchors          = 1,
     hudConfigShowGrid             = 1 << 1,
     hudConfigShowRadarView        = 1 << 2,
-    hudConfigLast                 = 7        // (1 << 3) - 1
+    hudConfigShowOverlay          = 1 << 3,
+    hudConfigLast                 = 15        // (1 << 4) - 1
 };
 
 typedef struct _draw_resource {

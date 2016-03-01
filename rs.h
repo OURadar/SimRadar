@@ -423,6 +423,9 @@ typedef struct _rs_handle {
     RSfloat                *dsd_cdf;
     RSfloat                *dsd_r;           // DSD radii
     
+    // Summary text
+    char                   summary[2048];
+    
 } RSHandle;
 
 
