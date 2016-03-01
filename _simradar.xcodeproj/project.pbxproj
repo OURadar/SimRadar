@@ -253,7 +253,6 @@
 		B50CD9ED1BE8117E0034B5BB /* Recorder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Recorder.m; sourceTree = "<group>"; };
 		B518D41D1C849FDF00BAF67D /* simple_ppi.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = simple_ppi.c; sourceTree = "<group>"; };
 		B518D4221C84A0BD00BAF67D /* simple_ppi */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = simple_ppi; sourceTree = BUILT_PRODUCTS_DIR; };
-		B518D4241C84A0BD00BAF67D /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		B5201C6D1C22396A00EACF53 /* SplashController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SplashController.h; sourceTree = "<group>"; };
 		B5201C6E1C22396A00EACF53 /* SplashController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SplashController.m; sourceTree = "<group>"; };
 		B5201C711C2239D100EACF53 /* Splash.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = Splash.xib; sourceTree = "<group>"; };
@@ -457,7 +456,6 @@
 				B5EF317718204B5C002DDEFC /* SimRadar */,
 				B54DEB3618A5453800EBEC07 /* Minion-Icons */,
 				B572419F1C0CA05F00B76BCB /* SimRadarEx */,
-				B518D4231C84A0BD00BAF67D /* simple_ppi */,
 				B50A281317D7B27500E4DE66 /* Frameworks */,
 				B50A280C17D7B22B00E4DE66 /* Products */,
 			);
@@ -518,14 +516,6 @@
 				B5B574791B690A45002AD2E7 /* iq.h */,
 			);
 			name = Sources;
-			sourceTree = "<group>";
-		};
-		B518D4231C84A0BD00BAF67D /* simple_ppi */ = {
-			isa = PBXGroup;
-			children = (
-				B518D4241C84A0BD00BAF67D /* main.c */,
-			);
-			path = simple_ppi;
 			sourceTree = "<group>";
 		};
 		B519295217D9153C00AB3687 /* Programs */ = {
@@ -3321,6 +3311,7 @@
 				B518D42B1C84A0BD00BAF67D /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		B527893018A13C0100650679 /* Build configuration list for PBXNativeTarget "radarsim" */ = {
 			isa = XCConfigurationList;

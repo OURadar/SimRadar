@@ -125,7 +125,8 @@
             box = RS_suggest_scan_domain(S, 16);
         }
         
-        ADMTable *adm = ADM_get_table(A, ADMConfigModelPlate);
+        //ADMTable *adm = ADM_get_table(A, ADMConfigModelPlate);
+        ADMTable *adm = ADM_get_table(A, ADMConfigSquarePlate);
 
         RS_set_adm_data_to_ADM_table(S, adm);
         
@@ -143,7 +144,7 @@
 
         RS_set_rcs_data_to_RCS_table(S, rcs);
 
-        RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigWoodBoard));
+        //RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigWoodBoard));
         RS_set_rcs_data_to_RCS_table(S, rcs);
 
         if (reportProgress) {
