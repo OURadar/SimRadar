@@ -267,6 +267,7 @@
 - (void)homeBeamPosition
 {
     az_deg = 0.0f;
+    el_deg = 5.0f;
     RS_set_beam_pos(S, az_deg, el_deg);
     RS_update_colors(S);
 }

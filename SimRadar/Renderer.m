@@ -1221,14 +1221,15 @@ unsigned int grayToBinary(unsigned int num)
             glBindVertexArray(lineRenderer.vao);
             glUseProgram(lineRenderer.program);
             glUniformMatrix4fv(lineRenderer.mvpUI, 1, GL_FALSE, hudModelViewProjection.m);
-            glUniform4f(lineRenderer.colorUI, 0.0f, 0.0f, 0.0f, 0.8f);
+            glUniform4f(lineRenderer.colorUI, 0.0f, 0.0f, 0.0f, 0.75f);
             glDrawArrays(GL_TRIANGLE_STRIP, lineRenderer.segmentOrigins[RendererLineSegmentBasicRectangle], 4);
             glUniform4f(lineRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
             glDrawArrays(GL_LINE_STRIP, lineRenderer.segmentOrigins[RendererLineSegmentBasicRectangle] + 4, 5);
         }
         
         // Objects on HUD (beam's view)
-        glViewport(hudOrigin.x * devicePixelRatio, hudOrigin.y * devicePixelRatio, hudSize.width * devicePixelRatio, hudSize.height * devicePixelRatio);
+        glViewport((hudOrigin.x + 1.5f) * devicePixelRatio, (hudOrigin.y + 1.5f) * devicePixelRatio,
+                   (hudSize.width - 3.0f) * devicePixelRatio, (hudSize.height - 3.0f) * devicePixelRatio);
 
         // Draw the debris again
         glUseProgram(instancedGeometryRenderer.program);
@@ -1469,7 +1470,7 @@ unsigned int grayToBinary(unsigned int num)
 
     if (hudConfigGray & hudConfigShowRadarView) {
         snprintf(statusMessage[4], 128, "EL %.2f   AZ %.2f", beamElevation / M_PI * 180.0f, beamAzimuth / M_PI * 180.0f);
-        [textRenderer drawText:statusMessage[4] origin:NSMakePoint(hudOrigin.x + 15.0f, hudOrigin.y + 15.0f) scale:0.25f];
+        [textRenderer drawText:statusMessage[4] origin:NSMakePoint(hudOrigin.x + 15.0f, hudOrigin.y - 30.0f) scale:0.25f];
     }
 
     // Colorbar
@@ -1535,7 +1536,7 @@ unsigned int grayToBinary(unsigned int num)
 
     GLfloat s = roundf(width * 0.2f);
     hudSize = CGSizeMake(s, s);
-    hudOrigin = CGPointMake(width - hudSize.width - 30.0f, height - hudSize.height - 30.0f);
+    hudOrigin = CGPointMake(width - hudSize.width - 30.5f, height - hudSize.height - 35.0f);
     hudProjection = GLKMatrix4MakeOrtho(0.0f, width, 0.0f, height, 0.0f, 1.0f);
     mat = GLKMatrix4MakeTranslation(hudOrigin.x, hudOrigin.y, 0.0f);
     mat = GLKMatrix4Scale(mat, hudSize.width, hudSize.height, 1.0f);
