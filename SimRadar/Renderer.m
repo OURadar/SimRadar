@@ -1533,14 +1533,16 @@ unsigned int grayToBinary(unsigned int num)
     projection = GLKMatrix4MakeFrustum(-aspectRatio, aspectRatio, -1.0f, 1.0f, MIN(RENDERER_NEAR_RANGE, near), RENDERER_FAR_RANGE);
     modelViewProjection = GLKMatrix4Multiply(projection, modelView);
 
-    hudSize = CGSizeMake(roundf(aspectRatio * 250.0f), 250.0f);
+    GLfloat s = roundf(width * 0.2f);
+    hudSize = CGSizeMake(s, s);
     hudOrigin = CGPointMake(width - hudSize.width - 30.0f, height - hudSize.height - 30.0f);
     hudProjection = GLKMatrix4MakeOrtho(0.0f, width, 0.0f, height, 0.0f, 1.0f);
     mat = GLKMatrix4MakeTranslation(hudOrigin.x, hudOrigin.y, 0.0f);
     mat = GLKMatrix4Scale(mat, hudSize.width, hudSize.height, 1.0f);
     hudModelViewProjection = GLKMatrix4Multiply(hudProjection, mat);
 
-    beamProjection = GLKMatrix4MakeFrustum(-aspectRatio, aspectRatio, -1.0f, 1.0f, MIN(RENDERER_NEAR_RANGE, 4.0f * near), RENDERER_FAR_RANGE);
+    GLfloat w = hudSize.width / hudSize.height;
+    beamProjection = GLKMatrix4MakeFrustum(-w, w, -1.0f, 1.0f, MIN(RENDERER_NEAR_RANGE, 2.0f * near), RENDERER_FAR_RANGE);
     mat = GLKMatrix4Identity;
     mat = GLKMatrix4RotateY(mat, beamAzimuth);
     mat = GLKMatrix4RotateX(mat, -beamElevation);
