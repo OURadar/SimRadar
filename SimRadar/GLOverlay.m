@@ -45,7 +45,7 @@
 
 
 - (id)init {
-    return [self initWithRect:NSMakeRect(20.0f, 60.0f, 380.0f, 360.0f)];
+    return [self initWithRect:NSMakeRect(20.0f, 60.0f, 380.0f, 405.0f)];
 }
 
 
@@ -72,20 +72,43 @@
     
     CGContextRef context = (CGContextRef)[[NSGraphicsContext currentContext] graphicsPort];
     
-    // Black background
-    CGContextSetFillColorWithColor(context, [NSColor colorWithWhite:0.0f alpha:0.6f].CGColor);
+    NSColor *color1 = [NSColor colorWithWhite:0.0f alpha:0.65f];
+    NSColor *color2 = [NSColor colorWithRed:1.0f green:0.8f blue:0.2f alpha:1.0f];
+    NSColor *color3 = [NSColor colorWithRed:0.2f green:0.9f blue:1.0f alpha:1.0f];
+
+    // Black translucent background
+    rect = CGRectMake(0.0f, 0.0f, (CGFloat)bitmapWidth, (CGFloat)bitmapHeight - 13.0f);
+
+    CGContextSetFillColorWithColor(context, color1.CGColor);
     CGContextFillRect(context, rect);
+
+    rect = CGRectInset(rect, 1.5f, 1.5f);
+//    CGContextSetStrokeColorWithColor(context, [NSColor whiteColor].CGColor);
+//    CGContextSetLineWidth(context, 1.0f);
+//    CGContextStrokeRect(context, rect);
+    
+    CGContextSetStrokeColorWithColor(context, color2.CGColor);
+    CGContextStrokeRect(context, rect);
+    
+    NSDictionary *atts = [NSDictionary dictionaryWithObjectsAndKeys:
+                          [NSFont boldSystemFontOfSize:20.0f], NSFontAttributeName,
+                          color2, NSForegroundColorAttributeName,
+                          nil];
+    NSString *title = @"Basic Parameters";
+    
+    CGSize size = [title sizeWithAttributes:atts];
+    
+    rect = CGRectMake(20.0f, bitmapHeight - size.height - 5.0f, ceilf(size.width), ceilf(size.height));
+    rect = CGRectInset(rect, -8.0f, -4.0f);
+    CGContextSetFillColorWithColor(context, color1.CGColor);
+    CGContextClearRect(context, rect);
+    CGContextFillRect(context, rect);
+
+    [title drawAtPoint:CGPointMake(20.0f, bitmapHeight - size.height - 2.0f) withAttributes:atts];
 }
 
 - (void)endCanvas {
-    CGRect rect = CGRectMake(0.5f, 0.5f, (CGFloat)bitmapWidth - 1.0f, (CGFloat)bitmapHeight - 1.0f);
-    CGContextRef context = (CGContextRef)[[NSGraphicsContext currentContext] graphicsPort];
-
-    CGContextSetStrokeColorWithColor(context, [NSColor whiteColor].CGColor);
-    CGContextSetLineWidth(context, 1.0f);
-
-    CGContextStrokeRect(context, rect);
-    
+//    CGContextRef context = (CGContextRef)[[NSGraphicsContext currentContext] graphicsPort];
 
     [image unlockFocus];
     

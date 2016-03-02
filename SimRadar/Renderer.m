@@ -1749,8 +1749,8 @@ unsigned int grayToBinary(unsigned int num)
     [overlayRenderer beginCanvas];
     
     NSDictionary *labelAtts = [NSDictionary dictionaryWithObjectsAndKeys:
-                               [NSFont fontWithName:@"Menlo Bold" size:11.0f], NSFontAttributeName,
-                               [NSColor colorWithRed:0.5f green:0.9f blue:1.0f alpha:1.0f], NSForegroundColorAttributeName,
+                               [NSFont fontWithName:@"Menlo Bold" size:12.0f], NSFontAttributeName,
+                               [NSColor colorWithRed:0.6f green:0.9f blue:1.0f alpha:1.0f], NSForegroundColorAttributeName,
                                nil];
     
     //[string sizeWithAttributes:labelAtts];
