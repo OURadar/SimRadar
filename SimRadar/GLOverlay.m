@@ -66,7 +66,7 @@
     drawPool = [NSAutoreleasePool new];
 
     // Use Core Graphics to draw a texture atlas
-    CGRect rect = CGRectMake(0.0f, 0.0f, (CGFloat)bitmapWidth, (CGFloat)bitmapHeight);
+    CGRect rect = CGRectMake(0.0f, 0.0f, drawRect.size.width, drawRect.size.height);
     image = [[NSImage alloc] initWithSize:rect.size];
     [image lockFocus];
     
@@ -77,7 +77,7 @@
     NSColor *color3 = [NSColor colorWithRed:0.2f green:0.9f blue:1.0f alpha:1.0f];
 
     // Black translucent background
-    rect = CGRectMake(0.0f, 0.0f, (CGFloat)bitmapWidth, (CGFloat)bitmapHeight - 13.0f);
+    rect = CGRectMake(0.0f, 0.0f, drawRect.size.width, drawRect.size.height - 13.0f);
 
     CGContextSetFillColorWithColor(context, color1.CGColor);
     CGContextFillRect(context, rect);
@@ -98,13 +98,13 @@
     
     CGSize size = [title sizeWithAttributes:atts];
     
-    rect = CGRectMake(20.0f, bitmapHeight - size.height - 5.0f, ceilf(size.width), ceilf(size.height));
+    rect = CGRectMake(20.0f, drawRect.size.height - size.height - 5.0f, ceilf(size.width), ceilf(size.height));
     rect = CGRectInset(rect, -8.0f, -4.0f);
     CGContextSetFillColorWithColor(context, color1.CGColor);
     CGContextClearRect(context, rect);
     CGContextFillRect(context, rect);
 
-    [title drawAtPoint:CGPointMake(20.0f, bitmapHeight - size.height - 2.0f) withAttributes:atts];
+    [title drawAtPoint:CGPointMake(20.0f, drawRect.size.height - size.height - 2.0f) withAttributes:atts];
 }
 
 - (void)endCanvas {
