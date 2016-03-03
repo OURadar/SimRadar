@@ -1748,18 +1748,57 @@ unsigned int grayToBinary(unsigned int num)
 }
 
 
-- (void)setOverlayString:(NSString *)string {
-    [overlayRenderer beginCanvas];
+- (void)setOverlayText:(NSString *)bodyText withTitle:(NSString *)title {
+    NSColor *color1 = [NSColor colorWithWhite:0.0f alpha:0.65f];
+    NSColor *color2 = [NSColor colorWithRed:1.0f green:0.8f blue:0.2f alpha:1.0f];
+    NSColor *color3 = [NSColor colorWithRed:0.5f green:0.9f blue:1.0f alpha:1.0f];
     
-    NSDictionary *labelAtts = [NSDictionary dictionaryWithObjectsAndKeys:
+    NSDictionary *bodyAtts = [NSDictionary dictionaryWithObjectsAndKeys:
                                [NSFont fontWithName:@"Menlo Bold" size:12.0f], NSFontAttributeName,
-                               [NSColor colorWithRed:0.6f green:0.9f blue:1.0f alpha:1.0f], NSForegroundColorAttributeName,
+                               color3, NSForegroundColorAttributeName,
                                nil];
     
-    //[string sizeWithAttributes:labelAtts];
+    NSSize bodySize = [bodyText sizeWithAttributes:bodyAtts];
     
-    [string drawAtPoint:CGPointMake(15.0, 15.0) withAttributes:labelAtts];
+    // The overall canvas size in points
+    NSRect drawRect = NSMakeRect(20.0f, 60.0f, ceilf(bodySize.width + 30.0f), ceilf(bodySize.height + 50.0f));
+    [overlayRenderer setDrawRect:drawRect];
+    [overlayRenderer beginCanvas];
     
+    // CoreGraphics API for drawing
+    CGContextRef context = (CGContextRef)[[NSGraphicsContext currentContext] graphicsPort];
+    
+    // Black translucent background
+    NSRect rect = CGRectMake(0.0f, 0.0f, drawRect.size.width, drawRect.size.height - 13.0f);
+    
+    CGContextSetFillColorWithColor(context, color1.CGColor);
+    CGContextFillRect(context, rect);
+    
+    rect = CGRectInset(rect, 1.5f, 1.5f);
+    //    CGContextSetStrokeColorWithColor(context, [NSColor whiteColor].CGColor);
+    //    CGContextSetLineWidth(context, 1.0f);
+    //    CGContextStrokeRect(context, rect);
+    
+    CGContextSetStrokeColorWithColor(context, color2.CGColor);
+    CGContextStrokeRect(context, rect);
+    
+    NSDictionary *atts = [NSDictionary dictionaryWithObjectsAndKeys:
+                          [NSFont boldSystemFontOfSize:20.0f], NSFontAttributeName,
+                          color2, NSForegroundColorAttributeName,
+                          nil];
+    
+    CGSize titleSize = [title sizeWithAttributes:atts];
+    
+    rect = CGRectMake(20.0f, drawRect.size.height - titleSize.height - 5.0f, ceilf(titleSize.width), ceilf(titleSize.height));
+    rect = CGRectInset(rect, -8.0f, -4.0f);
+    CGContextSetFillColorWithColor(context, color1.CGColor);
+    CGContextClearRect(context, rect);
+    CGContextFillRect(context, rect);
+    
+    [title drawAtPoint:CGPointMake(20.0f, drawRect.size.height - titleSize.height - 3.0f) withAttributes:atts];
+
+    [bodyText drawAtPoint:CGPointMake(15.0, 15.0) withAttributes:bodyAtts];
+
     [overlayRenderer endCanvas];
     
     overlayNeedsUpdate = true;

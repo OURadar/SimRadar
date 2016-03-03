@@ -218,7 +218,7 @@
         }
         
         // Get some information from the simulator
-        [dc.glView.renderer setOverlayString:sim.simulationDescription];
+        [dc.glView.renderer setOverlayText:sim.simulationDescription withTitle:@"Basic Parameters"];
         
     } else {
         NSLog(@"No simulation yet.");

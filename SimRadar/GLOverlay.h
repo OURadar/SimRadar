@@ -41,6 +41,7 @@
 }
 
 @property (nonatomic) GLKMatrix4 modelViewProjection;
+@property (nonatomic) NSRect drawRect;
 
 - (id)initWithRect:(NSRect)rect;
 

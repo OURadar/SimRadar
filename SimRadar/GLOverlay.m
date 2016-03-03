@@ -23,29 +23,20 @@
 @implementation GLOverlay
 
 @synthesize modelViewProjection;
+@synthesize drawRect;
 
 - (id)initWithRect:(NSRect)rect {
     self = [super init];
     if (self) {
-        // Initialize a Core-graphic context of given size
-        drawRect = rect;
-        devicePixelRatio = [[NSScreen mainScreen] backingScaleFactor];
-        bitmapWidth = rect.size.width * devicePixelRatio;
-        bitmapHeight = rect.size.height * devicePixelRatio;
-        bitmap = (GLubyte *)malloc(bitmapWidth * bitmapHeight * 4);
-                
+        [self setDrawRect:rect];
         [self buildShaders];
-        
-//        [self beginCanvas];
-//        [self drawSomething];
-//        [self endCanvas];
     }
     return self;
 }
 
 
 - (id)init {
-    return [self initWithRect:NSMakeRect(20.0f, 60.0f, 380.0f, 405.0f)];
+    return [self initWithRect:NSMakeRect(20.0f, 60.0f, 380.0f, 425.0f)];
 }
 
 
@@ -54,6 +45,19 @@
     [super dealloc];
 }
 
+
+- (void)setDrawRect:(NSRect)newDrawRect {
+    drawRect = newDrawRect;
+
+    // Initialize a bitmap with the same size
+    devicePixelRatio = [[NSScreen mainScreen] backingScaleFactor];
+    bitmapWidth = drawRect.size.width * devicePixelRatio;
+    bitmapHeight = drawRect.size.height * devicePixelRatio;
+    if (bitmap) {
+        free(bitmap);
+    }
+    bitmap = (GLubyte *)malloc(bitmapWidth * bitmapHeight * 4);
+}
 
 - (int)updateGLTexture {
     // Include vertex & fragment shader GLSL here
@@ -65,59 +69,23 @@
     // Create a separate pool for resources in this class so all of them are released when we are done drawing
     drawPool = [NSAutoreleasePool new];
 
-    // Use Core Graphics to draw a texture atlas
-    CGRect rect = CGRectMake(0.0f, 0.0f, drawRect.size.width, drawRect.size.height);
-    image = [[NSImage alloc] initWithSize:rect.size];
+    // Initialize a new NSImage and focus on the image so we are drawing on it
+    image = [[NSImage alloc] initWithSize:drawRect.size];
     [image lockFocus];
-    
-    CGContextRef context = (CGContextRef)[[NSGraphicsContext currentContext] graphicsPort];
-    
-    NSColor *color1 = [NSColor colorWithWhite:0.0f alpha:0.65f];
-    NSColor *color2 = [NSColor colorWithRed:1.0f green:0.8f blue:0.2f alpha:1.0f];
-    NSColor *color3 = [NSColor colorWithRed:0.2f green:0.9f blue:1.0f alpha:1.0f];
-
-    // Black translucent background
-    rect = CGRectMake(0.0f, 0.0f, drawRect.size.width, drawRect.size.height - 13.0f);
-
-    CGContextSetFillColorWithColor(context, color1.CGColor);
-    CGContextFillRect(context, rect);
-
-    rect = CGRectInset(rect, 1.5f, 1.5f);
-//    CGContextSetStrokeColorWithColor(context, [NSColor whiteColor].CGColor);
-//    CGContextSetLineWidth(context, 1.0f);
-//    CGContextStrokeRect(context, rect);
-    
-    CGContextSetStrokeColorWithColor(context, color2.CGColor);
-    CGContextStrokeRect(context, rect);
-    
-    NSDictionary *atts = [NSDictionary dictionaryWithObjectsAndKeys:
-                          [NSFont boldSystemFontOfSize:20.0f], NSFontAttributeName,
-                          color2, NSForegroundColorAttributeName,
-                          nil];
-    NSString *title = @"Basic Parameters";
-    
-    CGSize size = [title sizeWithAttributes:atts];
-    
-    rect = CGRectMake(20.0f, drawRect.size.height - size.height - 5.0f, ceilf(size.width), ceilf(size.height));
-    rect = CGRectInset(rect, -8.0f, -4.0f);
-    CGContextSetFillColorWithColor(context, color1.CGColor);
-    CGContextClearRect(context, rect);
-    CGContextFillRect(context, rect);
-
-    [title drawAtPoint:CGPointMake(20.0f, drawRect.size.height - size.height - 2.0f) withAttributes:atts];
 }
 
 - (void)endCanvas {
-//    CGContextRef context = (CGContextRef)[[NSGraphicsContext currentContext] graphicsPort];
-
+    // Unlock focus as we are finished
     [image unlockFocus];
     
     // A bunch of filtering / composing, like Photoshop can be inserted here
     
+    // Get the raw bitmap data from NSImage
     CIImage *result = [[CIImage alloc] initWithBitmapImageRep:[NSBitmapImageRep imageRepWithData:[image TIFFRepresentation]]];
     NSBitmapImageRep *bitmapImageRep = [[NSBitmapImageRep alloc] initWithCIImage:result];
     memcpy(bitmap, [bitmapImageRep bitmapData], bitmapWidth * bitmapHeight * 4);
     [bitmapImageRep release];
+    [image release];
     [result release];
     
     // All the CG resources are no longer needed from here on

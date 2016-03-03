@@ -236,6 +236,6 @@ enum RendererLineSegment {
 
 - (void)cycleVFX;
 
-- (void)setOverlayString:(NSString *)string;
+- (void)setOverlayText:(NSString *)bodyText withTitle:(NSString *)title;
 
 @end
