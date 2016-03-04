@@ -1420,28 +1420,38 @@ void RS_init_scat_pos(RSHandle *H) {
     // May want to add maximum relaxation time of each drop size
     // Potential places: vel.w, aux.s2
     if (H->dsd_name != RSDropSizeDistributionUndefined) {
-        for (i = 0; i < H->num_scats; i++) {
-            a = (float)rand() / RAND_MAX;
-            k = H->dsd_count;
-            bin = 0;
-            while (k > 0) {
-                k--;
-                if (a >= H->dsd_cdf[k]) {
-                    bin = k;
-                    break;
-                }
+        if (H->sim_concept & RSSimulationConceptScaledDropSizeDistribution) {
+            for (i = 0; i < H->num_scats; i++) {
+                a = (float)rand() / RAND_MAX;
+                bin = (int)(a * (float)H->dsd_count);
+                H->dsd_pop[bin]++;
+                H->scat_pos[i].w = H->dsd_r[bin];                                  // set the drop radius
+                H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // set the dsd bin index
             }
-            H->dsd_pop[bin]++;
-            H->scat_pos[i].w = H->dsd_r[bin];                                  // set the drop radius
-            H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // set the dsd bin index
+        } else {
+            for (i = 0; i < H->num_scats; i++) {
+                a = (float)rand() / RAND_MAX;
+                k = H->dsd_count;
+                bin = 0;
+                while (k > 0) {
+                    k--;
+                    if (a >= H->dsd_cdf[k]) {
+                        bin = k;
+                        break;
+                    }
+                }
+                H->dsd_pop[bin]++;
+                H->scat_pos[i].w = H->dsd_r[bin];                                  // set the drop radius
+                H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // set the dsd bin index
+            }
+            
+            // Replace a few for debugging purpose
+            #if defined(DEBUG_DSD)
+            H->scat_pos[0].w = 0.0025f;
+            H->scat_pos[1].w = 0.001f;
+            H->scat_pos[2].w = 0.0005f;
+            #endif
         }
-        
-        // Replace a few for debugging purpose
-        #if defined(DEBUG_DSD)
-        H->scat_pos[0].w = 0.0025f;
-        H->scat_pos[1].w = 0.001f;
-        H->scat_pos[2].w = 0.0005f;
-        #endif
         
         sprintf(H->summary + strlen(H->summary),
             "DSD Specifications:\n");
@@ -3757,6 +3767,9 @@ void RS_populate(RSHandle *H) {
 		return;
 	}
 
+    // Initialize the scatter body positions on CPU, will upload to the GPU later
+    RS_init_scat_pos(H);
+
     // All tables must be ready at this point
     // - range weight table
     // - antenna weight table
@@ -3785,9 +3798,6 @@ void RS_populate(RSHandle *H) {
     }
 	
     RS_update_debris_count(H);
-    
-    // Initialize the scatter body positions on CPU, will upload to the GPU later
-    RS_init_scat_pos(H);
     
 #if defined (__APPLE__) && defined (_SHARE_OBJ_)
     
@@ -4724,6 +4734,12 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
                 d, rba, rab, lz, lx, numer.s0, numer.s1, numer.s2, numer.s3, denom.s0, denom.s1, denom.s2, denom.s3, alxz.s0, alxz.s1, alxz.s2, alxz.s3, table[i].s0, table[i].s1, table[i].s2, table[i].s3);
         #endif
     }
+    
+//    if (H->sim_concept & RSSimulationConceptScaledDropSizeDistribution) {
+//        for (i = 0; i < n; i++) {
+//
+//        }
+//    }
     
     // Set table lookup in radius in mm
     RS_set_rcs_ellipsoid_table(H, table, 0.25e-3f, 0.05e-3f, n);
