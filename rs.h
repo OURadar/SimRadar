@@ -230,9 +230,10 @@ enum {
 
 typedef uint32_t RSSimulationConcept;
 enum RSSimulationConcept {
-    RSSimulationConceptNull                    = 0,
-    RSSimulationConceptDraggedBackground       = 1,
-    RSSimulationConceptBoundedParticleVelocity = 1 << 1
+    RSSimulationConceptNull                        = 0,
+    RSSimulationConceptDraggedBackground           = 1,
+    RSSimulationConceptBoundedParticleVelocity     = 1 << 1,
+    RSSimulationConceptScaledDropSizeDistribution  = 1 << 2
 };
 
 //
