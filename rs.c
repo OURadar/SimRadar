@@ -1426,7 +1426,7 @@ void RS_init_scat_pos(RSHandle *H) {
                 bin = (int)(a * (float)H->dsd_count);
                 H->dsd_pop[bin]++;
                 H->scat_pos[i].w = H->dsd_r[bin];                                  // set the drop radius
-                H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // set the dsd bin index
+                H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // set the dsd bin index (temporary)
             }
         } else {
             for (i = 0; i < H->num_scats; i++) {
@@ -4697,7 +4697,7 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
     }
     const cl_double sc = k_0 * k_0 / (4.0f * M_PI * epsilon_0) * 1.0e-9f * H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale];
     
-    // Make table with D = 0.05mm, 0.06mm, ... 10.0mm (96 entries)
+    // Make table with D = 0.5mm, 0.6mm, ... 10.0mm (96 entries)
     const size_t n = 96;
     
     cl_float4 *table = (cl_float4 *)malloc(n * sizeof(cl_float4));
@@ -4735,18 +4735,40 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
         #endif
     }
     
-//    if (H->sim_concept & RSSimulationConceptScaledDropSizeDistribution) {
-//        for (i = 0; i < n; i++) {
-//
-//        }
-//    }
-    
+    // Each size has same probably of occurence, the return power is scaled by the ratio of the
+    if (H->sim_concept & RSSimulationConceptScaledDropSizeDistribution) {
+        
+        int k;
+        const float p = 1.0f / (float)H->dsd_count;
+        cl_float4 *table_copy = (cl_float4 *)malloc(n * sizeof(cl_float4));
+        memcpy(table_copy, table, n * sizeof(cl_float4));
+        memset(table, 0, n * sizeof(cl_float4));
+
+        snprintf(H->summary + strlen(H->summary), sizeof(H->summary), "Drop RCS Scaling:\n");
+        for (i = 0; i < H->dsd_count; i++) {
+            k = (int)(H->dsd_r[i] * 20000.0f) - 5;
+            rsprint("  o %.2f mm scale by %.5f / %.5f = %.5f  k = %d --> %.2f\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], p, H->dsd_pdf[i] / p, k, 0.5f + (float)k * 0.1f);
+            snprintf(H->summary + strlen(H->summary), sizeof(H->summary), "  o %.2f mm scale by %.5f / %.2f = %.5f\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], p, H->dsd_pdf[i] / p);
+            table[k].s0 = table_copy[k].s0 * H->dsd_pdf[i] / p;
+            table[k].s1 = table_copy[k].s1 * H->dsd_pdf[i] / p;
+            table[k].s2 = table_copy[k].s2 * H->dsd_pdf[i] / p;
+            table[k].s3 = table_copy[k].s3 * H->dsd_pdf[i] / p;
+        }
+
+        #ifdef DEBUG_HEAVY
+        for (i = 0; i < n; i++) {
+            cl_double d = 0.5 + (cl_double)i * 0.1;
+            rsprint("D = %.2fmm  %.3e %.3e %.3e %.3e --> %.3e %.3e %.3e %.3e", d, table_copy[i].s0, table_copy[i].s1, table_copy[i].s2, table_copy[i].s3, table[i].s0, table[i].s1, table[i].s2, table[i].s3);
+        }
+        #endif
+    }
+
     // Set table lookup in radius in mm
     RS_set_rcs_ellipsoid_table(H, table, 0.25e-3f, 0.05e-3f, n);
     
     free(table);
-    
 }
+
 
 char *RS_simulation_description(RSHandle *H) {
     char *c = H->summary + strlen(H->summary) - 1;
