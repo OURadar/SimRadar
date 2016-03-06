@@ -4739,6 +4739,7 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
     if (H->sim_concept & RSSimulationConceptScaledDropSizeDistribution) {
         
         int k;
+        float s;
         const float p = 1.0f / (float)H->dsd_count;
         cl_float4 *table_copy = (cl_float4 *)malloc(n * sizeof(cl_float4));
         memcpy(table_copy, table, n * sizeof(cl_float4));
@@ -4747,12 +4748,13 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
         snprintf(H->summary + strlen(H->summary), sizeof(H->summary), "Drop RCS Scaling:\n");
         for (i = 0; i < H->dsd_count; i++) {
             k = (int)(H->dsd_r[i] * 20000.0f) - 5;
-            rsprint("  o %.2f mm scale by %.5f / %.5f = %.5f  k = %d --> %.2f\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], p, H->dsd_pdf[i] / p, k, 0.5f + (float)k * 0.1f);
-            snprintf(H->summary + strlen(H->summary), sizeof(H->summary), "  o %.2f mm scale by %.5f / %.2f = %.5f\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], p, H->dsd_pdf[i] / p);
-            table[k].s0 = table_copy[k].s0 * H->dsd_pdf[i] / p;
-            table[k].s1 = table_copy[k].s1 * H->dsd_pdf[i] / p;
-            table[k].s2 = table_copy[k].s2 * H->dsd_pdf[i] / p;
-            table[k].s3 = table_copy[k].s3 * H->dsd_pdf[i] / p;
+            s = sqrtf(H->dsd_pdf[i] / p);
+            rsprint("  o %.2f mm scale by %.5f / %.5f = %.5f  k = %d --> %.2f\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], p, s, k, 0.5f + (float)k * 0.1f);
+            snprintf(H->summary + strlen(H->summary), sizeof(H->summary), "  o %.2f mm %.5f -> %.2f dB\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], 20.0f * log10(s));
+            table[k].s0 = table_copy[k].s0 * s;
+            table[k].s1 = table_copy[k].s1 * s;
+            table[k].s2 = table_copy[k].s2 * s;
+            table[k].s3 = table_copy[k].s3 * s;
         }
 
         #ifdef DEBUG_HEAVY
@@ -4761,6 +4763,8 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
             rsprint("D = %.2fmm  %.3e %.3e %.3e %.3e --> %.3e %.3e %.3e %.3e", d, table_copy[i].s0, table_copy[i].s1, table_copy[i].s2, table_copy[i].s3, table[i].s0, table[i].s1, table[i].s2, table[i].s3);
         }
         #endif
+        
+        free(table_copy);
     }
 
     // Set table lookup in radius in mm

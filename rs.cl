@@ -371,16 +371,18 @@ float4 compute_debris_rcs(const float4 pos, const float4 ori, __read_only image2
     const float el = atan2(pos.s2, length(pos.s01));
     const float az = atan2(pos.s0, pos.s1);
     
-    const float el_beam = atan2(sim_desc.s2, length(sim_desc.s01));
-    const float az_beam = atan2(sim_desc.s0, sim_desc.s1);
+//    const float el_beam = atan2(sim_desc.s2, length(sim_desc.s01));
+//    const float az_beam = atan2(sim_desc.s0, sim_desc.s1);
     
     //
     // derive alpha, beta & gamma of RCS for RCS table lookup --------------------------
     //
     // I know this part looks like a black box, check reference MATLAB implementation quat_ref_change.m for the derivation
     //
-    float ce, se = sincos(0.5f * (el - el_beam + M_PI_2_F), &ce);
-    float ca, sa = sincos(0.5f * (az - az_beam), &ca);
+//    float ce, se = sincos(0.5f * (el - el_beam + M_PI_2_F), &ce);
+//    float ca, sa = sincos(0.5f * (az - az_beam), &ca);
+    float ce, se = sincos(0.5f * (el + M_PI_2_F), &ce);
+    float ca, sa = sincos(0.5f * (az), &ca);
     
     // O_conj.' =
     //
