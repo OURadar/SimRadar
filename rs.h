@@ -34,7 +34,7 @@
 #include <CL/cl.h>
 #endif
 
-#if defined (GUI) || defined (_SHARE_OBJ_)
+#if defined (GUI) || defined (_USE_GCL_)
 #include <OpenGL/OpenGL.h>
 #endif
 
@@ -297,7 +297,7 @@ typedef struct _rs_worker {
     unsigned int           vbo_scat_clr;
     unsigned int           vbo_scat_ori;
     
-#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+#if defined (__APPLE__) && defined (_USE_GCL_)
     
     dispatch_queue_t       que;
     dispatch_semaphore_t   sem;
@@ -500,12 +500,12 @@ void RS_clear_rcs_data(RSHandle *H);
 
 #pragma mark -
 
-#if defined (GUI) || defined (_SHARE_OBJ_)
+#if defined (GUI) || defined (_USE_GCL_)
 void RS_update_colors(RSHandle *H);
 void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[][n]);
 #endif
 
-#if defined (__APPLE__) && defined (_SHARE_OBJ_)
+#if defined (__APPLE__) && defined (_USE_GCL_)
 void RS_derive_ndranges(RSHandle *H);
 #endif
 

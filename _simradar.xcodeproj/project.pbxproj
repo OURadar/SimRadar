@@ -1476,7 +1476,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = (
-					"-D_SHARE_OBJ_",
+					"-D_USE_GCL_",
 					"-DDEBUG_GL",
 				);
 				OTHER_LDFLAGS = (
@@ -2282,7 +2282,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = (
-					"-D_SHARE_OBJ_",
+					"-D_USE_GCL_",
 					"-DGEN_IMG",
 				);
 				OTHER_LDFLAGS = (
@@ -2748,7 +2748,7 @@
 					/usr/local/lib,
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
-				OTHER_CFLAGS = "-D_SHARE_OBJ_";
+				OTHER_CFLAGS = "-D_USE_GCL_";
 				OTHER_LDFLAGS = (
 					"-L",
 					/usr/local/lib,
@@ -2812,7 +2812,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_CFLAGS = "-D_SHARE_OBJ_";
+				OTHER_CFLAGS = "-D_USE_GCL_";
 				OTHER_LDFLAGS = (
 					"-L",
 					/usr/local/lib,
@@ -3149,7 +3149,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = (
-					"-D_SHARE_OBJ_",
+					"-D_USE_GCL_",
 					"-D_DUMMY_",
 				);
 				OTHER_LDFLAGS = (
