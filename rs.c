@@ -3698,6 +3698,7 @@ void RS_io_test(RSHandle *H) {
 void RS_populate(RSHandle *H) {
 	if (H->num_scats > RS_MAX_NUM_SCATS) {
 		rsprint("Exceed the maximum allowed. (%ld > %d).\n", (unsigned long)H->num_scats, RS_MAX_NUM_SCATS);
+        exit(EXIT_FAILURE);
 	}
 	
     if (H->verb) {
@@ -4640,7 +4641,7 @@ RSBox RS_suggest_scan_domain(RSHandle *H, const int nbeams) {
     float na = 0.5f * (float)nbeams + RS_DOMAIN_PAD + 0.5f;
     
     // Maximum number of beams in elevation
-    float ne = 23.0f;
+    float ne = 18.0f;
     
     // Maximum y of the emulation box: The range when the width is fully utilized; This is also rmax
     float rmax = w / sinf(na * H->params.antenna_bw_rad);

@@ -483,12 +483,17 @@ int main(int argc, char *argv[]) {
            now(), commaint(num_pulses), num_pulses>1?"s":"", commaint(S->num_scats));
 
     // At this point, we are ready to bake
-
+    float dt, fps, prog, eta;
+    
     // Some warm up if we are going for real
     if (num_pulses >= 1200) {
         RS_set_prt(S, 1.0f / 60.0f);
+        gettimeofday(&t1, NULL);
         for (k = 0; k < warm_up_pulses; k++) {
-            if (k % 100 == 0) {
+            gettimeofday(&t2, NULL);
+            dt = DTIME(t1, t2);
+            if (dt >= 1.0f) {
+                t1 = t2;
                 fprintf(stderr, "Warming up ... \033[32m%.2f%%\033[0m  \r", (float)k / warm_up_pulses * 100.0f);
             }
             RS_advance_time(S);
@@ -502,8 +507,6 @@ int main(int argc, char *argv[]) {
     
     gettimeofday(&t1, NULL);
     
-    float dt, fps, prog, eta;
-    
     // Allocate a pulse cache
     IQPulseHeader *pulse_headers = (IQPulseHeader *)malloc(num_pulses * sizeof(IQPulseHeader));
     cl_float4 *pulse_cache = (cl_float4 *)malloc(num_pulses * S->params.range_count * sizeof(cl_float4));
@@ -511,19 +514,17 @@ int main(int argc, char *argv[]) {
     memset(pulse_cache, 0, num_pulses * S->params.range_count * sizeof(cl_float4));
 
     // Now we bake
+    int k0 = 0;
     for (k = 0; k<num_pulses; k++) {
-        if (k % 200 == 0) {
-            gettimeofday(&t2, NULL);
-            dt = DTIME(t1, t2);
+        gettimeofday(&t2, NULL);
+        dt = DTIME(t1, t2);
+        if (dt >= 1.0f) {
             t1 = t2;
-            if (k > 100) {
-                prog =  (float)k / num_pulses * 100.0f;
-                fps = 100.0f / dt;
-                eta = (float)(num_pulses - k) / fps;
-                fprintf(stderr, "k %5d   e%6.2f, a%5.2f   %.2f fps  \033[1;33m%.2f%%\033[0m   eta %.0f second%s   \r", k, scan.el, scan.az, fps, prog, eta, eta > 1.5f ? "s" : "");
-            } else {
-                fprintf(stderr, "k %5d   e%6.2f, az%5.2f\r", k, scan.el, scan.az);
-            }
+            prog =  (float)k / num_pulses * 100.0f;
+            fps = (k - k0) / dt;
+            eta = (float)(num_pulses - k) / fps;
+            k0 = k;
+            fprintf(stderr, "k %5d   e%6.2f, a%5.2f   %.2f fps  \033[1;33m%.2f%%\033[0m   eta %.0f second%s   \r", k, scan.el, scan.az, fps, prog, eta, eta > 1.5f ? "s" : "");
         }
         RS_set_beam_pos(S, scan.az, scan.el);
         RS_make_pulse(S);
