@@ -63,6 +63,8 @@
             }
         }
 
+        RS_set_density(S, 1000);
+        
         // Copy out some convenient constants
         nearest_thousand = (size_t)ceilf(1000.0f / S->preferred_multiple) * S->preferred_multiple;
         nearest_hundred = (size_t)ceilf(100.0f / S->preferred_multiple) * S->preferred_multiple;
@@ -96,7 +98,10 @@
             [delegate progressUpdated:10.0 message:[NSString stringWithFormat:@"Configuring radar parameters ..."]];
         }
         
-        RS_set_concept(S, RSSimulationConceptDraggedBackground | RSSimulationConceptBoundedParticleVelocity);
+        RS_set_concept(S,
+                       RSSimulationConceptDraggedBackground |
+                       RSSimulationConceptBoundedParticleVelocity |
+                       RSSimulationConceptScaledDropSizeDistribution);
 
 		RS_set_antenna_params(S, 1.0f, 44.5f);                // 1.0-deg beamwidth, 44.5-dBi gain
 		
