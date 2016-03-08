@@ -361,7 +361,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	C->pulse    = clCreateBuffer(C->context, CL_MEM_READ_WRITE, H->params.range_count * sizeof(cl_float4), NULL, &ret);              CHECK_CL_CREATE_BUFFER
 	
 	C->mem_size += (cl_uint)( (8 * C->num_scats + work_numel + H->params.range_count) * sizeof(cl_float4) + C->num_scats * sizeof(cl_int4) );
-	
+    
 	//
 	// Set up kernel's input / output arguments
 	//
@@ -3757,6 +3757,8 @@ void RS_populate(RSHandle *H) {
 		return;
 	}
 	
+    H->mem_size = H->num_scats * (7 * sizeof(cl_float4) + sizeof(cl_uint4)) + H->params.range_count * sizeof(cl_float4);
+    
 	int i;
 	char has_null = 0;
 	for (i = 0; i < H->num_workers; i++) {
@@ -3767,6 +3769,10 @@ void RS_populate(RSHandle *H) {
 		fprintf(stderr, "%s : RS : Error allocating memory space for pulses.\n", now());
 		return;
 	}
+    
+    H->mem_size += H->params.range_count * sizeof(cl_float4);
+
+    rsprint("CPU memory usage = %s", commaint(H->mem_size));
 
     // Initialize the scatter body positions on CPU, will upload to the GPU later
     RS_init_scat_pos(H);

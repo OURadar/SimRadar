@@ -389,6 +389,8 @@ typedef struct _rs_handle {
     
     cl_float4              *pulse_tmp[RS_MAX_GPU_DEVICE];
     
+    size_t                 mem_size;
+    
     // OpenCL device
     cl_uint                num_devs;
     cl_uint                num_workers;
