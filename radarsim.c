@@ -424,6 +424,11 @@ int main(int argc, char *argv[]) {
 //        return EXIT_FAILURE;
 //    }
     
+    RS_set_concept(S,
+                   RSSimulationConceptDraggedBackground |
+                   RSSimulationConceptBoundedParticleVelocity |
+                   RSSimulationConceptScaledDropSizeDistribution);
+    
     RS_set_antenna_params(S, 1.0f, 44.5f);
     
     RS_set_tx_params(S, pw, 50.0e3f);
