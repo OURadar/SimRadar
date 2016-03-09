@@ -170,6 +170,20 @@ void show_help() {
            "         Debris type is as follows:\n"
            "            o  Leaf\n"
            "            o  Wood Board\n"
+           "\n"
+           "  -c (--concept) " UNDERLINE("concepts") "\n"
+           "         Sets the simulation concepts to be used, which are OR together for\n"
+           "         multiple values that can be combined together.\n"
+           "            D - Dragged background.\n"
+           "            U - Uniform rain drop size density with scaled RCS.\n"
+           "            V - Bounded particle velocity.\n"
+           "         Examples:\n"
+           "            --concept DU\n"
+           "                sets simulation to use the concept of dragged background and\n"
+           "                uniform density of rain drop size.\n"
+           "            --concept V\n"
+           "                sets simulation to use the concept of bounded particle velocity\n"
+           "                but left the others as default.\n"
            "\n\n"
            "EXAMPLES\n"
            "     The following simulates a vortex and creates a PPI scan data using default\n"
@@ -230,6 +244,7 @@ int main(int argc, char *argv[]) {
     int debris_types = 0;
     int debris_count[RS_MAX_DEBRIS_TYPES];
     int warm_up_pulses = 2000;
+    RSSimulationConcept concept = RSSimulationConceptScaledDropSizeDistribution;
     
     memset(debris_count, 0, RS_MAX_DEBRIS_TYPES * sizeof(int));
 
@@ -237,12 +252,13 @@ int main(int argc, char *argv[]) {
 
     static struct option long_options[] = {
         {"alarm"      , no_argument      , 0, 'A'}, // ASCII 65 - 90 : A - Z
+        {"cpu"        , no_argument      , 0, 'C'},
         {"density"    , required_argument, 0, 'D'},
         {"preview"    , no_argument      , 0, 'N'},
         {"sweep"      , required_argument, 0, 'S'},
         {"warmup"     , required_argument, 0, 'W'},
         {"azimuth"    , required_argument, 0, 'a'}, // ASCII 97 - 122 : a - z
-        {"cpu"        , no_argument      , 0, 'c'},
+        {"concept"    , required_argument, 0, 'c'},
         {"debris"     , required_argument, 0, 'd'},
         {"elevation"  , required_argument, 0, 'e'},
         {"help"       , no_argument      , 0, 'h'},
@@ -279,6 +295,17 @@ int main(int argc, char *argv[]) {
                 quiet_mode = false;
                 break;
             case 'c':
+                if (strcasestr(optarg, "D")) {
+                    concept |= RSSimulationConceptDraggedBackground;
+                }
+                if (strcasestr(optarg, "U")) {
+                    concept |= RSSimulationConceptScaledDropSizeDistribution;
+                }
+                if (strcasestr(optarg, "V")) {
+                    concept |= RSSimulationConceptBoundedParticleVelocity;
+                }
+                break;
+            case 'C':
                 accel_type = ACCEL_TYPE_CPU;
                 break;
             case 'd':
@@ -424,10 +451,7 @@ int main(int argc, char *argv[]) {
 //        return EXIT_FAILURE;
 //    }
     
-    RS_set_concept(S,
-                   RSSimulationConceptDraggedBackground |
-                   RSSimulationConceptBoundedParticleVelocity |
-                   RSSimulationConceptScaledDropSizeDistribution);
+    RS_set_concept(S, concept);
     
     RS_set_antenna_params(S, 1.0f, 44.5f);
     
