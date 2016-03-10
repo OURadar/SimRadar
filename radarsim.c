@@ -547,10 +547,14 @@ int main(int argc, char *argv[]) {
     for (k = 0; k<num_pulses; k++) {
         gettimeofday(&t2, NULL);
         dt = DTIME(t1, t2);
-        if (dt >= 1.0f) {
+        if (dt >= 0.25f) {
             t1 = t2;
             prog =  (float)k / num_pulses * 100.0f;
-            fps = (k - k0) / dt;
+            if (k > 3) {
+                fps = 0.5f * fps + 0.5f * (float)(k - k0) / dt;
+            } else {
+                fps = (float)(k - k0) / dt;
+            }
             eta = (float)(num_pulses - k) / fps;
             k0 = k;
             fprintf(stderr, "k %5d   e%6.2f, a%5.2f   %.2f fps  \033[1;33m%.2f%%\033[0m   eta %.0f second%s   \r", k, scan.el, scan.az, fps, prog, eta, eta > 1.5f ? "s" : "");

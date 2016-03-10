@@ -746,7 +746,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
         
     } else {
         C->scat_pos = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
-        //C->scat_clr = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
+        C->scat_clr = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
         C->scat_ori = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
     }
 
@@ -759,11 +759,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     C->work     = clCreateBuffer(C->context, CL_MEM_READ_WRITE, work_numel * sizeof(cl_float4), NULL, &ret);                         CHECK_CL_CREATE_BUFFER
 	C->pulse    = clCreateBuffer(C->context, CL_MEM_READ_WRITE, H->params.range_count * sizeof(cl_float4), NULL, &ret);              CHECK_CL_CREATE_BUFFER
 	
-    if (H->has_vbo_from_gl) {
-        C->mem_usage += (8 * C->num_scats + work_numel + H->params.range_count) * sizeof(cl_float4) + C->num_scats * sizeof(cl_uint4);
-    } else {
-        C->mem_usage += (7 * C->num_scats + work_numel + H->params.range_count) * sizeof(cl_float4) + C->num_scats * sizeof(cl_uint4);
-    }
+    C->mem_usage += (8 * C->num_scats + work_numel + H->params.range_count) * sizeof(cl_float4) + C->num_scats * sizeof(cl_uint4);
     
 	//
 	// Set up kernel's input / output arguments
@@ -932,7 +928,8 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	
     if (C->mem_usage > C->mem_size / 4 * 3) {
         rsprint("WARNING: High GPU memory usage by worker[%d]: %s GB out of %s GB.", C->name, commafloat((float)C->mem_usage * 1.0e-9f), commafloat((float)C->mem_size * 1.0e-9f));
-    } else if (C->verb) {
+    }
+    if (C->verb) {
         rsprint("worker[%d] memory usage = %s B\n", C->name, commaint(C->mem_usage));
     }
 }
@@ -3803,7 +3800,7 @@ void RS_populate(RSHandle *H) {
     size_t host_mem = mem_pages * mem_page_size;
 
     if (H->mem_size > host_mem / 4 * 3) {
-        rsprint("WARNING: High host memory usage %s GB out of %s GB.", commafloat((float)H->mem_size * 1.0e-9f), commafloat((float)host_mem * 1.0e-9f));
+        rsprint("WARNING: High host memory usage: %s GB out of %s GB.", commafloat((float)H->mem_size * 1.0e-9f), commafloat((float)host_mem * 1.0e-9f));
     } else if (H->verb) {
         rsprint("CPU memory usage = %s out of %s", commaint(H->mem_size), commaint(host_mem));
     }
