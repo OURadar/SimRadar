@@ -58,15 +58,398 @@ cl_double4 double_complex_divide(const cl_double4 a, const cl_double4 b) {
 }
 
 #pragma mark -
+#pragma mark Convenient Functions
+
+char *commaint(long long num) {
+    static int i = 7;
+    static char buf[8][64];
+    
+    // Might need a semaphore to protect the following line
+    i = i == 7 ? 0 : i + 1;
+    
+    int b = i;
+    snprintf(buf[b], 48, "%lld", num);
+    if (num >= 1000) {
+        int c = (int)(strlen(buf[b]) - 1) / 3; // Number of commans
+        int p = (int)(strlen(buf[b])) + c;     // End position
+        int d = 1;                             // Count of digits
+        buf[b][p] = '\0';
+        while (p > 0) {
+            p--;
+            buf[b][p] = buf[b][p - c];
+            if (d > 3) {
+                d = 0;
+                buf[b][p] = ',';
+                c--;
+            }
+            d++;
+        }
+    }
+    return buf[b];
+}
+
+char *commafloat(float num) {
+    static int i = 7;
+    static char buf[8][64];
+    i = i == 7 ? 0 : i + 1;
+    int b = i;
+    snprintf(buf[b], 64, "%s.%02d", commaint(num), (int)(100 * (num - floorf(num))));
+    return buf[b];
+}
+
+// Here is a nice reference: http://www.cplusplus.com/ref/ctime/time.html
+char *now() {
+    static char timestr[64];
+    time_t utc;
+    time(&utc);
+    strftime(timestr, 63, "%H:%M:%S", localtime(&utc));
+    return timestr;
+}
+
+
+char *nowlong() {
+    static char timestr[64];
+    time_t utc;
+    time(&utc);
+    strftime(timestr, 63, "%Y%m%d-%H%M%S", localtime(&utc));
+    return timestr;
+}
+
+
+void rsprint(const char *format, ...) {
+    
+    char str[RS_MAX_STR] = "";
+    sprintf(str, "%s : RS : ", now());
+    size_t len = strlen(str);
+    va_list args;
+    char *msg = str + len;
+    
+    va_start(args, format);
+    vsnprintf(msg, RS_MAX_STR - len, format, args);
+    len = strlen(str);
+    va_end(args);
+    
+    len = MIN(len, RS_MAX_STR - 2);
+    if (str[len-1] != '\n') {
+        str[len] = '\n';
+        str[len+1] = '\0';
+    }
+    if (!strncmp(msg, "Error", 5)) {
+        fprintf(stderr, "\033[1;31m%s\033[0m", str);
+    } else if (!strncmp(msg, "WARNING", 7)) {
+        //fprintf(stderr, "\033[1;33m%s\033[0m", str);
+        fprintf(stderr, "%s : RS : \033[1;33m%s\033[0m", now(), msg);
+    } else {
+        printf("%s", str);
+    }
+}
+
+
+void pfn_prog_notify(cl_program program, void *user_data) {
+    if (user_data != NULL) {
+        fprintf(stderr, "%s : RS : Program %p returned %p (via pfn_prog_notify)\n", now(), program, user_data);
+    }
+}
+
+
+void pfn_notify(const char *errinfo, const void *private_info, size_t cb, void *user_data) {
+    fprintf(stderr, "%s : RS : %s (via pfn_notify)\n", now(), errinfo);
+}
+
+
+// CL_DEVICE_TYPE_GPU
+void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device_id *devices, cl_uint *num_cus, cl_uint *vendors, cl_int detail_level) {
+    
+    int i = 0, j = 0;
+    cl_uint num_platforms = 0;
+    cl_uint platform_num_devices = 0;
+    
+    *num_devices = 0;
+    
+    cl_platform_id platforms[RS_MAX_GPU_PLATFORM];
+    
+    char buf_char[RS_MAX_STR];
+    cl_uint buf_uint;
+    cl_ulong buf_ulong;
+    
+    CL_CHECK(clGetPlatformIDs(RS_MAX_GPU_PLATFORM, platforms, &num_platforms));
+    
+    if (detail_level)
+    printf("* Number of OpenCL platforms: %d\n", num_platforms);
+    
+    for (; i < num_platforms; i++) {
+        
+        CL_CHECK(clGetDeviceIDs(platforms[i], device_type, RS_MAX_GPU_DEVICE - *num_devices, &devices[*num_devices], &platform_num_devices));
+        
+        *num_devices += platform_num_devices;
+        if (*num_devices >= RS_MAX_GPU_DEVICE) {
+            fprintf(stderr, "%s : RS : Sweet. A lot of devices found. Upgrade! Upgrade!\n", now());
+            *num_devices = RS_MAX_GPU_DEVICE;
+            return;
+        }
+        
+        if (detail_level) {
+            printf("  > PLATFORM %d:\n", i);
+            CL_CHECK(clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, RS_MAX_STR, buf_char, NULL));
+            printf("    * NAME = %s\n", buf_char);
+            if (detail_level > 1) {
+                CL_CHECK(clGetPlatformInfo(platforms[i], CL_PLATFORM_VENDOR, RS_MAX_STR, buf_char, NULL));
+                printf("    * VENDOR = %s\n", buf_char);
+            }
+            CL_CHECK(clGetPlatformInfo(platforms[i], CL_PLATFORM_PROFILE, RS_MAX_STR, buf_char, NULL));
+            printf("    * PROFILE = %s\n", buf_char);
+            CL_CHECK(clGetPlatformInfo(platforms[i], CL_PLATFORM_VERSION, RS_MAX_STR, buf_char, NULL));
+            printf("    * VERSION = %s\n", buf_char);
+            if (detail_level > 2) {
+                CL_CHECK(clGetPlatformInfo(platforms[i], CL_PLATFORM_EXTENSIONS, RS_MAX_STR, buf_char, NULL));
+                if (strlen(buf_char)) {
+                    char *b = buf_char;
+                    while (1) {
+                        char *e = strchr(b, ' ');
+                        if (e) {
+                            *e = '\0';
+                        }
+                        if (b == buf_char) {
+                            printf("    * EXTENSIONS = %s\n", b);
+                        } else {
+                            printf("                   %s\n", b);
+                        }
+                        if (e) {
+                            b = e + 1;
+                        } else {
+                            break;
+                        }
+                    }
+                }
+            }
+            printf("    * Number of OpenCL devices = %d\n", *num_devices);
+            
+#define FMT "%-35s"
+#define FMT2 "%-14s"
+            
+            for (j = 0; j < platform_num_devices; j++) {
+                printf("      > DEVICE %d:\n", j);
+                CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_NAME, RS_MAX_STR, buf_char, NULL));
+                printf("        - " FMT " = %s\n", "CL_DEVICE_NAME", buf_char);
+                CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_VENDOR, RS_MAX_STR, buf_char, NULL));
+                if (strcasestr(buf_char, "intel")) {
+                    vendors[j] = RS_GPU_VENDOR_INTEL;
+                } else if (strcasestr(buf_char, "nvidia")) {
+                    vendors[j] = RS_GPU_VENDOR_NVIDIA;
+                } else if (strcasestr(buf_char, "amd")) {
+                    vendors[j] = RS_GPU_VENDOR_AMD;
+                } else {
+                    vendors[j] = RS_GPU_VENDOR_UNKNOWN;
+                }
+                printf("        - " FMT " = %s (%d)\n", "CL_DEVICE_VENDOR", buf_char, vendors[j]);
+                CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(buf_uint), &num_cus[j], NULL));
+                printf("        - " FMT " = %u\n", "CL_DEVICE_MAX_COMPUTE_UNITS", (unsigned int)num_cus[j]);
+                if (detail_level > 1) {
+                    CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_VERSION, RS_MAX_STR, buf_char, NULL));
+                    printf("        - " FMT " = %s\n", "CL_DEVICE_VERSION", buf_char);
+                    CL_CHECK(clGetDeviceInfo(devices[j], CL_DRIVER_VERSION, RS_MAX_STR, buf_char, NULL));
+                    printf("        - " FMT " = %s\n", "CL_DRIVER_VERSION", buf_char);
+                    CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(buf_uint), &buf_uint, NULL));
+                    printf("        - " FMT " = %s MHz\n", "CL_DEVICE_MAX_CLOCK_FREQUENCY", commaint(buf_uint));
+                    CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(buf_ulong), &buf_ulong, NULL));
+                    printf("        - " FMT " = %s B\n", "CL_DEVICE_GLOBAL_MEM_SIZE", commaint(buf_ulong));
+                    CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(buf_ulong), &buf_ulong, NULL));
+                    printf("        - " FMT " = %s B\n", "CL_DEVICE_MAX_MEM_ALLOC_SIZE", commaint(buf_ulong));
+                    if (detail_level > 2) {
+                        size_t work_sizes[3];
+                        clGetDeviceInfo(devices[j], CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(work_sizes), &work_sizes, NULL);
+                        printf("        - " FMT " = %zu / %zu / %zu\n", "CL_DEVICE_MAX_WORK_ITEM_SIZES", work_sizes[0], work_sizes[1], work_sizes[2]);
+                        clGetDeviceInfo(devices[j], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), work_sizes, NULL);
+                        printf("        - " FMT " = %zu\n", "CL_DEVICE_MAX_WORK_GROUP_SIZE", work_sizes[0]);
+                        clGetDeviceInfo(devices[j], CL_DEVICE_LOCAL_MEM_SIZE, sizeof(cl_ulong), &buf_ulong, NULL);
+                        printf("        - " FMT " = %s B\n", "CL_DEVICE_LOCAL_MEM_SIZE", commaint(buf_ulong));
+                        clGetDeviceInfo(devices[j], CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE, sizeof(cl_ulong), &buf_ulong, NULL);
+                        printf("        - " FMT " = %s B\n\n", "CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE", commaint(buf_ulong));
+                        
+                        clGetDeviceInfo(devices[j], CL_DEVICE_IMAGE2D_MAX_WIDTH, sizeof(size_t), work_sizes, NULL);
+                        printf("        - " FMT "   " FMT2 " %7s\n", "CL_DEVICE_IMAGE <dim>", "2D_MAX_WIDTH", commaint(work_sizes[0]));
+                        clGetDeviceInfo(devices[j], CL_DEVICE_IMAGE2D_MAX_HEIGHT, sizeof(size_t), work_sizes, NULL);
+                        printf("          " FMT "   " FMT2 " %7s\n", "", "2D_MAX_HEIGHT", commaint(work_sizes[0]));
+                        clGetDeviceInfo(devices[j], CL_DEVICE_IMAGE3D_MAX_WIDTH, sizeof(size_t), work_sizes, NULL);
+                        printf("          " FMT "   " FMT2 " %7s\n", "", "3D_MAX_WIDTH", commaint(work_sizes[0]));
+                        clGetDeviceInfo(devices[j], CL_DEVICE_IMAGE3D_MAX_HEIGHT, sizeof(size_t), work_sizes, NULL);
+                        printf("          " FMT "   " FMT2 " %7s\n", "", "3D_MAX_HEIGHT", commaint(work_sizes[0]));
+                        clGetDeviceInfo(devices[j], CL_DEVICE_IMAGE3D_MAX_DEPTH, sizeof(size_t), work_sizes, NULL);
+                        printf("          " FMT "   " FMT2 " %7s\n\n", "", "3D_MAX_DEPTH", commaint(work_sizes[0]));
+                    }
+                }
+            } // for (; j < platform_num_devices; j++)
+        } else {
+            for (; j < platform_num_devices; j++)
+            CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(buf_uint), &num_cus[j], NULL));
+        }
+    } // for (; i < num_platforms; i++)
+}
+
+
+cl_uint read_kernel_source_from_files(char *src_ptr[], ...) {
+    
+    static char char_buf[RS_MAX_KERNEL_SRC] = "";
+    
+    cl_uint count = 0, len = 0;
+    
+    va_list files;
+    
+    va_start(files, src_ptr);
+    char *filename = va_arg(files, char *);
+    while (filename != NULL && strlen(filename) > 0) {
+        
+#ifdef DEBUG_KERNEL_READ
+        rsprint("src '%s' (%d)\n", filename, (int)strlen(filename));
+#endif
+        
+        // Read in the kernel source
+        FILE *fid = fopen(filename, "r");
+        if (fid == NULL) {
+            fprintf(stderr, "%s : RS : Error opening kernel source %s.\n", now(), filename);
+            break;
+        }
+        while (!feof(fid) && strlen(char_buf) < RS_MAX_KERNEL_SRC && count < RS_MAX_KERNEL_LINES) {
+            src_ptr[count] = fgets(char_buf + len, RS_MAX_KERNEL_SRC - len, fid);
+            if (src_ptr[count] != NULL) {
+                len += strlen(src_ptr[count]) + 1;
+                count++;
+            }
+        }
+        fclose(fid);
+        
+        filename = va_arg(files, char *);
+    }
+    va_end(files);
+    
+    if (len >= RS_MAX_KERNEL_SRC * 8 / 10) {
+        printf("%s : RS : \e[31mWARNING. Kernel source size = %s / %s (%.2f > 80%%)\e[0m\n",
+               now(), commaint(len), commaint(RS_MAX_KERNEL_SRC), (float)len / RS_MAX_KERNEL_SRC * 100.0f);
+    }
+    
+    if (len >= RS_MAX_KERNEL_SRC || count >= RS_MAX_KERNEL_LINES) {
+        fprintf(stderr, "%s : RS : Kernel source exceeds buffer size constraints.  (len = %s / %s, count = %s / %s)\n",
+                now(), commaint(len), commaint(RS_MAX_KERNEL_SRC), commaint(count), commaint(RS_MAX_KERNEL_LINES));
+        return 0;
+    }
+    
+#ifdef DEBUG_KERNEL_READ
+    printf("%d lines\n", count);
+    for (int i = 0; i < count; i++) {
+        printf("%d:%s", i, src_ptr[i]);
+    }
+#endif
+    
+    return count;
+}
+
+
+ReductionParams *make_reduction_params(cl_uint count, cl_uint user_max_groups, cl_uint user_max_work_items) {
+    
+    ReductionParams *params = (ReductionParams *)malloc(sizeof(ReductionParams));
+    
+    if (params == NULL) {
+        rsprint("Error. Unable to allocate memory for ReductionParams.");
+        return NULL;
+    }
+    
+    // Copy these for housekeeping
+    params->count = count;
+    params->user_max_groups = user_max_groups;
+    params->user_max_work_items = user_max_work_items;
+    
+    // Work items is only count / 2 for small counts
+    int work_items = count > 2 * user_max_work_items ? user_max_work_items : count / 2;
+    
+    // Number of group of item-pairs
+    int groups = count / (work_items * 2);
+    if (groups > user_max_groups) {
+        groups = user_max_groups;
+    }
+    
+    cl_uint levels = 1;
+    cl_uint numels = groups;
+    
+    // First pass to figure out how many levels
+    while (numels > 1) {
+        int work_items = (numels > user_max_work_items * 2) ? user_max_work_items : numels / 2;
+        numels = numels / (work_items * 2);
+        levels++;
+    }
+    
+    params->pass_counts = levels;
+    params->entry_counts = (cl_uint *)malloc(levels * sizeof(cl_uint));
+    params->group_counts = (cl_uint *)malloc(levels * sizeof(cl_uint));
+    params->work_item_counts = (cl_uint *)malloc(levels * sizeof(cl_uint));
+    
+    params->entry_counts[0] = count;
+    params->group_counts[0] = groups;
+    params->work_item_counts[0] = work_items;
+    
+    int level = 1;
+    
+    numels = groups;
+    while (numels > 1) {
+        int work_items = (numels > user_max_work_items * 2) ? user_max_work_items : numels / 2;
+        int groups = numels / (work_items * 2);
+        if (groups > user_max_groups) {
+            groups = user_max_groups;
+        }
+        
+        params->entry_counts[level] = numels;
+        params->group_counts[level] = groups;
+        params->work_item_counts[level] = work_items;
+        
+        numels = numels / (work_items * 2);
+        level++;
+    }
+    
+    return params;
+}
+
+
+void free_reduction_params(ReductionParams *params) {
+    free(params->entry_counts);
+    free(params->group_counts);
+    free(params->work_item_counts);
+    free(params);
+}
+
+
+float read_table(const float *table, const float index_last, const float index) {
+    float floor_index = floorf(index);
+    float alpha = index - floor_index;
+    if (index <= 0.0f) {
+        //		printf("%.2f / %.2f --> i = %u  X0\n", index, index_last, 0);
+        return table[0];
+    } else if (floor_index >= index_last) {
+        //		printf("%.2f / %.2f --> i = %u  XM\n", index, index_last, (unsigned int)index_last);
+        return table[(unsigned int)index_last];
+    }
+    unsigned int i = (unsigned int)floor_index;
+    //	printf("%.2f / %.2f --> i = %d, %d / %.2f, %.2f  alpha = %.2f  v = %.3f\n", index, index_last, i, i+1,
+    //		   table[i], table[i + 1],
+    //		   alpha,
+    //		   table[i] + alpha * (table[i + 1] - table[i]);
+    return table[i] + alpha * (table[i + 1] - table[i]);
+}
+
+float zdr(cl_float4 x) {
+    return 10.0f * log10f((x.s0 * x.s0 + x.s1 * x.s1) / (x.s2 * x.s2 + x.s3 * x.s3));
+}
+
+#pragma mark -
 #pragma mark Private Functions
 
 void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char **src_ptr, cl_context_properties sharegroup, const char verb) {
 	
     C->dev = dev;
     C->verb = verb;
-    C->mem_size = 0;
+    C->mem_usage = 0;
     
     clGetDeviceInfo(C->dev, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &C->num_cus, NULL);
+
+    CL_CHECK(clGetDeviceInfo(C->dev, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(C->mem_size), &C->mem_size, NULL));
 
 #if defined (__APPLE__) && defined (_USE_GCL_)
     
@@ -102,11 +485,23 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
         
         rsprint("shareGroup = %p   verb = %d\n", sharegroup, verb);
         
+#if defined (__APPLE__)
+        
         cl_context_properties prop[] = {
             CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE, (cl_context_properties)sharegroup,
             0
         };
+
+#else
         
+        cl_context_properties prop[] = {
+            0
+        };
+        
+        rsprint("Error. I do not know how to share GL & CL on this platform.");
+        
+#endif
+
         // Create a context from a CGL share group
         C->context = clCreateContext(prop, 1, &C->dev, &pfn_notify, NULL, &ret);
         C->sharegroup = sharegroup;
@@ -315,7 +710,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     
     C->scat_rnd = gcl_malloc(C->num_scats * sizeof(cl_int4), NULL, 0);
     
-    C->mem_size += (cl_uint)( (8 * C->num_scats + work_numel + H->params.range_count) * sizeof(cl_float4) + C->num_scats * sizeof(cl_int4) );
+    C->mem_size += (8 * C->num_scats + work_numel + H->params.range_count) * sizeof(cl_float4) + C->num_scats * sizeof(cl_uint4);
 
 #else
 	
@@ -343,11 +738,15 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
             C->scat_ori = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
         }
         
+#else
+        
+        rsprint("Error. This should not happen.");
+        
 #endif
-
+        
     } else {
         C->scat_pos = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
-        C->scat_clr = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
+        //C->scat_clr = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
         C->scat_ori = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                       CHECK_CL_CREATE_BUFFER
     }
 
@@ -360,7 +759,11 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     C->work     = clCreateBuffer(C->context, CL_MEM_READ_WRITE, work_numel * sizeof(cl_float4), NULL, &ret);                         CHECK_CL_CREATE_BUFFER
 	C->pulse    = clCreateBuffer(C->context, CL_MEM_READ_WRITE, H->params.range_count * sizeof(cl_float4), NULL, &ret);              CHECK_CL_CREATE_BUFFER
 	
-	C->mem_size += (cl_uint)( (8 * C->num_scats + work_numel + H->params.range_count) * sizeof(cl_float4) + C->num_scats * sizeof(cl_int4) );
+    if (H->has_vbo_from_gl) {
+        C->mem_usage += (8 * C->num_scats + work_numel + H->params.range_count) * sizeof(cl_float4) + C->num_scats * sizeof(cl_uint4);
+    } else {
+        C->mem_usage += (7 * C->num_scats + work_numel + H->params.range_count) * sizeof(cl_float4) + C->num_scats * sizeof(cl_uint4);
+    }
     
 	//
 	// Set up kernel's input / output arguments
@@ -527,8 +930,10 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 	
 #endif
 	
-    if (C->verb) {
-        rsprint("worker[%d] memory usage = %s B\n", C->name, commaint(C->mem_size));
+    if (C->mem_usage > C->mem_size / 4 * 3) {
+        rsprint("WARNING: High GPU memory usage by worker[%d]: %s GB out of %s GB.", C->name, commafloat((float)C->mem_usage * 1.0e-9f), commafloat((float)C->mem_size * 1.0e-9f));
+    } else if (C->verb) {
+        rsprint("worker[%d] memory usage = %s B\n", C->name, commaint(C->mem_usage));
     }
 }
 
@@ -538,385 +943,6 @@ void RS_update_computed_properties(RSHandle *H) {
     H->params.fn = 0.5 / H->params.prf;
     H->params.antenna_bw_rad = H->params.antenna_bw_deg / 180.0f * M_PI;
     H->params.dr = 0.5f * H->params.c * H->params.tau;
-}
-
-#pragma mark -
-#pragma mark Convenient Functions
-
-char *commaint(long long num) {
-	static int i = 7;
-	static char buf[8][64];
-	
-	// Might need a semaphore to protect the following line
-	i = i == 7 ? 0 : i + 1;
-	
-	int b = i;
-	snprintf(buf[b], 48, "%lld", num);
-	if (num >= 1000) {
-		int c = (int)(strlen(buf[b]) - 1) / 3; // Number of commans
-		int p = (int)(strlen(buf[b])) + c;     // End position
-		int d = 1;                             // Count of digits
-		buf[b][p] = '\0';
-		while (p > 0) {
-			p--;
-			buf[b][p] = buf[b][p - c];
-			if (d > 3) {
-				d = 0;
-				buf[b][p] = ',';
-				c--;
-			}
-			d++;
-		}
-	}
-	return buf[b];
-}
-
-char *commafloat(float num) {
-    static int i = 7;
-    static char buf[8][64];
-    i = i == 7 ? 0 : i + 1;
-    int b = i;
-    snprintf(buf[b], 64, "%s.%02d", commaint(num), (int)(100 * (num - floorf(num))));
-    return buf[b];
-}
-
-// Here is a nice reference: http://www.cplusplus.com/ref/ctime/time.html
-char *now() {
-	static char timestr[64];
-	time_t utc;
-	time(&utc);
-	strftime(timestr, 63, "%H:%M:%S", localtime(&utc));
-	return timestr;
-}
-
-
-char *nowlong() {
-    static char timestr[64];
-    time_t utc;
-    time(&utc);
-    strftime(timestr, 63, "%Y%m%d-%H%M%S", localtime(&utc));
-    return timestr;
-}
-
-
-void rsprint(const char *format, ...) {
-	
-	char str[RS_MAX_STR] = "";
-	sprintf(str, "%s : RS : ", now());
-	size_t len = strlen(str);
-	va_list args;
-	
-	va_start(args, format);
-	vsnprintf(str + len, RS_MAX_STR - len, format, args);
-	len = strlen(str);
-	va_end(args);
-	
-	len = MIN(len, RS_MAX_STR - 2);
-	if (str[len-1] != '\n') {
-		str[len] = '\n';
-		str[len+1] = '\0';
-	}
-    if (!strncmp(str, "Error", 5)) {
-        fprintf(stderr, "\033[1;31m%s\033[0m", str);
-    } else if (!strncmp(str, "WARNING", 7)) {
-        fprintf(stderr, "\033[1;33m%s\033[0m", str);
-    } else {
-        printf("%s", str);
-    }
-}
-
-
-void pfn_prog_notify(cl_program program, void *user_data) {
-    if (user_data != NULL) {
-        fprintf(stderr, "%s : RS : Program %p returned %p (via pfn_prog_notify)\n", now(), program, user_data);
-    }
-}
-
-
-void pfn_notify(const char *errinfo, const void *private_info, size_t cb, void *user_data) {
-	fprintf(stderr, "%s : RS : %s (via pfn_notify)\n", now(), errinfo);
-}
-
-
-// CL_DEVICE_TYPE_GPU
-void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device_id *devices, cl_uint *num_cus, cl_uint *vendors, cl_int detail_level) {
-	
-	int i = 0, j = 0;
-	cl_uint num_platforms = 0;
-	cl_uint platform_num_devices = 0;
-	
-	*num_devices = 0;
-	
-	cl_platform_id platforms[RS_MAX_GPU_PLATFORM];
-	
-	char buf_char[RS_MAX_STR];
-	cl_uint buf_uint;
-	cl_ulong buf_ulong;
-	
-	CL_CHECK(clGetPlatformIDs(RS_MAX_GPU_PLATFORM, platforms, &num_platforms));
-	
-	if (detail_level)
-		printf("* Number of OpenCL platforms: %d\n", num_platforms);
-	
-	for (; i < num_platforms; i++) {
-		
-        CL_CHECK(clGetDeviceIDs(platforms[i], device_type, RS_MAX_GPU_DEVICE - *num_devices, &devices[*num_devices], &platform_num_devices));
-		
-		*num_devices += platform_num_devices;
-		if (*num_devices >= RS_MAX_GPU_DEVICE) {
-			fprintf(stderr, "%s : RS : Sweet. A lot of devices found. Upgrade! Upgrade!\n", now());
-			*num_devices = RS_MAX_GPU_DEVICE;
-			return;
-		}
-		
-		if (detail_level) {
-			printf("  > PLATFORM %d:\n", i);
-			CL_CHECK(clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, RS_MAX_STR, buf_char, NULL));
-			printf("    * NAME = %s\n", buf_char);
-			if (detail_level > 1) {
-				CL_CHECK(clGetPlatformInfo(platforms[i], CL_PLATFORM_VENDOR, RS_MAX_STR, buf_char, NULL));
-				printf("    * VENDOR = %s\n", buf_char);
-			}
-			CL_CHECK(clGetPlatformInfo(platforms[i], CL_PLATFORM_PROFILE, RS_MAX_STR, buf_char, NULL));
-			printf("    * PROFILE = %s\n", buf_char);
-			CL_CHECK(clGetPlatformInfo(platforms[i], CL_PLATFORM_VERSION, RS_MAX_STR, buf_char, NULL));
-			printf("    * VERSION = %s\n", buf_char);
-			if (detail_level > 2) {
-				CL_CHECK(clGetPlatformInfo(platforms[i], CL_PLATFORM_EXTENSIONS, RS_MAX_STR, buf_char, NULL));
-				if (strlen(buf_char)) {
-					char *b = buf_char;
-					while (1) {
-						char *e = strchr(b, ' ');
-						if (e) {
-							*e = '\0';
-						}
-						if (b == buf_char) {
-							printf("    * EXTENSIONS = %s\n", b);
-						} else {
-							printf("                   %s\n", b);
-						}
-						if (e) {
-							b = e + 1;
-						} else {
-							break;
-						}
-					}
-				}
-			}
-			printf("    * Number of OpenCL devices = %d\n", *num_devices);
-			
-#define FMT "%-35s"
-#define FMT2 "%-14s"
-			
-			for (j = 0; j < platform_num_devices; j++) {
-				printf("      > DEVICE %d:\n", j);
-				CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_NAME, RS_MAX_STR, buf_char, NULL));
-				printf("        - " FMT " = %s\n", "CL_DEVICE_NAME", buf_char);
-				CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_VENDOR, RS_MAX_STR, buf_char, NULL));
-                if (strcasestr(buf_char, "intel")) {
-                    vendors[j] = RS_GPU_VENDOR_INTEL;
-                } else if (strcasestr(buf_char, "nvidia")) {
-                    vendors[j] = RS_GPU_VENDOR_NVIDIA;
-                } else if (strcasestr(buf_char, "amd")) {
-                    vendors[j] = RS_GPU_VENDOR_AMD;
-                } else {
-                    vendors[j] = RS_GPU_VENDOR_UNKNOWN;
-                }
-				printf("        - " FMT " = %s (%d)\n", "CL_DEVICE_VENDOR", buf_char, vendors[j]);
-				CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(buf_uint), &num_cus[j], NULL));
-				printf("        - " FMT " = %u\n", "CL_DEVICE_MAX_COMPUTE_UNITS", (unsigned int)num_cus[j]);
-				if (detail_level > 1) {
-					CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_VERSION, RS_MAX_STR, buf_char, NULL));
-					printf("        - " FMT " = %s\n", "CL_DEVICE_VERSION", buf_char);
-					CL_CHECK(clGetDeviceInfo(devices[j], CL_DRIVER_VERSION, RS_MAX_STR, buf_char, NULL));
-					printf("        - " FMT " = %s\n", "CL_DRIVER_VERSION", buf_char);
-					CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(buf_uint), &buf_uint, NULL));
-					printf("        - " FMT " = %s MHz\n", "CL_DEVICE_MAX_CLOCK_FREQUENCY", commaint(buf_uint));
-					CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(buf_ulong), &buf_ulong, NULL));
-					printf("        - " FMT " = %s B\n", "CL_DEVICE_GLOBAL_MEM_SIZE", commaint(buf_ulong));
-					CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(buf_ulong), &buf_ulong, NULL));
-					printf("        - " FMT " = %s B\n", "CL_DEVICE_MAX_MEM_ALLOC_SIZE", commaint(buf_ulong));
-					if (detail_level > 2) {
-						size_t work_sizes[3];
-						clGetDeviceInfo(devices[j], CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(work_sizes), &work_sizes, NULL);
-						printf("        - " FMT " = %zu / %zu / %zu\n", "CL_DEVICE_MAX_WORK_ITEM_SIZES", work_sizes[0], work_sizes[1], work_sizes[2]);
-						clGetDeviceInfo(devices[j], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), work_sizes, NULL);
-						printf("        - " FMT " = %zu\n", "CL_DEVICE_MAX_WORK_GROUP_SIZE", work_sizes[0]);
-						clGetDeviceInfo(devices[j], CL_DEVICE_LOCAL_MEM_SIZE, sizeof(cl_ulong), &buf_ulong, NULL);
-						printf("        - " FMT " = %s B\n", "CL_DEVICE_LOCAL_MEM_SIZE", commaint(buf_ulong));
-						clGetDeviceInfo(devices[j], CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE, sizeof(cl_ulong), &buf_ulong, NULL);
-						printf("        - " FMT " = %s B\n\n", "CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE", commaint(buf_ulong));
-						
-						clGetDeviceInfo(devices[j], CL_DEVICE_IMAGE2D_MAX_WIDTH, sizeof(size_t), work_sizes, NULL);
-						printf("        - " FMT "   " FMT2 " %7s\n", "CL_DEVICE_IMAGE <dim>", "2D_MAX_WIDTH", commaint(work_sizes[0]));
-						clGetDeviceInfo(devices[j], CL_DEVICE_IMAGE2D_MAX_HEIGHT, sizeof(size_t), work_sizes, NULL);
-						printf("          " FMT "   " FMT2 " %7s\n", "", "2D_MAX_HEIGHT", commaint(work_sizes[0]));
-						clGetDeviceInfo(devices[j], CL_DEVICE_IMAGE3D_MAX_WIDTH, sizeof(size_t), work_sizes, NULL);
-						printf("          " FMT "   " FMT2 " %7s\n", "", "3D_MAX_WIDTH", commaint(work_sizes[0]));
-						clGetDeviceInfo(devices[j], CL_DEVICE_IMAGE3D_MAX_HEIGHT, sizeof(size_t), work_sizes, NULL);
-						printf("          " FMT "   " FMT2 " %7s\n", "", "3D_MAX_HEIGHT", commaint(work_sizes[0]));
-						clGetDeviceInfo(devices[j], CL_DEVICE_IMAGE3D_MAX_DEPTH, sizeof(size_t), work_sizes, NULL);
-						printf("          " FMT "   " FMT2 " %7s\n\n", "", "3D_MAX_DEPTH", commaint(work_sizes[0]));
-					}
-				}
-			} // for (; j < platform_num_devices; j++)
-		} else {
-			for (; j < platform_num_devices; j++)
-				CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(buf_uint), &num_cus[j], NULL));
-		}
-	} // for (; i < num_platforms; i++)
-}
-
-
-cl_uint read_kernel_source_from_files(char *src_ptr[], ...) {
-	
-	static char char_buf[RS_MAX_KERNEL_SRC] = "";
-	
-	cl_uint count = 0, len = 0;
-	
-	va_list files;
-	
-	va_start(files, src_ptr);
-	char *filename = va_arg(files, char *);
-	while (filename != NULL && strlen(filename) > 0) {
-
-#ifdef DEBUG_KERNEL_READ
-		rsprint("src '%s' (%d)\n", filename, (int)strlen(filename));
-#endif
-
-        // Read in the kernel source
-		FILE *fid = fopen(filename, "r");
-		if (fid == NULL) {
-			fprintf(stderr, "%s : RS : Error opening kernel source %s.\n", now(), filename);
-			break;
-		}
-		while (!feof(fid) && strlen(char_buf) < RS_MAX_KERNEL_SRC && count < RS_MAX_KERNEL_LINES) {
-			src_ptr[count] = fgets(char_buf + len, RS_MAX_KERNEL_SRC - len, fid);
-			if (src_ptr[count] != NULL) {
-				len += strlen(src_ptr[count]) + 1;
-				count++;
-			}
-		}
-		fclose(fid);
-		
-		filename = va_arg(files, char *);
-	}
-	va_end(files);
-	
-	if (len >= RS_MAX_KERNEL_SRC * 8 / 10) {
-		printf("%s : RS : \e[31mWARNING. Kernel source size = %s / %s (%.2f > 80%%)\e[0m\n",
-			   now(), commaint(len), commaint(RS_MAX_KERNEL_SRC), (float)len / RS_MAX_KERNEL_SRC * 100.0f);
-	}
-	
-	if (len >= RS_MAX_KERNEL_SRC || count >= RS_MAX_KERNEL_LINES) {
-		fprintf(stderr, "%s : RS : Kernel source exceeds buffer size constraints.  (len = %s / %s, count = %s / %s)\n",
-                now(), commaint(len), commaint(RS_MAX_KERNEL_SRC), commaint(count), commaint(RS_MAX_KERNEL_LINES));
-		return 0;
-	}
-	
-#ifdef DEBUG_KERNEL_READ
-	printf("%d lines\n", count);
-	for (int i = 0; i < count; i++) {
-		printf("%d:%s", i, src_ptr[i]);
-	}
-#endif
-	
-	return count;
-}
-
-
-ReductionParams *make_reduction_params(cl_uint count, cl_uint user_max_groups, cl_uint user_max_work_items) {
-	
-	ReductionParams *params = (ReductionParams *)malloc(sizeof(ReductionParams));
-	
-	if (params == NULL) {
-		rsprint("Error. Unable to allocate memory for ReductionParams.");
-		return NULL;
-	}
-	
-	// Copy these for housekeeping
-	params->count = count;
-	params->user_max_groups = user_max_groups;
-	params->user_max_work_items = user_max_work_items;
-	
-	// Work items is only count / 2 for small counts
-	int work_items = count > 2 * user_max_work_items ? user_max_work_items : count / 2;
-	
-	// Number of group of item-pairs
-	int groups = count / (work_items * 2);
-	if (groups > user_max_groups) {
-		groups = user_max_groups;
-	}
-	
-	cl_uint levels = 1;
-	cl_uint numels = groups;
-	
-	// First pass to figure out how many levels
-	while (numels > 1) {
-		int work_items = (numels > user_max_work_items * 2) ? user_max_work_items : numels / 2;
-		numels = numels / (work_items * 2);
-		levels++;
-	}
-	
-	params->pass_counts = levels;
-	params->entry_counts = (cl_uint *)malloc(levels * sizeof(cl_uint));
-	params->group_counts = (cl_uint *)malloc(levels * sizeof(cl_uint));
-	params->work_item_counts = (cl_uint *)malloc(levels * sizeof(cl_uint));
-	
-	params->entry_counts[0] = count;
-	params->group_counts[0] = groups;
-	params->work_item_counts[0] = work_items;
-	
-	int level = 1;
-	
-	numels = groups;
-	while (numels > 1) {
-		int work_items = (numels > user_max_work_items * 2) ? user_max_work_items : numels / 2;
-		int groups = numels / (work_items * 2);
-		if (groups > user_max_groups) {
-			groups = user_max_groups;
-		}
-		
-		params->entry_counts[level] = numels;
-		params->group_counts[level] = groups;
-		params->work_item_counts[level] = work_items;
-		
-		numels = numels / (work_items * 2);
-		level++;
-	}
-	
-	return params;
-}
-
-
-void free_reduction_params(ReductionParams *params) {
-	free(params->entry_counts);
-	free(params->group_counts);
-	free(params->work_item_counts);
-	free(params);
-}
-
-
-float read_table(const float *table, const float index_last, const float index) {
-	float floor_index = floorf(index);
-	float alpha = index - floor_index;
-	if (index <= 0.0f) {
-		//		printf("%.2f / %.2f --> i = %u  X0\n", index, index_last, 0);
-		return table[0];
-	} else if (floor_index >= index_last) {
-		//		printf("%.2f / %.2f --> i = %u  XM\n", index, index_last, (unsigned int)index_last);
-		return table[(unsigned int)index_last];
-	}
-	unsigned int i = (unsigned int)floor_index;
-	//	printf("%.2f / %.2f --> i = %d, %d / %.2f, %.2f  alpha = %.2f  v = %.3f\n", index, index_last, i, i+1,
-	//		   table[i], table[i + 1],
-	//		   alpha,
-	//		   table[i] + alpha * (table[i + 1] - table[i]);
-	return table[i] + alpha * (table[i + 1] - table[i]);
-}
-
-float zdr(cl_float4 x) {
-    return 10.0f * log10f((x.s0 * x.s0 + x.s1 * x.s1) / (x.s2 * x.s2 + x.s3 * x.s3));
 }
 
 #pragma mark -
@@ -2432,7 +2458,7 @@ void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const flo
         if (H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionUserConstant] == 0.0f) {
             rsprint("WARNING: Drop concentration scaling not set.");
         }
-        H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
+        H->worker[i].mem_usage += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
     }
     
     RS_table_free(table);
@@ -2504,7 +2530,7 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
         H->worker[i].range_weight_desc.s[RSTable1DDescriptionScale] = table.dx;
         H->worker[i].range_weight_desc.s[RSTable1DDescriptionOrigin] = table.x0;
         H->worker[i].range_weight_desc.s[RSTable1DDescriptionMaximum] = table.xm;
-        H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float);
+        H->worker[i].mem_usage += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float);
     }
     
     RS_table_free(table);
@@ -2585,7 +2611,7 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
         H->worker[i].angular_weight_desc.s[RSTable1DDescriptionScale] = table.dx;
         H->worker[i].angular_weight_desc.s[RSTable1DDescriptionOrigin] = table.x0;
         H->worker[i].angular_weight_desc.s[RSTable1DDescriptionMaximum] = table.xm;
-        H->worker[i].mem_size += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float);
+        H->worker[i].mem_usage += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float);
     }
 
     RS_table_free(table);
@@ -2750,7 +2776,7 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
         }
         H->worker[i].vel_desc.s[RSTable3DDescriptionRefreshTime] = table.tr;
 
-        H->worker[i].mem_size += (cl_uint)((table.xm + 1.0f) * (table.ym + 1.0f) * (table.zm + 1.0f)) * sizeof(cl_float4);
+        H->worker[i].mem_usage += (cl_uint)((table.xm + 1.0f) * (table.ym + 1.0f) * (table.zm + 1.0f)) * sizeof(cl_float4);
 	}
 
     H->vel_count++;
@@ -2949,7 +2975,7 @@ void RS_clear_vel_data(RSHandle *H) {
         cl_uint nx = (cl_uint)H->worker[i].vel_desc.s[RSTable3DDescriptionMaximumX] + 1;
         cl_uint ny = (cl_uint)H->worker[i].vel_desc.s[RSTable3DDescriptionMaximumY] + 1;
         cl_uint nz = (cl_uint)H->worker[i].vel_desc.s[RSTable3DDescriptionMaximumZ] + 1;
-        H->worker[i].mem_size -= nx * ny * nz * H->vel_count * sizeof(cl_float4);
+        H->worker[i].mem_usage -= nx * ny * nz * H->vel_count * sizeof(cl_float4);
     }
     H->vel_count = 0;
 }
@@ -3005,7 +3031,7 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
             
 #endif
             
-            H->worker[i].mem_size -= ((cl_uint)(H->worker[i].adm_desc[t].s8 + 1.0f) * (H->worker[i].adm_desc[t].s9 + 1.0f)) * 2 * sizeof(cl_float4);
+            H->worker[i].mem_usage -= ((cl_uint)(H->worker[i].adm_desc[t].s8 + 1.0f) * (H->worker[i].adm_desc[t].s9 + 1.0f)) * 2 * sizeof(cl_float4);
         }
         //  adm_cd & adm_cm always have the same desc
         
@@ -3076,7 +3102,7 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
         H->worker[i].adm_desc[t].s[RSTable3DDescriptionRecipInLnY] = H->adm_desc[t].phys.inv_inln_y;
         H->worker[i].adm_desc[t].s[RSTable3DDescriptionRecipInLnZ] = H->adm_desc[t].phys.inv_inln_z;
         H->worker[i].adm_desc[t].s[RSTable3DDescriptionTachikawa] = H->adm_desc[t].phys.Ta;
-        H->worker[i].mem_size += ((cl_uint)(cd.xm + 1.0f) * (cd.ym + 1.0f)) * 2 * sizeof(cl_float4);
+        H->worker[i].mem_usage += ((cl_uint)(cd.xm + 1.0f) * (cd.ym + 1.0f)) * 2 * sizeof(cl_float4);
     }
     H->adm_count++;
 }
@@ -3161,7 +3187,7 @@ void RS_clear_adm_data(RSHandle *H) {
         for (int t = 0; t < H->adm_count; t++) {
             cl_uint nx = (cl_uint)H->worker[i].adm_desc[t].s[RSTable3DDescriptionMaximumX] + 1;
             cl_uint ny = (cl_uint)H->worker[i].adm_desc[t].s[RSTable3DDescriptionMaximumY] + 1;
-            H->worker[i].mem_size -= nx * ny * 2 * sizeof(cl_float4);
+            H->worker[i].mem_usage -= nx * ny * 2 * sizeof(cl_float4);
         }
     }
     H->adm_count = 0;
@@ -3219,7 +3245,7 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
             
 #endif
             
-            H->worker[i].mem_size -= ((cl_uint)(H->worker[i].rcs_desc[t].s8 + 1.0f) * (H->worker[i].rcs_desc[t].s9 + 1.0f)) * 2 * sizeof(cl_float4);
+            H->worker[i].mem_usage -= ((cl_uint)(H->worker[i].rcs_desc[t].s8 + 1.0f) * (H->worker[i].rcs_desc[t].s9 + 1.0f)) * 2 * sizeof(cl_float4);
         }
         //  rcs_real & rcs_imag always have the same desc
         
@@ -3286,7 +3312,7 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
         H->worker[i].rcs_desc[t].s[RSTable3DDescriptionMaximumX] = real.xm;
         H->worker[i].rcs_desc[t].s[RSTable3DDescriptionMaximumY] = real.ym;
         H->worker[i].rcs_desc[t].s[RSTable3DDescriptionMaximumZ] = 0.0f;
-        H->worker[i].mem_size += ((cl_uint)(real.xm + 1.0f) * (real.ym + 1.0f)) * 2 * sizeof(cl_float4);
+        H->worker[i].mem_usage += ((cl_uint)(real.xm + 1.0f) * (real.ym + 1.0f)) * 2 * sizeof(cl_float4);
     }
     H->rcs_count++;
 }
@@ -3382,7 +3408,7 @@ void RS_clear_rcs_data(RSHandle *H) {
         for (int t = 0; t < H->rcs_count; t++) {
             cl_uint nx = (cl_uint)H->worker[i].rcs_desc[t].s[RSTable3DDescriptionMaximumX] + 1;
             cl_uint ny = (cl_uint)H->worker[i].rcs_desc[t].s[RSTable3DDescriptionMaximumY] + 1;
-            H->worker[i].mem_size -= nx * ny * 2 * sizeof(cl_float4);
+            H->worker[i].mem_usage -= nx * ny * 2 * sizeof(cl_float4);
         }
     }
     H->rcs_count = 0;
@@ -3764,15 +3790,23 @@ void RS_populate(RSHandle *H) {
 	for (i = 0; i < H->num_workers; i++) {
 		posix_memalign((void **)&H->pulse_tmp[i], RS_ALIGN_SIZE, H->params.range_count * sizeof(cl_float4));
 		has_null |= H->pulse_tmp[i] == NULL;
+        H->mem_size += H->params.range_count * sizeof(cl_float4);
 	}
 	if (has_null) {
 		fprintf(stderr, "%s : RS : Error allocating memory space for pulses.\n", now());
 		return;
 	}
-    
-    H->mem_size += H->params.range_count * sizeof(cl_float4);
 
-    rsprint("CPU memory usage = %s", commaint(H->mem_size));
+    // Get the available memory of the host
+    long mem_pages = sysconf(_SC_PHYS_PAGES);
+    long mem_page_size = sysconf(_SC_PAGE_SIZE);
+    size_t host_mem = mem_pages * mem_page_size;
+
+    if (H->mem_size > host_mem / 4 * 3) {
+        rsprint("WARNING: High host memory usage %s GB out of %s GB.", commafloat((float)H->mem_size * 1.0e-9f), commafloat((float)host_mem * 1.0e-9f));
+    } else if (H->verb) {
+        rsprint("CPU memory usage = %s out of %s", commaint(H->mem_size), commaint(host_mem));
+    }
 
     // Initialize the scatter body positions on CPU, will upload to the GPU later
     RS_init_scat_pos(H);
@@ -4756,7 +4790,9 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
         for (i = 0; i < H->dsd_count; i++) {
             k = (int)(H->dsd_r[i] * 20000.0f) - 5;
             s = sqrtf(H->dsd_pdf[i] / p);
-            rsprint("  o %.2f mm scale by %.5f / %.5f = %.5f  k = %d --> %.2f\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], p, s, k, 0.5f + (float)k * 0.1f);
+            if (H->verb) {
+                rsprint("  o %.2f mm scale by %.5f / %.5f = %.5f  k = %d --> %.2f\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], p, s, k, 0.5f + (float)k * 0.1f);
+            }
             snprintf(H->summary + strlen(H->summary), sizeof(H->summary), "  o %.2f mm %.5f -> %.2f dB\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], 20.0f * log10(s));
             table[k].s0 = table_copy[k].s0 * s;
             table[k].s1 = table_copy[k].s1 * s;

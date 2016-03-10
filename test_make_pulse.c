@@ -275,6 +275,9 @@ int main(int argc, char **argv)
 
     cl_float4 *table = (cl_float4 *)malloc(3 * 4 * 5 * sizeof(cl_float4));
     
+    cl_mem_flags flags = CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR;
+    cl_image_format format = {CL_RGBA, CL_FLOAT};
+
 #if defined (CL_VERSION_1_2)
     
     cl_image_desc desc;
@@ -289,9 +292,6 @@ int main(int argc, char **argv)
     desc.num_samples = 0;
     desc.buffer = NULL;
     
-    cl_mem_flags flags = CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR;
-    cl_image_format format = {CL_RGBA, CL_FLOAT};
-    
     les = clCreateImage(context, flags, &format, &desc, table, &ret);
     adm_cd = clCreateImage(context, flags, &format, &desc, table, &ret);
     adm_cm = clCreateImage(context, flags, &format, &desc, table, &ret);
@@ -300,11 +300,11 @@ int main(int argc, char **argv)
     
 #else
     
-    les = clCreateImage3D(H->worker[i].context, flags, &format, 3, 4, 5, 3 * sizeof(cl_float4), 4 * 3 * sizeof(cl_float4), table, &ret);
-    adm_cd = clCreateImage3D(H->worker[i].context, flags, &format, 3, 4, 5, 3 * sizeof(cl_float4), 4 * 3 * sizeof(cl_float4), table, &ret);
-    adm_cm = clCreateImage3D(H->worker[i].context, flags, &format, 3, 4, 5, 3 * sizeof(cl_float4), 4 * 3 * sizeof(cl_float4), table, &ret);
-    rcs_real = clCreateImage3D(H->worker[i].context, flags, &format, 3, 4, 5, 3 * sizeof(cl_float4), 4 * 3 * sizeof(cl_float4), table, &ret);
-    rcs_imag = clCreateImage3D(H->worker[i].context, flags, &format, 3, 4, 5, 3 * sizeof(cl_float4), 4 * 3 * sizeof(cl_float4), table, &ret);
+    les = clCreateImage3D(context, flags, &format, 3, 4, 5, 3 * sizeof(cl_float4), 4 * 3 * sizeof(cl_float4), table, &ret);
+    adm_cd = clCreateImage3D(context, flags, &format, 3, 4, 5, 3 * sizeof(cl_float4), 4 * 3 * sizeof(cl_float4), table, &ret);
+    adm_cm = clCreateImage3D(context, flags, &format, 3, 4, 5, 3 * sizeof(cl_float4), 4 * 3 * sizeof(cl_float4), table, &ret);
+    rcs_real = clCreateImage3D(context, flags, &format, 3, 4, 5, 3 * sizeof(cl_float4), 4 * 3 * sizeof(cl_float4), table, &ret);
+    rcs_imag = clCreateImage3D(context, flags, &format, 3, 4, 5, 3 * sizeof(cl_float4), 4 * 3 * sizeof(cl_float4), table, &ret);
     
 #endif
     

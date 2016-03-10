@@ -290,7 +290,8 @@ typedef struct _rs_worker {
     cl_mem                 vel[RS_MAX_VEL_TABLES];
     cl_float16             vel_desc;
     
-    cl_uint                mem_size;
+    size_t                 mem_size;
+    size_t                 mem_usage;
     
     // GPU side memory for VBOs
     unsigned int           vbo_scat_pos;
