@@ -295,6 +295,7 @@ int main(int argc, char *argv[]) {
                 quiet_mode = false;
                 break;
             case 'c':
+                concept = RSSimulationConceptNull;
                 if (strcasestr(optarg, "D")) {
                     concept |= RSSimulationConceptDraggedBackground;
                 }
@@ -512,7 +513,7 @@ int main(int argc, char *argv[]) {
            now(), commaint(num_pulses), num_pulses>1?"s":"", commaint(S->num_scats));
 
     // At this point, we are ready to bake
-    float dt, fps, prog, eta;
+    float dt = 0.1f, fps = 0.0f, prog = 0.0f, eta = 9999999.0f;
     
     // Some warm up if we are going for real
     if (num_pulses >= 1200) {

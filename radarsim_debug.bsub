@@ -31,7 +31,5 @@ decho "================== $nowstr ================="
 decho `pwd`
 decho "radarsim"
 
-#./radarsim -v -c -f 1000
-#decho "-----------------------------------------------------------------"
-./radarsim -vv -f 1000
+./radarsim -vv -f 2400 -o
 

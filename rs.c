@@ -1784,6 +1784,11 @@ void RS_set_scan_box(RSHandle *H,
             "nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(vol));
     sprintf(H->summary + strlen(H->summary),
             "average density = %.2f particles / radar cell\n", (float)preferred_n / nvol);
+    sprintf(H->summary + strlen(H->summary),
+            "Concepts used: %s%s%s\n",
+            H->sim_concept & RSSimulationConceptDraggedBackground ? "D" : "",
+            H->sim_concept & RSSimulationConceptBoundedParticleVelocity ? "B" : "",
+            H->sim_concept & RSSimulationConceptUniformDSDScaledRCS ? "U" : "");
     
     if (H->verb) {
         rsprint("User domain @ R:[ %5.2f ~ %5.2f ] km   E:[ %5.2f ~ %5.2f ] deg   A:[ %+6.2f ~ %+6.2f ] deg\n",
