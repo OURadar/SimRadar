@@ -689,6 +689,7 @@
 				B572419B1C0CA05F00B76BCB /* Frameworks */,
 				B572419C1C0CA05F00B76BCB /* Resources */,
 				B57241E11C0CA39D00B76BCB /* CopyFiles */,
+				B56D60431C9273B30016AFEC /* ShellScript */,
 			);
 			buildRules = (
 				B57241E51C0CA91400B76BCB /* PBXBuildRule */,
@@ -905,6 +906,19 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
 			shellScript = "#!/bin/bash\n# Auto Increment Version Script\nbuildPlist=\"SimRadar/SimRadar-Info.plist\"\nN=$(/usr/libexec/PlistBuddy -c \"Print CFBundleVersion\" $buildPlist)\nN=$(($N + 1))\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $N\" $buildPlist\nCFBuildDate=$(date)\n/usr/libexec/PlistBuddy -c \"Set :CFBuildDate $CFBuildDate\" $buildPlist\n";
+		};
+		B56D60431C9273B30016AFEC /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "#!/bin/bash\n# Auto Increment Version Script\nbuildPlist=\"SimRadarEx/Info.plist\"\nN=$(/usr/libexec/PlistBuddy -c \"Print CFBundleVersion\" $buildPlist)\nN=$(($N + 1))\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $N\" $buildPlist\nCFBuildDate=$(date)\n/usr/libexec/PlistBuddy -c \"Set :CFBuildDate $CFBuildDate\" $buildPlist\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

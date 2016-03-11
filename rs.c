@@ -4788,7 +4788,7 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
             k = (int)(H->dsd_r[i] * 20000.0f) - 5;
             s = sqrtf(H->dsd_pdf[i] / p);
             if (H->verb) {
-                rsprint("  o %.2f mm scale by %.5f / %.5f = %.5f  k = %d --> %.2f\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], p, s, k, 0.5f + (float)k * 0.1f);
+                printf("                 o %.2f mm scale by %.5f / %.5f = %.5f  k = %d --> %.2f\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], p, s, k, 0.5f + (float)k * 0.1f);
             }
             snprintf(H->summary + strlen(H->summary), sizeof(H->summary), "  o %.2f mm %.5f -> %.2f dB\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], 20.0f * log10(s));
             table[k].s0 = table_copy[k].s0 * s;
