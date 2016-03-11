@@ -1443,7 +1443,7 @@ void RS_init_scat_pos(RSHandle *H) {
     // May want to add maximum relaxation time of each drop size
     // Potential places: vel.w, aux.s2
     if (H->dsd_name != RSDropSizeDistributionUndefined) {
-        if (H->sim_concept & RSSimulationConceptScaledDropSizeDistribution) {
+        if (H->sim_concept & RSSimulationConceptUniformDSDScaledRCS) {
             for (i = 0; i < H->num_scats; i++) {
                 a = (float)rand() / RAND_MAX;
                 bin = (int)(a * (float)H->dsd_count);
@@ -4774,7 +4774,7 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
     }
     
     // Each size has same probably of occurence, the return power is scaled by the ratio of the
-    if (H->sim_concept & RSSimulationConceptScaledDropSizeDistribution) {
+    if (H->sim_concept & RSSimulationConceptUniformDSDScaledRCS) {
         
         int k;
         float s;

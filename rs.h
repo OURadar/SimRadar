@@ -233,7 +233,7 @@ enum RSSimulationConcept {
     RSSimulationConceptNull                        = 0,
     RSSimulationConceptDraggedBackground           = 1,
     RSSimulationConceptBoundedParticleVelocity     = 1 << 1,
-    RSSimulationConceptScaledDropSizeDistribution  = 1 << 2
+    RSSimulationConceptUniformDSDScaledRCS         = 1 << 2
 };
 
 //

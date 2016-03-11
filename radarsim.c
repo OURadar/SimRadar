@@ -244,7 +244,7 @@ int main(int argc, char *argv[]) {
     int debris_types = 0;
     int debris_count[RS_MAX_DEBRIS_TYPES];
     int warm_up_pulses = 2000;
-    RSSimulationConcept concept = RSSimulationConceptScaledDropSizeDistribution;
+    RSSimulationConcept concept = RSSimulationConceptUniformDSDScaledRCS;
     
     memset(debris_count, 0, RS_MAX_DEBRIS_TYPES * sizeof(int));
 
@@ -299,7 +299,7 @@ int main(int argc, char *argv[]) {
                     concept |= RSSimulationConceptDraggedBackground;
                 }
                 if (strcasestr(optarg, "U")) {
-                    concept |= RSSimulationConceptScaledDropSizeDistribution;
+                    concept |= RSSimulationConceptUniformDSDScaledRCS;
                 }
                 if (strcasestr(optarg, "V")) {
                     concept |= RSSimulationConceptBoundedParticleVelocity;
