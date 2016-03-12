@@ -185,7 +185,7 @@ void show_help() {
            "                sets simulation to use the concept of bounded particle velocity\n"
            "                but left the others as default.\n"
            "\n"
-           " --dontask\n"
+           "  --dontask\n"
            "         Sets the program to skip all the confirmation questions.\n"
            "\n\n"
            "EXAMPLES\n"
@@ -418,9 +418,8 @@ int main(int argc, char *argv[]) {
         c1 = getchar();
         printf("c1 = %d\n", c1);
         if (c1 == 'y' || c1 == 'Y') {
-            printf("Will generate an output file.\n");
+            output_file = true;
         }
-        return EXIT_SUCCESS;
     }
 
     if (num_pulses > 1000 && warm_up_pulses == -1) {
