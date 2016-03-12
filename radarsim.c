@@ -184,6 +184,9 @@ void show_help() {
            "            --concept V\n"
            "                sets simulation to use the concept of bounded particle velocity\n"
            "                but left the others as default.\n"
+           "\n"
+           " --dontask\n"
+           "         Sets the program to skip all the confirmation questions.\n"
            "\n\n"
            "EXAMPLES\n"
            "     The following simulates a vortex and creates a PPI scan data using default\n"
@@ -219,6 +222,7 @@ int main(int argc, char *argv[]) {
     char verb = 0;
     char accel_type = 0;
     char quiet_mode = true;
+    char skip_questions = false;
     char preview_only = false;
     char output_file = false;
     int num_pulses = 5;
@@ -243,7 +247,7 @@ int main(int argc, char *argv[]) {
     
     int debris_types = 0;
     int debris_count[RS_MAX_DEBRIS_TYPES];
-    int warm_up_pulses = 2000;
+    int warm_up_pulses = -1;
     RSSimulationConcept concept = RSSimulationConceptUniformDSDScaledRCS;
     
     memset(debris_count, 0, RS_MAX_DEBRIS_TYPES * sizeof(int));
@@ -271,6 +275,7 @@ int main(int argc, char *argv[]) {
         {"pulsewidth" , required_argument, 0, 'w'},
         {"quiet"      , no_argument      , 0, 'q'},
         {"verbose"    , no_argument      , 0, 'v'},
+        {"dontask"    , no_argument      , 0, 'y'},
         {0, 0, 0, 0}
     };
     
@@ -288,9 +293,6 @@ int main(int argc, char *argv[]) {
     int opt, long_index = 0;
     while ((opt = getopt_long(argc, argv, str, long_options, &long_index)) != -1) {
         switch (opt) {
-            case 'a':
-                scan.az = atof(optarg);
-                break;
             case 'A':
                 quiet_mode = false;
                 break;
@@ -308,6 +310,34 @@ int main(int argc, char *argv[]) {
                 break;
             case 'C':
                 accel_type = ACCEL_TYPE_CPU;
+                break;
+            case 'D':
+                density = atof(optarg);
+                break;
+            case 'N':
+                preview_only = true;
+                break;
+            case 'S':
+                k = sscanf(optarg, "%c:%f:%f:%f", &c1, &f1, &f2, &f3);
+                if (k < 4) {
+                    fprintf(stderr, "Error in scanmode argument.\n");
+                    exit(EXIT_FAILURE);
+                }
+                scan.mode = c1 == 'P' ? SCAN_MODE_PPI : ( c1 == 'R' ? SCAN_MODE_RHI : SCAN_MODE_STARE);
+                scan.start = f1;
+                scan.end = f2;
+                scan.delta = f3;
+                if (scan.mode == SCAN_MODE_PPI) {
+                    scan.az = f1;
+                } else if (scan.mode == SCAN_MODE_RHI) {
+                    scan.el = f1;
+                }
+                break;
+            case 'W':
+                warm_up_pulses = atoi(optarg);
+                break;
+            case 'a':
+                scan.az = atof(optarg);
                 break;
             case 'd':
                 debris_count[debris_types++] = atoi(optarg);
@@ -346,30 +376,8 @@ int main(int argc, char *argv[]) {
             case 'w':
                 pw = atof(optarg);
                 break;
-            case 'D':
-                density = atof(optarg);
-                break;
-            case 'N':
-                preview_only = true;
-                break;
-            case 'S':
-                k = sscanf(optarg, "%c:%f:%f:%f", &c1, &f1, &f2, &f3);
-                if (k < 4) {
-                    fprintf(stderr, "Error in scanmode argument.\n");
-                    exit(EXIT_FAILURE);
-                }
-                scan.mode = c1 == 'P' ? SCAN_MODE_PPI : ( c1 == 'R' ? SCAN_MODE_RHI : SCAN_MODE_STARE);
-                scan.start = f1;
-                scan.end = f2;
-                scan.delta = f3;
-                if (scan.mode == SCAN_MODE_PPI) {
-                    scan.az = f1;
-                } else if (scan.mode == SCAN_MODE_RHI) {
-                    scan.el = f1;
-                }
-                break;
-            case 'W':
-                warm_up_pulses = atoi(optarg);
+            case 'y':
+                skip_questions = true;
                 break;
             default:
                 exit(EXIT_FAILURE);
@@ -402,6 +410,23 @@ int main(int argc, char *argv[]) {
         return EXIT_SUCCESS;
     }
 
+    // ---------------------------------------------------------------------------------------------------------------
+    
+    if (num_pulses > 1000 && output_file == false && skip_questions == false) {
+        printf("Simulating more than 1,000 pulses but no file will be generated.\n"
+               "Do you want to generate an output file (Y/N/N) ? ");
+        c1 = getchar();
+        printf("c1 = %d\n", c1);
+        if (c1 == 'y' || c1 == 'Y') {
+            printf("Will generate an output file.\n");
+        }
+        return EXIT_SUCCESS;
+    }
+
+    if (num_pulses > 1000 && warm_up_pulses == -1) {
+        warm_up_pulses = 2000;
+    }
+    
     // ---------------------------------------------------------------------------------------------------------------
 
     // Initialize the RS framework
@@ -516,15 +541,15 @@ int main(int argc, char *argv[]) {
     float dt = 0.1f, fps = 0.0f, prog = 0.0f, eta = 9999999.0f;
     
     // Some warm up if we are going for real
-    if (num_pulses >= 1200) {
+    if (warm_up_pulses > 0) {
         RS_set_prt(S, 1.0f / 60.0f);
         gettimeofday(&t1, NULL);
         for (k = 0; k < warm_up_pulses; k++) {
             gettimeofday(&t2, NULL);
             dt = DTIME(t1, t2);
-            if (dt >= 1.0f) {
+            if (dt >= 0.25f) {
                 t1 = t2;
-                fprintf(stderr, "Warming up ... \033[32m%.2f%%\033[0m  \r", (float)k / warm_up_pulses * 100.0f);
+                fprintf(stderr, "Warming up ... %d out of %d ... \033[32m%.2f%%\033[0m  \r", k, warm_up_pulses, (float)k / warm_up_pulses * 100.0f);
             }
             RS_advance_time(S);
         }
@@ -545,7 +570,7 @@ int main(int argc, char *argv[]) {
 
     // Now we bake
     int k0 = 0;
-    for (k = 0; k<num_pulses; k++) {
+    for (k = 0; k < num_pulses; k++) {
         gettimeofday(&t2, NULL);
         dt = DTIME(t1, t2);
         if (dt >= 0.25f) {
@@ -558,7 +583,7 @@ int main(int argc, char *argv[]) {
             }
             eta = (float)(num_pulses - k) / fps;
             k0 = k;
-            fprintf(stderr, "k %5d   e%6.2f, a%5.2f   %.2f fps  \033[1;33m%.2f%%\033[0m   eta %.0f second%s   \r", k, scan.el, scan.az, fps, prog, eta, eta > 1.5f ? "s" : "");
+            fprintf(stderr, "k %5d   (e%6.2f, a%5.2f)   %.2f fps   \033[1;33m%.2f%%\033[0m   eta %.0f second%s   \r", k, scan.el, scan.az, fps, prog, eta, eta > 1.5f ? "s" : "");
         }
         RS_set_beam_pos(S, scan.az, scan.el);
         RS_make_pulse(S);
@@ -603,7 +628,7 @@ int main(int argc, char *argv[]) {
     
     gettimeofday(&t2, NULL);
     dt = DTIME(t0, t2);
-    printf("%s : Finished.  Total time elapsed = %.2f s\n", now(), dt);
+    printf("%s : Finished.  Total time elapsed = %.2f s  (%.1f FPS)\n", now(), dt, fps);
     
     if (verb > 2) {
         RS_download(S);
