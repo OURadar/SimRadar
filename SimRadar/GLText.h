@@ -56,6 +56,7 @@ typedef union _gltext_vertex GLTextVertex;
 	GLuint texture;
     CGFloat baseSize;
     GLKMatrix4 modelViewProjection;
+    NSFont *baseFont;
 	
 	@private
 	
@@ -81,12 +82,12 @@ typedef union _gltext_vertex GLTextVertex;
 }
 
 @property (nonatomic, readonly) GLuint texture;
-@property (nonatomic) CGFloat baseSize;
 @property (nonatomic) GLKMatrix4 modelViewProjection;
 
-+ (char *)commaint:(double)value decimals:(int)dec;
++ (char *)commaint:(long long)value;
++ (char *)commadouble:(double)value decimals:(int)dec;
 
-- (id)initWithDevicePixelRatio:(GLfloat)ratio;
+- (id)initWithFont:(NSFont *)font;
 
 - (void)showTextureMap;
 - (void)drawText:(const char *)string origin:(NSPoint)origin scale:(float)scale;

@@ -16,13 +16,41 @@
 @implementation GLText
 
 @synthesize texture;
-@synthesize baseSize;
+//@synthesize baseSize;
 @synthesize modelViewProjection;
 
 #pragma mark -
 #pragma mark Class methods
 
-+ (char *)commaint:(double)value decimals:(int)dec {
++ (char *)commaint:(long long)value {
+    static int i = 7;
+    static char buf[8][64];
+    
+    // Might need a semaphore to protect the following line
+    i = i == 7 ? 0 : i + 1;
+    
+    int b = i;
+    snprintf(buf[b], 48, "%lld", value);
+    if (value >= 1000) {
+        int c = (int)(strlen(buf[b]) - 1) / 3; // Number of commans
+        int p = (int)(strlen(buf[b])) + c;     // End position
+        int d = 1;                             // Count of digits
+        buf[b][p] = '\0';
+        while (p > 0) {
+            p--;
+            buf[b][p] = buf[b][p - c];
+            if (d > 3) {
+                d = 0;
+                buf[b][p] = ',';
+                c--;
+            }
+            d++;
+        }
+    }
+    return buf[b];
+}
+
++ (char *)commadouble:(double)value decimals:(int)dec {
     static int i = 7;
     static char buf[8][64];
     
@@ -50,7 +78,7 @@
         p = (int)strlen(buf[b]);
         if (dec == 1) {
             snprintf(&buf[b][p], 64 - p, ".%1u", (int)(10 * (value - floor(value))));
-        } else if (dec == 1) {
+        } else if (dec == 2) {
             snprintf(&buf[b][p], 64 - p, ".%02u", (int)(100 * (value - floor(value))));
         }
     } else {
@@ -63,14 +91,14 @@
 #pragma mark -
 #pragma mark Life Cycle
 
-- (id)initWithDevicePixelRatio:(GLfloat)ratio
+- (id)initWithFont:(NSFont *)userFont
 {
     self = [super init];
     if (self) {
-        baseSize = 72.0f;
-        bitmapWidth = 1024 * ratio;
-        bitmapHeight = 1024 * ratio;
-        devicePixelRatio = ratio;
+        baseFont = [userFont retain];
+        devicePixelRatio = [[NSScreen mainScreen] backingScaleFactor];
+        bitmapWidth = 1024 * devicePixelRatio;
+        bitmapHeight = 1024 * devicePixelRatio;
         bitmap = (GLubyte *)malloc(bitmapWidth * bitmapHeight * 4);
         drawAnchors = (GLTextVertex *)malloc(GLTextMaxString * 6 * sizeof(GLTextVertex));
         [self buildTexture];
@@ -81,14 +109,17 @@
 
 - (id)init
 {
-    return [self initWithDevicePixelRatio:[[NSScreen mainScreen] backingScaleFactor]];
+    return [self initWithFont:[NSFont systemFontOfSize:72.0f]];
 }
 
 
 - (void)dealloc
 {
+    [baseFont release];
+    
     free(bitmap);
     free(drawAnchors);
+    
     [super dealloc];
 }
 
@@ -232,7 +263,7 @@
     //                               [NSColor blueColor], NSForegroundColorAttributeName,
     //                               nil];
     NSDictionary *labelAtts = [NSDictionary dictionaryWithObjectsAndKeys:
-                               [NSFont systemFontOfSize:baseSize], NSFontAttributeName,
+                               baseFont, NSFontAttributeName,
                                [NSColor colorWithRed:0.0f green:0.0f blue:1.0f alpha:1.0f], NSForegroundColorAttributeName,
                                nil];
     

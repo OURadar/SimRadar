@@ -621,21 +621,23 @@ unsigned int grayToBinary(unsigned int num)
 
 - (void)updateStatusMessage
 {
-    snprintf(statusMessage[0],
-             sizeof(statusMessage[0]),
-             "@ %s Particles",
-             [GLText commaint:(double)bodyRenderer[0].count decimals:0]);
-    snprintf(statusMessage[1],
-             sizeof(statusMessage[1]),
-             "Debris Pop. %d, %d, %d    Color %d / %.3f",
-             debrisRenderer[1].count,
-             debrisRenderer[2].count,
-             debrisRenderer[3].count,
-             bodyRenderer[0].colormapIndex,
-             backgroundOpacity);
-    snprintf(statusMessage[2],
-             sizeof(statusMessage[2]),
-             "HUD %d%d%d%d / %d", (hudConfigGray & 0x08) >> 3, (hudConfigGray & 0x04) >> 2, (hudConfigGray & 0x02) >> 1, hudConfigGray & 0x01, hudConfigDecimal);
+    sprintf(statusMessage[0],
+            "Particle Count: %s",
+            [GLText commaint:bodyRenderer[0].count]);
+    sprintf(statusMessage[1],
+            "Debris: %s; %s; %s",
+            [GLText commaint:debrisRenderer[1].count],
+            [GLText commaint:debrisRenderer[2].count],
+            [GLText commaint:debrisRenderer[3].count]);
+    sprintf(statusMessage[2],
+            "Color %d / %.3f",
+            bodyRenderer[0].colormapIndex,
+            backgroundOpacity);
+    sprintf(statusMessage[3],
+             "HUD %d%d%d%d / %d",
+            (hudConfigGray & 0x08) >> 3, (hudConfigGray & 0x04) >> 2, (hudConfigGray & 0x02) >> 1, hudConfigGray & 0x01, hudConfigDecimal);
+    sprintf(statusMessage[4],
+            "FBO %u   VFX %u", ifbo, applyVFX);
 }
 
 
@@ -645,7 +647,7 @@ unsigned int grayToBinary(unsigned int num)
     tics[itic] = [NSDate timeIntervalSinceReferenceDate];
     itic = itic == RENDERER_TIC_COUNT - 1 ? 0 : itic + 1;
     fps = (float)(RENDERER_TIC_COUNT - 1) / (tics[otic] - tics[itic]);
-    snprintf(fpsString, sizeof(fpsString), "%.0f FPS", fps);
+    sprintf(fpsString, "%c%.0f FPS", (iframe / 40) % 2 == 0 ? '_' : ' ', fps);
 }
 
 
@@ -699,6 +701,7 @@ unsigned int grayToBinary(unsigned int num)
         height = 1;
         spinModel = 5;
         aspectRatio = 1.0f;
+        beamElevation = 5.0f / 180.0f * M_PI;
         
         iframe = -1;
         
@@ -706,7 +709,7 @@ unsigned int grayToBinary(unsigned int num)
         resetModelRotate = GLKMatrix4Identity;
         //resetModelRotate = GLKMatrix4MakeRotation(1.0, 0.0f, 1.0f, 1.0f);
         
-        hudConfigGray = hudConfigShowAnchors | hudConfigShowGrid | hudConfigShowOverlay;
+        hudConfigGray = hudConfigShowGrid | hudConfigShowOverlay | hudConfigShowRadarView;
         hudConfigDecimal = grayToBinary(hudConfigGray);
         
         hudModelViewProjection = GLKMatrix4Identity;
@@ -733,6 +736,11 @@ unsigned int grayToBinary(unsigned int num)
 
 - (void)dealloc
 {
+    [textRenderer release];
+    [fwTextRenderer release];
+    
+    [overlayRenderer release];
+    
 	if (lineRenderer.positions != NULL) {
 		free(lineRenderer.positions);
         free(lineRenderer.segmentOrigins);
@@ -817,6 +825,7 @@ unsigned int grayToBinary(unsigned int num)
     //NSLog(@"meshRenderer's drawColor @ %d / %d / %d", meshRenderer.colorUI, meshRenderer.positionAI, meshRenderer.textureCoordAI);
 
     textRenderer = [GLText new];
+    fwTextRenderer = [[GLText alloc] initWithFont:[NSFont fontWithName:@"Menlo" size:40.0f]];
     
     overlayRenderer = [GLOverlay new];
     
@@ -1443,25 +1452,26 @@ unsigned int grayToBinary(unsigned int num)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Text
-    snprintf(statusMessage[3], 256, "FBO %u   VFX %u  Frame %d", ifbo, applyVFX, iframe);
+    sprintf(statusMessage[5], "Frame %s", [GLText commaint:iframe]);
+    sprintf(statusMessage[6], "EL %.2f   AZ %.2f", beamElevation / M_PI * 180.0f, beamAzimuth / M_PI * 180.0f);
     
-    NSPoint origin = NSMakePoint(25.0f, height - 60.0f);
+    NSPoint origin = NSMakePoint(25.0f, height - 65.0f);
     
     if (titleString) {
         [textRenderer drawText:[titleString UTF8String] origin:origin scale:0.5f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
-        origin.y -= 30.0f;
+        origin.y -= 35.0f;
     }
     if (subtitleString) {
-        [textRenderer drawText:[subtitleString UTF8String] origin:origin scale:0.3f];
-        origin.y -= 30.0f;
+        [fwTextRenderer drawText:[subtitleString UTF8String] origin:origin scale:0.5f];
+        origin.y -= 28.0f;
     }
-    [textRenderer drawText:statusMessage[0] origin:origin scale:0.3f];   origin.y -= 30.0f;
-    [textRenderer drawText:statusMessage[1] origin:origin scale:0.3f];   origin.y -= 30.0f;
-    [textRenderer drawText:statusMessage[2] origin:origin scale:0.3f];   origin.y -= 30.0f;
-    [textRenderer drawText:statusMessage[3] origin:origin scale:0.3f];   origin.y -= 30.0f;
+    for (k = 0; k < 6; k++) {
+        [fwTextRenderer drawText:statusMessage[k] origin:origin scale:0.5f];
+        origin.y -= 28.0f;
+    }
 
 #ifndef GEN_IMG
-    [textRenderer drawText:fpsString origin:NSMakePoint(width - 30.0f, 20.0f) scale:0.333f red:1.0f green:0.9f blue:0.2f alpha:1.0f align:GLTextAlignmentRight];
+    [fwTextRenderer drawText:fpsString origin:NSMakePoint(width - 30.0f, 20.0f) scale:0.5f red:1.0f green:0.9f blue:0.2f alpha:1.0f align:GLTextAlignmentRight];
 #endif
     
     if (hudConfigGray & hudConfigShowOverlay) {
@@ -1469,8 +1479,7 @@ unsigned int grayToBinary(unsigned int num)
     }
 
     if (hudConfigGray & hudConfigShowRadarView) {
-        snprintf(statusMessage[4], 128, "EL %.2f   AZ %.2f", beamElevation / M_PI * 180.0f, beamAzimuth / M_PI * 180.0f);
-        [textRenderer drawText:statusMessage[4] origin:NSMakePoint(hudOrigin.x + 15.0f, hudOrigin.y - 30.0f) scale:0.25f];
+        [textRenderer drawText:statusMessage[6] origin:NSMakePoint(hudOrigin.x + 15.0f, hudOrigin.y - 30.0f) scale:0.25f];
     }
 
     // Colorbar
@@ -1534,7 +1543,7 @@ unsigned int grayToBinary(unsigned int num)
     projection = GLKMatrix4MakeFrustum(-aspectRatio, aspectRatio, -1.0f, 1.0f, MIN(RENDERER_NEAR_RANGE, near), RENDERER_FAR_RANGE);
     modelViewProjection = GLKMatrix4Multiply(projection, modelView);
 
-    GLfloat s = roundf(width * 0.2f);
+    GLfloat s = roundf(MAX(height * 0.25f, width * 0.2f));
     hudSize = CGSizeMake(s, s);
     hudOrigin = CGPointMake(width - hudSize.width - 30.5f, height - hudSize.height - 35.0f);
     hudProjection = GLKMatrix4MakeOrtho(0.0f, width, 0.0f, height, 0.0f, 1.0f);
@@ -1574,6 +1583,7 @@ unsigned int grayToBinary(unsigned int num)
     frameRenderer.modelViewProjectionOffOne = GLKMatrix4Multiply(frameRenderer.modelViewProjection, mat);
     
     [textRenderer setModelViewProjection:hudProjection];
+    [fwTextRenderer setModelViewProjection:hudProjection];
     
     [overlayRenderer setModelViewProjection:hudProjection];
 }
