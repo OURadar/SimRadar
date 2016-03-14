@@ -975,6 +975,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
     H->sim_tic = 0;
 	H->status = RSStatusDomainNull;
 	H->params.c = 3.0e8f;
+    H->params.tau = 0.2e-6f;
 	H->params.body_per_cell = RS_BODY_PER_CELL;
 	H->params.domain_pad_factor = RS_DOMAIN_PAD;
 	H->num_workers = 1;
@@ -1085,13 +1086,13 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
     #endif
     
     // Set up some basic parameters to default values, H->verb is still 0 so no API message output
-    RS_set_prt(H, 1.0e-3f);
+    RS_set_prt(H, RS_PARAMS_PRT);
     
-    RS_set_lambda(H, 0.1f);
+    RS_set_lambda(H, RS_PARAMS_LAMBDA);
     
-    RS_set_antenna_params(H, 1.0f, 50.0f);
+    RS_set_antenna_params(H, RS_PARAMS_BEAMWIDTH, 50.0f);
 
-    RS_set_tx_params(H, 1.0e-6f, 50.0e3f);
+    RS_set_tx_params(H, RS_PARAMS_TAU, 50.0e3f);
     
     RS_set_beam_pos(H, 5.0f, 1.0f);
     

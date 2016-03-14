@@ -40,12 +40,14 @@ typedef struct scan_params {
 } ScanParams;
 
 typedef struct user_params {
+    float beamwidth;
     float density;
     float lambda;
-    float pw;
     float prt;
-    int num_pulses;
-    unsigned int seed;
+    float pw;
+
+    int   num_pulses;
+    int   seed;
     
     char output_file;
     char preview_only;
@@ -225,6 +227,52 @@ void show_help() {
            );
 }
 
+enum ValueType {
+    ValueTypeInt,
+    ValueTypeFloat,
+    ValueTypeChar,
+    ValueTypeNotSupplied
+};
+
+void show_user_param(const char *name, const void* value, const char *unit, char type) {
+    char str_buf[64] = "not supplied";
+    char *value_str = str_buf;
+    float *fp;
+    int *ip;
+    switch (type) {
+        case ValueTypeInt:
+            ip = (int *)value;
+            if (*ip < 999) {
+                value_str = str_buf;
+            } else {
+                value_str = commaint(*ip);
+            }
+            break;
+        case ValueTypeFloat:
+            fp = (float *)value;
+            if (*fp < 999.0f) {
+                value_str = str_buf;
+            } else {
+                value_str = commafloat(*fp);
+            }
+            break;
+        case ValueTypeChar:
+            if (value == NULL) {
+                value_str = str_buf;
+            } else {
+                value_str = (char *)value;
+            }
+            break;
+        default:
+            value_str = str_buf;
+            break;
+    }
+    printf("  %-25s = %s %s\n", name, value_str, value_str == str_buf ? "" : unit);
+}
+
+#define PARAMS_FLOAT_NOT_SUPPLIED   -999.9f
+#define PARAMS_INT_NOT_SUPPLIED     -999
+
 //
 //
 //  M A I N
@@ -238,25 +286,28 @@ int main(int argc, char *argv[]) {
 
     // A structure unit that encapsulates command line user parameters
     UserParams user;
-    user.density = 0.0f;  // density of particles in count / cell
-    user.lambda = 0.0f;   // wavelength in meters
-    user.pw = 0.2e-6f;    // pulse width in seconds
-    user.prt = 1.0e-3f;   // pulse repetition time in seconds
-    user.seed = 0;
-    user.num_pulses = 5;
-    user.output_file = false;
-    user.preview_only = false;
-    user.quiet_mode = true;
-    user.skip_questions = false;
+    user.beamwidth       = PARAMS_FLOAT_NOT_SUPPLIED;
+    user.density         = PARAMS_FLOAT_NOT_SUPPLIED;
+    user.lambda          = PARAMS_FLOAT_NOT_SUPPLIED;
+    user.prt             = PARAMS_FLOAT_NOT_SUPPLIED;
+    user.pw              = PARAMS_FLOAT_NOT_SUPPLIED;
+
+    user.seed            = PARAMS_INT_NOT_SUPPLIED;
+    user.num_pulses      = PARAMS_INT_NOT_SUPPLIED;
+
+    user.output_file     = false;
+    user.preview_only    = false;
+    user.quiet_mode      = true;
+    user.skip_questions  = false;
 
     // A structure unit that encapsulates the scan strategy
     ScanParams scan;
-    scan.mode = SCAN_MODE_PPI;
-    scan.start = - 12.0f;
-    scan.end   = +12.0f;
-    scan.delta = 0.01f;
-    scan.az = scan.start;
-    scan.el = 3.0f;
+    scan.mode     = SCAN_MODE_PPI;
+    scan.start    = - 12.0f;
+    scan.end      = +12.0f;
+    scan.delta    = 0.01f;
+    scan.az       = scan.start;
+    scan.el       = 3.0f;
     
     struct timeval t0, t1, t2;
     
@@ -406,6 +457,29 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    
+    // ---------------------------------------------------------------------------------------------------------------
+
+    if (verb) {
+        printf("----------------------------------------------\n");
+        printf("  User parameters:\n");
+        printf("----------------------------------------------\n");
+        show_user_param("Beamwidth", &user.beamwidth, "deg", ValueTypeFloat);
+        show_user_param("TX lambda", &user.lambda, "m", ValueTypeFloat);
+        show_user_param("TX pulse width", &user.pw, "s", ValueTypeFloat);
+        show_user_param("Number of pulses", &user.num_pulses, "", ValueTypeInt);
+        show_user_param("Particle desntiy", &user.density, "", ValueTypeFloat);
+        printf("----------------------------------------------\n");
+    }
+    
+    // ---------------------------------------------------------------------------------------------------------------
+    
+    // Some conditions that no simulation should be commenced
+    if (user.num_pulses < 0) {
+        fprintf(stderr, "No pulses to be generated.\n");
+        exit(EXIT_FAILURE);
+    }
+    
     // ---------------------------------------------------------------------------------------------------------------
 
     // Preview only
@@ -431,22 +505,6 @@ int main(int argc, char *argv[]) {
         return EXIT_SUCCESS;
     }
 
-    // ---------------------------------------------------------------------------------------------------------------
-    
-    if (user.num_pulses > 1000 && user.output_file == false && user.skip_questions == false) {
-        printf("Simulating more than 1,000 pulses but no file will be generated.\n"
-               "Do you want to generate an output file (Y/N/N) ? ");
-        c1 = getchar();
-        printf("c1 = %d\n", c1);
-        if (c1 == 'y' || c1 == 'Y') {
-            user.output_file = true;
-        }
-    }
-
-    if (user.num_pulses > 1000 && warm_up_pulses == -1) {
-        warm_up_pulses = 2000;
-    }
-    
     // ---------------------------------------------------------------------------------------------------------------
 
     // Initialize the RS framework
@@ -496,25 +554,49 @@ int main(int argc, char *argv[]) {
 //        fprintf(stderr, "%s : Some errors occurred during ARPS_init().\n", now());
 //        return EXIT_FAILURE;
 //    }
-    
+
     RS_set_concept(S, concept);
     
-    RS_set_antenna_params(S, 1.0f, 44.5f);
+    // ---------------------------------------------------------------------------------------------------------------
     
-    RS_set_tx_params(S, user.pw, 50.0e3f);
+    // Pre-process some parameters to ensure proper logic
+    
+    if (user.num_pulses > 1000 && user.output_file == false && user.skip_questions == false) {
+        printf("Simulating more than 1,000 pulses but no file will be generated.\n"
+               "Do you want to generate an output file instead (Y/N/N) ? ");
+        c1 = getchar();
+        printf("c1 = %d\n", c1);
+        if (c1 == 'y' || c1 == 'Y') {
+            user.output_file = true;
+        }
+    }
+    
+    if (user.num_pulses > 1000 && warm_up_pulses == -1) {
+        warm_up_pulses = 2000;
+    } else {
+        warm_up_pulses = 0;
+    }
     
     // ---------------------------------------------------------------------------------------------------------------
     
     // Set user parameters that were supplied
-    if (user.density > 0.0f) {
+    if (user.beamwidth != PARAMS_FLOAT_NOT_SUPPLIED) {
+        RS_set_antenna_params(S, user.beamwidth, 44.5f);
+    }
+
+    if (user.density != PARAMS_FLOAT_NOT_SUPPLIED) {
         RS_set_density(S, user.density);
     }
     
-    if (user.lambda > 0.0f) {
+    if (user.pw != PARAMS_FLOAT_NOT_SUPPLIED) {
+        RS_set_tx_params(S, user.pw, 50.0e3f);
+    }
+    
+    if (user.lambda != PARAMS_FLOAT_NOT_SUPPLIED) {
         RS_set_lambda(S, user.lambda);
     }
     
-    if (user.seed != 0) {
+    if (user.seed != PARAMS_INT_NOT_SUPPLIED) {
         RS_set_random_seed(S, user.seed);
     }
 
@@ -551,9 +633,9 @@ int main(int argc, char *argv[]) {
     }
     
     RS_set_scan_box(S,
-                    box.origin.r, box.origin.r + box.size.r, 15.0f,   // Range
-                    box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
-                    box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
+                    box.origin.r, box.origin.r + box.size.r, 15.0f,             // Range
+                    box.origin.a, box.origin.a + box.size.a, S->params.antenna_bw_deg,    // Azimuth
+                    box.origin.e, box.origin.e + box.size.e, S->params.antenna_bw_deg);   // Elevation
     
     RS_set_dsd_to_mp(S);
 

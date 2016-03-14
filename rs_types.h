@@ -8,6 +8,14 @@
 #ifndef _rs_types_h
 #define _rs_types_h
 
+#define RS_MAX_NUM_SCATS    120000000               // Maximum tested = 110M, 2016-03-003 (25k body/cell)
+#define RS_BODY_PER_CELL           50.0f
+#define RS_PARAMS_LAMBDA            0.1f            // Default wavelength in m
+#define RS_PARAMS_PRT               1.0e-3f         // Default PRT in s
+#define RS_PARAMS_TAU               0.2e-6f         // Default pulse width in s
+#define RS_PARAMS_PULSEWIDTH        RS_PARAMS_TAU   // Default pulse width in s, same as RS_PARAMS_TAU
+#define RS_PARAMS_BEAMWIDTH         1.0f
+
 #define RSfloat  float
 
 #if !defined TRUE && !defined FALSE

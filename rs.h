@@ -438,6 +438,7 @@ typedef struct _rs_handle {
 #pragma mark Convenient functions
 
 char *commaint(long long num);
+char *commafloat(float num);
 char *now();
 char *nowlong();
 
