@@ -350,6 +350,7 @@ typedef struct _rs_handle {
     char                   verb;
     char                   method;
     RSParams               params;
+    unsigned int           random_seed;
     
     // Various simualtor state variables
     char                   status;
@@ -500,6 +501,8 @@ void RS_clear_adm_data(RSHandle *H);
 void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *table);
 void RS_set_rcs_data_to_unity(RSHandle *H);
 void RS_clear_rcs_data(RSHandle *H);
+
+void RS_set_random_seed(RSHandle *H, const unsigned int seed);
 
 #pragma mark -
 

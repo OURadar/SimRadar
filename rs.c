@@ -980,6 +980,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 	H->num_workers = 1;
     H->num_body_types = 1;
 	H->method = method;
+    H->random_seed = 19760520;
 	
 	for (i = 0; i < RS_MAX_GPU_DEVICE; i++) {
 		H->worker[i].name = i;
@@ -1366,7 +1367,7 @@ void RS_init_scat_pos(RSHandle *H) {
     int i, k, bin;
     float a;
     
-    srand(19760520);
+    srand(H->random_seed);
     
     RSVolume domain = RS_get_domain(H);
 
@@ -2303,9 +2304,6 @@ void RS_set_dsd_to_mp(RSHandle *H) {
 
     free(n);
 }
-
-#pragma mark -
-#pragma mark Functions to set properties after RS_init()
 
 void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const float table_index_start, const float table_index_delta, unsigned int table_size) {
 
@@ -3415,6 +3413,14 @@ void RS_clear_rcs_data(RSHandle *H) {
 }
 
 
+void RS_set_random_seed(RSHandle *H, const unsigned int seed) {
+    if (H->verb) {
+        rsprint("Random number generator set to use seed %s", commaint(seed));
+    }
+    H->random_seed = seed;
+}
+
+
 #pragma mark -
 #pragma mark GUI Specific Functions
 
@@ -3428,7 +3434,7 @@ void RS_update_auxiliary_attributes(RSHandle *H) {
     int i;
     
     if (!(H->status & RSStatusDomainPopulated)) {
-        fprintf(stderr, "%s : RS : Simulation domain not populated.\n", now());
+        rsprint("Error. Simulation domain not populated.");
         return;
     }
     

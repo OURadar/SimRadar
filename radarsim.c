@@ -39,6 +39,20 @@ typedef struct scan_params {
     float el;
 } ScanParams;
 
+typedef struct user_params {
+    float density;
+    float lambda;
+    float pw;
+    float prt;
+    int num_pulses;
+    unsigned int seed;
+    
+    char output_file;
+    char preview_only;
+    char quiet_mode;
+    char skip_questions;
+} UserParams;
+
 int get_next_scan_angles(ScanParams *params) {
     if (params->mode == SCAN_MODE_PPI) {
         params->az += params->delta;
@@ -221,17 +235,20 @@ int main(int argc, char *argv[]) {
     int k = 0;
     char verb = 0;
     char accel_type = 0;
-    char quiet_mode = true;
-    char skip_questions = false;
-    char preview_only = false;
-    char output_file = false;
-    int num_pulses = 5;
 
-    float density = 0.0f;
-    float lambda = 0.0f;
-    float pw = 0.2e-6f;   // pulse width in seconds
-    float prt = 1.0e-3f;
-    
+    // A structure unit that encapsulates command line user parameters
+    UserParams user;
+    user.density = 0.0f;  // density of particles in count / cell
+    user.lambda = 0.0f;   // wavelength in meters
+    user.pw = 0.2e-6f;    // pulse width in seconds
+    user.prt = 1.0e-3f;   // pulse repetition time in seconds
+    user.seed = 0;
+    user.num_pulses = 5;
+    user.output_file = false;
+    user.preview_only = false;
+    user.quiet_mode = true;
+    user.skip_questions = false;
+
     // A structure unit that encapsulates the scan strategy
     ScanParams scan;
     scan.mode = SCAN_MODE_PPI;
@@ -271,6 +288,7 @@ int main(int argc, char *argv[]) {
         {"lambda"     , required_argument, 0, 'l'},
         {"output"     , no_argument      , 0, 'o'},
         {"pulses"     , required_argument, 0, 'p'},
+        {"seed"       , required_argument, 0, 's'},
         {"prt"        , required_argument, 0, 't'},
         {"pulsewidth" , required_argument, 0, 'w'},
         {"quiet"      , no_argument      , 0, 'q'},
@@ -294,7 +312,7 @@ int main(int argc, char *argv[]) {
     while ((opt = getopt_long(argc, argv, str, long_options, &long_index)) != -1) {
         switch (opt) {
             case 'A':
-                quiet_mode = false;
+                user.quiet_mode = false;
                 break;
             case 'c':
                 concept = RSSimulationConceptNull;
@@ -312,10 +330,10 @@ int main(int argc, char *argv[]) {
                 accel_type = ACCEL_TYPE_CPU;
                 break;
             case 'D':
-                density = atof(optarg);
+                user.density = atof(optarg);
                 break;
             case 'N':
-                preview_only = true;
+                user.preview_only = true;
                 break;
             case 'S':
                 k = sscanf(optarg, "%c:%f:%f:%f", &c1, &f1, &f2, &f3);
@@ -353,31 +371,34 @@ int main(int argc, char *argv[]) {
                 exit(EXIT_SUCCESS);
                 break;
             case 'f':
-                num_pulses = atoi(optarg);
+                user.num_pulses = atoi(optarg);
                 break;
             case 'l':
-                lambda = atof(optarg);
+                user.lambda = atof(optarg);
                 break;
             case 'o':
-                output_file = true;
+                user.output_file = true;
                 break;
             case 'p':
-                num_pulses = atoi(optarg);
+                user.num_pulses = atoi(optarg);
                 break;
             case 'q':
-                quiet_mode = true;
+                user.quiet_mode = true;
+                break;
+            case 's':
+                user.seed = atoi(optarg);
                 break;
             case 't':
-                prt = atof(optarg);
+                user.prt = atof(optarg);
                 break;
             case 'v':
                 verb++;
                 break;
             case 'w':
-                pw = atof(optarg);
+                user.pw = atof(optarg);
                 break;
             case 'y':
-                skip_questions = true;
+                user.skip_questions = true;
                 break;
             default:
                 exit(EXIT_FAILURE);
@@ -388,7 +409,7 @@ int main(int argc, char *argv[]) {
     // ---------------------------------------------------------------------------------------------------------------
 
     // Preview only
-    if (preview_only) {
+    if (user.preview_only) {
         #define FLT_FMT  "\033[1;33m%+6.2f\033[0m"
         printf("Scan mode: \033[1;32m%s\033[0m", scan_mode_str(scan.mode));
         if (scan.mode == SCAN_MODE_RHI) {
@@ -403,7 +424,7 @@ int main(int argc, char *argv[]) {
         } else {
             printf("   EL: " FLT_FMT " deg\n", scan.el);
         }
-        for (k = 0; k < num_pulses; k++) {
+        for (k = 0; k < user.num_pulses; k++) {
             fprintf(stderr, "k = %4d   el = %6.2f deg   az = %5.2f deg\n", k, scan.el, scan.az);
             get_next_scan_angles(&scan);
         }
@@ -412,17 +433,17 @@ int main(int argc, char *argv[]) {
 
     // ---------------------------------------------------------------------------------------------------------------
     
-    if (num_pulses > 1000 && output_file == false && skip_questions == false) {
+    if (user.num_pulses > 1000 && user.output_file == false && user.skip_questions == false) {
         printf("Simulating more than 1,000 pulses but no file will be generated.\n"
                "Do you want to generate an output file (Y/N/N) ? ");
         c1 = getchar();
         printf("c1 = %d\n", c1);
         if (c1 == 'y' || c1 == 'Y') {
-            output_file = true;
+            user.output_file = true;
         }
     }
 
-    if (num_pulses > 1000 && warm_up_pulses == -1) {
+    if (user.num_pulses > 1000 && warm_up_pulses == -1) {
         warm_up_pulses = 2000;
     }
     
@@ -480,18 +501,27 @@ int main(int argc, char *argv[]) {
     
     RS_set_antenna_params(S, 1.0f, 44.5f);
     
-    RS_set_tx_params(S, pw, 50.0e3f);
+    RS_set_tx_params(S, user.pw, 50.0e3f);
     
-    if (density > 0.0f) {
-        RS_set_density(S, density);
+    // ---------------------------------------------------------------------------------------------------------------
+    
+    // Set user parameters that were supplied
+    if (user.density > 0.0f) {
+        RS_set_density(S, user.density);
     }
     
-    if (lambda > 0.0f) {
-        RS_set_lambda(S, lambda);
+    if (user.lambda > 0.0f) {
+        RS_set_lambda(S, user.lambda);
+    }
+    
+    if (user.seed != 0) {
+        RS_set_random_seed(S, user.seed);
     }
 
+    // ---------------------------------------------------------------------------------------------------------------
+
     // Number of LES entries needed based on the number of pulses to be simulated
-    int nvel = (int)ceilf(((float)num_pulses * S->params.prt + (float)warm_up_pulses * 1.0f / 60.0f) / LES_get_table_period(L));
+    int nvel = (int)ceilf(((float)user.num_pulses * S->params.prt + (float)warm_up_pulses * 1.0f / 60.0f) / LES_get_table_period(L));
     for (int k = 0; k < MIN(RS_MAX_VEL_TABLES, nvel); k++) {
         RS_set_vel_data_to_LES_table(S, LES_get_frame(L, k));
     }
@@ -534,7 +564,7 @@ int main(int argc, char *argv[]) {
     
     // Show some basic info
     printf("%s : Emulating %s frame%s with %s scatter bodies\n",
-           now(), commaint(num_pulses), num_pulses>1?"s":"", commaint(S->num_scats));
+           now(), commaint(user.num_pulses), user.num_pulses>1?"s":"", commaint(S->num_scats));
 
     // At this point, we are ready to bake
     float dt = 0.1f, fps = 0.0f, prog = 0.0f, eta = 9999999.0f;
@@ -555,32 +585,32 @@ int main(int argc, char *argv[]) {
     }
 
     // Set PRT to the actual one
-    RS_set_prt(S, prt);
+    RS_set_prt(S, user.prt);
 
     // ---------------------------------------------------------------------------------------------------------------
     
     gettimeofday(&t1, NULL);
     
     // Allocate a pulse cache
-    IQPulseHeader *pulse_headers = (IQPulseHeader *)malloc(num_pulses * sizeof(IQPulseHeader));
-    cl_float4 *pulse_cache = (cl_float4 *)malloc(num_pulses * S->params.range_count * sizeof(cl_float4));
-    memset(pulse_headers, 0, num_pulses * sizeof(IQPulseHeader));
-    memset(pulse_cache, 0, num_pulses * S->params.range_count * sizeof(cl_float4));
+    IQPulseHeader *pulse_headers = (IQPulseHeader *)malloc(user.num_pulses * sizeof(IQPulseHeader));
+    cl_float4 *pulse_cache = (cl_float4 *)malloc(user.num_pulses * S->params.range_count * sizeof(cl_float4));
+    memset(pulse_headers, 0, user.num_pulses * sizeof(IQPulseHeader));
+    memset(pulse_cache, 0, user.num_pulses * S->params.range_count * sizeof(cl_float4));
 
     // Now we bake
     int k0 = 0;
-    for (k = 0; k < num_pulses; k++) {
+    for (k = 0; k < user.num_pulses; k++) {
         gettimeofday(&t2, NULL);
         dt = DTIME(t1, t2);
         if (dt >= 0.25f) {
             t1 = t2;
-            prog =  (float)k / num_pulses * 100.0f;
+            prog =  (float)k / user.num_pulses * 100.0f;
             if (k > 3) {
                 fps = 0.5f * fps + 0.5f * (float)(k - k0) / dt;
             } else {
                 fps = (float)(k - k0) / dt;
             }
-            eta = (float)(num_pulses - k) / fps;
+            eta = (float)(user.num_pulses - k) / fps;
             k0 = k;
             fprintf(stderr, "k %5d   (e%6.2f, a%5.2f)   %.2f fps   \033[1;33m%.2f%%\033[0m   eta %.0f second%s   \r", k, scan.el, scan.az, fps, prog, eta, eta > 1.5f ? "s" : "");
         }
@@ -599,12 +629,12 @@ int main(int argc, char *argv[]) {
                 printf("sig[%d] = (%.4f %.4f %.4f %.4f)\n", r, S->pulse[r].s0, S->pulse[r].s1, S->pulse[r].s2, S->pulse[r].s3);
             }
             printf("\n");
-        } else if (output_file) {
+        } else if (user.output_file) {
             RS_download_pulse_only(S);
         }
 
         // Gather information for the  pulse header
-        if (output_file) {
+        if (user.output_file) {
             pulse_headers[k].time = S->sim_time;
             pulse_headers[k].az_deg = scan.az;
             pulse_headers[k].el_deg = scan.el;
@@ -617,7 +647,7 @@ int main(int argc, char *argv[]) {
     
     // Clear the last line and beep five times
     fprintf(stderr, "%120s\r", "");
-    if (!quiet_mode) {
+    if (!user.quiet_mode) {
         #if defined (__APPLE__)
         system("say -v Bells dong dong dong dong &");
         #else
@@ -636,7 +666,7 @@ int main(int argc, char *argv[]) {
         RS_show_scat_sig(S);
     }
 
-    if (output_file) {
+    if (user.output_file) {
         // Initialize a file if the user wants an output file
         FILE *fid = NULL;
         IQFileHeader file_header;
@@ -651,26 +681,26 @@ int main(int argc, char *argv[]) {
         file_header.scan_end   = scan.end;
         file_header.scan_delta = scan.delta;
         
-        if (output_file) {
+        if (user.output_file) {
             char filename[4096];
             memset(filename, 0, 4096);
             snprintf(filename, 256, "%s/Downloads/sim-%s-%s%04.1f.iq",
                      getenv("HOME"),
                      nowlong(),
                      scan.mode == SCAN_MODE_PPI ? "E": (scan.mode == SCAN_MODE_RHI ? "A" : "S"),
-                     scan.mode == SCAN_MODE_PPI ? scan.el: (scan.mode == SCAN_MODE_RHI ? scan.az : (float)num_pulses));
+                     scan.mode == SCAN_MODE_PPI ? scan.el: (scan.mode == SCAN_MODE_RHI ? scan.az : (float)user.num_pulses));
             printf("%s : Output file : \033[1;32m%s\033[0m\n", now(), filename);
             fid = fopen(filename, "wb");
             if (fid == NULL) {
                 fprintf(stderr, "%s : Error creating file for writing data.\n", now());
-                output_file = FALSE;
+                user.output_file = false;
             }
             // For now, we simply write a 4K header. Will populate with more contents next time
             fwrite(&file_header, sizeof(IQFileHeader), 1, fid);
         }
 
         // Flush out the cache
-        for (k = 0; k < num_pulses; k++) {
+        for (k = 0; k < user.num_pulses; k++) {
             fwrite(&pulse_headers[k], sizeof(IQPulseHeader), 1, fid);
             fwrite(&pulse_cache[k * S->params.range_count], sizeof(cl_float4), S->params.range_count, fid);
         }
