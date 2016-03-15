@@ -468,7 +468,7 @@ int main(int argc, char *argv[]) {
         show_user_param("TX lambda", &user.lambda, "m", ValueTypeFloat);
         show_user_param("TX pulse width", &user.pw, "s", ValueTypeFloat);
         show_user_param("Number of pulses", &user.num_pulses, "", ValueTypeInt);
-        show_user_param("Particle desntiy", &user.density, "", ValueTypeFloat);
+        show_user_param("Particle density", &user.density, "", ValueTypeFloat);
         printf("----------------------------------------------\n");
     }
     
