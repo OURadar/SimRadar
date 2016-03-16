@@ -49,11 +49,17 @@ typedef struct user_params {
     int   num_pulses;
     int   seed;
     
-    char output_file;
+    char output_iq_file;
+    char output_state_file;
     char preview_only;
     char quiet_mode;
     char skip_questions;
 } UserParams;
+
+typedef union simstate {
+    char raw[64 * 1024];
+    RSHandle master;
+} SimState;
 
 int get_next_scan_angles(ScanParams *params) {
     if (params->mode == SCAN_MODE_PPI) {
@@ -203,6 +209,10 @@ void show_help() {
            "\n"
            "  --dontask\n"
            "         Sets the program to skip all the confirmation questions.\n"
+           "\n"
+           "  --savestate\n"
+           "         Sets the program to generate a simulation state file at the end of the\n"
+           "         simulation.\n"
            "\n\n"
            "EXAMPLES\n"
            "     The following simulates a vortex and creates a PPI scan data using default\n"
@@ -283,6 +293,8 @@ int main(int argc, char *argv[]) {
     int k = 0;
     char verb = 0;
     char accel_type = 0;
+    char charbuff[4096];
+    FILE *fid = NULL;
 
     // A structure unit that encapsulates command line user parameters
     UserParams user;
@@ -295,7 +307,7 @@ int main(int argc, char *argv[]) {
     user.seed            = PARAMS_INT_NOT_SUPPLIED;
     user.num_pulses      = PARAMS_INT_NOT_SUPPLIED;
 
-    user.output_file     = false;
+    user.output_iq_file     = false;
     user.preview_only    = false;
     user.quiet_mode      = true;
     user.skip_questions  = false;
@@ -320,12 +332,16 @@ int main(int argc, char *argv[]) {
     
     memset(debris_count, 0, RS_MAX_DEBRIS_TYPES * sizeof(int));
 
+    IQFileHeader file_header;
+    memset(&file_header, 0, sizeof(IQFileHeader));
+    
     // ---------------------------------------------------------------------------------------------------------------
 
     static struct option long_options[] = {
         {"alarm"      , no_argument      , 0, 'A'}, // ASCII 65 - 90 : A - Z
         {"cpu"        , no_argument      , 0, 'C'},
         {"density"    , required_argument, 0, 'D'},
+        {"savestate"  , no_argument      , 0 ,'E'},
         {"preview"    , no_argument      , 0, 'N'},
         {"sweep"      , required_argument, 0, 'S'},
         {"warmup"     , required_argument, 0, 'W'},
@@ -383,6 +399,9 @@ int main(int argc, char *argv[]) {
             case 'D':
                 user.density = atof(optarg);
                 break;
+            case 'E':
+                user.output_state_file = true;
+                break;
             case 'N':
                 user.preview_only = true;
                 break;
@@ -428,7 +447,7 @@ int main(int argc, char *argv[]) {
                 user.lambda = atof(optarg);
                 break;
             case 'o':
-                user.output_file = true;
+                user.output_iq_file = true;
                 break;
             case 'p':
                 user.num_pulses = atoi(optarg);
@@ -472,6 +491,8 @@ int main(int argc, char *argv[]) {
         printf("----------------------------------------------\n");
     }
     
+    printf("sizeof(RSHandle) = %zu\n", sizeof(RSHandle));
+
     // ---------------------------------------------------------------------------------------------------------------
     
     // Some conditions that no simulation should be commenced
@@ -480,6 +501,16 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
     
+    if (sizeof(IQFileHeader) != sizeof(file_header.raw)) {
+        fprintf(stderr, "Error. sizeof(IQFileHeader) = %zu  !=  sizeof(file_header.raw) = %zu\n", sizeof(IQFileHeader), sizeof(file_header.raw));
+        exit(EXIT_FAILURE);
+    }
+
+    if (sizeof(RSHandle) > sizeof(SimState)) {
+        fprintf(stderr, "Error. sizeof(RSHandler) = %zu  >  %s\n", sizeof(RSHandle), commaint(sizeof(SimState)));
+        exit(EXIT_FAILURE);
+    }
+
     // ---------------------------------------------------------------------------------------------------------------
 
     // Preview only
@@ -561,13 +592,13 @@ int main(int argc, char *argv[]) {
     
     // Pre-process some parameters to ensure proper logic
     
-    if (user.num_pulses > 1000 && user.output_file == false && user.skip_questions == false) {
+    if (user.num_pulses > 1000 && user.output_iq_file == false && user.skip_questions == false) {
         printf("Simulating more than 1,000 pulses but no file will be generated.\n"
                "Do you want to generate an output file instead (Y/N/N) ? ");
         c1 = getchar();
         printf("c1 = %d\n", c1);
         if (c1 == 'y' || c1 == 'Y') {
-            user.output_file = true;
+            user.output_iq_file = true;
         }
     }
     
@@ -711,12 +742,12 @@ int main(int argc, char *argv[]) {
                 printf("sig[%d] = (%.4f %.4f %.4f %.4f)\n", r, S->pulse[r].s0, S->pulse[r].s1, S->pulse[r].s2, S->pulse[r].s3);
             }
             printf("\n");
-        } else if (user.output_file) {
+        } else if (user.output_iq_file) {
             RS_download_pulse_only(S);
         }
 
         // Gather information for the  pulse header
-        if (user.output_file) {
+        if (user.output_iq_file) {
             pulse_headers[k].time = S->sim_time;
             pulse_headers[k].az_deg = scan.az;
             pulse_headers[k].el_deg = scan.el;
@@ -741,19 +772,19 @@ int main(int argc, char *argv[]) {
     dt = DTIME(t0, t2);
     printf("%s : Finished.  Total time elapsed = %.2f s  (%.1f FPS)\n", now(), dt, fps);
     
+    // Download everything once we are all done.
+    RS_download(S);
+
     if (verb > 2) {
-        RS_download(S);
         printf("%s : Final scatter body positions, velocities and orientations:\n", now());
         RS_show_scat_pos(S);
         RS_show_scat_sig(S);
     }
 
-    if (user.output_file) {
-        // Initialize a file if the user wants an output file
-        FILE *fid = NULL;
-        IQFileHeader file_header;
-        memset(&file_header, 0, sizeof(IQFileHeader));
-        
+    // ---------------------------------------------------------------------------------------------------------------
+
+    // Initialize a file if the user wants an output file
+    if (user.output_iq_file || user.output_state_file) {
         file_header.params = S->params;
         for (k = 0; k < S->num_body_types; k++) {
             file_header.debris_population[k] = (uint32_t)S->debris_population[k];
@@ -762,24 +793,22 @@ int main(int argc, char *argv[]) {
         file_header.scan_start = scan.start;
         file_header.scan_end   = scan.end;
         file_header.scan_delta = scan.delta;
-        
-        if (user.output_file) {
-            char filename[4096];
-            memset(filename, 0, 4096);
-            snprintf(filename, 256, "%s/Downloads/sim-%s-%s%04.1f.iq",
-                     getenv("HOME"),
-                     nowlong(),
-                     scan.mode == SCAN_MODE_PPI ? "E": (scan.mode == SCAN_MODE_RHI ? "A" : "S"),
-                     scan.mode == SCAN_MODE_PPI ? scan.el: (scan.mode == SCAN_MODE_RHI ? scan.az : (float)user.num_pulses));
-            printf("%s : Output file : \033[1;32m%s\033[0m\n", now(), filename);
-            fid = fopen(filename, "wb");
-            if (fid == NULL) {
-                fprintf(stderr, "%s : Error creating file for writing data.\n", now());
-                user.output_file = false;
-            }
-            // For now, we simply write a 4K header. Will populate with more contents next time
-            fwrite(&file_header, sizeof(IQFileHeader), 1, fid);
+    }
+
+    if (user.output_iq_file) {
+        memset(charbuff, 0, sizeof(charbuff));
+        snprintf(charbuff, sizeof(charbuff), "%s/Downloads/sim-%s-%s%04.1f.iq",
+                 getenv("HOME"),
+                 nowlong(),
+                 scan.mode == SCAN_MODE_PPI ? "E": (scan.mode == SCAN_MODE_RHI ? "A" : "S"),
+                 scan.mode == SCAN_MODE_PPI ? scan.el: (scan.mode == SCAN_MODE_RHI ? scan.az : (float)user.num_pulses));
+        printf("%s : Output file : \033[1;32m%s\033[0m\n", now(), charbuff);
+        fid = fopen(charbuff, "wb");
+        if (fid == NULL) {
+            fprintf(stderr, "%s : Error creating file for writing data.\n", now());
+            user.output_iq_file = false;
         }
+        fwrite(&file_header, sizeof(IQFileHeader), 1, fid);
 
         // Flush out the cache
         for (k = 0; k < user.num_pulses; k++) {
@@ -788,6 +817,35 @@ int main(int argc, char *argv[]) {
         }
         printf("%s : Data file with %s bytes.\n", now(), commaint(ftell(fid)));
         fclose(fid);
+    }
+    
+    if (user.output_state_file) {
+        memset(charbuff, 0, sizeof(charbuff));
+        snprintf(charbuff, sizeof(charbuff), "%s/Downloads/sim-%s-%s%04.1f.simstate",
+                 getenv("HOME"),
+                 nowlong(),
+                 scan.mode == SCAN_MODE_PPI ? "E": (scan.mode == SCAN_MODE_RHI ? "A" : "S"),
+                 scan.mode == SCAN_MODE_PPI ? scan.el: (scan.mode == SCAN_MODE_RHI ? scan.az : (float)user.num_pulses));
+        printf("%s : Output file : \033[1;32m%s\033[0m\n", now(), charbuff);
+        fid = fopen(charbuff, "wb");
+        if (fid == NULL) {
+            fprintf(stderr, "%s : Error creating file for writing data.\n", now());
+            user.output_iq_file = false;
+        }
+        fwrite(&file_header, sizeof(IQFileHeader), 1, fid);
+        SimState state;
+        memset(&state, 0, sizeof(SimState));
+        memcpy(&state.master, S, sizeof(RSHandle));
+        fwrite(S, sizeof(SimState), 1, fid);
+        printf("header + state @ %s\n", commaint(ftell(fid)));
+        fwrite(S->scat_pos, sizeof(cl_float4), S->num_scats, fid);
+        fwrite(S->scat_vel, sizeof(cl_float4), S->num_scats, fid);
+        fwrite(S->scat_ori, sizeof(cl_float4), S->num_scats, fid);
+        fwrite(S->scat_tum, sizeof(cl_float4), S->num_scats, fid);
+        fwrite(S->scat_aux, sizeof(cl_float4), S->num_scats, fid);
+        fwrite(S->scat_rcs, sizeof(cl_float4), S->num_scats, fid);
+        fwrite(S->scat_sig, sizeof(cl_float4), S->num_scats, fid);
+        fwrite(S->scat_rnd, sizeof(cl_uint4), S->num_scats, fid);
     }
     
     free(pulse_headers);
