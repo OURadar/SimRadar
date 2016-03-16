@@ -236,6 +236,8 @@ enum RSSimulationConcept {
     RSSimulationConceptUniformDSDScaledRCS         = 1 << 2
 };
 
+#pragma pack(push, 1)
+
 //
 //
 //  Worker (per GPU) handle
@@ -433,6 +435,7 @@ typedef struct _rs_handle {
     
 } RSHandle;
 
+#pragma pack(pop)
 
 #pragma mark -
 #pragma mark Convenient functions

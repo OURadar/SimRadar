@@ -54,6 +54,7 @@ typedef struct user_params {
     char preview_only;
     char quiet_mode;
     char skip_questions;
+    char tight_box;
 } UserParams;
 
 typedef union simstate {
@@ -217,6 +218,10 @@ void show_help() {
            "  -t " UNDERLINE("period") "\n"
            "         Sets the pulse repetition time to " UNDERLINE("period") " seconds.\n"
            "\n"
+           "  -T (--tightbox)\n"
+           "         Sets the program to use a tight box, i.e., only simulate from ground to\n"
+           "         the scan elevation. Note that framework padding will still be respected.\n"
+           "\n"
            "  -W (--warmup) " UNDERLINE("count") "\n"
            "         Sets the warm up stage to use " UNDERLINE("count") " pulses.\n"
            "\n\n"
@@ -313,10 +318,11 @@ int main(int argc, char *argv[]) {
     user.seed            = PARAMS_INT_NOT_SUPPLIED;
     user.num_pulses      = PARAMS_INT_NOT_SUPPLIED;
 
-    user.output_iq_file     = false;
+    user.output_iq_file  = false;
     user.preview_only    = false;
     user.quiet_mode      = true;
     user.skip_questions  = false;
+    user.tight_box       = false;
 
     // A structure unit that encapsulates the scan strategy
     ScanParams scan;
@@ -334,7 +340,9 @@ int main(int argc, char *argv[]) {
     int debris_types = 0;
     int debris_count[RS_MAX_DEBRIS_TYPES];
     int warm_up_pulses = -1;
-    RSSimulationConcept concept = RSSimulationConceptUniformDSDScaledRCS;
+    RSSimulationConcept concept = RSSimulationConceptDraggedBackground
+                                | RSSimulationConceptBoundedParticleVelocity
+                                | RSSimulationConceptUniformDSDScaledRCS;
     
     memset(debris_count, 0, RS_MAX_DEBRIS_TYPES * sizeof(int));
 
@@ -350,6 +358,7 @@ int main(int argc, char *argv[]) {
         {"savestate"  , no_argument      , 0 ,'E'},
         {"preview"    , no_argument      , 0, 'N'},
         {"sweep"      , required_argument, 0, 'S'},
+        {"tightbox"   , no_argument      , 0, 'T'},
         {"warmup"     , required_argument, 0, 'W'},
         {"azimuth"    , required_argument, 0, 'a'}, // ASCII 97 - 122 : a - z
         {"concept"    , required_argument, 0, 'c'},
@@ -466,6 +475,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 't':
                 user.prt = atof(optarg);
+                break;
+            case 'T':
+                user.tight_box = true;
                 break;
             case 'v':
                 verb++;
@@ -650,13 +662,15 @@ int main(int argc, char *argv[]) {
     }
     RS_revise_debris_counts_to_gpu_preference(S);
     
-//    if (scan.mode == SCAN_MODE_PPI) {
-//        // No need to go all the way up if we are looking low
-//        box.size.e = MIN(box.size.e, scan.el);
-//    } else if (scan.mode == SCAN_MODE_RHI) {
-//        // Need to make sure we cover the very top
-//        box.size.e = MAX(scan.start, scan.end);
-//    }
+    if (user.tight_box) {
+        if (scan.mode == SCAN_MODE_PPI) {
+            // No need to go all the way up if we are looking low
+            box.size.e = MIN(box.size.e, scan.el);
+        } else if (scan.mode == SCAN_MODE_RHI) {
+            // Need to make sure we cover the very top
+            box.size.e = MAX(scan.start, scan.end);
+        }
+    }
     
     RS_set_scan_box(S,
                     box.origin.r, box.origin.r + box.size.r, 15.0f,             // Range
@@ -679,6 +693,10 @@ int main(int argc, char *argv[]) {
     
     // Some warm up if we are going for real
     if (warm_up_pulses > 0) {
+        // Save the framework default PRT for later
+        if (user.prt == PARAMS_FLOAT_NOT_SUPPLIED) {
+            user.prt = S->params.prt;
+        }
         RS_set_prt(S, 1.0f / 60.0f);
         gettimeofday(&t1, NULL);
         for (k = 0; k < warm_up_pulses; k++) {
@@ -834,6 +852,7 @@ int main(int argc, char *argv[]) {
         fwrite(S, sizeof(SimState), 1, fid);
         if (verb > 1) {
             printf("%s : Total header size = %s\n", now(), commaint(ftell(fid)));
+            printf("%s : sizeof(LESTable) = %zu   sizeof(ADMTable) = %zu   sizeof(RCSTable) = %zu\n", now(), sizeof(LESTable), sizeof(ADMTable), sizeof(RCSTable));
         }
         fwrite(S->scat_pos, sizeof(cl_float4), S->num_scats, fid);
         fwrite(S->scat_vel, sizeof(cl_float4), S->num_scats, fid);
