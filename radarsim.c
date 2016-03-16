@@ -492,12 +492,11 @@ int main(int argc, char *argv[]) {
         show_user_param("Beamwidth", &user.beamwidth, "deg", ValueTypeFloat);
         show_user_param("TX lambda", &user.lambda, "m", ValueTypeFloat);
         show_user_param("TX pulse width", &user.pw, "s", ValueTypeFloat);
+        show_user_param("Warm up pulses", &warm_up_pulses, "", ValueTypeInt);
         show_user_param("Number of pulses", &user.num_pulses, "", ValueTypeInt);
         show_user_param("Particle density", &user.density, "", ValueTypeFloat);
         printf("----------------------------------------------\n");
     }
-    
-    printf("sizeof(RSHandle) = %zu\n", sizeof(RSHandle));
 
     // ---------------------------------------------------------------------------------------------------------------
     
@@ -602,8 +601,6 @@ int main(int argc, char *argv[]) {
     
     if (user.num_pulses > 1000 && warm_up_pulses == -1) {
         warm_up_pulses = 2000;
-    } else {
-        warm_up_pulses = 0;
     }
     
     // ---------------------------------------------------------------------------------------------------------------
@@ -653,13 +650,13 @@ int main(int argc, char *argv[]) {
     }
     RS_revise_debris_counts_to_gpu_preference(S);
     
-    if (scan.mode == SCAN_MODE_PPI) {
-        // No need to go all the way up if we are looking low
-        box.size.e = MIN(box.size.e, scan.el);
-    } else if (scan.mode == SCAN_MODE_RHI) {
-        // Need to make sure we cover the very top
-        box.size.e = MAX(scan.start, scan.end);
-    }
+//    if (scan.mode == SCAN_MODE_PPI) {
+//        // No need to go all the way up if we are looking low
+//        box.size.e = MIN(box.size.e, scan.el);
+//    } else if (scan.mode == SCAN_MODE_RHI) {
+//        // Need to make sure we cover the very top
+//        box.size.e = MAX(scan.start, scan.end);
+//    }
     
     RS_set_scan_box(S,
                     box.origin.r, box.origin.r + box.size.r, 15.0f,             // Range
@@ -675,7 +672,7 @@ int main(int argc, char *argv[]) {
     
     // Show some basic info
     printf("%s : Emulating %s frame%s with %s scatter bodies\n",
-           now(), commaint(user.num_pulses), user.num_pulses>1?"s":"", commaint(S->num_scats));
+           now(), commaint(user.num_pulses), user.num_pulses > 1 ? "s" : "", commaint(S->num_scats));
 
     // At this point, we are ready to bake
     float dt = 0.1f, fps = 0.0f, prog = 0.0f, eta = 9999999.0f;
@@ -846,7 +843,7 @@ int main(int argc, char *argv[]) {
         fwrite(S->scat_rcs, sizeof(cl_float4), S->num_scats, fid);
         fwrite(S->scat_sig, sizeof(cl_float4), S->num_scats, fid);
         fwrite(S->scat_rnd, sizeof(cl_uint4), S->num_scats, fid);
-        printf("%s : Data file with %s B.\n", now(), commaint(ftell(fid)));
+        printf("%s : State file with %s B.\n", now(), commaint(ftell(fid)));
         fclose(fid);
     }
     
