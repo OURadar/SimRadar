@@ -561,7 +561,6 @@ int main(int argc, char *argv[]) {
     ADMHandle *A;
     LESHandle *L;
     RCSHandle *R;
-//    ARPSHandle *O;
     
     
     // Initialize the LES ingest
@@ -585,13 +584,6 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
     
-    // Initialize the ARPS ingest
-//    O = ARPS_init();
-//    if (O == NULL) {
-//        fprintf(stderr, "%s : Some errors occurred during ARPS_init().\n", now());
-//        return EXIT_FAILURE;
-//    }
-
     RS_set_concept(S, concept);
     
     // ---------------------------------------------------------------------------------------------------------------
@@ -821,7 +813,7 @@ int main(int argc, char *argv[]) {
             fwrite(&pulse_headers[k], sizeof(IQPulseHeader), 1, fid);
             fwrite(&pulse_cache[k * S->params.range_count], sizeof(cl_float4), S->params.range_count, fid);
         }
-        printf("%s : Data file with %s bytes.\n", now(), commaint(ftell(fid)));
+        printf("%s : Data file with %s B.\n", now(), commaint(ftell(fid)));
         fclose(fid);
     }
     
@@ -843,7 +835,9 @@ int main(int argc, char *argv[]) {
         memset(&state, 0, sizeof(SimState));
         memcpy(&state.master, S, sizeof(RSHandle));
         fwrite(S, sizeof(SimState), 1, fid);
-        printf("header + state @ %s\n", commaint(ftell(fid)));
+        if (verb > 1) {
+            printf("%s : Total header size = %s\n", now(), commaint(ftell(fid)));
+        }
         fwrite(S->scat_pos, sizeof(cl_float4), S->num_scats, fid);
         fwrite(S->scat_vel, sizeof(cl_float4), S->num_scats, fid);
         fwrite(S->scat_ori, sizeof(cl_float4), S->num_scats, fid);
@@ -852,6 +846,8 @@ int main(int argc, char *argv[]) {
         fwrite(S->scat_rcs, sizeof(cl_float4), S->num_scats, fid);
         fwrite(S->scat_sig, sizeof(cl_float4), S->num_scats, fid);
         fwrite(S->scat_rnd, sizeof(cl_uint4), S->num_scats, fid);
+        printf("%s : Data file with %s B.\n", now(), commaint(ftell(fid)));
+        fclose(fid);
     }
     
     free(pulse_headers);
@@ -866,8 +862,6 @@ int main(int argc, char *argv[]) {
     ADM_free(A);
     
     RCS_free(R);
-    
-    //ARPS_free(O);
     
     return EXIT_SUCCESS;
 }
