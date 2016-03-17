@@ -47,6 +47,7 @@ typedef struct user_params {
     float pw;
 
     int   num_pulses;
+    int   warm_up_pulses;
     int   seed;
     
     char output_iq_file;
@@ -203,8 +204,8 @@ void show_help() {
            "  --sweep " UNDERLINE("M:S:E:D") "\n"
            "         Sets the beam to scan mode.\n"
            "         The argument " UNDERLINE("M:S:E:D") " are parameters for mode, start, end, and delta.\n"
+           "            M = P for PPI (plane position indicator) mode\n"
            "            M = R for RHI (range height indicator) mode\n"
-           "            M = P for RHI (range height indicator) mode\n"
            "         Examples:\n"
            "            --sweep P:-12:12:0.1\n"
            "                sets the scan mode in PPI, start from azimuth -12-deg and ends\n"
@@ -255,6 +256,9 @@ enum ValueType {
     ValueTypeNotSupplied
 };
 
+#define PARAMS_FLOAT_NOT_SUPPLIED   -999.9f
+#define PARAMS_INT_NOT_SUPPLIED     -999
+
 void show_user_param(const char *name, const void* value, const char *unit, char type) {
     char str_buf[64] = "not supplied";
     char *value_str = str_buf;
@@ -263,7 +267,7 @@ void show_user_param(const char *name, const void* value, const char *unit, char
     switch (type) {
         case ValueTypeInt:
             ip = (int *)value;
-            if (*ip < 999) {
+            if (*ip == PARAMS_INT_NOT_SUPPLIED) {
                 value_str = str_buf;
             } else {
                 value_str = commaint(*ip);
@@ -271,7 +275,7 @@ void show_user_param(const char *name, const void* value, const char *unit, char
             break;
         case ValueTypeFloat:
             fp = (float *)value;
-            if (*fp < 999.0f) {
+            if (*fp == PARAMS_FLOAT_NOT_SUPPLIED) {
                 value_str = str_buf;
             } else {
                 value_str = commafloat(*fp);
@@ -291,9 +295,6 @@ void show_user_param(const char *name, const void* value, const char *unit, char
     printf("  %-25s = %s %s\n", name, value_str, value_str == str_buf ? "" : unit);
 }
 
-#define PARAMS_FLOAT_NOT_SUPPLIED   -999.9f
-#define PARAMS_INT_NOT_SUPPLIED     -999
-
 //
 //
 //  M A I N
@@ -309,20 +310,22 @@ int main(int argc, char *argv[]) {
 
     // A structure unit that encapsulates command line user parameters
     UserParams user;
-    user.beamwidth       = PARAMS_FLOAT_NOT_SUPPLIED;
-    user.density         = PARAMS_FLOAT_NOT_SUPPLIED;
-    user.lambda          = PARAMS_FLOAT_NOT_SUPPLIED;
-    user.prt             = PARAMS_FLOAT_NOT_SUPPLIED;
-    user.pw              = PARAMS_FLOAT_NOT_SUPPLIED;
+    user.beamwidth         = PARAMS_FLOAT_NOT_SUPPLIED;
+    user.density           = PARAMS_FLOAT_NOT_SUPPLIED;
+    user.lambda            = PARAMS_FLOAT_NOT_SUPPLIED;
+    user.prt               = PARAMS_FLOAT_NOT_SUPPLIED;
+    user.pw                = PARAMS_FLOAT_NOT_SUPPLIED;
 
-    user.seed            = PARAMS_INT_NOT_SUPPLIED;
-    user.num_pulses      = PARAMS_INT_NOT_SUPPLIED;
+    user.seed              = PARAMS_INT_NOT_SUPPLIED;
+    user.num_pulses        = PARAMS_INT_NOT_SUPPLIED;
+    user.warm_up_pulses    = PARAMS_INT_NOT_SUPPLIED;
 
-    user.output_iq_file  = false;
-    user.preview_only    = false;
-    user.quiet_mode      = true;
-    user.skip_questions  = false;
-    user.tight_box       = false;
+    user.output_iq_file    = false;
+    user.output_state_file = false;
+    user.preview_only      = false;
+    user.quiet_mode        = true;
+    user.skip_questions    = false;
+    user.tight_box         = false;
 
     // A structure unit that encapsulates the scan strategy
     ScanParams scan;
@@ -339,7 +342,6 @@ int main(int argc, char *argv[]) {
     
     int debris_types = 0;
     int debris_count[RS_MAX_DEBRIS_TYPES];
-    int warm_up_pulses = -1;
     RSSimulationConcept concept = RSSimulationConceptDraggedBackground
                                 | RSSimulationConceptBoundedParticleVelocity
                                 | RSSimulationConceptUniformDSDScaledRCS;
@@ -437,7 +439,7 @@ int main(int argc, char *argv[]) {
                 }
                 break;
             case 'W':
-                warm_up_pulses = atoi(optarg);
+                user.warm_up_pulses = atoi(optarg);
                 break;
             case 'a':
                 scan.az = atof(optarg);
@@ -497,14 +499,14 @@ int main(int argc, char *argv[]) {
     
     // ---------------------------------------------------------------------------------------------------------------
 
-    if (verb) {
+    if (verb > 1) {
         printf("----------------------------------------------\n");
         printf("  User parameters:\n");
         printf("----------------------------------------------\n");
         show_user_param("Beamwidth", &user.beamwidth, "deg", ValueTypeFloat);
         show_user_param("TX lambda", &user.lambda, "m", ValueTypeFloat);
         show_user_param("TX pulse width", &user.pw, "s", ValueTypeFloat);
-        show_user_param("Warm up pulses", &warm_up_pulses, "", ValueTypeInt);
+        show_user_param("Warm up pulses", &user.warm_up_pulses, "", ValueTypeInt);
         show_user_param("Number of pulses", &user.num_pulses, "", ValueTypeInt);
         show_user_param("Particle density", &user.density, "", ValueTypeFloat);
         printf("----------------------------------------------\n");
@@ -605,14 +607,17 @@ int main(int argc, char *argv[]) {
         printf("Simulating more than 1,000 pulses but no file will be generated.\n"
                "Do you want to generate an output file instead (Y/N/N) ? ");
         c1 = getchar();
-        printf("c1 = %d\n", c1);
         if (c1 == 'y' || c1 == 'Y') {
             user.output_iq_file = true;
         }
     }
     
-    if (user.num_pulses > 1000 && warm_up_pulses == -1) {
-        warm_up_pulses = 2000;
+    if (user.warm_up_pulses == PARAMS_INT_NOT_SUPPLIED) {
+        if (user.num_pulses > 1000)  {
+            user.warm_up_pulses = 2000;
+        } else {
+            user.warm_up_pulses = 0;
+        }
     }
     
     // ---------------------------------------------------------------------------------------------------------------
@@ -641,7 +646,16 @@ int main(int argc, char *argv[]) {
     // ---------------------------------------------------------------------------------------------------------------
 
     // Number of LES entries needed based on the number of pulses to be simulated
-    int nvel = (int)ceilf(((float)user.num_pulses * S->params.prt + (float)warm_up_pulses * 1.0f / 60.0f) / LES_get_table_period(L));
+    int nvel = 0;
+    if (user.prt == PARAMS_FLOAT_NOT_SUPPLIED) {
+        nvel = (int)ceilf(((float)user.num_pulses * S->params.prt + (float)user.warm_up_pulses * 1.0f / 60.0f) / LES_get_table_period(L));
+    } else {
+        nvel = (int)ceilf(((float)user.num_pulses * user.prt + (float)user.warm_up_pulses * 1.0f / 60.0f) / LES_get_table_period(L));
+    }
+    if (nvel <= 0) {
+        fprintf(stderr, "%s : nvel = 0.\n", now());
+        exit(EXIT_FAILURE);
+    }
     for (int k = 0; k < MIN(RS_MAX_VEL_TABLES, nvel); k++) {
         RS_set_vel_data_to_LES_table(S, LES_get_frame(L, k));
     }
@@ -673,17 +687,24 @@ int main(int argc, char *argv[]) {
     }
     
     RS_set_scan_box(S,
-                    box.origin.r, box.origin.r + box.size.r, 15.0f,             // Range
+                    box.origin.r, box.origin.r + box.size.r, 15.0f,                       // Range
                     box.origin.a, box.origin.a + box.size.a, S->params.antenna_bw_deg,    // Azimuth
                     box.origin.e, box.origin.e + box.size.e, S->params.antenna_bw_deg);   // Elevation
     
     RS_set_dsd_to_mp(S);
 
+    // Save the framework default PRT for later
+    if (user.prt == PARAMS_FLOAT_NOT_SUPPLIED) {
+        user.prt = S->params.prt;
+    }
+
+    RS_show_radar_params(S);
+    
     // Populate the domain with scatter bodies.
     // This is also the function that triggers kernel compilation, GPU memory allocation and
     // upload all the parameters to the GPU.
     RS_populate(S);
-    
+        
     // Show some basic info
     printf("%s : Emulating %s frame%s with %s scatter bodies\n",
            now(), commaint(user.num_pulses), user.num_pulses > 1 ? "s" : "", commaint(S->num_scats));
@@ -692,22 +713,19 @@ int main(int argc, char *argv[]) {
     float dt = 0.1f, fps = 0.0f, prog = 0.0f, eta = 9999999.0f;
     
     // Some warm up if we are going for real
-    if (warm_up_pulses > 0) {
-        // Save the framework default PRT for later
-        if (user.prt == PARAMS_FLOAT_NOT_SUPPLIED) {
-            user.prt = S->params.prt;
-        }
+    if (user.warm_up_pulses > 0) {
         RS_set_prt(S, 1.0f / 60.0f);
         gettimeofday(&t1, NULL);
-        for (k = 0; k < warm_up_pulses; k++) {
+        for (k = 0; k < user.warm_up_pulses; k++) {
             gettimeofday(&t2, NULL);
             dt = DTIME(t1, t2);
             if (dt >= 0.25f) {
                 t1 = t2;
-                fprintf(stderr, "Warming up ... %d out of %d ... \033[32m%.2f%%\033[0m  \r", k, warm_up_pulses, (float)k / warm_up_pulses * 100.0f);
+                fprintf(stderr, "Warming up ... %d out of %d ... \033[32m%.2f%%\033[0m  \r", k, user.warm_up_pulses, (float)k / user.warm_up_pulses * 100.0f);
             }
             RS_advance_time(S);
         }
+        fprintf(stderr, "%80s\r", " ");
     }
 
     // Set PRT to the actual one
@@ -818,8 +836,7 @@ int main(int argc, char *argv[]) {
         printf("%s : Output file : \033[1;32m%s\033[0m\n", now(), charbuff);
         fid = fopen(charbuff, "wb");
         if (fid == NULL) {
-            fprintf(stderr, "%s : Error creating file for writing data.\n", now());
-            user.output_iq_file = false;
+            fprintf(stderr, "%s : Error creating file for IQ data.\n", now());
         }
         fwrite(&file_header, sizeof(IQFileHeader), 1, fid);
 
@@ -842,8 +859,7 @@ int main(int argc, char *argv[]) {
         printf("%s : Output file : \033[1;32m%s\033[0m\n", now(), charbuff);
         fid = fopen(charbuff, "wb");
         if (fid == NULL) {
-            fprintf(stderr, "%s : Error creating file for writing data.\n", now());
-            user.output_iq_file = false;
+            fprintf(stderr, "%s : Error creating file for simulation state data.\n", now());
         }
         fwrite(&file_header, sizeof(IQFileHeader), 1, fid);
         SimState state;
@@ -851,7 +867,7 @@ int main(int argc, char *argv[]) {
         memcpy(&state.master, S, sizeof(RSHandle));
         fwrite(S, sizeof(SimState), 1, fid);
         if (verb > 1) {
-            printf("%s : Total header size = %s\n", now(), commaint(ftell(fid)));
+            printf("%s : Total header size = %s B.\n", now(), commaint(ftell(fid)));
             printf("%s : sizeof(LESTable) = %zu   sizeof(ADMTable) = %zu   sizeof(RCSTable) = %zu\n", now(), sizeof(LESTable), sizeof(ADMTable), sizeof(RCSTable));
         }
         fwrite(S->scat_pos, sizeof(cl_float4), S->num_scats, fid);

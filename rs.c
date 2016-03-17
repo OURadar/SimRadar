@@ -14,6 +14,8 @@
 #include "rs.cl.h"
 #endif
 
+#define RS_INDENT  "                  "
+
 #pragma mark -
 
 // These implementations are very inefficient on CPU; They are coded this way so comparison with the GPU kernel codes can be made easily.
@@ -1495,15 +1497,15 @@ void RS_init_scat_pos(RSHandle *H) {
         if (H->verb > 1) {
             rsprint("Actual DSD Specifications:");
             for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
-                printf("                 o %.2f mm - PDF %.5f / %.5f / %zu particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->num_scats, H->dsd_pop[i]);
+                printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %zu particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->num_scats, H->dsd_pop[i]);
             }
             if (H->dsd_count > 8) {
-                printf("                 o  :      -      :     /  :     /\n");
-                printf("                 o  :      -      :     /  :     /\n");
+                printf(RS_INDENT "o  :      -      :     /  :     /\n");
+                printf(RS_INDENT "o  :      -      :     /  :     /\n");
                 i = MAX(4, H->dsd_count - 1);
             }
             for (; i < H->dsd_count; i++) {
-                printf("                 o %.2f mm - PDF %.5f / %.5f / %zu particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->num_scats, H->dsd_pop[i]);
+                printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %zu particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->num_scats, H->dsd_pop[i]);
             }
         }
     }
@@ -1810,6 +1812,21 @@ void RS_set_scan_box(RSHandle *H,
         rsprint("              = ( %.2f m x %.2f m x %.2f m )\n",
                xmax - xmin, ymax - ymin, zmax - zmin);
         rsprint("nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(vol));
+        rsprint("average density = %.2f particles / radar cell\n", (float)preferred_n / nvol);
+        rsprint("Concepts used:\n");
+        if (H->sim_concept == RSSimulationConceptNull) {
+            printf(RS_INDENT "o No special concept\n");
+        } else {
+            if (H->sim_concept & RSSimulationConceptDraggedBackground) {
+                printf(RS_INDENT "o D - Dragged Background\n");
+            }
+            if (H->sim_concept & RSSimulationConceptBoundedParticleVelocity) {
+                printf(RS_INDENT "o B - Bounded Particle Velocity\n");
+            }
+            if (H->sim_concept & RSSimulationConceptUniformDSDScaledRCS) {
+                printf(RS_INDENT "o U - Uniform DSD with Scaled RCS\n");
+            }
+        }
 		rsprint("Suggest %s bodies\n", commaint(preferred_n));
 		rsprint("Set to GPU preferred %s (%.2f bodies / resolution cell)", commaint(preferred_n), (float)preferred_n / nvol);
         rsprint("Drop concentration scale to be used later = %s", commafloat(concentration_scale));
@@ -2258,15 +2275,15 @@ void RS_set_dsd(RSHandle *H, const float *pdf, const float *diameters, const int
     if (H->verb) {
         printf("%s : RS : User set DSD specifications:\n", now());
         for (i = 0; i < MIN(MAX(count - 2, 1), 3); i++) {
-            printf("                 o %.2f mm - PDF %.4f / TH %.4f\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], H->dsd_cdf[i]);
+            printf(RS_INDENT "o %.2f mm - PDF %.4f / TH %.4f\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], H->dsd_cdf[i]);
         }
         if (count > 5) {
-            printf("                 o  :      -      :     /     :\n");
-            printf("                 o  :      -      :     /     :\n");
+            printf(RS_INDENT "o  :      -      :     /     :\n");
+            printf(RS_INDENT "o  :      -      :     /     :\n");
             i = MAX(4, count - 1);
         }
         for (; i < count; i++) {
-            printf("                 o %.2f mm - PDF %.4f / TH %.4f\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], H->dsd_cdf[i]);
+            printf(RS_INDENT "o %.2f mm - PDF %.4f / TH %.4f\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], H->dsd_cdf[i]);
         }
     }
 }
@@ -4602,6 +4619,16 @@ void RS_table3d_free(RSTable3D T) {
 #pragma mark -
 #pragma mark Display
 
+void RS_show_radar_params(RSHandle *H) {
+    rsprint("Radar Parameters:\n");
+    printf(RS_INDENT "o antenna beamwidth = %.2f deg\n", H->params.antenna_bw_deg);
+    printf(RS_INDENT "o range resolution = %.2f m\n", H->params.dr);
+    printf(RS_INDENT "o lambda = %.2f m\n", H->params.lambda);
+    printf(RS_INDENT "o PRT = %.2f ms\n", H->params.prt * 1.0e3f);
+    printf(RS_INDENT "o va = %.2f m/s\n", H->params.va);
+}
+
+
 static void RS_show_scat_i(RSHandle *H, const size_t i) {
 	printf(" %7lu - ( %9.2f, %9.2f, %9.2f, %4.2f )  %7.2f %7.2f %7.2f   %7.4f %7.4f %7.4f %7.4f\n", i,
 		   H->scat_pos[i].x, H->scat_pos[i].y, H->scat_pos[i].z, H->scat_pos[i].w,
@@ -4798,9 +4825,9 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
             k = (int)(H->dsd_r[i] * 20000.0f) - 5;
             s = sqrtf(H->dsd_pdf[i] / p);
             if (H->verb) {
-                printf("                 o %.2f mm scale by %.5f / %.5f = %.5f  k = %d --> %.2f\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], p, s, k, 0.5f + (float)k * 0.1f);
+                printf(RS_INDENT "o %.2f mm scale by %.4f / %.4f = %.4f = %.2f dB  k = %d\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], p, s, 20.0f * log10f(s), k);
             }
-            snprintf(H->summary + strlen(H->summary), sizeof(H->summary), "  o %.2f mm %.5f -> %.2f dB\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], 20.0f * log10(s));
+            snprintf(H->summary + strlen(H->summary), sizeof(H->summary), "  o %.2f mm %.5f -> %.2f dB\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], 20.0f * log10f(s));
             table[k].s0 = table_copy[k].s0 * s;
             table[k].s1 = table_copy[k].s1 * s;
             table[k].s2 = table_copy[k].s2 * s;
