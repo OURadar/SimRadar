@@ -56,6 +56,8 @@ typedef struct user_params {
     char quiet_mode;
     char skip_questions;
     char tight_box;
+    
+    char output_dir[1024];
 } UserParams;
 
 typedef union simstate {
@@ -287,10 +289,9 @@ void show_user_param(const char *name, const void* value, const char *unit, char
             }
             break;
         case ValueTypeChar:
-            if (value == NULL) {
+            value_str = (char *)value;
+            if (strlen(value_str) == 0) {
                 value_str = str_buf;
-            } else {
-                value_str = (char *)value;
             }
             break;
         default:
@@ -331,6 +332,8 @@ int main(int argc, char *argv[]) {
     user.quiet_mode        = true;
     user.skip_questions    = false;
     user.tight_box         = false;
+    
+    user.output_dir[0]     = '\0';
 
     // A structure unit that encapsulates the scan strategy
     ScanParams scan;
@@ -364,6 +367,7 @@ int main(int argc, char *argv[]) {
         {"density"    , required_argument, 0, 'D'},
         {"savestate"  , no_argument      , 0 ,'E'},
         {"preview"    , no_argument      , 0, 'N'},
+        {"outdir"     , required_argument, 0, 'O'},
         {"sweep"      , required_argument, 0, 'S'},
         {"tightbox"   , no_argument      , 0, 'T'},
         {"warmup"     , required_argument, 0, 'W'},
@@ -471,6 +475,9 @@ int main(int argc, char *argv[]) {
             case 'o':
                 user.output_iq_file = true;
                 break;
+            case 'O':
+                strncpy(user.output_dir, optarg, sizeof(user.output_dir));
+                break;
             case 'p':
                 user.num_pulses = atoi(optarg);
                 break;
@@ -514,6 +521,7 @@ int main(int argc, char *argv[]) {
         show_user_param("Warm up pulses", &user.warm_up_pulses, "", ValueTypeInt);
         show_user_param("Number of pulses", &user.num_pulses, "", ValueTypeInt);
         show_user_param("Particle density", &user.density, "", ValueTypeFloat);
+        show_user_param("Output directory", user.output_dir, "", ValueTypeChar);
         printf("----------------------------------------------\n");
     }
 
@@ -831,10 +839,13 @@ int main(int argc, char *argv[]) {
         file_header.scan_delta = scan.delta;
     }
 
+    if (strlen(user.output_dir) == 0) {
+        snprintf(user.output_dir, sizeof(user.output_dir), "%s/Downloads", getenv("HOME"));
+    }
     if (user.output_iq_file) {
         memset(charbuff, 0, sizeof(charbuff));
-        snprintf(charbuff, sizeof(charbuff), "%s/Downloads/sim-%s-%s%04.1f.iq",
-                 getenv("HOME"),
+        snprintf(charbuff, sizeof(charbuff), "%s/sim-%s-%s%04.1f.iq",
+                 user.output_dir,
                  nowlong(),
                  scan.mode == SCAN_MODE_PPI ? "E": (scan.mode == SCAN_MODE_RHI ? "A" : "S"),
                  scan.mode == SCAN_MODE_PPI ? scan.el: (scan.mode == SCAN_MODE_RHI ? scan.az : (float)user.num_pulses));
@@ -856,8 +867,8 @@ int main(int argc, char *argv[]) {
     
     if (user.output_state_file) {
         memset(charbuff, 0, sizeof(charbuff));
-        snprintf(charbuff, sizeof(charbuff), "%s/Downloads/sim-%s-%s%04.1f.simstate",
-                 getenv("HOME"),
+        snprintf(charbuff, sizeof(charbuff), "%s/sim-%s-%s%04.1f.simstate",
+                 user.output_dir,
                  nowlong(),
                  scan.mode == SCAN_MODE_PPI ? "E": (scan.mode == SCAN_MODE_RHI ? "A" : "S"),
                  scan.mode == SCAN_MODE_PPI ? scan.el: (scan.mode == SCAN_MODE_RHI ? scan.az : (float)user.num_pulses));
