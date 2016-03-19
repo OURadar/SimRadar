@@ -409,14 +409,14 @@ int main(int argc, char *argv[]) {
                 break;
             case 'c':
                 concept = RSSimulationConceptNull;
+                if (strcasestr(optarg, "B")) {
+                    concept |= RSSimulationConceptBoundedParticleVelocity;
+                }
                 if (strcasestr(optarg, "D")) {
                     concept |= RSSimulationConceptDraggedBackground;
                 }
                 if (strcasestr(optarg, "U")) {
                     concept |= RSSimulationConceptUniformDSDScaledRCS;
-                }
-                if (strcasestr(optarg, "V")) {
-                    concept |= RSSimulationConceptBoundedParticleVelocity;
                 }
                 break;
             case 'C':
