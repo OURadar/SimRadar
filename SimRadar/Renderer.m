@@ -430,6 +430,7 @@ unsigned int grayToBinary(unsigned int num)
 	glDeleteShader(shader);
 }
 
+
 - (void)getUniformsAndAttributes:(RenderResource *)resource
 {
     const char verb = 0;
@@ -737,6 +738,7 @@ unsigned int grayToBinary(unsigned int num)
 - (void)dealloc
 {
     [textRenderer release];
+    [tTextRenderer release];
     [fwTextRenderer release];
     
     [overlayRenderer release];
@@ -825,6 +827,7 @@ unsigned int grayToBinary(unsigned int num)
     //NSLog(@"meshRenderer's drawColor @ %d / %d / %d", meshRenderer.colorUI, meshRenderer.positionAI, meshRenderer.textureCoordAI);
 
     textRenderer = [GLText new];
+    tTextRenderer = [[GLText alloc] initWithFont:[NSFont fontWithName:@"Gas" size:72.0f]];
     fwTextRenderer = [[GLText alloc] initWithFont:[NSFont fontWithName:@"Menlo" size:40.0f]];
     
     overlayRenderer = [GLOverlay new];
@@ -1446,7 +1449,7 @@ unsigned int grayToBinary(unsigned int num)
     }
     
 #ifdef DEBUG_GL
-    [textRenderer showTextureMap];
+    [tTextRenderer showTextureMap];
 #endif
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1455,11 +1458,11 @@ unsigned int grayToBinary(unsigned int num)
     sprintf(statusMessage[5], "Frame %s", [GLText commaint:iframe]);
     sprintf(statusMessage[6], "EL %.2f   AZ %.2f", beamElevation / M_PI * 180.0f, beamAzimuth / M_PI * 180.0f);
     
-    NSPoint origin = NSMakePoint(25.0f, height - 65.0f);
+    NSPoint origin = NSMakePoint(25.0f, height - tTextRenderer.pointSize - 35.0f);
     
     if (titleString) {
-        [textRenderer drawText:[titleString UTF8String] origin:origin scale:0.5f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
-        origin.y -= 35.0f;
+        [tTextRenderer drawText:[titleString UTF8String] origin:origin scale:1.0f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
+        origin.y -= 32.0f;
     }
     if (subtitleString) {
         [fwTextRenderer drawText:[subtitleString UTF8String] origin:origin scale:0.5f];
@@ -1583,6 +1586,7 @@ unsigned int grayToBinary(unsigned int num)
     frameRenderer.modelViewProjectionOffOne = GLKMatrix4Multiply(frameRenderer.modelViewProjection, mat);
     
     [textRenderer setModelViewProjection:hudProjection];
+    [tTextRenderer setModelViewProjection:hudProjection];
     [fwTextRenderer setModelViewProjection:hudProjection];
     
     [overlayRenderer setModelViewProjection:hudProjection];

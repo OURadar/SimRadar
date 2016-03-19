@@ -45,6 +45,8 @@
 		B56C7FA31ADC221500552B1E /* rcs.c in Sources */ = {isa = PBXBuildFile; fileRef = B55716851AB7519D001984E0 /* rcs.c */; };
 		B56C7FA71ADC231400552B1E /* Sparkle.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = B56C7FA41ADC22E300552B1E /* Sparkle.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		B56C7FAA1ADC250500552B1E /* Sparkle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B56C7FA41ADC22E300552B1E /* Sparkle.framework */; };
+		B56D60451C9DF47E0016AFEC /* Fonts in Resources */ = {isa = PBXBuildFile; fileRef = B56D60441C9DF47E0016AFEC /* Fonts */; };
+		B56D60461C9DF47E0016AFEC /* Fonts in Resources */ = {isa = PBXBuildFile; fileRef = B56D60441C9DF47E0016AFEC /* Fonts */; };
 		B570B0B418BC5B7900391717 /* rs.cl in CopyFiles */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
 		B570B0B518BC5B8400391717 /* rs.cl in CopyFiles */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
 		B57241A71C0CA06000B76BCB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B57241A61C0CA06000B76BCB /* Assets.xcassets */; };
@@ -278,6 +280,7 @@
 		B567F8BB1A6D66E700F40660 /* test_adm */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_adm; sourceTree = BUILT_PRODUCTS_DIR; };
 		B56A7CE71C0F5AF700133ACF /* Shaders */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Shaders; path = SimRadar/Shaders; sourceTree = "<group>"; };
 		B56C7FA41ADC22E300552B1E /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Sparkle.framework; path = SimRadar/Sparkle.framework; sourceTree = "<group>"; };
+		B56D60441C9DF47E0016AFEC /* Fonts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Fonts; path = SimRadar/Fonts; sourceTree = "<group>"; };
 		B570B0AF18BC5B5500391717 /* rs.cl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.opencl; path = rs.cl; sourceTree = "<group>"; };
 		B572419E1C0CA05F00B76BCB /* SimRadarEx.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimRadarEx.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B57241A61C0CA06000B76BCB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = SimRadarEx/Assets.xcassets; sourceTree = "<group>"; };
@@ -456,6 +459,7 @@
 				B519295217D9153C00AB3687 /* Programs */,
 				B5EF317718204B5C002DDEFC /* SimRadar */,
 				B54DEB3618A5453800EBEC07 /* Minion-Icons */,
+				B56D60441C9DF47E0016AFEC /* Fonts */,
 				B572419F1C0CA05F00B76BCB /* SimRadarEx */,
 				B50A281317D7B27500E4DE66 /* Frameworks */,
 				B50A280C17D7B22B00E4DE66 /* Products */,
@@ -866,6 +870,7 @@
 				B57241B71C0CA1BF00B76BCB /* MainMenu.xib in Resources */,
 				B57241B81C0CA1C100B76BCB /* LiveDisplay.xib in Resources */,
 				B57241E01C0CA2F400B76BCB /* Minion-Icons in Resources */,
+				B56D60461C9DF47E0016AFEC /* Fonts in Resources */,
 				B5D22A191C10D62C00CE15EB /* Images in Resources */,
 				B56A7CE91C0F5AF700133ACF /* Shaders in Resources */,
 				B57241E61C0CB0D900B76BCB /* rs.cl in Resources */,
@@ -880,6 +885,7 @@
 				B5342BD41C21401A004592BF /* Assets.xcassets in Resources */,
 				B54DEB3718A5453800EBEC07 /* Minion-Icons in Resources */,
 				B5D22A181C10D62C00CE15EB /* Images in Resources */,
+				B56D60451C9DF47E0016AFEC /* Fonts in Resources */,
 				B56A7CE81C0F5AF700133ACF /* Shaders in Resources */,
 				B5916CC61ABC7069007EA0B9 /* README.md in Resources */,
 				B535159D1AD32077004C0F50 /* MainMenu.xib in Resources */,
