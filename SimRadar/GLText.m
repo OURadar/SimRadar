@@ -98,7 +98,7 @@
         baseFont = [userFont retain];
         devicePixelRatio = [[NSScreen mainScreen] backingScaleFactor];
         bitmapWidth = (userFont.pointSize > 100.0f ? 2048 : 1024) * devicePixelRatio;
-        bitmapHeight = 1024 * devicePixelRatio;
+        bitmapHeight = (userFont.pointSize > 100.0f ? 2048 : 1024) * devicePixelRatio;
         bitmap = (GLubyte *)malloc(bitmapWidth * bitmapHeight * 4);
         drawAnchors = (GLTextVertex *)malloc(GLTextMaxString * 6 * sizeof(GLTextVertex));
         [self buildTexture];

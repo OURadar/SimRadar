@@ -827,8 +827,10 @@ unsigned int grayToBinary(unsigned int num)
     //NSLog(@"meshRenderer's drawColor @ %d / %d / %d", meshRenderer.colorUI, meshRenderer.positionAI, meshRenderer.textureCoordAI);
 
     textRenderer = [GLText new];
-    tTextRenderer = [[GLText alloc] initWithFont:[NSFont fontWithName:@"Gas" size:72.0f]];
-    fwTextRenderer = [[GLText alloc] initWithFont:[NSFont fontWithName:@"Menlo" size:40.0f]];
+//    tTextRenderer = [[GLText alloc] initWithFont:[NSFont fontWithName:@"Gas" size:72.0f]];
+    tTextRenderer = [[GLText alloc] initWithFont:[NSFont fontWithName:@"Weird Science NBP" size:144.0f]];
+//    fwTextRenderer = [[GLText alloc] initWithFont:[NSFont fontWithName:@"Menlo" size:40.0f]];
+    fwTextRenderer = [[GLText alloc] initWithFont:[NSFont fontWithName:@"White Rabbit" size:40.0f]];
     
     overlayRenderer = [GLOverlay new];
     
@@ -1458,10 +1460,10 @@ unsigned int grayToBinary(unsigned int num)
     sprintf(statusMessage[5], "Frame %s", [GLText commaint:iframe]);
     sprintf(statusMessage[6], "EL %.2f   AZ %.2f", beamElevation / M_PI * 180.0f, beamAzimuth / M_PI * 180.0f);
     
-    NSPoint origin = NSMakePoint(25.0f, height - tTextRenderer.pointSize - 35.0f);
+    NSPoint origin = NSMakePoint(25.0f, height - tTextRenderer.pointSize * 0.5f - 35.0f);
     
     if (titleString) {
-        [tTextRenderer drawText:[titleString UTF8String] origin:origin scale:1.0f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
+        [tTextRenderer drawText:[titleString UTF8String] origin:origin scale:0.5f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
         origin.y -= 32.0f;
     }
     if (subtitleString) {
@@ -1755,10 +1757,12 @@ unsigned int grayToBinary(unsigned int num)
 
 - (void)cycleFBO {
     ifbo = ifbo >= 4 ? 0 : ifbo + 1;
+    statusMessageNeedsUpdate = true;
 }
 
 - (void)cycleFBOReverse {
     ifbo = ifbo == 0 ? 4 : ifbo - 1;
+    statusMessageNeedsUpdate = true;
 }
 
 
