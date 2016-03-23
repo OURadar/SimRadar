@@ -56,6 +56,7 @@ typedef struct user_params {
     char quiet_mode;
     char skip_questions;
     char tight_box;
+    char show_progress;
     
     char output_dir[1024];
 } UserParams;
@@ -331,6 +332,7 @@ int main(int argc, char *argv[]) {
     user.preview_only      = false;
     user.quiet_mode        = true;
     user.skip_questions    = false;
+    user.show_progress     = true;
     user.tight_box         = false;
     
     user.output_dir[0]     = '\0';
@@ -366,6 +368,7 @@ int main(int argc, char *argv[]) {
         {"cpu"        , no_argument      , 0, 'C'},
         {"density"    , required_argument, 0, 'D'},
         {"savestate"  , no_argument      , 0 ,'E'},
+        {"noprogress" , no_argument      , 0 ,'F'},
         {"preview"    , no_argument      , 0, 'N'},
         {"outdir"     , required_argument, 0, 'O'},
         {"sweep"      , required_argument, 0, 'S'},
@@ -404,6 +407,9 @@ int main(int argc, char *argv[]) {
     int opt, long_index = 0;
     while ((opt = getopt_long(argc, argv, str, long_options, &long_index)) != -1) {
         switch (opt) {
+            case 'a':
+                scan.az = atof(optarg);
+                break;
             case 'A':
                 user.quiet_mode = false;
                 break;
@@ -422,14 +428,51 @@ int main(int argc, char *argv[]) {
             case 'C':
                 accel_type = ACCEL_TYPE_CPU;
                 break;
+            case 'd':
+                debris_count[debris_types++] = atoi(optarg);
+                break;
             case 'D':
                 user.density = atof(optarg);
+                break;
+            case 'e':
+                scan.el = atof(optarg);
                 break;
             case 'E':
                 user.output_state_file = true;
                 break;
+            case 'f':
+                user.num_pulses = atoi(optarg);
+                break;
+            case 'F':
+                user.show_progress = false;
+                break;
+            case 'g':
+                accel_type = ACCEL_TYPE_GPU;
+                break;
+            case 'h':
+                show_help();
+                exit(EXIT_SUCCESS);
+                break;
+            case 'l':
+                user.lambda = atof(optarg);
+                break;
             case 'N':
                 user.preview_only = true;
+                break;
+            case 'o':
+                user.output_iq_file = true;
+                break;
+            case 'O':
+                strncpy(user.output_dir, optarg, sizeof(user.output_dir));
+                break;
+            case 'p':
+                user.num_pulses = atoi(optarg);
+                break;
+            case 'q':
+                user.quiet_mode = true;
+                break;
+            case 's':
+                user.seed = atoi(optarg);
                 break;
             case 'S':
                 k = sscanf(optarg, "%c:%f:%f:%f", &c1, &f1, &f2, &f3);
@@ -447,46 +490,6 @@ int main(int argc, char *argv[]) {
                     scan.el = f1;
                 }
                 break;
-            case 'W':
-                user.warm_up_pulses = atoi(optarg);
-                break;
-            case 'a':
-                scan.az = atof(optarg);
-                break;
-            case 'd':
-                debris_count[debris_types++] = atoi(optarg);
-                break;
-            case 'e':
-                scan.el = atof(optarg);
-                break;
-            case 'g':
-                accel_type = ACCEL_TYPE_GPU;
-                break;
-            case 'h':
-                show_help();
-                exit(EXIT_SUCCESS);
-                break;
-            case 'f':
-                user.num_pulses = atoi(optarg);
-                break;
-            case 'l':
-                user.lambda = atof(optarg);
-                break;
-            case 'o':
-                user.output_iq_file = true;
-                break;
-            case 'O':
-                strncpy(user.output_dir, optarg, sizeof(user.output_dir));
-                break;
-            case 'p':
-                user.num_pulses = atoi(optarg);
-                break;
-            case 'q':
-                user.quiet_mode = true;
-                break;
-            case 's':
-                user.seed = atoi(optarg);
-                break;
             case 't':
                 user.prt = atof(optarg);
                 break;
@@ -498,6 +501,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'w':
                 user.pw = atof(optarg);
+                break;
+            case 'W':
+                user.warm_up_pulses = atoi(optarg);
                 break;
             case 'y':
                 user.skip_questions = true;
@@ -730,15 +736,20 @@ int main(int argc, char *argv[]) {
         RS_set_prt(S, 1.0f / 60.0f);
         gettimeofday(&t1, NULL);
         for (k = 0; k < user.warm_up_pulses; k++) {
-            gettimeofday(&t2, NULL);
-            dt = DTIME(t1, t2);
-            if (dt >= 0.25f) {
-                t1 = t2;
-                fprintf(stderr, "Warming up ... %d out of %d ... \033[32m%.2f%%\033[0m  \r", k, user.warm_up_pulses, (float)k / user.warm_up_pulses * 100.0f);
+            // Skip computing progress if we are not showing progress
+            if (user.show_progress) {
+                gettimeofday(&t2, NULL);
+                dt = DTIME(t1, t2);
+                if (dt >= 0.25f) {
+                    t1 = t2;
+                    fprintf(stderr, "Warming up ... %d out of %d ... \033[32m%.2f%%\033[0m  \r", k, user.warm_up_pulses, (float)k / user.warm_up_pulses * 100.0f);
+                }
             }
             RS_advance_time(S);
         }
-        fprintf(stderr, "%80s\r", " ");
+        if (user.show_progress) {
+            fprintf(stderr, "%80s\r", " ");
+        }
     }
 
     // Set PRT to the actual one
@@ -757,19 +768,21 @@ int main(int argc, char *argv[]) {
     // Now we bake
     int k0 = 0;
     for (k = 0; k < user.num_pulses; k++) {
-        gettimeofday(&t2, NULL);
-        dt = DTIME(t1, t2);
-        if (dt >= 0.25f) {
-            t1 = t2;
-            prog =  (float)k / user.num_pulses * 100.0f;
-            if (k > 3) {
-                fps = 0.5f * fps + 0.5f * (float)(k - k0) / dt;
-            } else {
-                fps = (float)(k - k0) / dt;
+        if (user.show_progress) {
+            gettimeofday(&t2, NULL);
+            dt = DTIME(t1, t2);
+            if (dt >= 0.25f) {
+                t1 = t2;
+                prog =  (float)k / user.num_pulses * 100.0f;
+                if (k > 3) {
+                    fps = 0.5f * fps + 0.5f * (float)(k - k0) / dt;
+                } else {
+                    fps = (float)(k - k0) / dt;
+                }
+                eta = (float)(user.num_pulses - k) / fps;
+                k0 = k;
+                fprintf(stderr, "k %5d   (e%6.2f, a%5.2f)   %.2f fps   \033[1;33m%.2f%%\033[0m   eta %.0f second%s   \r", k, scan.el, scan.az, fps, prog, eta, eta > 1.5f ? "s" : "");
             }
-            eta = (float)(user.num_pulses - k) / fps;
-            k0 = k;
-            fprintf(stderr, "k %5d   (e%6.2f, a%5.2f)   %.2f fps   \033[1;33m%.2f%%\033[0m   eta %.0f second%s   \r", k, scan.el, scan.az, fps, prog, eta, eta > 1.5f ? "s" : "");
         }
         RS_set_beam_pos(S, scan.az, scan.el);
         RS_make_pulse(S);
@@ -801,7 +814,12 @@ int main(int argc, char *argv[]) {
         // Update scan angles for the next pulse
         get_next_scan_angles(&scan);
     }
-    
+
+    // Overall fps
+    gettimeofday(&t2, NULL);
+    dt = DTIME(t0, t2);
+    fps = user.num_pulses / dt;
+
     // Clear the last line and beep five times
     fprintf(stderr, "%120s\r", "");
     if (!user.quiet_mode) {
@@ -811,9 +829,6 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "\a\a\a\a\a");
         #endif
     }
-    
-    gettimeofday(&t2, NULL);
-    dt = DTIME(t0, t2);
     printf("%s : Finished.  Total time elapsed = %.2f s  (%.1f FPS)\n", now(), dt, fps);
     
     // Download everything once we are all done.
