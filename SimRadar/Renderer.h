@@ -171,6 +171,7 @@ enum RendererLineSegment {
     GLfloat theta, phase;
 
     GLText *textRenderer;
+    GLText *tTextRenderer;
     GLText *fwTextRenderer;
     
     GLOverlay *overlayRenderer;

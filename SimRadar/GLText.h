@@ -89,6 +89,8 @@ typedef union _gltext_vertex GLTextVertex;
 
 - (id)initWithFont:(NSFont *)font;
 
+- (GLfloat)pointSize;
+
 - (void)showTextureMap;
 - (void)drawText:(const char *)string origin:(NSPoint)origin scale:(float)scale;
 - (void)drawText:(const char *)string origin:(NSPoint)origin scale:(float)scale align:(GLTextAlignment)align;

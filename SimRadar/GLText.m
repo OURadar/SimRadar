@@ -97,8 +97,8 @@
     if (self) {
         baseFont = [userFont retain];
         devicePixelRatio = [[NSScreen mainScreen] backingScaleFactor];
-        bitmapWidth = 1024 * devicePixelRatio;
-        bitmapHeight = 1024 * devicePixelRatio;
+        bitmapWidth = (userFont.pointSize > 100.0f ? 2048 : 1024) * devicePixelRatio;
+        bitmapHeight = (userFont.pointSize > 100.0f ? 2048 : 1024) * devicePixelRatio;
         bitmap = (GLubyte *)malloc(bitmapWidth * bitmapHeight * 4);
         drawAnchors = (GLTextVertex *)malloc(GLTextMaxString * 6 * sizeof(GLTextVertex));
         [self buildTexture];
@@ -468,6 +468,10 @@
 
 #pragma mark -
 #pragma mark Public Methods
+
+- (GLfloat)pointSize {
+    return (GLfloat)baseFont.pointSize;
+}
 
 - (void)drawText:(const char *)string origin:(NSPoint)origin scale:(float)scale {
     [self drawText:string origin:origin scale:scale red:1.0f green:1.0f blue:1.0f alpha:1.0f align:GLTextAlignmentLeft];

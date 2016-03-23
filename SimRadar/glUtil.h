@@ -22,6 +22,10 @@
 
 #else
 
+#ifndef GL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED
+#define GL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED 1
+#endif
+
 #import <OpenGL/OpenGL.h>
 //#import <OpenGL/gl3.h>
 
