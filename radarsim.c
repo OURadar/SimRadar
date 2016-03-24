@@ -125,7 +125,7 @@ static char *scan_mode_str(char scan_mode) {
 //   s h o w _ h e l p
 //
 #define CLEAR         "\033[0m"
-#define UNDERLINE(x)  "\033[4m" x "\033[0m"
+#define UNDERLINE(x)  "\033[4m" x "\033[24m"
 #define PROGNAME      "radarsim"
 
 void show_help() {
@@ -864,7 +864,7 @@ int main(int argc, char *argv[]) {
                  nowlong(),
                  scan.mode == SCAN_MODE_PPI ? "E": (scan.mode == SCAN_MODE_RHI ? "A" : "S"),
                  scan.mode == SCAN_MODE_PPI ? scan.el: (scan.mode == SCAN_MODE_RHI ? scan.az : (float)user.num_pulses));
-        printf("%s : Output file : \033[1;32m%s\033[0m\n", now(), charbuff);
+        printf("%s : Output file : " UNDERLINE("%s") "\n", now(), charbuff);
         fid = fopen(charbuff, "wb");
         if (fid == NULL) {
             fprintf(stderr, "%s : Error creating file for IQ data.\n", now());
@@ -887,7 +887,7 @@ int main(int argc, char *argv[]) {
                  nowlong(),
                  scan.mode == SCAN_MODE_PPI ? "E": (scan.mode == SCAN_MODE_RHI ? "A" : "S"),
                  scan.mode == SCAN_MODE_PPI ? scan.el: (scan.mode == SCAN_MODE_RHI ? scan.az : (float)user.num_pulses));
-        printf("%s : Output file : \033[1;32m%s\033[0m\n", now(), charbuff);
+        printf("%s : Output file : " UNDERLINE ("%s") "\n", now(), charbuff);
         fid = fopen(charbuff, "wb");
         if (fid == NULL) {
             fprintf(stderr, "%s : Error creating file for simulation state data.\n", now());

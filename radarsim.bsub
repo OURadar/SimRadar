@@ -1,16 +1,16 @@
 #!/bin/bash
 #
 #BSUB -q cuda
-#BSUB -o /home/boonleng/radarsim/radarsim_stdout.txt
-#BSUB -e /home/boonleng/radarsim/radarsim_stderr.txt
-#BSUB -W 01:00
+#BSUB -o /home/boonleng/simradar/radarsim_stdout.txt
+#BSUB -e /home/boonleng/simradar/radarsim_stderr.txt
+#BSUB -W 00:30
 #BSUB -N
 #
 # The BSUB directive below says to use 1 CPU core of one CPU chip
 # on one compute node, meaning that this batch jobs is non-parallel
 # (serial). DON'T CHANGE THIS.
 #
-#BSUB -n 2
+#BSUB -n 1
 #BSUB -J "radarsim"
 
 function decho() {
@@ -31,7 +31,7 @@ decho "================== $nowstr ================="
 decho `pwd`
 decho "radarsim"
 
-./radarsim -v -c -f 100
+./radarsim -v -o -p 2400 --seed 2000 -O big/ --tightbox --density 10000 --concept DB -W 1000 --noprogress
+
 decho "-----------------------------------------------------------------"
-./radarsim -vv -f 100
 
