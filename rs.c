@@ -515,7 +515,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error creating OpenCL context.  ret = %d\n", now(), ret);
         exit(EXIT_FAILURE);
-    } else if (verb) {
+    } else if (verb > 1) {
         rsprint("OpenCL context[%d] created (context @ %p, device_id @ %p).\n", (int)C->name, C->context, dev);
     }
     
@@ -540,7 +540,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
         clReleaseProgram(C->prog);
         clReleaseContext(C->context);
         return;
-    } else if (verb) {
+    } else if (verb > 1) {
         rsprint("OpenCL program[%d] created (program @ %p).\n", (int)C->name, C->prog);
     }
 	
@@ -567,7 +567,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     C->kern_make_pulse_pass_2_range = clCreateKernel(C->prog, "make_pulse_pass_2_local", &ret);   CHECK_CL_CREATE_KERNEL
     C->kern_make_pulse_pass_2 = C->kern_make_pulse_pass_2_group;
     
-    if (verb) {
+    if (verb > 1) {
         rsprint("Kernels for program[%d] created.\n", (int)C->name);
         if (verb > 2) {
             size_t pref_size;

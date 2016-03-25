@@ -31,7 +31,12 @@ decho "================== $nowstr ================="
 decho `pwd`
 decho "radarsim"
 
-./radarsim -v -o -p 2400 --seed 2000 -O big/ --tightbox --density 10000 --concept DB -W 1000 --noprogress
+#./radarsim -v -o -p 2400 --seed 1000 -O /home/boonleng/Downloads/big/ --tightbox --density 10000 --concept DB -W 1000 --noprogress
 
-decho "-----------------------------------------------------------------"
+seed=2000
+while [ 1 ]; do
+	decho "-----------------------------------------------------------------"
+        ./radarsim -v -o -p 2400 --seed ${seed} -O /home/boonleng/Downloads/big/ --tightbox --density 10000 --concept DB -W 1000 --noprogress
+        seed=$((seed+1))
+done
 
