@@ -19,6 +19,8 @@
 #include <time.h>
 #include <string.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
 #include <pthread.h>
 
 #include "rs_const.h"

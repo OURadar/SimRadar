@@ -244,6 +244,10 @@ void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device
                     vendors[j] = RS_GPU_VENDOR_UNKNOWN;
                 }
                 printf("        - " FMT " = %s (%d)\n", "CL_DEVICE_VENDOR", buf_char, vendors[j]);
+                CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(buf_ulong), &buf_ulong, NULL));
+                printf("        - " FMT " = %s B\n", "CL_DEVICE_GLOBAL_MEM_SIZE", commaint(buf_ulong));
+                CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(buf_ulong), &buf_ulong, NULL));
+                printf("        - " FMT " = %s B\n", "CL_DEVICE_MAX_MEM_ALLOC_SIZE", commaint(buf_ulong));
                 CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(buf_uint), &num_cus[j], NULL));
                 printf("        - " FMT " = %u\n", "CL_DEVICE_MAX_COMPUTE_UNITS", (unsigned int)num_cus[j]);
                 if (detail_level > 1) {
@@ -253,10 +257,6 @@ void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device
                     printf("        - " FMT " = %s\n", "CL_DRIVER_VERSION", buf_char);
                     CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(buf_uint), &buf_uint, NULL));
                     printf("        - " FMT " = %s MHz\n", "CL_DEVICE_MAX_CLOCK_FREQUENCY", commaint(buf_uint));
-                    CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(buf_ulong), &buf_ulong, NULL));
-                    printf("        - " FMT " = %s B\n", "CL_DEVICE_GLOBAL_MEM_SIZE", commaint(buf_ulong));
-                    CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(buf_ulong), &buf_ulong, NULL));
-                    printf("        - " FMT " = %s B\n", "CL_DEVICE_MAX_MEM_ALLOC_SIZE", commaint(buf_ulong));
                     if (detail_level > 2) {
                         size_t work_sizes[3];
                         clGetDeviceInfo(devices[j], CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(work_sizes), &work_sizes, NULL);
@@ -523,9 +523,9 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     // Program
     C->prog = clCreateProgramWithSource(C->context, src_size, (const char **)src_ptr, NULL, &ret);
     if (ret != CL_SUCCESS) {
-        fprintf(stderr, "%s : RS : Error creating OpenCL program.  ret = %d\n", now(), ret);
+        fprintf(stderr, "%s : RS : Error. Unable to create OpenCL program.  ret = %d\n", now(), ret);
         clReleaseContext(C->context);
-        return;
+        exit(EXIT_FAILURE);
     }
     if (verb) {
         ret = clBuildProgram(C->prog, 1, &C->dev, "", &pfn_prog_notify, NULL);
@@ -536,10 +536,10 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     if (ret != CL_SUCCESS) {
         char char_buf[RS_MAX_STR] = "";
         clGetProgramBuildInfo(C->prog, C->dev, CL_PROGRAM_BUILD_LOG, RS_MAX_STR, char_buf, NULL);
-        fprintf(stderr, "%s : RS : CL Compilation failed:\n%s", now(), char_buf);
+        fprintf(stderr, "%s : RS : Error. CL Compilation failed:\n%s", now(), char_buf);
         clReleaseProgram(C->prog);
         clReleaseContext(C->context);
-        return;
+        exit(EXIT_FAILURE);
     } else if (verb > 1) {
         rsprint("OpenCL program[%d] created (program @ %p).\n", (int)C->name, C->prog);
     }
@@ -3746,11 +3746,21 @@ void RS_io_test(RSHandle *H) {
 
 
 void RS_populate(RSHandle *H) {
+    // Divide the scatter bodies into (num_workers) chunks
+    const size_t sub_num_scats = H->num_scats / MAX(1, H->num_workers);
+    
 	if (H->num_scats > RS_MAX_NUM_SCATS) {
-		rsprint("Exceed the maximum allowed. (%ld > %d).\n", (unsigned long)H->num_scats, RS_MAX_NUM_SCATS);
+		rsprint("Number of scatterers exceed the maximum allowed. (%s > %s).\n", commaint(H->num_scats), commaint(RS_MAX_NUM_SCATS));
         exit(EXIT_FAILURE);
 	}
 	
+    size_t max_var_size;
+    CL_CHECK(clGetDeviceInfo(H->worker[0].dev, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(max_var_size), &max_var_size, NULL));
+    if (sub_num_scats * sizeof(cl_float4) > max_var_size) {
+        rsprint("Error. Every scatterer attribute occupies %s B > %s B.", commaint(sub_num_scats * sizeof(cl_float4)), commaint(max_var_size));
+        exit(EXIT_FAILURE);
+    }
+    
     if (H->verb) {
         rsprint("RS_populate()");
     }
@@ -3822,9 +3832,21 @@ void RS_populate(RSHandle *H) {
 	}
 
     // Get the available memory of the host
+
+#if defined(_SC_PHYS_PAGES)
+
     long mem_pages = sysconf(_SC_PHYS_PAGES);
     long mem_page_size = sysconf(_SC_PAGE_SIZE);
     size_t host_mem = mem_pages * mem_page_size;
+
+#else
+
+    uint64_t mem;
+    size_t len = sizeof(mem);
+    sysctlbyname("hw.memsize", &mem, &len, NULL, 0);
+    size_t host_mem = mem;
+
+#endif
 
     if (H->mem_size > host_mem / 4 * 3) {
         rsprint("WARNING: High host memory usage: %s GB out of %s GB.", commafloat((float)H->mem_size * 1.0e-9f), commafloat((float)host_mem * 1.0e-9f));
@@ -3849,9 +3871,6 @@ void RS_populate(RSHandle *H) {
 	//
 	
 	size_t offset = 0;
-	
-	// Divide the scatter bodies into (num_workers) chunks
-	size_t sub_num_scats = H->num_scats / MAX(1, H->num_workers);
 	
     for (i = 0; i < H->num_workers; i++) {
         H->offset[i] = offset;

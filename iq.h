@@ -27,6 +27,7 @@ typedef union fileheader {
         float     scan_start;
         float     scan_end;
         float     scan_delta;
+        uint32_t  simulation_seed;
     };
 } IQFileHeader;
 

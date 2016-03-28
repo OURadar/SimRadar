@@ -19,6 +19,10 @@
 #include "iq.h"
 #include <getopt.h>
 
+#if defined (_OPEN_MPI)
+#include <mpi.h>
+#endif
+
 enum ACCEL_TYPE {
     ACCEL_TYPE_GPU,
     ACCEL_TYPE_CPU
@@ -302,6 +306,31 @@ void show_user_param(const char *name, const void* value, const char *unit, char
     printf("  %-25s = %s %s\n", name, value_str, value_str == str_buf ? "" : unit);
 }
 
+void write_iq_file(const UserParams user, const ScanParams scan, const IQFileHeader *file_header, const IQPulseHeader *pulse_headers, const cl_float4 *pulse_cache, const int stride) {
+    char charbuff[2048];
+    
+    memset(charbuff, 0, sizeof(charbuff));
+    snprintf(charbuff, sizeof(charbuff), "%s/sim-%s-%s%04.1f.iq",
+             user.output_dir,
+             nowlong(),
+             scan.mode == SCAN_MODE_PPI ? "E": (scan.mode == SCAN_MODE_RHI ? "A" : "S"),
+             scan.mode == SCAN_MODE_PPI ? scan.el: (scan.mode == SCAN_MODE_RHI ? scan.az : (float)user.num_pulses));
+    printf("%s : Output file : " UNDERLINE("%s") "\n", now(), charbuff);
+    FILE *fid = fopen(charbuff, "wb");
+    if (fid == NULL) {
+        fprintf(stderr, "%s : Error creating file for IQ data.\n", now());
+    }
+    fwrite(file_header, sizeof(IQFileHeader), 1, fid);
+    
+    // Flush out the cache
+    for (int k = 0; k < user.num_pulses; k++) {
+        fwrite(&pulse_headers[k], sizeof(IQPulseHeader), 1, fid);
+        fwrite(&pulse_cache[k * stride], sizeof(cl_float4), stride, fid);
+    }
+    printf("%s : Data file with %s B (seed = %s).\n", now(), commaint(ftell(fid)), commaint(file_header->simulation_seed));
+    fclose(fid);
+}
+
 //
 //
 //  M A I N
@@ -517,6 +546,24 @@ int main(int argc, char *argv[]) {
     
     // ---------------------------------------------------------------------------------------------------------------
 
+#if defined (_OPEN_MPI)
+    
+    int world_size, world_rank;
+    char processor_name[MPI_MAX_PROCESSOR_NAME];
+    
+    MPI_Init(NULL, NULL);
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+    MPI_Get_processor_name(processor_name, &k);
+    
+    //printf("Node " UNDERLINE("%s") " ( %d out of %d )\n",  processor_name, world_rank, world_size);
+    
+    if (user.seed != PARAMS_INT_NOT_SUPPLIED) {
+        user.seed += world_rank;
+    }
+    
+#endif
+    
     if (verb > 1) {
         printf("----------------------------------------------\n");
         printf("  User parameters:\n");
@@ -528,6 +575,7 @@ int main(int argc, char *argv[]) {
         show_user_param("Number of pulses", &user.num_pulses, "", ValueTypeInt);
         show_user_param("Particle density", &user.density, "", ValueTypeFloat);
         show_user_param("Output directory", user.output_dir, "", ValueTypeChar);
+        show_user_param("User random seed", &user.seed, "", ValueTypeInt);
         printf("----------------------------------------------\n");
     }
 
@@ -588,12 +636,19 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
     
+#if defined (_OPEN_MPI)
+
+    printf("%s : Session started on %s (%d / %d / %s)\n", now(), processor_name, world_rank, world_size, commaint(user.seed));
+
+#else
+    
     printf("%s : Session started\n", now());
+
+#endif
     
     ADMHandle *A;
     LESHandle *L;
     RCSHandle *R;
-    
     
     // Initialize the LES ingest
     L = LES_init();
@@ -663,6 +718,17 @@ int main(int argc, char *argv[]) {
     }
 
     // ---------------------------------------------------------------------------------------------------------------
+    
+#if defined (_OPEN_MPI)
+
+    // Suppress child nodes output after this point for Open MPI runs
+    
+    if (world_rank > 0) {
+        verb = 0;
+        RS_set_verbosity(S, 0);
+    }
+    
+#endif
 
     // Number of LES entries needed based on the number of pulses to be simulated
     int nvel = 0;
@@ -717,7 +783,9 @@ int main(int argc, char *argv[]) {
         user.prt = S->params.prt;
     }
 
-    RS_show_radar_params(S);
+    if (verb) {
+        RS_show_radar_params(S);
+    }
     
     // Populate the domain with scatter bodies.
     // This is also the function that triggers kernel compilation, GPU memory allocation and
@@ -725,8 +793,18 @@ int main(int argc, char *argv[]) {
     RS_populate(S);
         
     // Show some basic info
+
+#if defined (_OPEN_MPI)
+
+    printf("%s : Emulating %s frame%s with %s scatter bodies on %s\n",
+           now(), commaint(user.num_pulses), user.num_pulses > 1 ? "s" : "", commaint(S->num_scats), processor_name);
+
+#else
+    
     printf("%s : Emulating %s frame%s with %s scatter bodies\n",
            now(), commaint(user.num_pulses), user.num_pulses > 1 ? "s" : "", commaint(S->num_scats));
+    
+#endif
 
     // At this point, we are ready to bake
     float dt = 0.1f, fps = 0.0f, prog = 0.0f, eta = 9999999.0f;
@@ -829,7 +907,16 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "\a\a\a\a\a");
         #endif
     }
+
+#if defined (_OPEN_MPI)
+
+    printf("%s : Finished on %s.  Total time elapsed = %.2f s  (%.1f FPS)\n", now(), processor_name, dt, fps);
+    
+#else
+    
     printf("%s : Finished.  Total time elapsed = %.2f s  (%.1f FPS)\n", now(), dt, fps);
+
+#endif
     
     // Download everything once we are all done.
     RS_download(S);
@@ -849,35 +936,57 @@ int main(int argc, char *argv[]) {
             file_header.debris_population[k] = (uint32_t)S->debris_population[k];
         }
         snprintf(file_header.scan_mode, sizeof(file_header.scan_mode), "%s", scan_mode_str(scan.mode));
-        file_header.scan_start = scan.start;
-        file_header.scan_end   = scan.end;
-        file_header.scan_delta = scan.delta;
+        file_header.scan_start      = scan.start;
+        file_header.scan_end        = scan.end;
+        file_header.scan_delta      = scan.delta;
+        file_header.simulation_seed = S->random_seed;
     }
 
     if (strlen(user.output_dir) == 0) {
         snprintf(user.output_dir, sizeof(user.output_dir), "%s/Downloads", getenv("HOME"));
+    } else {
+        size_t len = strlen(user.output_dir);
+        if (user.output_dir[len - 1] == '\\') {
+            user.output_dir[len - 1] = '\0';
+        }
     }
+    
     if (user.output_iq_file) {
-        memset(charbuff, 0, sizeof(charbuff));
-        snprintf(charbuff, sizeof(charbuff), "%s/sim-%s-%s%04.1f.iq",
-                 user.output_dir,
-                 nowlong(),
-                 scan.mode == SCAN_MODE_PPI ? "E": (scan.mode == SCAN_MODE_RHI ? "A" : "S"),
-                 scan.mode == SCAN_MODE_PPI ? scan.el: (scan.mode == SCAN_MODE_RHI ? scan.az : (float)user.num_pulses));
-        printf("%s : Output file : " UNDERLINE("%s") "\n", now(), charbuff);
-        fid = fopen(charbuff, "wb");
-        if (fid == NULL) {
-            fprintf(stderr, "%s : Error creating file for IQ data.\n", now());
-        }
-        fwrite(&file_header, sizeof(IQFileHeader), 1, fid);
 
-        // Flush out the cache
-        for (k = 0; k < user.num_pulses; k++) {
-            fwrite(&pulse_headers[k], sizeof(IQPulseHeader), 1, fid);
-            fwrite(&pulse_cache[k * S->params.range_count], sizeof(cl_float4), S->params.range_count, fid);
+#if defined (_OPEN_MPI)
+
+        // Let master node do all the file writing to avoid identical filenames
+        
+        MPI_Status status;
+        
+        if (world_rank == 0) {
+            write_iq_file(user, scan, &file_header, pulse_headers, pulse_cache, S->params.range_count);
+            for (k = 1; k < world_size; k++) {
+                MPI_Recv(&file_header, sizeof(file_header), MPI_BYTE, k, 0, MPI_COMM_WORLD, &status);
+                printf("%s : Received header from node %d  (seed = %s).\n", now(), status.MPI_SOURCE, commaint(file_header.simulation_seed));
+                MPI_Recv(pulse_headers, sizeof(pulse_headers), MPI_BYTE, k, 1, MPI_COMM_WORLD, &status);
+                printf("%s : Received pulse headers of %s B from node %d.\n", now(), commaint(status._count), status.MPI_SOURCE);
+                memset(pulse_cache, 0, sizeof(pulse_cache));
+                MPI_Recv(pulse_cache, sizeof(pulse_cache), MPI_BYTE, k, 2, MPI_COMM_WORLD, &status);
+                printf("%s : Received pulse data of %s B from node %d.\n", now(), commaint(status._count), status.MPI_SOURCE);
+                sleep(1);
+                write_iq_file(user, scan, &file_header, pulse_headers, pulse_cache, S->params.range_count);
+            }
+        } else {
+            //printf("%s : %s : Sending header to master node.\n", now(), processor_name);
+            MPI_Send(&file_header, sizeof(file_header), MPI_BYTE, 0, 0, MPI_COMM_WORLD);
+            //printf("%s : %s : Sending pulse headers to master node.\n", now(), processor_name);
+            MPI_Send(pulse_headers, sizeof(pulse_headers), MPI_BYTE, 0, 1, MPI_COMM_WORLD);
+            //printf("%s : %s : Sending pulse data to master node.\n", now(), processor_name);
+            MPI_Send(pulse_cache, sizeof(pulse_cache), MPI_BYTE, 0, 2, MPI_COMM_WORLD);
         }
-        printf("%s : Data file with %s B.\n", now(), commaint(ftell(fid)));
-        fclose(fid);
+
+#else
+        
+        write_iq_file(user, scan, &file_header, pulse_headers, pulse_cache, S->params.range_count);
+        
+#endif
+        
     }
     
     if (user.output_state_file) {
@@ -925,6 +1034,12 @@ int main(int argc, char *argv[]) {
     ADM_free(A);
     
     RCS_free(R);
+    
+#if defined (_OPEN_MPI)
+
+    MPI_Finalize();
+    
+#endif
     
     return EXIT_SUCCESS;
 }
