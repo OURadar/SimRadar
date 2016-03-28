@@ -1,6 +1,6 @@
 UNAME := $(shell uname)
 
-CFLAGS = -std=gnu99 -Wall -Wno-unknown-pragmas -Os -msse -msse2 -mavx -I /usr/local/include
+CFLAGS = -std=gnu99 -Wall -Wno-unknown-pragmas -Os -msse2 -mavx -I /usr/local/include
 LDFLAGS = -L lib -L /usr/local/lib -lrs
 
 OBJS = rs.o les.o adm.o rcs.o
@@ -16,6 +16,7 @@ LDFLAGS += -framework OpenCL
 else
 CC = gcc
 # This option is actually special for OSCER's boomer
+PROGS += radarsim_omp
 CFLAGS += -D_GNU_SOURCE
 CFLAGS += -I /opt/local/software/Cuda/4.2.9/include
 LDFLAGS += -L /usr/lib64/nvidia -lOpenCL
@@ -35,6 +36,8 @@ lib/librs.a: $(OBJS)
 	mkdir -p lib
 	ar rvcs $@ $(OBJS)
 
+radarsim_omp:
+	mpicc $(CFLAGS) -D_OPEN_MPI -o $@ radarsim.c $(LDFLAGS)
 
 clean:
 	rm -f *.o *.a
