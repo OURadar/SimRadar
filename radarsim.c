@@ -327,7 +327,7 @@ void write_iq_file(const UserParams user, const ScanParams scan, const IQFileHea
         fwrite(&pulse_headers[k], sizeof(IQPulseHeader), 1, fid);
         fwrite(&pulse_cache[k * stride], sizeof(cl_float4), stride, fid);
     }
-    printf("%s : Data file with %s B.\n", now(), commaint(ftell(fid)));
+    printf("%s : Data file with %s B (seed = %s).\n", now(), commaint(ftell(fid)), commaint(file_header->simulation_seed));
     fclose(fid);
 }
 
@@ -960,16 +960,15 @@ int main(int argc, char *argv[]) {
         MPI_Status status;
         
         if (world_rank == 0) {
-            
             write_iq_file(user, scan, &file_header, pulse_headers, pulse_cache, S->params.range_count);
-            
             for (k = 1; k < world_size; k++) {
                 MPI_Recv(&file_header, sizeof(file_header), MPI_BYTE, k, 0, MPI_COMM_WORLD, &status);
                 printf("%s : Received header from node %d  (seed = %s).\n", now(), status.MPI_SOURCE, commaint(file_header.simulation_seed));
                 MPI_Recv(pulse_headers, sizeof(pulse_headers), MPI_BYTE, k, 1, MPI_COMM_WORLD, &status);
-                printf("%s : Received pulse headers from node %d.\n", now(), status.MPI_SOURCE);
+                printf("%s : Received pulse headers of %s B from node %d.\n", now(), commaint(status._count), status.MPI_SOURCE);
+                memset(pulse_cache, 0, sizeof(pulse_cache));
                 MPI_Recv(pulse_cache, sizeof(pulse_cache), MPI_BYTE, k, 2, MPI_COMM_WORLD, &status);
-                printf("%s : Received pulse data from node %d.\n", now(), status.MPI_SOURCE);
+                printf("%s : Received pulse data of %s B from node %d.\n", now(), commaint(status._count), status.MPI_SOURCE);
                 sleep(1);
                 write_iq_file(user, scan, &file_header, pulse_headers, pulse_cache, S->params.range_count);
             }
