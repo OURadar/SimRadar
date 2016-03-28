@@ -948,7 +948,7 @@ int main(int argc, char *argv[]) {
         snprintf(user.output_dir, sizeof(user.output_dir), "%s/Downloads", getenv("HOME"));
     } else {
         size_t len = strlen(user.output_dir);
-        if (user.output_dir[len - 1] == '\\') {
+        if (user.output_dir[len - 1] == '/') {
             user.output_dir[len - 1] = '\0';
         }
     }
