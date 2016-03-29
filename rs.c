@@ -118,6 +118,16 @@ char *nowlong() {
 }
 
 
+char *nowlongoffset(const int offset) {
+    static char timestr[64];
+    time_t utc;
+    time(&utc);
+    utc += offset;
+    strftime(timestr, 63, "%Y%m%d-%H%M%S", localtime(&utc));
+    return timestr;
+}
+
+
 void rsprint(const char *format, ...) {
     
     char str[RS_MAX_STR] = "";
