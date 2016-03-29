@@ -446,6 +446,7 @@ char *commaint(long long num);
 char *commafloat(float num);
 char *now();
 char *nowlong();
+char *nowlongoffset(const int offset);
 
 cl_uint RS_gpu_count(void);
 

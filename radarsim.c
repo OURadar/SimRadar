@@ -306,13 +306,13 @@ void show_user_param(const char *name, const void* value, const char *unit, char
     printf("  %-25s = %s %s\n", name, value_str, value_str == str_buf ? "" : unit);
 }
 
-void write_iq_file(const UserParams user, const ScanParams scan, const IQFileHeader *file_header, const IQPulseHeader *pulse_headers, const cl_float4 *pulse_cache, const int stride) {
+void write_iq_file(const UserParams user, const ScanParams scan, const IQFileHeader *file_header, const IQPulseHeader *pulse_headers, const cl_float4 *pulse_cache, const int stride, const int offset) {
     char charbuff[2048];
     
     memset(charbuff, 0, sizeof(charbuff));
     snprintf(charbuff, sizeof(charbuff), "%s/sim-%s-%s%04.1f.iq",
              user.output_dir,
-             nowlong(),
+             nowlongoffset(offset),
              scan.mode == SCAN_MODE_PPI ? "E": (scan.mode == SCAN_MODE_RHI ? "A" : "S"),
              scan.mode == SCAN_MODE_PPI ? scan.el: (scan.mode == SCAN_MODE_RHI ? scan.az : (float)user.num_pulses));
     printf("%s : Output file : " UNDERLINE("%s") "\n", now(), charbuff);
@@ -842,8 +842,6 @@ int main(int argc, char *argv[]) {
     cl_float4 *pulse_cache = (cl_float4 *)malloc(user.num_pulses * S->params.range_count * sizeof(cl_float4));
     memset(pulse_headers, 0, user.num_pulses * sizeof(IQPulseHeader));
     memset(pulse_cache, 0, user.num_pulses * S->params.range_count * sizeof(cl_float4));
-
-    fprintf(stderr, "sizeof(pulse_headers) = %s\n", commaint(sizeof(pulse_headers)));
     
     // Now we bake
     int k0 = 0;
@@ -962,29 +960,31 @@ int main(int argc, char *argv[]) {
         MPI_Status status;
         
         if (world_rank == 0) {
-            write_iq_file(user, scan, &file_header, pulse_headers, pulse_cache, S->params.range_count);
+            write_iq_file(user, scan, &file_header, pulse_headers, pulse_cache, S->params.range_count, 0);
             for (k = 1; k < world_size; k++) {
                 MPI_Recv(&file_header, sizeof(IQFileHeader), MPI_BYTE, k, 0, MPI_COMM_WORLD, &status);
-                printf("%s : Received file header from node %d  (seed = %s).\n", now(), status.MPI_SOURCE, commaint(file_header.simulation_seed));
+                if (verb > 1) {
+                    printf("%s : Received file header from node %d  (seed = %s).\n", now(), status.MPI_SOURCE, commaint(file_header.simulation_seed));
+                }
                 MPI_Recv(pulse_headers, user.num_pulses * sizeof(IQPulseHeader), MPI_BYTE, k, 1, MPI_COMM_WORLD, &status);
-                printf("%s : Received pulse headers of %s B from node %d.\n", now(), commaint(status._count), status.MPI_SOURCE);
+                if (verb > 1) {
+                    printf("%s : Received pulse headers of %s B from node %d.\n", now(), commaint(status._count), status.MPI_SOURCE);
+                }
                 MPI_Recv(pulse_cache, user.num_pulses * S->params.range_count * sizeof(cl_float4), MPI_BYTE, k, 2, MPI_COMM_WORLD, &status);
-                printf("%s : Received pulse data of %s B from node %d.\n", now(), commaint(status._count), status.MPI_SOURCE);
-                sleep(1);
-                write_iq_file(user, scan, &file_header, pulse_headers, pulse_cache, S->params.range_count);
+                if (verb > 1) {
+                    printf("%s : Received pulse data of %s B from node %d.\n", now(), commaint(status._count), status.MPI_SOURCE);
+                }
+                write_iq_file(user, scan, &file_header, pulse_headers, pulse_cache, S->params.range_count, k);
             }
         } else {
-            //printf("%s : %s : Sending header to master node.\n", now(), processor_name);
             MPI_Send(&file_header, sizeof(IQFileHeader), MPI_BYTE, 0, 0, MPI_COMM_WORLD);
-            //printf("%s : %s : Sending pulse headers to master node.\n", now(), processor_name);
             MPI_Send(pulse_headers, user.num_pulses * sizeof(IQPulseHeader), MPI_BYTE, 0, 1, MPI_COMM_WORLD);
-            //printf("%s : %s : Sending pulse data to master node.\n", now(), processor_name);
             MPI_Send(pulse_cache, user.num_pulses * S->params.range_count * sizeof(cl_float4), MPI_BYTE, 0, 2, MPI_COMM_WORLD);
         }
 
 #else
         
-        write_iq_file(user, scan, &file_header, pulse_headers, pulse_cache, S->params.range_count);
+        write_iq_file(user, scan, &file_header, pulse_headers, pulse_cache, S->params.range_count, 0);
         
 #endif
         
