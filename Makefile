@@ -15,11 +15,11 @@ CFLAGS += -D_DARWIN_C_SOURCE
 LDFLAGS += -framework OpenCL
 else
 CC = gcc
-# This option is actually special for OSCER's boomer
+# This option is actually special for Linux (OSCER's boomer included)
 PROGS += radarsim_omp
 CFLAGS += -D_GNU_SOURCE
-CFLAGS += -I /opt/local/software/Cuda/4.2.9/include
-LDFLAGS += -L /usr/lib64/nvidia -lOpenCL
+CFLAGS += -I /usr/local/cuda/include
+LDFLAGS += -L /usr/local/cuda/lib64 -lOpenCL
 endif
 
 LDFLAGS += -lm -lpthread
