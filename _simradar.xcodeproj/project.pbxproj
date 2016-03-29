@@ -30,6 +30,7 @@
 		B5342BD41C21401A004592BF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B57241A61C0CA06000B76BCB /* Assets.xcassets */; };
 		B535159D1AD32077004C0F50 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = B535159C1AD32077004C0F50 /* MainMenu.xib */; };
 		B53A764A1C16816100405F2A /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5EF317418204B5C002DDEFC /* AppKit.framework */; };
+		B54601CA1CAA19BD005A8BF6 /* lsiq.c in Sources */ = {isa = PBXBuildFile; fileRef = B54601BB1CAA1940005A8BF6 /* lsiq.c */; };
 		B54DEB3718A5453800EBEC07 /* Minion-Icons in Resources */ = {isa = PBXBuildFile; fileRef = B54DEB3618A5453800EBEC07 /* Minion-Icons */; };
 		B55716861AB7519D001984E0 /* rcs.c in Sources */ = {isa = PBXBuildFile; fileRef = B55716851AB7519D001984E0 /* rcs.c */; };
 		B5576B8B18315B3B0012E6F5 /* SimPoint.m in Sources */ = {isa = PBXBuildFile; fileRef = B5576B8A18315B3B0012E6F5 /* SimPoint.m */; };
@@ -156,6 +157,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B54601BE1CAA19A8005A8BF6 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
 		B54DEB3B18A572D800EBEC07 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 12;
@@ -266,6 +276,8 @@
 		B52B2BDD1BE8F77C00F1F91D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
 		B535159B1AD31E12004C0F50 /* versions.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = versions.html; path = delivery/versions.html; sourceTree = "<group>"; };
 		B535159C1AD32077004C0F50 /* MainMenu.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
+		B54601BB1CAA1940005A8BF6 /* lsiq.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = lsiq.c; sourceTree = "<group>"; };
+		B54601C01CAA19A8005A8BF6 /* lsiq */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = lsiq; sourceTree = BUILT_PRODUCTS_DIR; };
 		B54DEB3618A5453800EBEC07 /* Minion-Icons */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "Minion-Icons"; path = "SimRadar/Minion-Icons"; sourceTree = "<group>"; };
 		B54DEB3E18A5742300EBEC07 /* SimRadar-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "SimRadar-Info.plist"; sourceTree = "<group>"; };
 		B54DEB3F18A5742300EBEC07 /* SimRadar-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SimRadar-Prefix.pch"; sourceTree = "<group>"; };
@@ -352,6 +364,13 @@
 			files = (
 				B527893418A13C6D00650679 /* OpenCL.framework in Frameworks */,
 				B527893518A13C6D00650679 /* OpenGL.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B54601BD1CAA19A8005A8BF6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -480,6 +499,7 @@
 				B5C2D1F31ADC155700DD91B1 /* test_rcs */,
 				B572419E1C0CA05F00B76BCB /* SimRadarEx.app */,
 				B518D4221C84A0BD00BAF67D /* simple_ppi */,
+				B54601C01CAA19A8005A8BF6 /* lsiq */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -528,6 +548,7 @@
 			children = (
 				B50A281717D7C2F400E4DE66 /* radarsim.c */,
 				B518D41D1C849FDF00BAF67D /* simple_ppi.c */,
+				B54601BB1CAA1940005A8BF6 /* lsiq.c */,
 				B5BAD55618B67E80007AC15D /* test_rs.c */,
 				B50A280617D7B1EC00E4DE66 /* cldemo.c */,
 				B5760EA718A938F2008DAF83 /* test_clreduce.c */,
@@ -649,6 +670,23 @@
 			name = radarsim;
 			productName = radarsim;
 			productReference = B527892C18A13C0100650679 /* radarsim */;
+			productType = "com.apple.product-type.tool";
+		};
+		B54601BF1CAA19A8005A8BF6 /* lsiq */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B54601C41CAA19A8005A8BF6 /* Build configuration list for PBXNativeTarget "lsiq" */;
+			buildPhases = (
+				B54601BC1CAA19A8005A8BF6 /* Sources */,
+				B54601BD1CAA19A8005A8BF6 /* Frameworks */,
+				B54601BE1CAA19A8005A8BF6 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = lsiq;
+			productName = lsiq;
+			productReference = B54601C01CAA19A8005A8BF6 /* lsiq */;
 			productType = "com.apple.product-type.tool";
 		};
 		B56077EE17E356910068C6BE /* cldemo */ = {
@@ -821,6 +859,9 @@
 					B518D4211C84A0BD00BAF67D = {
 						CreatedOnToolsVersion = 7.2.1;
 					};
+					B54601BF1CAA19A8005A8BF6 = {
+						CreatedOnToolsVersion = 7.2.1;
+					};
 					B567F8BA1A6D66E700F40660 = {
 						CreatedOnToolsVersion = 6.1;
 					};
@@ -847,6 +888,7 @@
 			targets = (
 				B56077EE17E356910068C6BE /* cldemo */,
 				B527892B18A13C0100650679 /* radarsim */,
+				B54601BF1CAA19A8005A8BF6 /* lsiq */,
 				B518D4211C84A0BD00BAF67D /* simple_ppi */,
 				B5760E9D18A938D3008DAF83 /* test_clreduce */,
 				B5D1420E18AA72F80041566E /* test_make_pulse */,
@@ -951,6 +993,14 @@
 				B527893318A13C5F00650679 /* rs.c in Sources */,
 				B59A64281B8CF23E00747CD5 /* arps.c in Sources */,
 				B527893118A13C4400650679 /* radarsim.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B54601BC1CAA19A8005A8BF6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B54601CA1CAA19BD005A8BF6 /* lsiq.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1091,18 +1141,13 @@
 		B50A280517D7B1DC00E4DE66 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				HEADER_SEARCH_PATHS = /usr/local/include;
+				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				ONLY_ACTIVE_ARCH = YES;
 				OPENCL_AUTO_VECTORIZE_ENABLE = YES;
 				OPENCL_OPTIMIZATION_LEVEL = 3;
-				OTHER_CFLAGS = (
-					"-I",
-					/usr/local/include,
-				);
-				OTHER_LDFLAGS = (
-					"-L",
-					/usr/local/lib,
-					"-lhdf5",
-				);
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "-lhdf5";
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -1371,18 +1416,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
+				HEADER_SEARCH_PATHS = /usr/local/include;
+				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				ONLY_ACTIVE_ARCH = YES;
 				OPENCL_AUTO_VECTORIZE_ENABLE = YES;
 				OPENCL_OPTIMIZATION_LEVEL = 3;
-				OTHER_CFLAGS = (
-					"-I",
-					/usr/local/include,
-				);
-				OTHER_LDFLAGS = (
-					"-L",
-					/usr/local/lib,
-					"-lhdf5",
-				);
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "-lhdf5";
 				SDKROOT = macosx;
 			};
 			name = "Debug GL";
@@ -1639,22 +1679,207 @@
 			};
 			name = "Debug GL";
 		};
+		B54601C51CAA19A8005A8BF6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		B54601C61CAA19A8005A8BF6 /* DUMMY */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = DUMMY;
+		};
+		B54601C71CAA19A8005A8BF6 /* GEN_IMG */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = GEN_IMG;
+		};
+		B54601C81CAA19A8005A8BF6 /* Debug GL */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = "Debug GL";
+		};
+		B54601C91CAA19A8005A8BF6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
 		B56077C817E34F940068C6BE /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
+				HEADER_SEARCH_PATHS = /usr/local/include;
+				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				ONLY_ACTIVE_ARCH = YES;
 				OPENCL_AUTO_VECTORIZE_ENABLE = YES;
 				OPENCL_OPTIMIZATION_LEVEL = 3;
-				OTHER_CFLAGS = (
-					"-I",
-					/usr/local/include,
-				);
-				OTHER_LDFLAGS = (
-					"-L",
-					/usr/local/lib,
-					"-lhdf5",
-				);
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "-lhdf5";
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -2177,18 +2402,13 @@
 		B59AEE9619DDF25300F5129C /* GEN_IMG */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				HEADER_SEARCH_PATHS = /usr/local/include;
+				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				ONLY_ACTIVE_ARCH = YES;
 				OPENCL_AUTO_VECTORIZE_ENABLE = YES;
 				OPENCL_OPTIMIZATION_LEVEL = 3;
-				OTHER_CFLAGS = (
-					"-I",
-					/usr/local/include,
-				);
-				OTHER_LDFLAGS = (
-					"-L",
-					/usr/local/lib,
-					"-lhdf5",
-				);
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "-lhdf5";
 				SDKROOT = macosx;
 			};
 			name = GEN_IMG;
@@ -2849,18 +3069,13 @@
 		B5F3BFEA1C7B52B300CE3F41 /* DUMMY */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				HEADER_SEARCH_PATHS = /usr/local/include;
+				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				ONLY_ACTIVE_ARCH = YES;
 				OPENCL_AUTO_VECTORIZE_ENABLE = YES;
 				OPENCL_OPTIMIZATION_LEVEL = 3;
-				OTHER_CFLAGS = (
-					"-I",
-					/usr/local/include,
-				);
-				OTHER_LDFLAGS = (
-					"-L",
-					/usr/local/lib,
-					"-lhdf5",
-				);
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "-lhdf5";
 				SDKROOT = macosx;
 			};
 			name = DUMMY;
@@ -3346,6 +3561,17 @@
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
+		};
+		B54601C41CAA19A8005A8BF6 /* Build configuration list for PBXNativeTarget "lsiq" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B54601C51CAA19A8005A8BF6 /* Release */,
+				B54601C61CAA19A8005A8BF6 /* DUMMY */,
+				B54601C71CAA19A8005A8BF6 /* GEN_IMG */,
+				B54601C81CAA19A8005A8BF6 /* Debug GL */,
+				B54601C91CAA19A8005A8BF6 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
 		};
 		B56077F117E356910068C6BE /* Build configuration list for PBXNativeTarget "cldemo" */ = {
 			isa = XCConfigurationList;
