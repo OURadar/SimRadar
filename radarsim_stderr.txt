@@ -1,72 +1,237 @@
-================== Fri Feb 21 10:22:07 CST 2014 =================
-/home/boonleng/radarsim
-radarsim
-================== Fri Feb 21 10:27:15 CST 2014 =================
-/home/boonleng/radarsim
-radarsim
+k    23   (e  3.00, a-11.77)   45.72 fps   [1;33m23.00%[0m   eta 2 seconds   k    23   (e  3.00, a-11.77)   45.69 fps   [1;33m23.00%[0m   eta 2 seconds   k    49   (e  3.00, a-11.51)   73.72 fps   [1;33m49.00%[0m   eta 1 second   k    49   (e  3.00, a-11.51)   73.67 fps   [1;33m49.00%[0m   eta 1 second   k    75   (e  3.00, a-11.25)   87.71 fps   [1;33m75.00%[0m   eta 0 second   k    75   (e  3.00, a-11.25)   87.63 fps   [1;33m75.00%[0m   eta 0 second                                                                                                                                                                                                                                                   k    23   (e  3.00, a-11.77)   45.72 fps   [1;33m23.00%[0m   eta 2 seconds   k    49   (e  3.00, a-11.51)   73.72 fps   [1;33m49.00%[0m   eta 1 second   k    75   (e  3.00, a-11.25)   87.70 fps   [1;33m75.00%[0m   eta 0 second                                                                                                                           k    23   (e  3.00, a-11.77)   45.66 fps   [1;33m23.00%[0m   eta 2 seconds   k    49   (e  3.00, a-11.51)   73.65 fps   [1;33m49.00%[0m   eta 1 second   k    75   (e  3.00, a-11.25)   87.64 fps   [1;33m75.00%[0m   eta 0 second                                                                                                                           12:30:08 : RS : [1;33mWARNING: High GPU memory usage by worker[0]: 7.77 GB out of 5.63 GB.
+[0m12:30:08 : RS : [1;33mWARNING: High GPU memory usage by worker[1]: 7.77 GB out of 5.63 GB.
+[0m12:30:09 : RS : CL_MEM_OBJECT_ALLOCATION_FAILURE error executing CL_COMMAND_WRITE_BUFFER on Tesla M2075 (Device 0).
+ (via pfn_notify)
+12:30:09 : RS : CL_MEM_OBJECT_ALLOCATION_FAILURE error executing CL_COMMAND_WRITE_BUFFER on Tesla M2075 (Device 0).
+ (via pfn_notify)
+12:30:10 : RS : CL_MEM_OBJECT_ALLOCATION_FAILURE error executing CL_COMMAND_WRITE_BUFFER on Tesla M2075 (Device 0).
+ (via pfn_notify)
+12:30:10 : RS : CL_MEM_OBJECT_ALLOCATION_FAILURE error executing CL_COMMAND_WRITE_BUFFER on Tesla M2075 (Device 0).
+ (via pfn_notify)
+12:30:10 : RS : CL_MEM_OBJECT_ALLOCATION_FAILURE error executing CL_COMMAND_NDRANGE_KERNEL on Tesla M2075 (Device 0).
+ (via pfn_notify)
+
+radarsim_omp:14748 terminated with signal 11 at PC=2b820a4b55a2 SP=7fff11dd4910.  Backtrace:
+/usr/lib64/nvidia/libnvidia-opencl.so.1(+0x13f5a2)[0x2b820a4b55a2]
+/usr/lib64/nvidia/libnvidia-opencl.so.1(+0x13f140)[0x2b820a4b5140]
+/usr/lib64/nvidia/libnvidia-opencl.so.1(+0x139cb7)[0x2b820a4afcb7]
+/usr/lib64/nvidia/libnvidia-opencl.so.1(+0x139f0c)[0x2b820a4aff0c]
+radarsim_omp(RS_make_pulse+0x45b)[0x40bc52]
+radarsim_omp(main+0x108e)[0x407b02]
+/lib64/libc.so.6(__libc_start_main+0xfd)[0x300041ed5d]
+radarsim_omp[0x4069b9]
+--------------------------------------------------------------------------
+mpirun has exited due to process rank 0 with PID 14747 on
+node c288 exiting without calling "finalize". This may
+have caused other processes in the application to be
+terminated by signals sent by mpirun (as reported here).
+--------------------------------------------------------------------------
+==================<<< Mon Mar 28 12:36:44 CDT 2016 >>>=================
+/home/boonleng/simradar
+Mar 28 12:42:00 2016 12431 4 7.06 handleTSRegisterTerm(): TS reports task <0> pid <37514> on host<c264> killed or core dumped
+--------------------------------------------------------------------------
+mpirun has exited due to process rank 0 with PID 37513 on
+node c264 exiting without calling "finalize". This may
+have caused other processes in the application to be
+terminated by signals sent by mpirun (as reported here).
+--------------------------------------------------------------------------
+User defined signal 2
+==================<<< Mon Mar 28 12:46:00 CDT 2016 >>>=================
+/home/boonleng/simradar
+Mar 28 12:51:15 2016 16259 4 7.06 handleTSRegisterTerm(): TS reports task <0> pid <38861> on host<c264> killed or core dumped
+--------------------------------------------------------------------------
+mpirun has exited due to process rank 0 with PID 38860 on
+node c264 exiting without calling "finalize". This may
+have caused other processes in the application to be
+terminated by signals sent by mpirun (as reported here).
+--------------------------------------------------------------------------
+User defined signal 2
+==================<<< Mon Mar 28 12:53:13 CDT 2016 >>>=================
+/home/boonleng/simradar
+Mar 28 13:08:23 2016 19216 4 7.06 handleTSRegisterTerm(): TS reports task <0> pid <39940> on host<c264> killed or core dumped
+--------------------------------------------------------------------------
+mpirun has exited due to process rank 0 with PID 39939 on
+node c264 exiting without calling "finalize". This may
+have caused other processes in the application to be
+terminated by signals sent by mpirun (as reported here).
+--------------------------------------------------------------------------
+User defined signal 2
+==================<<< Mon Mar 28 13:14:12 CDT 2016 >>>=================
+/home/boonleng/simradar
+                                                                                                                                                                                                                                                ==================<<< Mon Mar 28 13:52:35 CDT 2016 >>>=================
+/home/boonleng/simradar
+                                                                                                                                                                                                                                                ==================<<< Mon Mar 28 14:01:44 CDT 2016 >>>=================
+/home/boonleng/simradar
+                                                                                                                                                                                                                                                ==================<<< Mon Mar 28 14:27:28 CDT 2016 >>>=================
+/home/boonleng/simradar
 -----------------------------------------------------------------
-================== Fri Feb 21 11:08:07 CST 2014 =================
-/home/boonleng/radarsim
-radarsim
+                                                                                                                                                                                                                                                -----------------------------------------------------------------
+                                                                                                                                                                                                                                                -----------------------------------------------------------------
+Terminated
+--------------------------------------------------------------------------
+mpirun has exited due to process rank 0 with PID 9370 on
+node c264 exiting without calling "finalize". This may
+have caused other processes in the application to be
+terminated by signals sent by mpirun (as reported here).
+--------------------------------------------------------------------------
+==================<<< Mon Mar 28 15:22:17 CDT 2016 >>>=================
+/home/boonleng/simradar
 -----------------------------------------------------------------
-================== Fri Feb 21 11:44:13 CST 2014 =================
-/home/boonleng/radarsim
-radarsim
-11:44:18 : RS : Error in clCreateBuffer().  ret = -34
-11:44:18 : RS : Error in clCreateBuffer().  ret = -34
+                                                                                                                                                                                                                                                -----------------------------------------------------------------
+Terminated
+--------------------------------------------------------------------------
+mpirun has exited due to process rank 0 with PID 40837 on
+node c288 exiting without calling "finalize". This may
+have caused other processes in the application to be
+terminated by signals sent by mpirun (as reported here).
+--------------------------------------------------------------------------
+==================<<< Mon Mar 28 15:51:46 CDT 2016 >>>=================
+/home/boonleng/simradar
 -----------------------------------------------------------------
-11:47:03 : RS : Error in clCreateBuffer().  ret = -34
-11:47:03 : RS : Error in clCreateBuffer().  ret = -34
-/home/boonleng/.lsbatch/1393004639.3344172.shell: line 27: 20242 Segmentation fault      (core dumped) ./radarsim -vv -f 1000
-================== Fri Feb 21 12:08:57 CST 2014 =================
-/home/boonleng/radarsim
-radarsim
+sizeof(pulse_headers) = 8
+sizeof(pulse_headers) = 8
+                                                                                                                                                                                                                                                [c264.oscer.ou.edu:16451] *** An error occurred in MPI_Recv
+[c264.oscer.ou.edu:16451] *** on communicator MPI_COMM_WORLD
+[c264.oscer.ou.edu:16451] *** MPI_ERR_TRUNCATE: message truncated
+[c264.oscer.ou.edu:16451] *** MPI_ERRORS_ARE_FATAL (your MPI job will now abort)
+--------------------------------------------------------------------------
+mpirun has exited due to process rank 0 with PID 16450 on
+node c264 exiting without calling "finalize". This may
+have caused other processes in the application to be
+terminated by signals sent by mpirun (as reported here).
+--------------------------------------------------------------------------
+==================<<< Mon Mar 28 15:54:01 CDT 2016 >>>=================
+/home/boonleng/simradar
 -----------------------------------------------------------------
-================== Fri Feb 21 12:27:16 CST 2014 =================
-/home/boonleng/radarsim
-radarsim
+sizeof(pulse_headers) = 8
+sizeof(pulse_headers) = 8
+                                                                                                                                                                                                                                                ==================<<< Mon Mar 28 15:59:57 CDT 2016 >>>=================
+/home/boonleng/simradar
 -----------------------------------------------------------------
-================== Fri Feb 21 12:32:23 CST 2014 =================
-/home/boonleng/radarsim
-radarsim
+sizeof(pulse_headers) = 8
+sizeof(pulse_headers) = 8
+                                                                                                                                                                                                                                                -----------------------------------------------------------------
+                                                                                                                                                                                                                                                -----------------------------------------------------------------
+Terminated
+--------------------------------------------------------------------------
+mpirun has exited due to process rank 0 with PID 22499 on
+node c264 exiting without calling "finalize". This may
+have caused other processes in the application to be
+terminated by signals sent by mpirun (as reported here).
+--------------------------------------------------------------------------
+==================<<< Mon Mar 28 16:34:54 CDT 2016 >>>=================
+/home/boonleng/simradar
 -----------------------------------------------------------------
-================== Fri Feb 21 12:39:59 CST 2014 =================
-/home/boonleng/radarsim
-radarsim
+Terminated
+--------------------------------------------------------------------------
+mpirun has exited due to process rank 1 with PID 48628 on
+node c288 exiting without calling "finalize". This may
+have caused other processes in the application to be
+terminated by signals sent by mpirun (as reported here).
+--------------------------------------------------------------------------
+==================<<< Mon Mar 28 16:36:54 CDT 2016 >>>=================
+/home/boonleng/simradar
 -----------------------------------------------------------------
-================== Fri Feb 21 12:52:28 CST 2014 =================
-/home/boonleng/radarsim
-radarsim
------------------------------------------------------------------
-================== Fri Feb 21 12:59:13 CST 2014 =================
-/home/boonleng/radarsim
-radarsim
------------------------------------------------------------------
-================== Fri Feb 21 13:07:53 CST 2014 =================
-/home/boonleng/radarsim
-radarsim
------------------------------------------------------------------
-================== Tue Feb 25 16:51:05 CST 2014 =================
-/home/boonleng/radarsim
-radarsim
------------------------------------------------------------------
-================== Thu Feb 27 02:24:20 CST 2014 =================
-/home/boonleng/radarsim
-radarsim
-================== Thu Feb 27 02:26:43 CST 2014 =================
-/home/boonleng/radarsim
-radarsim
-================== Thu Feb 27 02:40:13 CST 2014 =================
-/home/boonleng/radarsim
-radarsim
-================== Thu Feb 27 02:59:20 CST 2014 =================
-/home/boonleng/radarsim
-radarsim
------------------------------------------------------------------
-================== Thu Feb 27 15:37:58 CST 2014 =================
-/home/boonleng/radarsim
-radarsim
-================== Thu Feb 27 15:50:07 CST 2014 =================
-/home/boonleng/radarsim
-radarsim
------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------
+Terminated
+--------------------------------------------------------------------------
+mpirun has exited due to process rank 0 with PID 36334 on
+node c264 exiting without calling "finalize". This may
+have caused other processes in the application to be
+terminated by signals sent by mpirun (as reported here).
+--------------------------------------------------------------------------
+==================<<< Tue Mar 29 11:08:33 CDT 2016 >>>=================
+/home/boonleng/simradar
+-----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        ==================<<< Tue Mar 29 16:08:15 CDT 2016 >>>=================
+/home/boonleng/simradar
+-----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                        -----------------------------------------------------------------------

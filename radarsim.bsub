@@ -1,17 +1,19 @@
 #!/bin/bash
 #
 #BSUB -q cuda
+#BSUB -a openmpi
+#BSUB -x
+#BSUB -n 3
+#BSUB -R "span[ptile=1]"
 #BSUB -o /home/boonleng/simradar/radarsim_stdout.txt
 #BSUB -e /home/boonleng/simradar/radarsim_stderr.txt
-#BSUB -W 00:30
+#BSUB -W 48:00
+#BSUB -J "radarsim_omp"
 #BSUB -N
-#
-# The BSUB directive below says to use 1 CPU core of one CPU chip
-# on one compute node, meaning that this batch jobs is non-parallel
-# (serial). DON'T CHANGE THIS.
-#
-#BSUB -n 1
-#BSUB -J "radarsim"
+
+export MPI_COMPILER="intel"
+export MPI_HARDWARE="ib"
+export MPI_SOFTWARE="openmpi"
 
 function decho() {
 	echo $@
@@ -19,24 +21,22 @@ function decho() {
 }
 
 export CUDA_PATH="/opt/local/software/Cuda/4.2.9"
-export LD_LIBRARY_PATH="/usr/lib64:${CUDA_PATH}/lib64:${CUDA_PATH}/open64/lib:${CUDA_PATH}/lib:${LD_LIBRARY_PATH}"
+export MPI_PATH="/usr/mpi/gcc/openmpi-1.4.3"
+export LD_LIBRARY_PATH="/usr/lib64:${CUDA_PATH}/lib64:${CUDA_PATH}/open64/lib:${CUDA_PATH}/lib:${LD_LIBRARY_PATH}:${MPI_PATH}/lib64"
 export PATH="${CUDA_PATH}/bin:${CUDA_PATH}/open64/bin:${PATH}"
 
 errlog="radarsim_stderr.txt"
 nowstr=`date`
 
-cd /home/boonleng/radarsim
+cd /home/boonleng/simradar
 
-decho "================== $nowstr ================="
+decho "==================<<< $nowstr >>>================="
 decho `pwd`
-decho "radarsim"
 
-#./radarsim -v -o -p 2400 --seed 1000 -O /home/boonleng/Downloads/big/ --tightbox --density 10000 --concept DB -W 1000 --noprogress
-
-seed=2000
-while [ 1 ]; do
-	decho "-----------------------------------------------------------------"
-        ./radarsim -v -o -p 2400 --seed ${seed} -O /home/boonleng/Downloads/big/ --tightbox --density 10000 --concept DB -W 1000 --noprogress
-        seed=$((seed+1))
+seed=2501
+while [ ${seed} -lt "3000" ]; do
+	decho "-----------------------------------------------------------------------"
+	mpirun.lsf radarsim_omp -v -o -p 2400 --seed ${seed} -O /home/boonleng/Downloads/big --tightbox --density 10000 --concept DB -W 1000 --noprogress
+	seed=$((seed+3))
 done
 

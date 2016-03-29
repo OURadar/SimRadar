@@ -1,0 +1,38 @@
+#!/bin/bash
+#
+#BSUB -q cuda
+#BSUB -x
+#BSUB -o /home/boonleng/simradar/radarsim_single_stdout.txt
+#BSUB -e /home/boonleng/simradar/radarsim_single_stderr.txt
+#BSUB -W 00:30
+#BSUB -N
+#BSUB -n 1
+#BSUB -J "radarsim"
+
+function decho() {
+	echo $@
+	echo $@ >> ${errlog}
+}
+
+export CUDA_PATH="/opt/local/software/Cuda/4.2.9"
+export LD_LIBRARY_PATH="/usr/lib64:${CUDA_PATH}/lib64:${CUDA_PATH}/open64/lib:${CUDA_PATH}/lib:${LD_LIBRARY_PATH}"
+export PATH="${CUDA_PATH}/bin:${CUDA_PATH}/open64/bin:${PATH}"
+
+errlog="radarsim_single_stderr.txt"
+nowstr=`date`
+
+cd /home/boonleng/radarsim
+
+decho "================== $nowstr ================="
+decho `pwd`
+decho "radarsim"
+
+#./radarsim -v -o -p 2400 --seed 1000 -O /home/boonleng/Downloads/big/ --tightbox --density 10000 --concept DB -W 1000 --noprogress
+
+seed=2000
+while [ 1 ]; do
+	decho "-----------------------------------------------------------------"
+        ./radarsim -v -o -p 2400 --seed ${seed} -O /home/boonleng/Downloads/big/ --tightbox --density 10000 --concept DB -W 1000 --noprogress
+        seed=$((seed+1))
+done
+

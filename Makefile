@@ -1,13 +1,16 @@
 UNAME := $(shell uname)
 
 CFLAGS = -std=gnu99 -Wall -Wno-unknown-pragmas -Os -msse2 -mavx -I /usr/local/include
+
 LDFLAGS = -L lib -L /usr/local/lib -lrs
 
 OBJS = rs.o les.o adm.o rcs.o
 
 MYLIB = lib/librs.a
 
-PROGS = cldemo radarsim test_clreduce test_make_pulse test_rs test_les test_adm test_rcs simple_ppi lsiq
+PROGS = cldemo test_clreduce test_make_pulse test_rs test_les test_adm test_rcs simple_ppi lsiq
+
+MPI_PROGS = radarsim
 
 ifeq ($(UNAME), Darwin)
 CC = clang
@@ -16,7 +19,6 @@ LDFLAGS += -framework OpenCL
 else
 CC = gcc
 # This option is actually special for Linux (OSCER's boomer included)
-PROGS += radarsim_omp
 CFLAGS += -D_GNU_SOURCE
 CFLAGS += -I /usr/local/cuda/include
 LDFLAGS += -L /usr/local/cuda/lib64 -lOpenCL
@@ -24,7 +26,7 @@ endif
 
 LDFLAGS += -lm -lpthread
 
-all: $(MYLIB) $(PROGS)
+all: $(MYLIB) $(PROGS) $(MPI_PROGS)
 
 $(OBJS): %.o: %.c %.h rs_types.h
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -36,11 +38,15 @@ lib/librs.a: $(OBJS)
 	mkdir -p lib
 	ar rvcs $@ $(OBJS)
 
-radarsim_omp:
-	mpicc $(CFLAGS) -D_OPEN_MPI -o $@ radarsim.c $(LDFLAGS)
+$(MPI_PROGS): %: %.c $(MYLIB)
+ifdef OPEN_MPI_CLUSTER
+	mpicc $(CFLAGS) -D_OPEN_MPI -o $@ $@.c $(LDFLAGS)
+else
+	$(CC) $(CFLAGS) -o $@ $@.c $(LDFLAGS)
+endif
 
 clean:
 	rm -f *.o *.a
-	rm -f $(MYLIB) $(PROGS)
+	rm -f $(MYLIB) $(PROGS) $(MPI_PROGS)
 	rm -rf *.dSYM
 
