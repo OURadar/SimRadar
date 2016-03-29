@@ -7,15 +7,19 @@ t
 lib/librs.a
 delivery/*.pem
 delivery/SimRadar.*
-cldemo
-test_*
-radarsim
 Sparkle.framework
 *.xcuserstate
 project.xcworkspace/
 xcuserdata/
 *.mp4
 
-simple_ppi
+# Misc. assets
 SimRadar/Photoshop Images
 ref/
+
+# Programs
+test_*
+cldemo
+radarsim
+simple_ppi
+lsiq

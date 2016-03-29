@@ -16,6 +16,13 @@
 
 #define UNDERLINE(x)  "\033[4m" x "\033[24m"
 
+int cstring_cmp(const void *a, const void *b)
+{
+    const char **ia = (const char **)a;
+    const char **ib = (const char **)b;
+    return strcmp(*ia, *ib);
+}
+
 int main(int argc, char **argv) {
 
     int k;
@@ -46,34 +53,59 @@ int main(int argc, char **argv) {
         }
     }
     
+    char *filelist[4096];
+
+    // Truncate the last path delimeter
+    if (path[strlen(path) - 1] == '/') {
+        path[strlen(path) - 1] = '\0';
+    }
+    
     d = opendir(path);
 
     if (d == NULL) {
         fprintf(stderr, "Directory does not exists.\n");
         return EXIT_FAILURE;
     }
-
+    
     k = 0;
     while ((dir = readdir(d)) != NULL) {
-        if (dir->d_namlen < 3 || strstr(dir->d_name, ".iq") == NULL) {
+        if (strlen(dir->d_name) < 3 || strstr(dir->d_name, ".iq") == NULL) {
             continue;
         }
-        sprintf(filename, "%s/%s", path, dir->d_name);
-        if (stat(filename, &file_stat) < 0) {
-            printf("%s\n", strerror(errno));
-        }
-        f = fopen(filename, "r");
-        fread(&file_header, sizeof(file_header), 1, f);
-        fclose(f);
-        printf("%s   %6s B   %d\n", dir->d_name, commaint(file_stat.st_size), file_header.simulation_seed);
+        filelist[k] = (char *)malloc(strlen(dir->d_name) + 1);
+        strcpy(filelist[k], dir->d_name);
         k++;
     }
     
+    closedir(d);
+
     if (k == 0) {
         printf("No files.\n");
+        return EXIT_SUCCESS;
     }
     
-    closedir(d);
+    const int nfiles = k;
+    
+    //printf("nfiles = %d\n", nfiles);
+
+    qsort(filelist, nfiles, sizeof(char *), cstring_cmp);
+    
+    for (k = 0; k < nfiles; k++) {
+        sprintf(filename, "%s/%s", path, filelist[k]);
+        if (stat(filename, &file_stat) < 0) {
+            printf("%s\n", strerror(errno));
+        }
+        f = fopen(filename, "r+");
+        fread(&file_header, sizeof(file_header), 1, f);
+        printf("%s   %6s B   %d\n", filelist[k], commaint(file_stat.st_size), file_header.simulation_seed);
+//        file_header.simulation_seed = k + 1825;
+//        rewind(f);
+//        fwrite(&file_header, sizeof(file_header), 1, f);
+//        fseek(f, 0, SEEK_END);
+        free(filelist[k]);
+        fclose(f);
+    }
+    
     
     return EXIT_SUCCESS;
 }
