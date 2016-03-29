@@ -17,8 +17,8 @@ CC = clang
 CFLAGS += -D_DARWIN_C_SOURCE
 LDFLAGS += -framework OpenCL
 else
+# These options are for Linux systems, boomer at OSCER included
 CC = gcc
-# This option is actually special for Linux (OSCER's boomer included)
 CFLAGS += -D_GNU_SOURCE
 CFLAGS += -I /usr/local/cuda/include
 LDFLAGS += -L /usr/local/cuda/lib64 -lOpenCL

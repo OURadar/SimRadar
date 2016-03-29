@@ -17,6 +17,10 @@ xcuserdata/
 SimRadar/Photoshop Images
 ref/
 
+# Log files
+*stdout.txt
+*stderr.txt
+
 # Programs
 test_*
 cldemo
