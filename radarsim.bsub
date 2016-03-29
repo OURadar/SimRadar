@@ -8,7 +8,7 @@
 #BSUB -o /home/boonleng/simradar/radarsim_stdout.txt
 #BSUB -e /home/boonleng/simradar/radarsim_stderr.txt
 #BSUB -W 48:00
-#BSUB -J "radarsim_omp"
+#BSUB -J "radarsim"
 #BSUB -N
 
 export MPI_COMPILER="intel"
@@ -33,10 +33,10 @@ cd /home/boonleng/simradar
 decho "==================<<< $nowstr >>>================="
 decho `pwd`
 
-seed=2501
+seed=2528
 while [ ${seed} -lt "3000" ]; do
 	decho "-----------------------------------------------------------------------"
-	mpirun.lsf radarsim_omp -v -o -p 2400 --seed ${seed} -O /home/boonleng/Downloads/big --tightbox --density 10000 --concept DB -W 1000 --noprogress
+	mpirun.lsf radarsim -v -o -p 2400 --seed ${seed} -O /home/boonleng/Downloads/big --tightbox --density 10000 --concept DB -W 1000 --noprogress
 	seed=$((seed+3))
 done
 
