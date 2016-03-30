@@ -1278,10 +1278,15 @@ void RS_free(RSHandle *H) {
 }
 
 
-RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint group_size_multiple, const cl_uint user_max_groups, const cl_uint max_local_mem_size,
-									   const float range_start, const float range_delta, const unsigned int range_count) {
+RSMakePulseParams RS_make_pulse_params(const cl_uint count,
+                                       const cl_uint group_size_multiple,
+                                       const cl_uint user_max_groups,
+                                       const cl_uint max_local_mem_size,
+									   const float range_start,
+                                       const float range_delta,
+                                       const unsigned int range_count) {
 	RSMakePulseParams param;
-
+    
 	// Keep a copy for reference
 	param.num_scats = count;
 	param.user_max_groups = user_max_groups;
@@ -1837,9 +1842,10 @@ void RS_set_scan_box(RSHandle *H,
                 printf(RS_INDENT "o U - Uniform DSD with Scaled RCS\n");
             }
         }
-		rsprint("Suggest %s bodies\n", commaint(preferred_n));
 		rsprint("Set to GPU preferred %s (%.2f bodies / resolution cell)", commaint(preferred_n), (float)preferred_n / nvol);
-        rsprint("Drop concentration scale to be used later = %s", commafloat(concentration_scale));
+        if (H->verb > 1) {
+            rsprint("Drop concentration scale to be used later = %s", commafloat(concentration_scale));
+        }
 	}
 
     // Now, we actually set it to suggested debris count
@@ -2841,22 +2847,20 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
     hmax = leslie->ax * (1.0f - powf(leslie->rx, table.xm)) / (1.0f - leslie->rx);
     zmax = leslie->az * (1.0f - powf(leslie->rz, (float)(leslie->nz - 1))) / (1.0f - leslie->rz);
     
-    if (H->verb > 0 && H->vel_count == 0) {
-        printf("%s : RS : LES stretched x-grid using %.6f * log1p( %.6f * x )    Mid = %.2f m\n",
-               now(), table.xs, table.xo, hmax);
-        printf("%s : RS : LES stretched z-grid using %.6f * log1p( %.6f * z )    Max = %.2f m\n",
-               now(), table.zs, table.zo, zmax);
-    }
-    
     if (H->verb > 1) {
-        printf("%s : RS : GPU LES[%2d] @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
-               now(),
-               H->vel_count,
-               -hmax, hmax,
-               -hmax, hmax,
-              0.0, zmax);
+        if (H->vel_count == 0) {
+            rsprint("LES stretched x-grid using %.6f * log1p( %.6f * x )    Mid = %.2f m\n",
+                   table.xs, table.xo, hmax);
+            rsprint("LES stretched z-grid using %.6f * log1p( %.6f * z )    Max = %.2f m\n",
+                   table.zs, table.zo, zmax);
+        }
+        rsprint("GPU LES[%2d] @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
+                H->vel_count,
+                -hmax, hmax,
+                -hmax, hmax,
+                0.0, zmax);
     }
-    
+
     // Some other parameters
     table.tr = leslie->tr;
     table.spacing = RSTableSpacingStretchedX | RSTableSpacingStretchedY | RSTableSpacingStretchedZ;
@@ -2870,7 +2874,8 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
         if (!(isfinite(table.data[i].x) &&
               isfinite(table.data[i].y) &&
               isfinite(table.data[i].z))) {
-            printf("%s : RS : Some LES entries are not finite  (i = %d, vel = %.2f, %.2f, %.2f).\n", now(), i, table.data[i].x, table.data[i].y, table.data[i].z);
+            rsprint("WARNING. Some LES entries are not finite  (i = %d, vel = %.2f, %.2f, %.2f).",
+                    i, table.data[i].x, table.data[i].y, table.data[i].z);
         }
 	}
 
@@ -3759,6 +3764,10 @@ void RS_populate(RSHandle *H) {
     // Divide the scatter bodies into (num_workers) chunks
     const size_t sub_num_scats = H->num_scats / MAX(1, H->num_workers);
     
+    if (H->verb > 1) {
+        rsprint("RS_populate()");
+    }
+    
 	if (H->num_scats > RS_MAX_NUM_SCATS) {
 		rsprint("Number of scatterers exceed the maximum allowed. (%s > %s).\n", commaint(H->num_scats), commaint(RS_MAX_NUM_SCATS));
         exit(EXIT_FAILURE);
@@ -3769,10 +3778,6 @@ void RS_populate(RSHandle *H) {
     if (sub_num_scats * sizeof(cl_float4) > max_var_size) {
         rsprint("Error. Every scatterer attribute occupies %s B > %s B.", commaint(sub_num_scats * sizeof(cl_float4)), commaint(max_var_size));
         exit(EXIT_FAILURE);
-    }
-    
-    if (H->verb) {
-        rsprint("RS_populate()");
     }
     
     if (H->adm_count != H->rcs_count) {
@@ -4650,11 +4655,8 @@ void RS_table3d_free(RSTable3D T) {
 
 void RS_show_radar_params(RSHandle *H) {
     rsprint("Radar Parameters:\n");
-    printf(RS_INDENT "o antenna beamwidth = %.2f deg\n", H->params.antenna_bw_deg);
-    printf(RS_INDENT "o range resolution = %.2f m\n", H->params.dr);
-    printf(RS_INDENT "o lambda = %.2f m\n", H->params.lambda);
-    printf(RS_INDENT "o PRT = %.2f ms\n", H->params.prt * 1.0e3f);
-    printf(RS_INDENT "o va = %.2f m/s\n", H->params.va);
+    printf(RS_INDENT "o antenna beamwidth = %4.2f deg          o range resolution = %.2f m\n", H->params.antenna_bw_deg, H->params.dr);
+    printf(RS_INDENT "o lambda = %4.2f m    o PRT = %.2f ms    o va = %.2f m/s\n", H->params.lambda, H->params.prt * 1.0e3f, H->params.va);
 }
 
 
@@ -4736,6 +4738,10 @@ void RS_show_pulse(RSHandle *H) {
 RSBox RS_suggest_scan_domain(RSHandle *H, const int nbeams) {
     RSBox box;
 
+    if (H->verb > 1) {
+        rsprint("RS_suggest_scan_domain()");
+    }
+    
     // Extremas of the domain
     float w = H->vel_desc.ax * (1.0f - powf(H->vel_desc.rx, 0.5f * (float)(H->vel_desc.nx - 3))) / (1.0f - H->vel_desc.rx);
     float h = H->vel_desc.az * (1.0f - powf(H->vel_desc.rz,        (float)(H->vel_desc.nz - 1))) / (1.0f - H->vel_desc.rz);
@@ -4788,6 +4794,11 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
     const cl_double k_0 = H->sim_desc.s[RSSimulationDescriptionWaveNumber] * 0.5f;
     const cl_double epsilon_0 = 8.85418782e-12f;
     const cl_double4 epsilon_r_minus_one = (cl_double4){{78.669, 18.2257, 78.669, 18.2257}};
+
+    if (H->verb > 1) {
+        rsprint("RS_compute_rcs_ellipsoids()");
+    }
+    
     //
     // Sc = k_0 ^ 2 / (4 * pi * epsilon_0)
     // Coefficient 1.0e-9 for scaling the volume to unit of m^3
@@ -4795,7 +4806,6 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
     //
     sprintf(H->summary + strlen(H->summary), "Drops / scatterer = %s\n", commafloat(H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] * H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale]));
     if (H->verb) {
-        rsprint("RS_compute_rcs_ellipsoids()");
         rsprint("Drops / scatterer = %s", commafloat(H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] * H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale]));
         rsprint("Drop concentration scaling = %s  (k_0 = %.4f)", commafloat(H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale]), k_0);
     }
