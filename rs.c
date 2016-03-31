@@ -3870,7 +3870,11 @@ void RS_populate(RSHandle *H) {
     if (H->mem_size > host_mem / 4 * 3) {
         rsprint("WARNING: High host memory usage: %s GB out of %s GB.", commafloat((float)H->mem_size * 1.0e-9f), commafloat((float)host_mem * 1.0e-9f));
     } else if (H->verb) {
-        rsprint("CPU memory usage = %s out of %s", commaint(H->mem_size), commaint(host_mem));
+        if (H->mem_size > 1.0e-9) {
+            rsprint("CPU memory usage = %s GB out of %s GB", commafloat((float)H->mem_size * 1.0e-9f), commafloat((float)host_mem * 1.0e-9f));
+        } else {
+            rsprint("CPU memory usage = %s MB out of %s MB", commafloat((float)H->mem_size * 1.0e-6f), commafloat((float)host_mem * 1.0e-6f));
+        }
     }
 
     // Initialize the scatter body positions on CPU, will upload to the GPU later

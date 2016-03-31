@@ -267,17 +267,19 @@ enum ValueType {
     ValueTypeInt,
     ValueTypeFloat,
     ValueTypeChar,
+    ValueTypeFloatArray,
     ValueTypeNotSupplied
 };
 
 #define PARAMS_FLOAT_NOT_SUPPLIED   -999.9f
 #define PARAMS_INT_NOT_SUPPLIED     -999
 
-void show_user_param(const char *name, const void* value, const char *unit, char type) {
+void show_user_param(const char *name, const void* value, const char *unit, const char type, const int count) {
     char str_buf[64] = "not supplied";
     char *value_str = str_buf;
     float *fp;
     int *ip;
+    int k;
     switch (type) {
         case ValueTypeInt:
             ip = (int *)value;
@@ -301,6 +303,17 @@ void show_user_param(const char *name, const void* value, const char *unit, char
                 value_str = str_buf;
             }
             break;
+        case ValueTypeFloatArray:
+            fp = (float *)value;
+            if (count == 0) {
+                value_str = str_buf;
+            } else {
+                snprintf(str_buf, 63, "%.2f", fp[0]);
+                for (k = 1; k < count; k++) {
+                    snprintf(str_buf + strlen(str_buf), 63 - strlen(str_buf), ", %.2f", fp[k]);
+                }
+                snprintf(str_buf + strlen(str_buf), 63 - strlen(str_buf), " %s", unit);
+            }
         default:
             value_str = str_buf;
             break;
@@ -489,12 +502,12 @@ int main(int argc, char *argv[]) {
                 pc2 = optarg - 1;
                 do {
                     pc1 = pc2 + 1;
-                    user.dsd_sizes[k++] = atof(pc1);
+                    user.dsd_sizes[k++] = 1.0e-3f * atof(pc1);
                 } while ((pc2 = strstr(pc1, ":")) != NULL);
                 user.dsd_count = k;
                 if (verb > 2) {
                     for (k = 0; k < user.dsd_count; k++) {
-                        printf("k=%d  size=%.2f mm\n", k, user.dsd_sizes[k]);
+                        printf("k=%d  size=%.2f mm\n", k, 1000.0f * user.dsd_sizes[k]);
                     }
                 }
                 break;
@@ -587,14 +600,15 @@ int main(int argc, char *argv[]) {
         printf("----------------------------------------------\n");
         printf("  User parameters:\n");
         printf("----------------------------------------------\n");
-        show_user_param("Beamwidth", &user.beamwidth, "deg", ValueTypeFloat);
-        show_user_param("TX lambda", &user.lambda, "m", ValueTypeFloat);
-        show_user_param("TX pulse width", &user.pw, "s", ValueTypeFloat);
-        show_user_param("Warm up pulses", &user.warm_up_pulses, "", ValueTypeInt);
-        show_user_param("Number of pulses", &user.num_pulses, "", ValueTypeInt);
-        show_user_param("Particle density", &user.density, "", ValueTypeFloat);
-        show_user_param("Output directory", user.output_dir, "", ValueTypeChar);
-        show_user_param("User random seed", &user.seed, "", ValueTypeInt);
+        show_user_param("Beamwidth", &user.beamwidth, "deg", ValueTypeFloat, 0);
+        show_user_param("TX lambda", &user.lambda, "m", ValueTypeFloat, 0);
+        show_user_param("TX pulse width", &user.pw, "s", ValueTypeFloat, 0);
+        show_user_param("Warm up pulses", &user.warm_up_pulses, "", ValueTypeInt, 0);
+        show_user_param("Number of pulses", &user.num_pulses, "", ValueTypeInt, 0);
+        show_user_param("Particle density", &user.density, "", ValueTypeFloat, 0);
+        show_user_param("Output directory", user.output_dir, "", ValueTypeChar, 0);
+        show_user_param("User random seed", &user.seed, "", ValueTypeInt, 0);
+        show_user_param("User DSD profile", user.dsd_sizes, "mm", ValueTypeFloatArray, user.dsd_count);
         printf("----------------------------------------------\n");
     }
 
@@ -737,7 +751,7 @@ int main(int argc, char *argv[]) {
     }
     
     if (user.dsd_count > 0) {
-        RS_set
+        RS_set_dsd_to_mp_with_sizes(S, user.dsd_sizes, user.dsd_count);
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -799,7 +813,6 @@ int main(int argc, char *argv[]) {
                     box.origin.a, box.origin.a + box.size.a, S->params.antenna_bw_deg,    // Azimuth
                     box.origin.e, box.origin.e + box.size.e, S->params.antenna_bw_deg);   // Elevation
     
-    RS_set_dsd_to_mp(S);
 
     // Save the framework default PRT for later
     if (user.prt == PARAMS_FLOAT_NOT_SUPPLIED) {
