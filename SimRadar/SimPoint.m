@@ -55,11 +55,12 @@
             return nil;
         }
         
+        // Special cases for laptop demos, etc.
         if (S->vendors[0] == RS_GPU_VENDOR_INTEL) {
             if (S->num_cus[0] <= 16) {
-                RS_set_density(S, 1.5f);
+                RS_set_density(S, 1.2f);
             } else if (S->num_cus[0] <= 24) {
-                RS_set_density(S, 3.0f);
+                RS_set_density(S, 1.6f);
             }
         }
         

@@ -18,11 +18,11 @@
 
 #define RSfloat  float
 
-#if !defined BOOL
-typedef char		    BOOL;
+#if !defined (BOOL)
+typedef signed char BOOL;
 #endif
 
-#if !defined TRUE && !defined FALSE
+#if !defined (TRUE) && !defined (FALSE)
 #define TRUE            ((BOOL)1)
 #define FALSE           ((BOOL)0)
 #endif

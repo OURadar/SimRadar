@@ -4655,8 +4655,8 @@ void RS_table3d_free(RSTable3D T) {
 
 void RS_show_radar_params(RSHandle *H) {
     rsprint("Radar Parameters:\n");
-    printf(RS_INDENT "o antenna beamwidth = %4.2f deg          o range resolution = %.2f m\n", H->params.antenna_bw_deg, H->params.dr);
-    printf(RS_INDENT "o lambda = %4.2f m    o PRT = %.2f ms    o va = %.2f m/s\n", H->params.lambda, H->params.prt * 1.0e3f, H->params.va);
+    printf(RS_INDENT "o beamwidth = %4.2f deg      o dr = %.2f m\n", H->params.antenna_bw_deg, H->params.dr);
+    printf(RS_INDENT "o lambda = %4.2f m           o PRT = %.2f ms      o va = %.2f m/s\n", H->params.lambda, H->params.prt * 1.0e3f, H->params.va);
 }
 
 
