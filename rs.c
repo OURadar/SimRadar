@@ -1509,7 +1509,7 @@ void RS_init_scat_pos(RSHandle *H) {
             sprintf(H->summary + strlen(H->summary), "  o %.2f mm - P %.5f / %s particles\n", 2000.0f * H->dsd_r[i], (float)H->dsd_pop[i] / (float)H->num_scats, commaint(H->dsd_pop[i]));
         }
         
-        if (H->verb > 1) {
+        if (H->verb) {
             rsprint("Actual DSD Specifications:");
             for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
                 printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %zu particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->num_scats, H->dsd_pop[i]);
@@ -2288,7 +2288,7 @@ void RS_set_dsd(RSHandle *H, const float *pdf, const float *diameters, const int
         lo += pdf[i];
     }
     
-    if (H->verb) {
+    if (H->verb > 1) {
         printf("%s : RS : User set DSD specifications:\n", now());
         for (i = 0; i < MIN(MAX(count - 2, 1), 3); i++) {
             printf(RS_INDENT "o %.2f mm - PDF %.4f / TH %.4f\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], H->dsd_cdf[i]);
@@ -2305,17 +2305,11 @@ void RS_set_dsd(RSHandle *H, const float *pdf, const float *diameters, const int
 }
 
 
-void RS_set_dsd_to_mp(RSHandle *H) {
+void RS_set_dsd_to_mp_with_sizes(RSHandle *H, const float *ds, const int count) {
     
     int i;
     
     float d, sum = 0.0f;
-    
-    float ds[] = {0.001f, 0.002f, 0.003f, 0.004f, 0.005f};
-//    float ds[] = {0.001f, 0.003f, 0.005f};
-    //float ds[] = {0.003f, 0.004f, 0.005f, 0.006f};
-    
-    const int count = sizeof(ds) / sizeof(float);
     
     H->dsd_mu = 8000.0f;              // Brandes et al. 2006, mu = 8000 m^-3 m^-1
     H->dsd_lambda = 2.3f * 1000.0f;
@@ -2338,6 +2332,16 @@ void RS_set_dsd_to_mp(RSHandle *H) {
 
     free(n);
 }
+
+
+void RS_set_dsd_to_mp(RSHandle *H) {
+    float ds[] = {0.001f, 0.002f, 0.003f, 0.004f, 0.005f};
+    //float ds[] = {0.001f, 0.003f, 0.005f};
+    //float ds[] = {0.003f, 0.004f, 0.005f, 0.006f};
+
+    RS_set_dsd_to_mp_with_sizes(H, ds, sizeof(ds) / sizeof(float));
+}
+
 
 void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const float table_index_start, const float table_index_delta, unsigned int table_size) {
 

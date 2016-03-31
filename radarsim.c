@@ -49,10 +49,12 @@ typedef struct user_params {
     float lambda;
     float prt;
     float pw;
+    float dsd_sizes[100];
 
     int   num_pulses;
     int   warm_up_pulses;
     int   seed;
+    int   dsd_count;
     
     char output_iq_file;
     char output_state_file;
@@ -351,6 +353,7 @@ int main(int argc, char *argv[]) {
     user.lambda            = PARAMS_FLOAT_NOT_SUPPLIED;
     user.prt               = PARAMS_FLOAT_NOT_SUPPLIED;
     user.pw                = PARAMS_FLOAT_NOT_SUPPLIED;
+    user.dsd_count         = 0;
 
     user.seed              = PARAMS_INT_NOT_SUPPLIED;
     user.num_pulses        = PARAMS_INT_NOT_SUPPLIED;
@@ -396,8 +399,9 @@ int main(int argc, char *argv[]) {
         {"alarm"      , no_argument      , 0, 'A'}, // ASCII 65 - 90 : A - Z
         {"cpu"        , no_argument      , 0, 'C'},
         {"density"    , required_argument, 0, 'D'},
-        {"savestate"  , no_argument      , 0 ,'E'},
-        {"noprogress" , no_argument      , 0 ,'F'},
+        {"savestate"  , no_argument      , 0, 'E'},
+        {"noprogress" , no_argument      , 0, 'F'},
+        {"mpdsd"      , required_argument, 0, 'G'},
         {"preview"    , no_argument      , 0, 'N'},
         {"outdir"     , required_argument, 0, 'O'},
         {"sweep"      , required_argument, 0, 'S'},
@@ -430,7 +434,7 @@ int main(int argc, char *argv[]) {
     }
     //printf("str = '%s'\n", str);
     
-    char c1;
+    char c1, *pc1, *pc2;
     float f1, f2, f3;
     // Process the input arguments and set the simulator parameters
     int opt, long_index = 0;
@@ -477,6 +481,22 @@ int main(int argc, char *argv[]) {
                 break;
             case 'g':
                 accel_type = ACCEL_TYPE_GPU;
+                break;
+            case 'G':
+                //k = sscanf(optarg, "%c:%f:%f:%f", &c1, &f1, &f2, &f3);
+                strcpy(charbuff, optarg);
+                k = 0;
+                pc2 = optarg - 1;
+                do {
+                    pc1 = pc2 + 1;
+                    user.dsd_sizes[k++] = atof(pc1);
+                } while ((pc2 = strstr(pc1, ":")) != NULL);
+                user.dsd_count = k;
+                if (verb > 2) {
+                    for (k = 0; k < user.dsd_count; k++) {
+                        printf("k=%d  size=%.2f mm\n", k, user.dsd_sizes[k]);
+                    }
+                }
                 break;
             case 'h':
                 show_help();
@@ -543,7 +563,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    
     // ---------------------------------------------------------------------------------------------------------------
 
 #if defined (_OPEN_MPI)
@@ -715,6 +734,10 @@ int main(int argc, char *argv[]) {
     
     if (user.seed != PARAMS_INT_NOT_SUPPLIED) {
         RS_set_random_seed(S, user.seed);
+    }
+    
+    if (user.dsd_count > 0) {
+        RS_set
     }
 
     // ---------------------------------------------------------------------------------------------------------------

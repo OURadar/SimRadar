@@ -489,6 +489,7 @@ RSVolume RS_get_domain(RSHandle *H);
 
 void RS_set_dsd(RSHandle *H, const float *cdf, const float *diameters, const int count, const char name);
 void RS_set_dsd_to_mp(RSHandle *H);
+void RS_set_dsd_to_mp_with_sizes(RSHandle *H, const float *ds, const int count);
 
 void RS_set_range_weight(RSHandle *H, const float *weights, const float table_index_start, const float table_index_delta, unsigned int table_size);
 void RS_set_range_weight_to_triangle(RSHandle *H, float pulse_width_m);
