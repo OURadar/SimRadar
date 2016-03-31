@@ -149,8 +149,9 @@ void rsprint(const char *format, ...) {
     if (!strncmp(msg, "Error", 5)) {
         fprintf(stderr, "\033[1;31m%s\033[0m", str);
     } else if (!strncmp(msg, "WARNING", 7)) {
-        //fprintf(stderr, "\033[1;33m%s\033[0m", str);
         fprintf(stderr, "%s : RS : \033[1;33m%s\033[0m", now(), msg);
+    } else if (!strncmp(msg, "INFO", 4)) {
+        printf("%s : RS : \033[4m%s\033[24m", now(), msg);
     } else {
         printf("%s", str);
     }
@@ -1523,6 +1524,8 @@ void RS_init_scat_pos(RSHandle *H) {
                 printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %zu particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->num_scats, H->dsd_pop[i]);
             }
         }
+    } else {
+        rsprint("INFO: No DSD specified. The background drops do not return any power.");
     }
 	
     // Replace a few points for debugging purpose.
@@ -3800,7 +3803,8 @@ void RS_populate(RSHandle *H) {
     }
 
     if (H->status & RSStatusDomainPopulated) {
-        rsprint("Simulation was populated.");
+        rsprint("WARNING. Simulation was populated.");
+        return;
     }
 
     //
@@ -3870,7 +3874,7 @@ void RS_populate(RSHandle *H) {
     if (H->mem_size > host_mem / 4 * 3) {
         rsprint("WARNING: High host memory usage: %s GB out of %s GB.", commafloat((float)H->mem_size * 1.0e-9f), commafloat((float)host_mem * 1.0e-9f));
     } else if (H->verb) {
-        if (H->mem_size > 1.0e-9) {
+        if (H->mem_size > (size_t)1.0e9f) {
             rsprint("CPU memory usage = %s GB out of %s GB", commafloat((float)H->mem_size * 1.0e-9f), commafloat((float)host_mem * 1.0e-9f));
         } else {
             rsprint("CPU memory usage = %s MB out of %s MB", commafloat((float)H->mem_size * 1.0e-6f), commafloat((float)host_mem * 1.0e-6f));

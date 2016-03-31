@@ -63,6 +63,7 @@ typedef struct user_params {
     char skip_questions;
     char tight_box;
     char show_progress;
+    char no_background;
     
     char output_dir[1024];
 } UserParams;
@@ -267,6 +268,7 @@ enum ValueType {
     ValueTypeInt,
     ValueTypeFloat,
     ValueTypeChar,
+    ValueTypeBool,
     ValueTypeFloatArray,
     ValueTypeNotSupplied
 };
@@ -303,6 +305,10 @@ void show_user_param(const char *name, const void* value, const char *unit, cons
                 value_str = str_buf;
             }
             break;
+        case ValueTypeBool:
+            if (*(char *)value) {
+                strcpy(value_str, "true");
+            }
         case ValueTypeFloatArray:
             fp = (float *)value;
             if (count == 0) {
@@ -318,7 +324,11 @@ void show_user_param(const char *name, const void* value, const char *unit, cons
             value_str = str_buf;
             break;
     }
-    printf("  %-25s = %s %s\n", name, value_str, value_str == str_buf ? "" : unit);
+    if (type == ValueTypeBool && *(char *)value == true) {
+        printf("  %-25s\n", name);
+    } else {
+        printf("  %-25s = %s %s\n", name, value_str, value_str == str_buf ? "" : unit);
+    }
 }
 
 void write_iq_file(const UserParams user, const ScanParams scan, const IQFileHeader *file_header, const IQPulseHeader *pulse_headers, const cl_float4 *pulse_cache, const int stride, const int offset) {
@@ -379,6 +389,7 @@ int main(int argc, char *argv[]) {
     user.skip_questions    = false;
     user.show_progress     = true;
     user.tight_box         = false;
+    user.no_background     = false;
     
     user.output_dir[0]     = '\0';
 
@@ -409,33 +420,34 @@ int main(int argc, char *argv[]) {
     // ---------------------------------------------------------------------------------------------------------------
 
     static struct option long_options[] = {
-        {"alarm"      , no_argument      , 0, 'A'}, // ASCII 65 - 90 : A - Z
-        {"cpu"        , no_argument      , 0, 'C'},
-        {"density"    , required_argument, 0, 'D'},
-        {"savestate"  , no_argument      , 0, 'E'},
-        {"noprogress" , no_argument      , 0, 'F'},
-        {"mpdsd"      , required_argument, 0, 'G'},
-        {"preview"    , no_argument      , 0, 'N'},
-        {"outdir"     , required_argument, 0, 'O'},
-        {"sweep"      , required_argument, 0, 'S'},
-        {"tightbox"   , no_argument      , 0, 'T'},
-        {"warmup"     , required_argument, 0, 'W'},
-        {"azimuth"    , required_argument, 0, 'a'}, // ASCII 97 - 122 : a - z
-        {"concept"    , required_argument, 0, 'c'},
-        {"debris"     , required_argument, 0, 'd'},
-        {"elevation"  , required_argument, 0, 'e'},
-        {"help"       , no_argument      , 0, 'h'},
-        {"gpu"        , no_argument      , 0, 'g'},
-        {"frames"     , required_argument, 0, 'f'},
-        {"lambda"     , required_argument, 0, 'l'},
-        {"output"     , no_argument      , 0, 'o'},
-        {"pulses"     , required_argument, 0, 'p'},
-        {"seed"       , required_argument, 0, 's'},
-        {"prt"        , required_argument, 0, 't'},
-        {"pulsewidth" , required_argument, 0, 'w'},
-        {"quiet"      , no_argument      , 0, 'q'},
-        {"verbose"    , no_argument      , 0, 'v'},
-        {"dontask"    , no_argument      , 0, 'y'},
+        {"alarm"         , no_argument      , 0, 'A'}, // ASCII 65 - 90 : A - Z
+        {"cpu"           , no_argument      , 0, 'C'},
+        {"density"       , required_argument, 0, 'D'},
+        {"savestate"     , no_argument      , 0, 'E'},
+        {"noprogress"    , no_argument      , 0, 'F'},
+        {"mpdsd"         , required_argument, 0, 'G'},
+        {"preview"       , no_argument      , 0, 'N'},
+        {"outdir"        , required_argument, 0, 'O'},
+        {"sweep"         , required_argument, 0, 'S'},
+        {"tightbox"      , no_argument      , 0, 'T'},
+        {"warmup"        , required_argument, 0, 'W'},
+        {"azimuth"       , required_argument, 0, 'a'}, // ASCII 97 - 122 : a - z
+        {"no-background" , no_argument      , 0, 'b'},
+        {"concept"       , required_argument, 0, 'c'},
+        {"debris"        , required_argument, 0, 'd'},
+        {"elevation"     , required_argument, 0, 'e'},
+        {"help"          , no_argument      , 0, 'h'},
+        {"gpu"           , no_argument      , 0, 'g'},
+        {"frames"        , required_argument, 0, 'f'},
+        {"lambda"        , required_argument, 0, 'l'},
+        {"output"        , no_argument      , 0, 'o'},
+        {"pulses"        , required_argument, 0, 'p'},
+        {"seed"          , required_argument, 0, 's'},
+        {"prt"           , required_argument, 0, 't'},
+        {"pulsewidth"    , required_argument, 0, 'w'},
+        {"quiet"         , no_argument      , 0, 'q'},
+        {"verbose"       , no_argument      , 0, 'v'},
+        {"dontask"       , no_argument      , 0, 'y'},
         {0, 0, 0, 0}
     };
     
@@ -458,6 +470,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'A':
                 user.quiet_mode = false;
+                break;
+            case 'b':
+                user.no_background = true;
                 break;
             case 'c':
                 concept = RSSimulationConceptNull;
@@ -609,6 +624,7 @@ int main(int argc, char *argv[]) {
         show_user_param("Output directory", user.output_dir, "", ValueTypeChar, 0);
         show_user_param("User random seed", &user.seed, "", ValueTypeInt, 0);
         show_user_param("User DSD profile", user.dsd_sizes, "mm", ValueTypeFloatArray, user.dsd_count);
+        show_user_param("No background return", &user.no_background, "", ValueTypeBool, 0);
         printf("----------------------------------------------\n");
     }
 
@@ -752,6 +768,8 @@ int main(int argc, char *argv[]) {
     
     if (user.dsd_count > 0) {
         RS_set_dsd_to_mp_with_sizes(S, user.dsd_sizes, user.dsd_count);
+    } else if (user.no_background == false) {
+        RS_set_dsd_to_mp(S);
     }
 
     // ---------------------------------------------------------------------------------------------------------------
