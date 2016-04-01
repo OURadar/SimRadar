@@ -1513,7 +1513,7 @@ void RS_init_scat_pos(RSHandle *H) {
         if (H->verb) {
             rsprint("Actual DSD Specifications:");
             for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
-                printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %zu particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->num_scats, H->dsd_pop[i]);
+                printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %s particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->num_scats, commaint(H->dsd_pop[i]));
             }
             if (H->dsd_count > 8) {
                 printf(RS_INDENT "o  :      -      :     /  :     /\n");
@@ -1521,7 +1521,7 @@ void RS_init_scat_pos(RSHandle *H) {
                 i = MAX(4, H->dsd_count - 1);
             }
             for (; i < H->dsd_count; i++) {
-                printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %zu particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->num_scats, H->dsd_pop[i]);
+                printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %s particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->num_scats, commaint(H->dsd_pop[i]));
             }
         }
     } else {
