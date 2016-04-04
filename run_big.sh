@@ -7,7 +7,8 @@ if [ ! -z ${1} ]; then
 	echo "Start using seed = ${seed}"
 fi
 
-while [ 1 ]; do
+end_seed=$((seed+500))
+while [ ${seed} -lt ${end_seed} ]; do
 	radarsim -v -o -p 2400 --seed ${seed} -O ${HOME}/Downloads/big/ --tightbox --density 10000 --concept DB -W 1000
 	seed=$((seed+1))
 done

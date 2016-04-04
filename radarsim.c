@@ -865,6 +865,7 @@ int main(int argc, char *argv[]) {
     
     // Some warm up if we are going for real
     if (user.warm_up_pulses > 0) {
+        strcpy(charbuff, commaint(user.warm_up_pulses));
         RS_set_prt(S, 1.0f / 60.0f);
         gettimeofday(&t1, NULL);
         for (k = 0; k < user.warm_up_pulses; k++) {
@@ -874,7 +875,7 @@ int main(int argc, char *argv[]) {
                 dt = DTIME(t1, t2);
                 if (dt >= 0.25f) {
                     t1 = t2;
-                    fprintf(stderr, "Warming up ... %d out of %d ... \033[32m%.2f%%\033[0m  \r", k, user.warm_up_pulses, (float)k / user.warm_up_pulses * 100.0f);
+                    fprintf(stderr, "Warming up ... %s out of %s ... \033[32m%.2f%%\033[0m  \r", commaint(k), charbuff, (float)k / user.warm_up_pulses * 100.0f);
                 }
             }
             RS_advance_time(S);
