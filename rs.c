@@ -3241,12 +3241,12 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
 
     const size_t n = real.x_ * real.y_;
     if (imag.x_ * imag.y_ != n) {
-        fprintf(stderr, "%s : RS : RS_set_rcs_data() received inconsistent real (%d x %d) & imag (%d x %d) dimensions", now(), real.x_, real.y_, imag.x_, imag.y_);
+        rsprint("WARNING. RS_set_rcs_data() received inconsistent real (%d x %d) & imag (%d x %d) dimensions", now(), real.x_, real.y_, imag.x_, imag.y_);
         return;
     }
 
     if (H->verb > 1) {
-        printf("%s : RS : GPU RCS[%d] @ X:[ -M_PI - +M_PI ]  Y:[ 0 - M_PI ]\n", now(), H->rcs_count);
+        rsprint("GPU RCS[%d] @ X:[ -M_PI - +M_PI ]  Y:[ 0 - M_PI ]", H->rcs_count);
     }
     
     // This is the part that we need to create two texture maps for each RSTable2D table
@@ -3312,10 +3312,10 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
         
 #endif
         if (H->worker[i].rcs_real[t] == NULL || H->worker[i].rcs_imag[t] == NULL) {
-            fprintf(stderr, "%s : RS : worker[%d] encountered error creating RCS tables on CL device(s).\n", now(), i);
+            rsprint("Error. worker[%d] unable to create RCS tables on CL device(s).", i);
             return;
         } else if (H->verb > 2) {
-            printf("%s : RS : worker[%d] created RCS tables rcs_real[%d] & rcs_imag[%d] @ %p & %p\n", now(), i, t, t, &H->worker[i].rcs_real[t], &H->worker[i].rcs_imag[t]);
+            rsprint("worker[%d] created RCS tables rcs_real[%d] & rcs_imag[%d] @ %p & %p", i, t, t, &H->worker[i].rcs_real[t], &H->worker[i].rcs_imag[t]);
         }
         
 #if defined (_USE_GCL_)
@@ -3836,7 +3836,7 @@ void RS_populate(RSHandle *H) {
 		H->scat_sig == NULL ||
         H->scat_rnd == NULL ||
 		H->pulse == NULL) {
-		fprintf(stderr, "%s : RS : Error allocating memory space for scatterers.\n", now());
+		rsprint("Error. Unable to allocate memory space for scatterers.");
 		return;
 	}
 	
@@ -3850,7 +3850,7 @@ void RS_populate(RSHandle *H) {
         H->mem_size += H->params.range_count * sizeof(cl_float4);
 	}
 	if (has_null) {
-		fprintf(stderr, "%s : RS : Error allocating memory space for pulses.\n", now());
+		rsprint("Error. Unable to allocate memory space for pulses.");
 		return;
 	}
 
@@ -3902,7 +3902,7 @@ void RS_populate(RSHandle *H) {
     for (i = 0; i < H->num_workers; i++) {
         H->offset[i] = offset;
         if (H->verb > 1) {
-            printf("%s : RS : worker[%d] num_scats = %s   offset = %s\n", now(), i, commaint(sub_num_scats), commaint(offset));
+            rsprint("worker[%d] num_scats = %s   offset = %s", i, commaint(sub_num_scats), commaint(offset));
         }
         RS_worker_malloc(H, i, sub_num_scats, offset);
         offset += sub_num_scats;
@@ -3914,7 +3914,7 @@ void RS_populate(RSHandle *H) {
     
     CGLContextObj cobj = CGLGetCurrentContext();
     if (cobj == NULL) {
-        fprintf(stderr, "No GL context yet.\n");
+        rsprint("Error. No GL context yet.");
         return;
     }
     
@@ -3928,8 +3928,8 @@ void RS_populate(RSHandle *H) {
     RS_upload(H);
 
     if (H->verb) {
-        printf("%s : RS : VEL / ADM / RCS count = %d / %d / %d\n", now(), H->vel_count, H->adm_count, H->rcs_count);
-        printf("%s : RS : CL domain synchronized.\n", now());
+        rsprint("VEL / ADM / RCS count = %d / %d / %d", H->vel_count, H->adm_count, H->rcs_count);
+        rsprint("CL domain synchronized.");
     }
     
 	H->status |= RSStatusDomainPopulated;

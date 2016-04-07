@@ -33,8 +33,8 @@ cd /home/boonleng/simradar
 decho "==================<<< $nowstr >>>================="
 decho `pwd`
 
-seed=2528
-while [ ${seed} -lt "3000" ]; do
+seed=6501
+while [ ${seed} -lt "6999" ]; do
 	decho "-----------------------------------------------------------------------"
 	mpirun.lsf radarsim -v -o -p 2400 --seed ${seed} -O /home/boonleng/Downloads/big --tightbox --density 10000 --concept DB -W 1000 --noprogress
 	seed=$((seed+3))
