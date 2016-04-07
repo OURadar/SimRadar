@@ -2247,7 +2247,7 @@ void RS_update_debris_count(RSHandle *H) {
 void RS_set_dsd(RSHandle *H, const float *pdf, const float *diameters, const int count, const char name) {
     
     if (H->status & RSStatusDomainPopulated) {
-        fprintf(stderr, "%s : RS : Simulation domain has been populated. DSD cannot be changed.", now());
+        rsprint("Simulation domain has been populated. DSD cannot be changed.");
         return;
     }
     
@@ -2460,7 +2460,7 @@ void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const flo
         }
         H->worker[i].rcs_ellipsoid = gcl_malloc(table_size * sizeof(cl_float4), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
         if (H->worker[i].rcs_ellipsoid == NULL) {
-            fprintf(stderr, "%s : RS : Error creating RCS of ellipsoid table on CL device.\n", now());
+            rsprintf("Error. Unable to create RCS of ellipsoid table on CL device.");
             return;
         }
     }
@@ -2476,7 +2476,7 @@ void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const flo
             clReleaseMemObject(H->worker[i].rcs_ellipsoid);
         }
         if (H->verb > 2) {
-            printf("%s : RS : worker[%d] creating RCS of ellipsoid (cl_mem) & copying data from %p.\n", now(), i, table.data);
+            rsprint("worker[%d] creating RCS of ellipsoid (cl_mem) & copying data from %p.", i, table.data);
         }
         H->worker[i].rcs_ellipsoid = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(cl_float4), table.data, &ret);
         if (ret != CL_SUCCESS) {
@@ -2536,7 +2536,7 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
         }
         H->worker[i].range_weight = gcl_malloc(table_size * sizeof(float), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
         if (H->worker[i].range_weight == NULL) {
-            fprintf(stderr, "%s : RS : Error. Unable to create range weight table on CL device.\n", now());
+            rsprintf("Error. Unable to create range weight table on CL device.");
             return;
         }
     }
@@ -2552,15 +2552,15 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
             clReleaseMemObject(H->worker[i].range_weight);
         }
         if (H->verb > 2) {
-            printf("%s : RS : worker[%d] creating range weight (cl_mem) & copying data from %p.\n", now(), i, table.data);
+            rsprint("worker[%d] creating range weight (cl_mem) & copying data from %p.", now(), i, table.data);
         }
         H->worker[i].range_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), table.data, &ret);
         if (ret != CL_SUCCESS) {
-            fprintf(stderr, "%s : RS : Error. Unable to create range weight table on CL device.\n", now());
+            rsprintf("Error. Unable to create range weight table on CL device.");
             return;
         }
         if (H->verb > 2) {
-            printf("%s : RS : worker[%d] created range weight @ %p.\n", now(), i, H->worker[i].range_weight);
+            rsprint("worker[%d] created range weight @ %p.", i, H->worker[i].range_weight);
         }
     }
 
@@ -2617,7 +2617,7 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
 //        }
         H->worker[i].angular_weight = gcl_malloc(table_size * sizeof(float), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
         if (H->worker[i].angular_weight == NULL) {
-            fprintf(stderr, "%s : RS : Error. Unable to create angular weight table on CL device.\n", now());
+            rsprint("Error. Unable to create angular weight table on CL device.");
             return;
         }
     }
@@ -2633,15 +2633,15 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
             clReleaseMemObject(H->worker[i].angular_weight);
         }
         if (H->verb > 2) {
-            printf("%s : RS : worker[%d] creating angular weight (cl_mem) & copying data from %p.\n", now(), i, table.data);
+            rsprint("worker[%d] creating angular weight (cl_mem) & copying data from %p.", i, table.data);
         }
         H->worker[i].angular_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), table.data, &ret);
         if (ret != CL_SUCCESS) {
-            fprintf(stderr, "%s : RS : Error. Unable to create angular weight table on CL device.\n", now());
+            rsprintf("Error. Unable to create angular weight table on CL device.");
             return;
         }
         if (H->verb > 2) {
-            printf("%s : RS : worker[%d] created angular weight.\n", now(), i);
+            rsprint("worker[%d] created angular weight.", i);
         }
     }
 		
@@ -3028,12 +3028,12 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
     
     const size_t n = cd.x_ * cd.y_;
     if (cm.x_ * cm.y_ != n) {
-        fprintf(stderr, "%s : RS : RS_set_adm_data() received inconsistent cd (%d x %d) & cm (%d x %d) dimensions", now(), cd.x_, cd.y_, cm.x_, cm.y_);
+        rsprint("WARNING. RS_set_adm_data() received inconsistent cd (%d x %d) & cm (%d x %d) dimensions", cd.x_, cd.y_, cm.x_, cm.y_);
         return;
     }
     
     if (H->verb > 2) {
-        printf("%s : RS : ADM[%d] @ X:[ -M_PI - +M_PI ]  Y:[ 0 - M_PI ]\n", now(), H->adm_count);
+        rsprint("ADM[%d] @ X:[ -M_PI - +M_PI ]  Y:[ 0 - M_PI ]", H->adm_count);
     }
     
     // This is the part that we need to create two texture maps for each RSTable2D table
@@ -3099,10 +3099,10 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
         
 #endif
         if (H->worker[i].adm_cd[t] == NULL || H->worker[i].adm_cm[t] == NULL) {
-            fprintf(stderr, "%s : RS : worker[%d] encountered error creating ADM tables on CL device(s).\n", now(), i);
+            rsprint("Error. worker[%d] unable to create ADM tables on CL device(s).", i);
             return;
         } else if (H->verb > 2) {
-            printf("%s : RS : worker[%d] created ADM tables adm_cd[%d] & adm_cd[%d] @ %p & %p\n", now(), i, t, t, &H->worker[i].adm_cd[t], &H->worker[i].adm_cm[t]);
+            rsprint("worker[%d] created ADM tables adm_cd[%d] & adm_cd[%d] @ %p & %p", i, t, t, &H->worker[i].adm_cd[t], &H->worker[i].adm_cm[t]);
         }
         
 #if defined (_USE_GCL_)
