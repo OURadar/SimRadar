@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
         }
     }
     
-    char *filelist[4096];
+    char *filelist[16384];
 
     // Truncate the last path delimeter
     if (path[strlen(path) - 1] == '/') {
