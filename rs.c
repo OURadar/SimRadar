@@ -4198,7 +4198,7 @@ void RS_advance_time(RSHandle *H) {
     int r, a;
 
     if (!(H->status & RSStatusDomainPopulated)) {
-		fprintf(stderr, "%s : RS : Error. Simulation domain not populated.\n", now());
+		rsprint("Error. Simulation domain not yet populated.");
 		return;
 	}
 
@@ -4596,7 +4596,7 @@ RSTable RS_table_init(size_t numel) {
     RSTable table = {0.0f, 1.0f, 1.0f, 0, NULL};
 	
 	if (posix_memalign((void **)&table.data, RS_ALIGN_SIZE, numel * sizeof(float))) {
-		fprintf(stderr, "%s : RS : Error allocating an RSTable->data.\n", now());
+		rsprint("Error. Unable to allocate an RSTable->data.\n", now());
 		return table;
 	}
 	
@@ -4620,7 +4620,7 @@ RSTable2D RS_table2d_init(size_t numel) {
     table.xm = 1.0f;      table.ym = 1.0f;
     
     if (posix_memalign((void **)&table.data, RS_ALIGN_SIZE, numel * sizeof(cl_float4))) {
-        fprintf(stderr, "%s : RS : Error allocating an RSTable2D->data.\n", now());
+        rsprint("Error. Unable to allocate an RSTable2D->data.\n", now());
         return table;
     }
     
@@ -4646,7 +4646,7 @@ RSTable3D RS_table3d_init(size_t numel) {
 	table.xm = 1.0f;      table.ym = 1.0f;      table.zm = 1.0f;
 	
 	if (posix_memalign((void **)&table.data, RS_ALIGN_SIZE, numel * sizeof(cl_float4))) {
-		fprintf(stderr, "%s : RS : Error allocating an RSTable3D->data.\n", now());
+        rsprint("Error. Unable to allocate an RSTable3D->data.\n", now());
 		return table;
 	}
 	
