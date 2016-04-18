@@ -15,6 +15,7 @@
 #include <dirent.h>
 
 #define UNDERLINE(x)  "\033[4m" x "\033[24m"
+#define MAX_FILELIST  16384
 
 int cstring_cmp(const void *a, const void *b)
 {
@@ -53,7 +54,7 @@ int main(int argc, char **argv) {
         }
     }
     
-    char *filelist[16384];
+    char *filelist[MAX_FILELIST];
 
     // Truncate the last path delimeter
     if (path[strlen(path) - 1] == '/') {
@@ -75,6 +76,10 @@ int main(int argc, char **argv) {
         filelist[k] = (char *)malloc(strlen(dir->d_name) + 1);
         strcpy(filelist[k], dir->d_name);
         k++;
+        if (k > MAX_FILELIST) {
+            fprintf(stderr, "Too many files in the directory.\n");
+            return EXIT_FAILURE;
+        }
     }
     
     closedir(d);
@@ -90,6 +95,8 @@ int main(int argc, char **argv) {
 
     qsort(filelist, nfiles, sizeof(char *), cstring_cmp);
     
+    uint32_t prev_seed = 0;
+    
     for (k = 0; k < nfiles; k++) {
         sprintf(filename, "%s/%s", path, filelist[k]);
         if (stat(filename, &file_stat) < 0) {
@@ -97,13 +104,14 @@ int main(int argc, char **argv) {
         }
         f = fopen(filename, "r+");
         fread(&file_header, sizeof(file_header), 1, f);
-        printf("%s   %6s B   %d\n", filelist[k], commaint(file_stat.st_size), file_header.simulation_seed);
+        printf("%s   %6s B   %d  (+%u)\n", filelist[k], commaint(file_stat.st_size), file_header.simulation_seed, file_header.simulation_seed - prev_seed);
 //        file_header.simulation_seed = k + 1825;
 //        rewind(f);
 //        fwrite(&file_header, sizeof(file_header), 1, f);
 //        fseek(f, 0, SEEK_END);
         free(filelist[k]);
         fclose(f);
+        prev_seed = file_header.simulation_seed;
     }
     
     
