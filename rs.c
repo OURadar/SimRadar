@@ -2556,7 +2556,7 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
         }
         H->worker[i].range_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), table.data, &ret);
         if (ret != CL_SUCCESS) {
-            rsprintf("Error. Unable to create range weight table on CL device.");
+            rsprint("Error. Unable to create range weight table on CL device.");
             return;
         }
         if (H->verb > 2) {
@@ -2637,7 +2637,7 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
         }
         H->worker[i].angular_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), table.data, &ret);
         if (ret != CL_SUCCESS) {
-            rsprintf("Error. Unable to create angular weight table on CL device.");
+            rsprint("Error. Unable to create angular weight table on CL device.");
             return;
         }
         if (H->verb > 2) {
@@ -4198,7 +4198,7 @@ void RS_advance_time(RSHandle *H) {
     int r, a;
 
     if (!(H->status & RSStatusDomainPopulated)) {
-		fprintf(stderr, "%s : RS : Error. Simulation domain not populated.\n", now());
+		rsprint("Error. Simulation domain not yet populated.");
 		return;
 	}
 
@@ -4596,7 +4596,7 @@ RSTable RS_table_init(size_t numel) {
     RSTable table = {0.0f, 1.0f, 1.0f, 0, NULL};
 	
 	if (posix_memalign((void **)&table.data, RS_ALIGN_SIZE, numel * sizeof(float))) {
-		fprintf(stderr, "%s : RS : Error allocating an RSTable->data.\n", now());
+		rsprint("Error. Unable to allocate an RSTable->data.\n", now());
 		return table;
 	}
 	
@@ -4620,7 +4620,7 @@ RSTable2D RS_table2d_init(size_t numel) {
     table.xm = 1.0f;      table.ym = 1.0f;
     
     if (posix_memalign((void **)&table.data, RS_ALIGN_SIZE, numel * sizeof(cl_float4))) {
-        fprintf(stderr, "%s : RS : Error allocating an RSTable2D->data.\n", now());
+        rsprint("Error. Unable to allocate an RSTable2D->data.\n", now());
         return table;
     }
     
@@ -4646,7 +4646,7 @@ RSTable3D RS_table3d_init(size_t numel) {
 	table.xm = 1.0f;      table.ym = 1.0f;      table.zm = 1.0f;
 	
 	if (posix_memalign((void **)&table.data, RS_ALIGN_SIZE, numel * sizeof(cl_float4))) {
-		fprintf(stderr, "%s : RS : Error allocating an RSTable3D->data.\n", now());
+        rsprint("Error. Unable to allocate an RSTable3D->data.\n", now());
 		return table;
 	}
 	
