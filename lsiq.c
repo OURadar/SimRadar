@@ -62,7 +62,6 @@ int main(int argc, char **argv) {
     }
     
     d = opendir(path);
-
     if (d == NULL) {
         fprintf(stderr, "Directory does not exists.\n");
         return EXIT_FAILURE;

@@ -17,7 +17,12 @@
 
 #include "rs.h"
 #include "iq.h"
+#include <stdbool.h>
 #include <getopt.h>
+#include <dirent.h>
+#include <errno.h>
+
+#define MAX_FILELIST  65536
 
 #if defined (_OPEN_MPI)
 #include <mpi.h>
@@ -56,14 +61,15 @@ typedef struct user_params {
     int   seed;
     int   dsd_count;
     
-    char output_iq_file;
-    char output_state_file;
-    char preview_only;
-    char quiet_mode;
-    char skip_questions;
-    char tight_box;
-    char show_progress;
-    char no_background;
+    bool output_iq_file;
+    bool output_state_file;
+    bool preview_only;
+    bool quiet_mode;
+    bool skip_questions;
+    bool tight_box;
+    bool show_progress;
+    bool no_background;
+    bool resume_seed;
     
     char output_dir[1024];
 } UserParams;
@@ -356,6 +362,81 @@ void write_iq_file(const UserParams user, const ScanParams scan, const IQFileHea
     fclose(fid);
 }
 
+int cstring_cmp(const void *a, const void *b)
+{
+    const char **ia = (const char **)a;
+    const char **ib = (const char **)b;
+    return strcmp(*ia, *ib);
+}
+
+int get_last_seed(const char *output_dir) {
+    int k;
+    char path[1024];
+    struct dirent *dir;
+    struct stat file_stat;
+    
+    DIR *d;
+    char filename[1024];
+    char *filelist[MAX_FILELIST];
+    
+    FILE *f;
+    
+    IQFileHeader file_header;
+    
+    // Copy path and truncate the last path delimeter
+    strncpy(path, output_dir, 1023);
+    if (path[strlen(path) - 1] == '/') {
+        path[strlen(path) - 1] = '\0';
+    }
+    
+    d = opendir(path);
+    if (d == NULL) {
+        fprintf(stderr, "Directory does not exists.\n");
+        return EXIT_FAILURE;
+    }
+
+    k = 0;
+    while ((dir = readdir(d)) != NULL) {
+        if (strlen(dir->d_name) < 3 || strstr(dir->d_name, ".iq") == NULL) {
+            continue;
+        }
+        filelist[k] = (char *)malloc(strlen(dir->d_name) + 1);
+        strcpy(filelist[k], dir->d_name);
+        k++;
+        if (k > MAX_FILELIST) {
+            fprintf(stderr, "Too many files in the directory.\n");
+            return EXIT_FAILURE;
+        }
+    }
+
+    closedir(d);
+
+    if (k == 0) {
+        printf("No files.\n");
+        return 0;
+    }
+
+    // Sort the file based on names
+    qsort(filelist, k, sizeof(char *), cstring_cmp);
+
+    // Pick the last file
+    sprintf(filename, "%s/%s", path, filelist[k - 1]);
+    if (stat(filename, &file_stat) < 0) {
+        printf("%s\n", strerror(errno));
+    }
+    f = fopen(filename, "r+");
+    fread(&file_header, sizeof(file_header), 1, f);
+    fclose(f);
+
+    // Free the filelist
+    while (k > 0) {
+        k--;
+        free(filelist[k]);
+    }
+    
+    return file_header.simulation_seed;
+}
+
 //
 //
 //  M A I N
@@ -426,6 +507,7 @@ int main(int argc, char *argv[]) {
         {"savestate"     , no_argument      , 0, 'E'},
         {"noprogress"    , no_argument      , 0, 'F'},
         {"mpdsd"         , required_argument, 0, 'G'},
+        {"resume-seed"   , no_argument      , 0, 'H'},
         {"preview"       , no_argument      , 0, 'N'},
         {"outdir"        , required_argument, 0, 'O'},
         {"sweep"         , required_argument, 0, 'S'},
@@ -530,6 +612,9 @@ int main(int argc, char *argv[]) {
                 show_help();
                 exit(EXIT_SUCCESS);
                 break;
+            case 'H':
+                user.resume_seed = true;
+                break;
             case 'l':
                 user.lambda = atof(optarg);
                 break;
@@ -597,7 +682,8 @@ int main(int argc, char *argv[]) {
     
     int world_size, world_rank;
     char processor_name[MPI_MAX_PROCESSOR_NAME];
-    
+    MPI_Status status;
+
     MPI_Init(NULL, NULL);
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -605,8 +691,26 @@ int main(int argc, char *argv[]) {
     
     //printf("Node " UNDERLINE("%s") " ( %d out of %d )\n",  processor_name, world_rank, world_size);
     
+    if (user.resume_seed) {
+        if (world_rank == 0) {
+            user.seed = get_last_seed(user.output_dir) + 1;
+            // Distribute the seed to all the other workers
+            for (k = 1; k < world_size; k++) {
+                MPI_Send(&user.seed, sizeof(user.seed), MPI_BYTE, k, 's', MPI_COMM_WORLD);
+            }
+        } else {
+            MPI_Recv(&user.seed, sizeof(user.seed), MPI_BYTE, 0, 's', MPI_COMM_WORLD, &status);
+        }
+    }
+    
     if (user.seed != PARAMS_INT_NOT_SUPPLIED) {
         user.seed += world_rank;
+    }
+    
+#else
+    
+    if (user.resume_seed) {
+        user.seed = get_last_seed(user.output_dir) + 1;
     }
     
 #endif
@@ -1011,11 +1115,9 @@ int main(int argc, char *argv[]) {
 #if defined (_OPEN_MPI)
 
         // Let master node do all the file writing to avoid identical filenames
-        
-        MPI_Status status;
-        
         if (world_rank == 0) {
             write_iq_file(user, scan, &file_header, pulse_headers, pulse_cache, S->params.range_count, 0);
+            // Collect data from worker nodes
             for (k = 1; k < world_size; k++) {
                 MPI_Recv(&file_header, sizeof(IQFileHeader), MPI_BYTE, k, 0, MPI_COMM_WORLD, &status);
                 if (verb > 1) {
@@ -1032,6 +1134,7 @@ int main(int argc, char *argv[]) {
                 write_iq_file(user, scan, &file_header, pulse_headers, pulse_cache, S->params.range_count, k);
             }
         } else {
+            // Send data to master node
             MPI_Send(&file_header, sizeof(IQFileHeader), MPI_BYTE, 0, 0, MPI_COMM_WORLD);
             MPI_Send(pulse_headers, user.num_pulses * sizeof(IQPulseHeader), MPI_BYTE, 0, 1, MPI_COMM_WORLD);
             MPI_Send(pulse_cache, user.num_pulses * S->params.range_count * sizeof(cl_float4), MPI_BYTE, 0, 2, MPI_COMM_WORLD);
