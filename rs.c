@@ -2460,7 +2460,7 @@ void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const flo
         }
         H->worker[i].rcs_ellipsoid = gcl_malloc(table_size * sizeof(cl_float4), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
         if (H->worker[i].rcs_ellipsoid == NULL) {
-            rsprintf("Error. Unable to create RCS of ellipsoid table on CL device.");
+            rsprint("Error. Unable to create RCS of ellipsoid table on CL device.");
             return;
         }
     }
@@ -2536,7 +2536,7 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
         }
         H->worker[i].range_weight = gcl_malloc(table_size * sizeof(float), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
         if (H->worker[i].range_weight == NULL) {
-            rsprintf("Error. Unable to create range weight table on CL device.");
+            rsprint("Error. Unable to create range weight table on CL device.");
             return;
         }
     }

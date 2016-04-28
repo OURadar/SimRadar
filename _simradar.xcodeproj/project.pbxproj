@@ -1147,7 +1147,7 @@
 				OPENCL_AUTO_VECTORIZE_ENABLE = YES;
 				OPENCL_OPTIMIZATION_LEVEL = 3;
 				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = "-lhdf5";
+				OTHER_LDFLAGS = "";
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -1422,7 +1422,7 @@
 				OPENCL_AUTO_VECTORIZE_ENABLE = YES;
 				OPENCL_OPTIMIZATION_LEVEL = 3;
 				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = "-lhdf5";
+				OTHER_LDFLAGS = "";
 				SDKROOT = macosx;
 			};
 			name = "Debug GL";
@@ -1542,7 +1542,6 @@
 				OTHER_LDFLAGS = (
 					"-L",
 					/usr/local/lib,
-					"-lhdf5",
 					"-Wl,-rpath,@loader_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "edu.ou.arrc.${PRODUCT_NAME:rfc1034identifier}";
@@ -1879,7 +1878,7 @@
 				OPENCL_AUTO_VECTORIZE_ENABLE = YES;
 				OPENCL_OPTIMIZATION_LEVEL = 3;
 				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = "-lhdf5";
+				OTHER_LDFLAGS = "";
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -2408,7 +2407,7 @@
 				OPENCL_AUTO_VECTORIZE_ENABLE = YES;
 				OPENCL_OPTIMIZATION_LEVEL = 3;
 				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = "-lhdf5";
+				OTHER_LDFLAGS = "";
 				SDKROOT = macosx;
 			};
 			name = GEN_IMG;
@@ -2528,7 +2527,6 @@
 				OTHER_LDFLAGS = (
 					"-L",
 					/usr/local/lib,
-					"-lhdf5",
 					"-Wl,-rpath,@loader_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "edu.ou.arrc.${PRODUCT_NAME:rfc1034identifier}";
@@ -2992,7 +2990,6 @@
 				OTHER_LDFLAGS = (
 					"-L",
 					/usr/local/lib,
-					"-lhdf5",
 					"-Wl,-rpath,@loader_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "edu.ou.arrc.${PRODUCT_NAME:rfc1034identifier}";
@@ -3056,7 +3053,6 @@
 				OTHER_LDFLAGS = (
 					"-L",
 					/usr/local/lib,
-					"-lhdf5",
 					"-Wl,-rpath,@loader_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "edu.ou.arrc.${PRODUCT_NAME:rfc1034identifier}";
@@ -3075,7 +3071,7 @@
 				OPENCL_AUTO_VECTORIZE_ENABLE = YES;
 				OPENCL_OPTIMIZATION_LEVEL = 3;
 				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = "-lhdf5";
+				OTHER_LDFLAGS = "";
 				SDKROOT = macosx;
 			};
 			name = DUMMY;
@@ -3390,7 +3386,6 @@
 				OTHER_LDFLAGS = (
 					"-L",
 					/usr/local/lib,
-					"-lhdf5",
 					"-Wl,-rpath,@loader_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "edu.ou.arrc.${PRODUCT_NAME:rfc1034identifier}";
@@ -3572,6 +3567,7 @@
 				B54601C91CAA19A8005A8BF6 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		B56077F117E356910068C6BE /* Build configuration list for PBXNativeTarget "cldemo" */ = {
 			isa = XCConfigurationList;

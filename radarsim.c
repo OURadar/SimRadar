@@ -537,7 +537,7 @@ int main(int argc, char *argv[]) {
     char str[1024] = "";
     for (k = 0; k < sizeof(long_options) / sizeof(struct option); k++) {
         struct option *o = &long_options[k];
-        snprintf(str + strlen(str), 1024, "%c%s", o->val, o->has_arg ? ":" : "");
+        snprintf(str + strlen(str), 1024, "%c%s", o->val, o->has_arg == required_argument ? ":" : (o->has_arg == optional_argument ? "::" : ""));
     }
     //printf("str = '%s'\n", str);
     
