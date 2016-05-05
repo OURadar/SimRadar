@@ -1759,10 +1759,10 @@ void RS_set_scan_box(RSHandle *H,
 	
 	//printf("H->num_anchors = %zu   ii = %d\n", H->num_anchors, ii);
 	
-	// Volume of a single resolution cell at the start of the domain
+	// Volume of a single resolution cell at the start of the domain (svol = smallest volume)
 	r = H->params.range_start;
-	RSfloat vol = (H->params.antenna_bw_rad * r) * (H->params.antenna_bw_rad * r) * (H->params.c * H->params.tau * 0.5f);
-	RSfloat nvol = ((xmax - xmin) * (ymax - ymin) * (zmax - zmin)) / vol;
+	RSfloat svol = (H->params.antenna_bw_rad * r) * (H->params.antenna_bw_rad * r) * (H->params.c * H->params.tau * 0.5f);
+	RSfloat nvol = ((xmax - xmin) * (ymax - ymin) * (zmax - zmin)) / svol;
 	
     // The closing domain of the simulation
     H->sim_desc.s[RSSimulationDescriptionBoundSizeX] = xmax - xmin;
@@ -1785,7 +1785,7 @@ void RS_set_scan_box(RSHandle *H,
 	}
     // Drop concentration scaling factor
     // Typical volume is about 2500 drops per m^2, each scatterer represents N drops (Radar Equation document example)
-    float concentration_scale = sqrtf((nvol * vol * 2500.0f) / (float)preferred_n);
+    float concentration_scale = sqrtf((nvol * svol * 2500.0f) / (float)preferred_n);
     
     sprintf(H->summary,
             "User domain @\n  R:[ %6.2f ~ %6.2f ] km\n  E:[ %6.2f ~ %6.2f ] deg\n  A:[ %+6.2f ~ %+6.2f ] deg\n",
@@ -1803,7 +1803,7 @@ void RS_set_scan_box(RSHandle *H,
             ymin, ymax, ymax - ymin,
             zmin, zmax, zmax - zmin);
     sprintf(H->summary + strlen(H->summary),
-            "nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(vol));
+            "nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(svol));
     sprintf(H->summary + strlen(H->summary),
             "average density = %.2f particles / radar cell\n", (float)preferred_n / nvol);
     sprintf(H->summary + strlen(H->summary),
@@ -1829,7 +1829,7 @@ void RS_set_scan_box(RSHandle *H,
                zmin, zmax);
         rsprint("              = ( %.2f m x %.2f m x %.2f m )\n",
                xmax - xmin, ymax - ymin, zmax - zmin);
-        rsprint("nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(vol));
+        rsprint("nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(svol));
         rsprint("average density = %.2f particles / radar cell\n", (float)preferred_n / nvol);
         rsprint("Concepts used:\n");
         if (H->sim_concept == RSSimulationConceptNull) {

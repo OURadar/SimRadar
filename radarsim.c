@@ -212,6 +212,11 @@ void show_help() {
            "         sweep mode = P, start = -12, end = +12, delta = 0.01, and combine with\n"
            "         option -p 2400 for a simulation session of 2400 pulses.\n"
            "\n"
+           "  --resume-seed\n"
+           "         Runs the simulator by resuming the latest seed generated, plus one, by\n"
+           "         inspecting the output files with extension .iq in the specified output\n"
+           "         directory, if supplied, or the default output directory.\n"
+           "\n"
            "  --savestate\n"
            "         Sets the program to generate a simulation state file at the end of the\n"
            "         simulation. An output file like sim-20160229-143941-E03.0.simstate will\n"
@@ -537,7 +542,7 @@ int main(int argc, char *argv[]) {
     char str[1024] = "";
     for (k = 0; k < sizeof(long_options) / sizeof(struct option); k++) {
         struct option *o = &long_options[k];
-        snprintf(str + strlen(str), 1024, "%c%s", o->val, o->has_arg ? ":" : "");
+        snprintf(str + strlen(str), 1024, "%c%s", o->val, o->has_arg == required_argument ? ":" : (o->has_arg == optional_argument ? "::" : ""));
     }
     //printf("str = '%s'\n", str);
     
