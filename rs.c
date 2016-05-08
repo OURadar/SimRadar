@@ -2830,7 +2830,7 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
 	
 	RSTable3D table = RS_table3d_init(leslie->nn);
     if (table.data == NULL) {
-        printf("%s : RS : LES input data cannot be NULL.", now());
+        rsprint("Error. LES input data cannot be NULL.");
         return;
     }
 
@@ -2903,8 +2903,7 @@ void RS_set_vel_data_to_uniform(RSHandle *H, cl_float4 velocity) {
     RSVolume domain = RS_get_domain(H);
     
     if (H->verb > 1) {
-        printf("%s : RS : Uniform @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
-               now(),
+        rsprint("Uniform @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]",
                domain.origin.x, domain.origin.x + domain.size.x,
                domain.origin.y, domain.origin.y + domain.size.y,
                domain.origin.z, domain.origin.z + domain.size.z);
@@ -2937,8 +2936,7 @@ void RS_set_vel_data_to_cube27(RSHandle *H) {
     RSVolume domain = RS_get_domain(H);
     
 	if (H->verb > 1) {
-		printf("%s : RS : Cube27 @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
-			   now(),
+		rsprint("Cube27 @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]",
                domain.origin.x, domain.origin.x + domain.size.x,
                domain.origin.y, domain.origin.y + domain.size.y,
                domain.origin.z, domain.origin.z + domain.size.z);
@@ -2978,8 +2976,7 @@ void RS_set_vel_data_to_cube125(RSHandle *H) {
     RSVolume domain = RS_get_domain(H);
     
 	if (H->verb > 1) {
-		printf("%s : RS : Cube125 @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
-			   now(),
+		rsprint("Cube125 @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]",
                domain.origin.x, domain.origin.x + domain.size.x,
                domain.origin.y, domain.origin.y + domain.size.y,
                domain.origin.z, domain.origin.z + domain.size.z);
@@ -3706,8 +3703,8 @@ void RS_derive_ndranges(RSHandle *H) {
             C->ndrange_scat[k].global_work_size[0] = C->debris_population[k];
             C->ndrange_scat[k].local_work_size[0] = 0;
             if (C->verb > 2) {
-                printf("%s : RS : work[%d] offset, size = %d, %d\n",
-                       now(), (int)C->name, (int)C->ndrange_scat[k].global_work_offset[0], (int)C->ndrange_scat[k].global_work_size[0]);
+                rsprint("work[%d] offset, size = %d, %d",
+                       (int)C->name, (int)C->ndrange_scat[k].global_work_offset[0], (int)C->ndrange_scat[k].global_work_size[0]);
             }
         }
         
