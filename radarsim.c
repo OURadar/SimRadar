@@ -774,7 +774,7 @@ int main(int argc, char *argv[]) {
             printf("   EL: " FLT_FMT " deg\n", scan.el);
         }
         for (k = 0; k < user.num_pulses; k++) {
-            fprintf(stderr, "k = %4d   el = %6.2f deg   az = %5.2f deg\n", k, scan.el, scan.az);
+            printf("k = %4d   el = %6.2f deg   az = %5.2f deg\n", k, scan.el, scan.az);
             get_next_scan_angles(&scan);
         }
         return EXIT_SUCCESS;
@@ -902,7 +902,7 @@ int main(int argc, char *argv[]) {
         nvel = (int)ceilf(((float)user.num_pulses * user.prt + (float)user.warm_up_pulses * 1.0f / 60.0f) / LES_get_table_period(L));
     }
     if (nvel <= 0) {
-        fprintf(stderr, "%s : nvel = 0.\n", now());
+        fprintf(stderr, "%s : Error. nvel = 0.\n", now());
         exit(EXIT_FAILURE);
     }
     for (int k = 0; k < MIN(RS_MAX_VEL_TABLES, nvel); k++) {
@@ -973,6 +973,7 @@ int main(int argc, char *argv[]) {
     float dt = 0.1f, fps = 0.0f, prog = 0.0f, eta = 9999999.0f;
     
     // Some warm up if we are going for real
+    setbuf(stdout, NULL);
     if (user.warm_up_pulses > 0) {
         strcpy(charbuff, commaint(user.warm_up_pulses));
         RS_set_prt(S, 1.0f / 60.0f);
@@ -984,13 +985,13 @@ int main(int argc, char *argv[]) {
                 dt = DTIME(t1, t2);
                 if (dt >= 0.25f) {
                     t1 = t2;
-                    fprintf(stderr, "Warming up ... %s out of %s ... \033[32m%.2f%%\033[0m  \r", commaint(k), charbuff, (float)k / user.warm_up_pulses * 100.0f);
+                    printf("Warming up ... %s out of %s ... \033[32m%.2f%%\033[0m  \r", commaint(k), charbuff, (float)k / user.warm_up_pulses * 100.0f);
                 }
             }
             RS_advance_time(S);
         }
         if (user.show_progress) {
-            fprintf(stderr, "%80s\r", " ");
+            printf("%80s\r", " ");
         }
     }
 
@@ -1023,7 +1024,7 @@ int main(int argc, char *argv[]) {
                 }
                 eta = (float)(user.num_pulses - k) / fps;
                 k0 = k;
-                fprintf(stderr, "k %5d   (e%6.2f, a%5.2f)   %.2f fps   \033[1;33m%.2f%%\033[0m   eta %.0f second%s   \r", k, scan.el, scan.az, fps, prog, eta, eta > 1.5f ? "s" : "");
+                printf("k %5d   (e%6.2f, a%5.2f)   %.2f fps   \033[1;33m%.2f%%\033[0m   eta %.0f second%s   \r", k, scan.el, scan.az, fps, prog, eta, eta > 1.5f ? "s" : "");
             }
         }
         RS_set_beam_pos(S, scan.az, scan.el);
