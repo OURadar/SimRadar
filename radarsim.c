@@ -741,7 +741,7 @@ int main(int argc, char *argv[]) {
     
     // Some conditions that no simulation should be commenced
     if (user.num_pulses < 0) {
-        fprintf(stderr, "No pulses to be generated.\n");
+        fprintf(stderr, "Error. No pulses was specified.\n");
         exit(EXIT_FAILURE);
     }
     
