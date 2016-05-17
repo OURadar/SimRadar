@@ -476,6 +476,7 @@ int main(int argc, char *argv[]) {
     user.show_progress     = true;
     user.tight_box         = false;
     user.no_background     = false;
+    user.resume_seed       = false;
     
     user.output_dir[0]     = '\0';
 
