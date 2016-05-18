@@ -681,7 +681,8 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
     const float s5 = sim_desc.s5;
     const uint concept = *(uint *)&s5;
 
-    pos += vel * dt;
+    //pos += vel * dt;  // this line should be more efficient but my desktop does not like this.
+    pos.xyz += vel.xyz * dt.xyz;
     
     int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
     
@@ -720,7 +721,6 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
         float re = rho_over_mu_air * (2.0f * pos.w) * delta_v_abs;
         float cd = 24.0f / re + 6.0f / (1.0f + sqrt(re)) + 0.4f;
         float4 dudt = (0.5f * rho_air * cd * area_over_mass_particle * delta_v_abs) * delta_v + (float4)(0.0f, 0.0f, -9.8f, 0.0f);
-        //float4 dudt = (float4)(0.0f, 0.0f, -9.8f, 0.0f);
 
         vel += dudt * dt;
 

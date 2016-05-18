@@ -1795,7 +1795,7 @@ void RS_set_scan_box(RSHandle *H,
         size_t max_work_group_size;
         clGetDeviceInfo(H->worker[0].dev, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max_work_group_size), &max_work_group_size, NULL);
         size_t mul = H->num_cus[0] * H->num_devs * max_work_group_size * 2;
-        size_t preferred_n = (size_t)(H->num_scats / mul) * mul;
+        preferred_n = (size_t)(H->num_scats / mul) * mul;
         while (preferred_n < H->params.body_per_cell * 9 / 10) {
             preferred_n += mul;
         }
