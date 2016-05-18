@@ -1040,7 +1040,11 @@ int main(int argc, char *argv[]) {
     
             printf("signal:\n");
             for (int r = 0; r < S->params.range_count; r++) {
-                printf("sig[%d] = (%.4f %.4f %.4f %.4f)\n", r, S->pulse[r].s0, S->pulse[r].s1, S->pulse[r].s2, S->pulse[r].s3);
+                printf("sig[%d] = (%.4f %.4f %.4f %.4f)   (%.4f %.4f %.4f %.4f) + (%.4f %.4f %.4f %.4f)\n",
+                       r,
+                       S->pulse[r].s0, S->pulse[r].s1, S->pulse[r].s2, S->pulse[r].s3,
+                       S->pulse_tmp[0][r].s0, S->pulse_tmp[0][r].s1, S->pulse_tmp[0][r].s2, S->pulse_tmp[0][r].s3,
+                       S->pulse_tmp[1][r].s0, S->pulse_tmp[1][r].s1, S->pulse_tmp[1][r].s2, S->pulse_tmp[1][r].s3);
             }
             printf("\n");
         } else if (user.output_iq_file) {

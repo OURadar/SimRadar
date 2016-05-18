@@ -737,6 +737,10 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
     
     //printf("shared_vbo: %d %d %d\n", C->vbo_scat_pos, C->vbo_scat_clr, C->vbo_scat_ori);
 
+    size_t numel = ((C->num_scats + group_size_multiple - 1) / group_size_multiple) * group_size_multiple;
+    
+    //printf("numel = %zu  num_scats = %zu\n", numel, C->num_scats);
+    
     if (H->has_vbo_from_gl) {
 
 #if defined (CL_VERSION_1_2)
@@ -746,9 +750,9 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
         C->scat_ori = clCreateFromGLBuffer(C->context, CL_MEM_READ_WRITE, C->vbo_scat_ori, &ret);
         if (C->scat_pos == NULL || C->scat_clr == NULL || C->scat_ori == NULL || ret != CL_SUCCESS) {
             fprintf(stderr, "%s : RS : Error in clCreateFromGLBuffer().  ret = %d\n", now(), ret);
-            C->scat_pos = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);              CHECK_CL_CREATE_BUFFER
-            C->scat_clr = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);              CHECK_CL_CREATE_BUFFER
-            C->scat_ori = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);              CHECK_CL_CREATE_BUFFER
+            C->scat_pos = clCreateBuffer(C->context, CL_MEM_READ_WRITE, numel * sizeof(cl_float4), NULL, &ret);              CHECK_CL_CREATE_BUFFER
+            C->scat_clr = clCreateBuffer(C->context, CL_MEM_READ_WRITE, numel * sizeof(cl_float4), NULL, &ret);              CHECK_CL_CREATE_BUFFER
+            C->scat_ori = clCreateBuffer(C->context, CL_MEM_READ_WRITE, numel * sizeof(cl_float4), NULL, &ret);              CHECK_CL_CREATE_BUFFER
         }
         
 #else
@@ -758,21 +762,29 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
 #endif
         
     } else {
-        C->scat_pos = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                  CHECK_CL_CREATE_BUFFER
-        C->scat_clr = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                  CHECK_CL_CREATE_BUFFER
-        C->scat_ori = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                  CHECK_CL_CREATE_BUFFER
+        C->scat_pos = clCreateBuffer(C->context, CL_MEM_READ_WRITE, numel * sizeof(cl_float4), NULL, &ret);                  CHECK_CL_CREATE_BUFFER
+        C->scat_clr = clCreateBuffer(C->context, CL_MEM_READ_WRITE, numel * sizeof(cl_float4), NULL, &ret);                  CHECK_CL_CREATE_BUFFER
+        C->scat_ori = clCreateBuffer(C->context, CL_MEM_READ_WRITE, numel * sizeof(cl_float4), NULL, &ret);                  CHECK_CL_CREATE_BUFFER
     }
 
-    C->scat_vel = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                      CHECK_CL_CREATE_BUFFER
-    C->scat_tum = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                      CHECK_CL_CREATE_BUFFER
-	C->scat_aux = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                      CHECK_CL_CREATE_BUFFER
-    C->scat_rcs = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                      CHECK_CL_CREATE_BUFFER
-	C->scat_sig = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_float4), NULL, &ret);                      CHECK_CL_CREATE_BUFFER
-    C->scat_rnd = clCreateBuffer(C->context, CL_MEM_READ_WRITE, C->num_scats * sizeof(cl_int4), NULL, &ret);                        CHECK_CL_CREATE_BUFFER
-    C->work     = clCreateBuffer(C->context, CL_MEM_READ_WRITE, work_numel * sizeof(cl_float4), NULL, &ret);                        CHECK_CL_CREATE_BUFFER
-	C->pulse    = clCreateBuffer(C->context, CL_MEM_READ_WRITE, H->params.range_count * sizeof(cl_float4), NULL, &ret);             CHECK_CL_CREATE_BUFFER
-	
-    C->mem_usage += (8 * C->num_scats + work_numel + H->params.range_count) * sizeof(cl_float4) + C->num_scats * sizeof(cl_uint4);
+    C->scat_vel = clCreateBuffer(C->context, CL_MEM_READ_WRITE, numel * sizeof(cl_float4), NULL, &ret);                      CHECK_CL_CREATE_BUFFER
+    C->scat_tum = clCreateBuffer(C->context, CL_MEM_READ_WRITE, numel * sizeof(cl_float4), NULL, &ret);                      CHECK_CL_CREATE_BUFFER
+	C->scat_aux = clCreateBuffer(C->context, CL_MEM_READ_WRITE, numel * sizeof(cl_float4), NULL, &ret);                      CHECK_CL_CREATE_BUFFER
+    C->scat_rcs = clCreateBuffer(C->context, CL_MEM_READ_WRITE, numel * sizeof(cl_float4), NULL, &ret);                      CHECK_CL_CREATE_BUFFER
+	C->scat_sig = clCreateBuffer(C->context, CL_MEM_READ_WRITE, numel * sizeof(cl_float4), NULL, &ret);                      CHECK_CL_CREATE_BUFFER
+    C->scat_rnd = clCreateBuffer(C->context, CL_MEM_READ_WRITE, numel * sizeof(cl_int4), NULL, &ret);                        CHECK_CL_CREATE_BUFFER
+    C->work     = clCreateBuffer(C->context, CL_MEM_READ_WRITE, work_numel * sizeof(cl_float4), NULL, &ret);                 CHECK_CL_CREATE_BUFFER
+	C->pulse    = clCreateBuffer(C->context, CL_MEM_READ_WRITE, H->params.range_count * sizeof(cl_float4), NULL, &ret);      CHECK_CL_CREATE_BUFFER
+    
+    // Set some components to zero
+    cl_float4 *zeros = (cl_float4 *)malloc(numel * sizeof(cl_float4));
+    memset(zeros, 0, numel * sizeof(cl_float4));
+    clEnqueueWriteBuffer(C->que, C->scat_aux, CL_TRUE, 0, numel * sizeof(cl_float4), zeros, 0, NULL, NULL);
+    clEnqueueWriteBuffer(C->que, C->scat_rcs, CL_TRUE, 0, numel * sizeof(cl_float4), zeros, 0, NULL, NULL);
+    clEnqueueWriteBuffer(C->que, C->scat_sig, CL_TRUE, 0, numel * sizeof(cl_float4), zeros, 0, NULL, NULL);
+    free(zeros);
+    
+    C->mem_usage += (8 * numel + work_numel + H->params.range_count) * sizeof(cl_float4) + numel * sizeof(cl_uint4);
     
 	//
 	// Set up kernel's input / output arguments
@@ -1303,15 +1315,17 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count,
 	}
 	
 	// Work items is at most count / 2
-	unsigned int work_items = count > param.user_max_work_items * 2 ? param.user_max_work_items : count / 2;
+    unsigned int work_items = count > param.user_max_work_items * 2 ? param.user_max_work_items : count / 2;
+	//unsigned int work_items = count > param.user_max_work_items * 2 ? param.user_max_work_items : (count + 1) / 2;
 	
 	// Number of group item-pairs
-	unsigned int group_count = count <= work_items * 2 ? 1 : count / (work_items * 2);
+    //unsigned int group_count = count <= work_items * 2 ? 1 : count / (work_items * 2);
+	unsigned int group_count = count <= work_items * 2 ? 1 : (count + work_items * 2 - 1) / (work_items * 2);
 	if (group_count > param.user_max_groups) {
 		group_count = param.user_max_groups;
 	}
 	
-	//printf("count=%d  work_items=%d  groups=%d/%d\n", count, work_items, group_count, param.user_max_groups);
+	//printf("count=%d  work_items=%d  group_count=%d/%d\n", count, work_items, group_count, param.user_max_groups);
 	
 	// 1st pass
 	param.entry_counts[0] = count;
@@ -1331,7 +1345,7 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count,
             }
             param.group_counts[0] = group_count;
             param.global[0] = group_count * work_items;
-            param.local[0] = work_items;\
+            param.local[0] = work_items;
             param.local_mem_size[0] = range_count * work_items * sizeof(cl_float4);
         } else {
             rsprint("Error. Could not resolve local memory size limits.");
@@ -1776,13 +1790,17 @@ void RS_set_scan_box(RSHandle *H,
 	H->num_scats = (size_t)(H->params.body_per_cell * nvol);
 	
 	// Round to a GPU preferred number: make_pulse_pass_1 uses 2 x max_work_group_size stride
-    size_t max_work_group_size;
-    clGetDeviceInfo(H->worker[0].dev, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max_work_group_size), &max_work_group_size, NULL);
-    size_t mul = H->num_cus[0] * H->num_devs * max_work_group_size * 2;
-	size_t preferred_n = (size_t)(H->num_scats / mul) * mul;
-	while (preferred_n < H->params.body_per_cell * 9 / 10) {
-		preferred_n += mul;
-	}
+    size_t preferred_n = (H->num_scats / H->num_workers) * H->num_workers;
+    if (H->num_scats > 50000) {
+        size_t max_work_group_size;
+        clGetDeviceInfo(H->worker[0].dev, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max_work_group_size), &max_work_group_size, NULL);
+        size_t mul = H->num_cus[0] * H->num_devs * max_work_group_size * 2;
+        size_t preferred_n = (size_t)(H->num_scats / mul) * mul;
+        while (preferred_n < H->params.body_per_cell * 9 / 10) {
+            preferred_n += mul;
+        }
+    }
+    
     // Drop concentration scaling factor
     // Typical volume is about 2500 drops per m^2, each scatterer represents N drops (Radar Equation document example)
     float concentration_scale = sqrtf((nvol * svol * 2500.0f) / (float)preferred_n);
@@ -3964,7 +3982,7 @@ void RS_download(RSHandle *H) {
 
     cl_event events[H->num_workers][7];
     
-    // Non-blocking read, wait for events later when they are queue up.
+    // Non-blocking read, wait for events later when they are all queued up.
 	for (i = 0; i < H->num_workers; i++) {
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, &events[i][0]);
 		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_vel, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, &events[i][1]);
@@ -3975,8 +3993,13 @@ void RS_download(RSHandle *H) {
         clEnqueueReadBuffer(H->worker[i].que, H->worker[i].pulse, CL_FALSE, 0, H->params.range_count * sizeof(cl_float4), H->pulse_tmp[i], 0, NULL, &events[i][6]);
 	}
 
+    cl_int ret;
+    
     for (i = 0; i < H->num_workers; i++) {
-        clWaitForEvents(7, events[i]);
+        ret = clWaitForEvents(7, events[i]);
+        if (ret != CL_SUCCESS) {
+            rsprint("Error. Unable to properly read back the values.");
+        }
         for (k = 0; k < 7; k++) {
             clReleaseEvent(events[i][k]);
         }
@@ -4005,7 +4028,7 @@ void RS_download_position_only(RSHandle *H) {
 #else
 	
 	for (i = 0; i < H->num_workers; i++) {
-		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL,NULL);
+		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, NULL);
 	}
 	
 #endif
@@ -4029,7 +4052,7 @@ void RS_download_orientation_only(RSHandle *H) {
 #else
     
     for (i = 0; i < H->num_workers; i++) {
-        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL,NULL);
+        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, NULL);
     }
     
 #endif
@@ -4346,7 +4369,7 @@ void RS_advance_time(RSHandle *H) {
 
 //        clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->debris_origin[0], &C->num_scats, NULL, 0, NULL, &events[i][0]);
         
-        // Background: Need to refresh some parameters at each time update
+        // Need to refresh some parameters of the background at each time update
         if (H->sim_concept & RSSimulationConceptDraggedBackground) {
             clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,      sizeof(cl_mem),     &C->vel[v]);
             clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription,   sizeof(cl_float16), &H->sim_desc);
@@ -4710,6 +4733,7 @@ void RS_show_scat_sig(RSHandle *H) {
     printf("background:\n");
     for (w = 0; w < H->num_workers; w++) {
         for (i = 0; i < H->worker[w].debris_population[0]; i += H->worker[w].debris_population[0] / 9) {
+        //for (i = 0; i < H->worker[w].debris_population[0]; i++) {
             RS_show_rcs_i(H, H->worker[w].debris_global_offset + H->worker[w].debris_origin[0] + i);
         }
     }
