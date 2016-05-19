@@ -681,8 +681,9 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
     const float s5 = sim_desc.s5;
     const uint concept = *(uint *)&s5;
 
-    //pos += vel * dt;  // this line should be more efficient but my desktop does not like this.
-    pos.xyz += vel.xyz * dt.xyz;
+    //pos += vel * dt;                 // this line should be more efficient but my desktop does not like this.
+    //pos.xyz += vel.xyz * dt.xyz;     // use this as the substitue for the line above.
+    pos = fma(vel, dt, pos);
     
     int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
     
