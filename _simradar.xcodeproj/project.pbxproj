@@ -54,7 +54,6 @@
 		B57241B11C0CA11300B76BCB /* rs.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281917D7C4D500E4DE66 /* rs.c */; };
 		B57241B21C0CA11500B76BCB /* les.c in Sources */ = {isa = PBXBuildFile; fileRef = B5F3C31C18F2F86700092A72 /* les.c */; };
 		B57241B31C0CA11700B76BCB /* adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B11A6D522F00F40660 /* adm.c */; };
-		B57241B41C0CA11900B76BCB /* arps.c in Sources */ = {isa = PBXBuildFile; fileRef = B59A64251B8CEB0200747CD5 /* arps.c */; };
 		B57241B51C0CA11D00B76BCB /* rcs.c in Sources */ = {isa = PBXBuildFile; fileRef = B55716851AB7519D001984E0 /* rcs.c */; };
 		B57241B61C0CA16700B76BCB /* rs.cl in Sources */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
 		B57241B71C0CA1BF00B76BCB /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = B535159C1AD32077004C0F50 /* MainMenu.xib */; };
@@ -90,6 +89,7 @@
 		B5916CC61ABC7069007EA0B9 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = B5916CC51ABC7069007EA0B9 /* README.md */; };
 		B59A64271B8CEB0200747CD5 /* arps.c in Sources */ = {isa = PBXBuildFile; fileRef = B59A64251B8CEB0200747CD5 /* arps.c */; };
 		B59A64281B8CF23E00747CD5 /* arps.c in Sources */ = {isa = PBXBuildFile; fileRef = B59A64251B8CEB0200747CD5 /* arps.c */; };
+		B59FE7821D00D2C9007B878E /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = B5916CC51ABC7069007EA0B9 /* README.md */; };
 		B5A5142718328A2F00921ACE /* FullscreenWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = B5A5142618328A2F00921ACE /* FullscreenWindow.m */; };
 		B5BAD55A18B67E8B007AC15D /* rs.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281917D7C4D500E4DE66 /* rs.c */; };
 		B5BAD55C18B67E8B007AC15D /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
@@ -908,15 +908,16 @@
 			buildActionMask = 2147483647;
 			files = (
 				B57241A71C0CA06000B76BCB /* Assets.xcassets in Resources */,
-				B58F632C1C177EE40010AEE6 /* dsa_pub.pem in Resources */,
+				B57241E01C0CA2F400B76BCB /* Minion-Icons in Resources */,
+				B5D22A191C10D62C00CE15EB /* Images in Resources */,
+				B56D60461C9DF47E0016AFEC /* Fonts in Resources */,
+				B56A7CE91C0F5AF700133ACF /* Shaders in Resources */,
+				B59FE7821D00D2C9007B878E /* README.md in Resources */,
 				B57241B71C0CA1BF00B76BCB /* MainMenu.xib in Resources */,
 				B57241B81C0CA1C100B76BCB /* LiveDisplay.xib in Resources */,
-				B57241E01C0CA2F400B76BCB /* Minion-Icons in Resources */,
-				B56D60461C9DF47E0016AFEC /* Fonts in Resources */,
-				B5D22A191C10D62C00CE15EB /* Images in Resources */,
-				B56A7CE91C0F5AF700133ACF /* Shaders in Resources */,
-				B57241E61C0CB0D900B76BCB /* rs.cl in Resources */,
 				B5201C731C2239D100EACF53 /* Splash.xib in Resources */,
+				B58F632C1C177EE40010AEE6 /* dsa_pub.pem in Resources */,
+				B57241E61C0CB0D900B76BCB /* rs.cl in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -931,8 +932,8 @@
 				B56A7CE81C0F5AF700133ACF /* Shaders in Resources */,
 				B5916CC61ABC7069007EA0B9 /* README.md in Resources */,
 				B535159D1AD32077004C0F50 /* MainMenu.xib in Resources */,
-				B5201C721C2239D100EACF53 /* Splash.xib in Resources */,
 				B5EF31C2182060E1002DDEFC /* LiveDisplay.xib in Resources */,
+				B5201C721C2239D100EACF53 /* Splash.xib in Resources */,
 				B5EF317C18204B5C002DDEFC /* InfoPlist.strings in Resources */,
 				B5EF318218204B5C002DDEFC /* Credits.rtf in Resources */,
 				B58F632B1C177EE40010AEE6 /* dsa_pub.pem in Resources */,
@@ -1032,7 +1033,6 @@
 				B57241B11C0CA11300B76BCB /* rs.c in Sources */,
 				B57241B21C0CA11500B76BCB /* les.c in Sources */,
 				B57241B31C0CA11700B76BCB /* adm.c in Sources */,
-				B57241B41C0CA11900B76BCB /* arps.c in Sources */,
 				B57241B51C0CA11D00B76BCB /* rcs.c in Sources */,
 				B57241BB1C0CA20C00B76BCB /* RootController.m in Sources */,
 				B57241BC1C0CA21000B76BCB /* DisplayController.m in Sources */,
@@ -2147,7 +2147,6 @@
 				OTHER_LDFLAGS = (
 					"-L",
 					/usr/local/lib,
-					"-lhdf5",
 					"-Wl,-rpath,@loader_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadarEx;
@@ -2201,7 +2200,6 @@
 				OTHER_LDFLAGS = (
 					"-L",
 					/usr/local/lib,
-					"-lhdf5",
 					"-Wl,-rpath,@loader_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadarEx;
@@ -2260,7 +2258,6 @@
 				OTHER_LDFLAGS = (
 					"-L",
 					/usr/local/lib,
-					"-lhdf5",
 					"-Wl,-rpath,@loader_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadarEx;
@@ -2319,7 +2316,6 @@
 				OTHER_LDFLAGS = (
 					"-L",
 					/usr/local/lib,
-					"-lhdf5",
 					"-Wl,-rpath,@loader_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadarEx;
@@ -3441,7 +3437,6 @@
 				OTHER_LDFLAGS = (
 					"-L",
 					/usr/local/lib,
-					"-lhdf5",
 					"-Wl,-rpath,@loader_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadarEx;
