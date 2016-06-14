@@ -427,8 +427,9 @@ typedef struct _rs_handle {
     char                   dsd_name;
     RSfloat                dsd_n0;           // DSD parameter for MP, gamma
     RSfloat                dsd_lambda;       // DSD parameter for MP, gamma
-    RSfloat                dsd_mu;           // DSD pameter for gamma
-    int                    dsd_count;
+    RSfloat                dsd_mu;           // DSD parameter for gamma
+    int                    dsd_count;        // DSD bin count
+    RSfloat                dsd_nd_sum;       // DSD drop concentration (drops / m^3)
     size_t                 *dsd_pop;
     RSfloat                *dsd_pdf;
     RSfloat                *dsd_cdf;

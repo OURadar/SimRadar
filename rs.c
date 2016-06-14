@@ -1473,6 +1473,16 @@ void RS_init_scat_pos(RSHandle *H) {
         H->scat_rnd[i].s3 = rand();                    // random seed
 	}
     
+    // Volume of the simulation domain (m^3)
+    float vol = H->sim_desc.s[RSSimulationDescriptionBoundSizeX] * H->sim_desc.s[RSSimulationDescriptionBoundSizeY] * H->sim_desc.s[RSSimulationDescriptionBoundSizeZ];
+    float drops_per_scat = (vol * H->dsd_nd_sum) / H->num_scats;
+
+    sprintf(H->summary + strlen(H->summary), "Drops / scatterer = %s\n", commafloat(drops_per_scat));
+    
+    // Store a copy of concentration scale in simulation description
+    H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] = sqrt(drops_per_scat);
+
+    
     // Parameterized drop radius as scat_pos.w if DSD has been set
     // May want to add maximum relaxation time of each drop size
     // Potential places: vel.w, aux.s2
@@ -1647,6 +1657,7 @@ void RS_set_tx_params(RSHandle *H, RSfloat pulsewidth, RSfloat tx_power_watt) {
 }
 
 
+// This method also suggests number of scatterer to be used based on the scatterer / resolution volume rule.
 void RS_set_scan_box(RSHandle *H,
 					 RSfloat range_start, RSfloat range_end, RSfloat range_delta,
 					 RSfloat azimuth_start, RSfloat azimuth_end, RSfloat azimuth_delta,
@@ -1802,8 +1813,9 @@ void RS_set_scan_box(RSHandle *H,
     }
     
     // Drop concentration scaling factor
-    // Typical volume is about 2500 drops per m^2, each scatterer represents N drops (Radar Equation document example)
-    float concentration_scale = sqrtf((nvol * svol * 2500.0f) / (float)preferred_n);
+    // OLD: Typical volume is about 2500 drops per m^2, each scatterer represents N drops (Radar Equation document example)
+    // NEW: Based on the supplied DSD, the total number of drops has been derived and stored in H->dsd_nd_sum.
+//    float concentration_scale = sqrtf((nvol * svol * H->dsd_nd_sum) / (float)preferred_n);
     
     sprintf(H->summary,
             "User domain @\n  R:[ %6.2f ~ %6.2f ] km\n  E:[ %6.2f ~ %6.2f ] deg\n  A:[ %+6.2f ~ %+6.2f ] deg\n",
@@ -1864,16 +1876,16 @@ void RS_set_scan_box(RSHandle *H,
             }
         }
 		rsprint("Set to GPU preferred %s (%.2f bodies / resolution cell)", commaint(preferred_n), (float)preferred_n / nvol);
-        if (H->verb > 1) {
-            rsprint("Drop concentration scale to be used later = %s", commafloat(concentration_scale));
-        }
+//        if (H->verb > 1) {
+//            rsprint("Drop concentration scale to be used later = %s", commafloat(concentration_scale));
+//        }
 	}
 
     // Now, we actually set it to suggested debris count
 	H->num_scats = preferred_n;
 
     // Store a copy of concentration scale in simulation description
-    H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] = concentration_scale;
+//    H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] = concentration_scale;
 
     // Anchor lines to show the volume of interest, which was set by the user. The number is well more than enough
 	H->num_anchor_lines  = 8 * (naz + nel);
@@ -2262,7 +2274,7 @@ void RS_update_debris_count(RSHandle *H) {
 }
 
 
-void RS_set_dsd(RSHandle *H, const float *pdf, const float *diameters, const int count, const char name) {
+void RS_set_dsd(RSHandle *H, const float *nd, const float *diameters, const int count, const char name) {
     
     if (H->status & RSStatusDomainPopulated) {
         rsprint("Simulation domain has been populated. DSD cannot be changed.");
@@ -2285,6 +2297,20 @@ void RS_set_dsd(RSHandle *H, const float *pdf, const float *diameters, const int
         free(H->dsd_cdf);
         free(H->dsd_pop);
     }
+
+    // Derive concentration to pdf
+    RSfloat *pdf = (RSfloat *)malloc(count * sizeof(RSfloat));
+    H->dsd_nd_sum = 0.0f;
+    for (i = 0; i < count; i++) {
+        H->dsd_nd_sum += nd[i];
+    }
+    for (i = 0; i < count; i++) {
+        pdf[i] = nd[i] / H->dsd_nd_sum;
+    }
+    
+    // Total drops
+    rsprint("Drop concentration ~ %s drops / m^3", commaint(H->dsd_nd_sum));
+
     H->dsd_r = (RSfloat *)malloc(count * sizeof(RSfloat));
     H->dsd_pdf = (RSfloat *)malloc(count * sizeof(RSfloat));
     H->dsd_cdf = (RSfloat *)malloc(count * sizeof(RSfloat));
@@ -2323,6 +2349,8 @@ void RS_set_dsd(RSHandle *H, const float *pdf, const float *diameters, const int
             printf(RS_INDENT "o %.2f mm - PDF %.4f / TH %.4f\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], H->dsd_cdf[i]);
         }
     }
+    
+    free(pdf);
 }
 
 
@@ -2330,23 +2358,17 @@ void RS_set_dsd_to_mp_with_sizes(RSHandle *H, const float *ds, const int count) 
     
     int i;
     
-    float d, sum = 0.0f;
+    float d;
     
-    H->dsd_mu = 8000.0f;              // Brandes et al. 2006, mu = 8000 m^-3 m^-1
-    H->dsd_lambda = 2.3f * 1000.0f;
+    H->dsd_n0 = 8000.0f;              // Marshall-Palmer 1948, mu = 0.08 cm^-4 = 8000 m^-3 m^-1
+    H->dsd_lambda = 2.3f * 1000.0f;   // Let's say rainrate of ~15 mm hr^-1, lambda = 41 R ^-0.21 = 2.3
     
     RSfloat *n = (RSfloat *)malloc(count * sizeof(RSfloat));
     
     // Derive a concentration curve
     for (i = 0; i < count; i++) {
         d = ds[i];
-        n[i] = H->dsd_mu * exp(-H->dsd_lambda * d);
-        sum += n[i];
-    }
-    
-    // Convert concentration to pdf
-    for (i = 0; i < count; i++) {
-        n[i] /= sum;
+        n[i] = H->dsd_n0 * exp(-H->dsd_lambda * d);
     }
     
     RS_set_dsd(H, n, ds, count, RSDropSizeDistributionMarshallPalmer);
@@ -4835,9 +4857,8 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
     //
     // Sc = k_0 ^ 2 / (4 * pi * epsilon_0)
     // Coefficient 1.0e-9 for scaling the volume to unit of m^3
-    // Drop concentration scale derived based on ~2,500 drops / m^3
     //
-    sprintf(H->summary + strlen(H->summary), "Drops / scatterer = %s\n", commafloat(H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] * H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale]));
+    //sprintf(H->summary + strlen(H->summary), "Drops / scatterer = %s\n", commafloat(H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] * H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale]));
     if (H->verb) {
         rsprint("Drops / scatterer = %s", commafloat(H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] * H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale]));
         rsprint("Drop concentration scaling = %s  (k_0 = %.4f)", commafloat(H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale]), k_0);
