@@ -4858,9 +4858,9 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
     // Sc = k_0 ^ 2 / (4 * pi * epsilon_0)
     // Coefficient 1.0e-9 for scaling the volume to unit of m^3
     //
-    //sprintf(H->summary + strlen(H->summary), "Drops / scatterer = %s\n", commafloat(H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] * H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale]));
     if (H->verb) {
-        rsprint("Drops / scatterer = %s", commafloat(H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] * H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale]));
+        i = (int)roundf((H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] * H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale]));
+        rsprint("Drops / scatterer = %s", commaint(i));
         rsprint("Drop concentration scaling = %s  (k_0 = %.4f)", commafloat(H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale]), k_0);
     }
     const cl_double sc = k_0 * k_0 / (4.0f * M_PI * epsilon_0) * 1.0e-9f * H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale];

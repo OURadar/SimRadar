@@ -18,6 +18,7 @@
 #include <sys/types.h>
 
 #define RCSConfigLeaf              "leaf"
+#define RCSConfigPlate             "plate"
 #define RCSConfigBrick             "brick"
 #define RCSConfigWoodBoard         "woodboard"
 #define RCSConfigWoodBoardDish     "woodboardish"

@@ -858,7 +858,10 @@ __kernel void db_rcs(__global float4 *p,
 }
 
 
+//
 // Deprecating
+//
+// see RS_compute_rcs_ellipsoids in rs.c
 //
 // scatterer rcs based on drop radius in pos.w in meters
 //

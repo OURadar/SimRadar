@@ -9,7 +9,7 @@
 #define _rs_types_h
 
 #define RS_MAX_NUM_SCATS    120000000               // Maximum tested = 110M, 2016-03-003 (25k body/cell)
-#define RS_BODY_PER_CELL           50.0f
+#define RS_BODY_PER_CELL         1000.0f            // Default scatterer density
 #define RS_PARAMS_LAMBDA            0.1f            // Default wavelength in m
 #define RS_PARAMS_PRT               1.0e-3f         // Default PRT in s
 #define RS_PARAMS_TAU               0.2e-6f         // Default pulse width in s

@@ -269,9 +269,13 @@ void show_help() {
            "\n"
            "     The following simulates a vortex and creates a PPI scan data with\n"
            "     scan parameters: mode = 'P' (PPI), start = -12, end = +12, delta = 0.01,\n"
-           "     el = 3.0 (not set, default). With PRT = 5ms, it takes 4800 pulses to cover\n"
-           "     the sector so -p 4800 would complete the sweep.\n"
-           "           " PROGNAME " -T --sweep P:-12:12:0.005 -t 0.0005 -o -p 4800\n"
+           "     el = 3.0 (not set, default). With PRT = 0.5ms, it takes 4800 pulses to\n"
+           "     cover the sector so -p 4800 would complete the sweep.\n"
+           "           " PROGNAME " -o -T --sweep P:-12:12:0.005 -t 0.0005 -p 4800\n"
+           "\n"
+           "     The following simulates the same as before but loads the domain with 10^5\n"
+           "     debris objects\n"
+           "           " PROGNAME " -o --concept DBU -T --sweep P:-12:12:0.005 -t 0.0005 -p 4800 -d 10000\n"
            );
 }
 
@@ -913,7 +917,8 @@ int main(int argc, char *argv[]) {
     RS_set_adm_data_to_ADM_table(S, ADM_get_table(A, ADMConfigModelPlate));
     RS_set_adm_data_to_ADM_table(S, ADM_get_table(A, ADMConfigSquarePlate));
     
-    RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigLeaf));
+    RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigPlate));
+    //RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigLeaf));
     RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigWoodBoard));
 
     RSBox box = RS_suggest_scan_domain(S, 16);
