@@ -481,6 +481,7 @@ NSWindow *standardWindow;
         [glView.renderer setFadeSmallScatterers:FALSE];
     }
     [glView.renderer setSubtitleString:[NSString stringWithFormat:@"Draw mode %c%c%c (%d)", ind, trans, mode, mkey]];
+    [glView.renderer setViewParametersNeedUpdate:TRUE];
 }
 
 - (void)scrollWheel:(NSEvent *)event

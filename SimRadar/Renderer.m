@@ -48,7 +48,7 @@ unsigned int grayToBinary(unsigned int num)
 @synthesize resetModelRotate;
 @synthesize width, height;
 @synthesize beamAzimuth, beamElevation;
-@synthesize showDebrisAttributes, fadeSmallScatterers;
+@synthesize showDebrisAttributes, fadeSmallScatterers, viewParametersNeedUpdate;
 
 #pragma mark -
 #pragma mark Properties
@@ -635,7 +635,7 @@ unsigned int grayToBinary(unsigned int num)
             bodyRenderer[0].colormapIndex,
             backgroundOpacity);
     sprintf(statusMessage[3],
-             "HUD %d%d%d%d / %d",
+            "HUD %d%d%d%d / %d",
             (hudConfigGray & 0x08) >> 3, (hudConfigGray & 0x04) >> 2, (hudConfigGray & 0x02) >> 1, hudConfigGray & 0x01, hudConfigDecimal);
     sprintf(statusMessage[4],
             "FBO %u   VFX %u", ifbo, applyVFX);
@@ -1457,7 +1457,7 @@ unsigned int grayToBinary(unsigned int num)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Text
-    sprintf(statusMessage[5], "Frame %s", [GLText commaint:iframe]);
+    //sprintf(statusMessage[5], "Frame %s", [GLText commaint:iframe]);
     sprintf(statusMessage[6], "EL %.2f   AZ %.2f", beamElevation / M_PI * 180.0f, beamAzimuth / M_PI * 180.0f);
     
     NSPoint origin = NSMakePoint(25.0f, height - tTextRenderer.pointSize * 0.5f - 35.0f);
