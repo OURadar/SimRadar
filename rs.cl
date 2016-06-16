@@ -1031,7 +1031,7 @@ __kernel void scat_sig_aux(__global float4 *s,
     // cosine & sine to represent exp(j phase)
     float cc, ss = sincos(phase, &cc);
 
-    sig = cl_complex_multiply(r[i], (float4)(cc, ss, cc, ss)) * atten;
+    sig = cl_complex_multiply(r[i], (float4)(cc, -ss, cc, -ss)) * atten;
     
 //    if (i == 0) {
 //        printf("atten = %.4e  %.4v4e\n", atten, sig);
