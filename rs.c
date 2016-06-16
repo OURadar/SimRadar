@@ -2205,7 +2205,7 @@ void RS_update_debris_count(RSHandle *H) {
     size_t count = H->num_scats;
     
     if (H->num_workers == 0) {
-        printf("%s : RS : Expected. Number of workers = 0.\n", now());
+        rsprint("RS : Expected. Number of workers = 0.");
         return;
     }
     
@@ -2216,13 +2216,14 @@ void RS_update_debris_count(RSHandle *H) {
     }
     H->debris_population[0] = count;
 
-    if (H->verb > 1) {
-        printf("%s : RS : Population details:\n", now());
+    if (H->verb) {
+        rsprint("RS : Population details:");
         for (k = 0; k < RS_MAX_DEBRIS_TYPES; k++) {
             if (H->debris_population[k] == 0) {
                 break;
             }
-            printf("                 o Global debris_population[%d] = %s\n", k, commaint(H->debris_population[k]));
+            //printf("                 o Global debris_population[%d] = %s\n", k, commaint(H->debris_population[k]));
+            printf(RS_INDENT "o Global debris_population[%d] = %s\n", k, commaint(H->debris_population[k]));
         }
     }
     
@@ -2262,9 +2263,9 @@ void RS_update_debris_count(RSHandle *H) {
     
     if (H->verb > 2) {
         for (i = 0; i < H->num_workers; i++) {
-            printf("%s : RS : worker[%d] with total population %s  offset %s\n", now(), i, commaint(H->worker[i].num_scats), commaint(H->worker[i].debris_global_offset));
+            rsprint("RS : worker[%d] with total population %s  offset %s\n", i, commaint(H->worker[i].num_scats), commaint(H->worker[i].debris_global_offset));
             for (k = 0; k < H->num_body_types; k++) {
-                printf("                 o debris_population[%d] - [ %9s, %9s, %9s ]\n", k,
+                printf(RS_INDENT "o debris_population[%d] - [ %9s, %9s, %9s ]\n", k,
                        commaint(H->worker[i].debris_origin[k]),
                        commaint(H->worker[i].debris_population[k]),
                        commaint(H->worker[i].debris_origin[k] + H->worker[i].debris_population[k]));
