@@ -4251,6 +4251,9 @@ void RS_advance_time(RSHandle *H) {
     if (H->sim_tic >= H->sim_toc) {
         H->sim_toc = H->sim_tic + (size_t)(H->vel_desc.tp / H->params.prt);
         H->vel_idx = H->vel_idx == H->vel_count - 1 ? 0 : H->vel_idx + 1;
+        if (H->vel_idx == 0) {
+            rsprint("Wind table restarted.");
+        }
         if (H->verb > 2) {
             rsprint("Wind table advanced. vel_idx = %d   ( %.2f / %.4f )", H->vel_idx, H->vel_desc.tp, H->params.prt);
         }

@@ -12,7 +12,7 @@
 #define RS_C                 29979458.0
 #define RS_DOMAIN_PAD               2.0
 #define RS_MAX_STR               4096
-#define RS_MAX_GPU_PLATFORM        10
+#define RS_MAX_GPU_PLATFORM        40
 #define RS_MAX_GPU_DEVICE           8
 #define RS_MAX_KERNEL_LINES      2048
 #define RS_MAX_KERNEL_SRC      131072
