@@ -73,9 +73,9 @@
 //		L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
 //        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, NULL);
 
-        A = ADM_init();
+//        A = ADM_init();
 
-        R = RCS_init();
+//        R = RCS_init();
 
         NSLog(@"LES @ %s", LES_data_path(S->L));
         NSLog(@"ADM @ %s", ADM_data_path(S->A));
@@ -132,30 +132,30 @@
         }
         
         //ADMTable *adm = ADM_get_table(A, ADMConfigModelPlate);
-        ADMTable *adm = ADM_get_table(A, ADMConfigSquarePlate);
+        //ADMTable *adm = ADM_get_table(A, ADMConfigSquarePlate);
 
-        RS_set_adm_data_to_ADM_table(S, adm);
+//        RS_set_adm_data_to_ADM_table(S, adm);
+//
+//        ADM_transform_scale(adm, 1.0f, 3.0f, 3.0f, 1.0f);
+//        RS_set_adm_data_to_ADM_table(S, adm);
+//        
+//        RS_set_adm_data_to_ADM_table(S, adm);
 
-        ADM_transform_scale(adm, 1.0f, 3.0f, 3.0f, 1.0f);
-        RS_set_adm_data_to_ADM_table(S, adm);
-        
-        RS_set_adm_data_to_ADM_table(S, adm);
-
-        //RS_set_adm_data_to_config(S, ADMConfigSquarePlate);
+        RS_set_adm_data_to_config(S, ADMConfigSquarePlate);
 
         if (reportProgress) {
             [delegate progressUpdated:90.0 message:@"ADM table"];
         }
         
-        RCSTable *rcs = RCS_get_table(R, RCSConfigLeaf);
+//        RCSTable *rcs = RCS_get_table(R, RCSConfigLeaf);
 //        RCSTable *rcs = RCS_get_table(R, RCSConfigWoodBoard);
 
-        RS_set_rcs_data_to_RCS_table(S, rcs);
-
-        RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigWoodBoard));
 //        RS_set_rcs_data_to_RCS_table(S, rcs);
 
-//        RS_set_rcs_data_to_config(S, RCSConfigPlate);
+//        RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigWoodBoard));
+//        RS_set_rcs_data_to_RCS_table(S, rcs);
+
+        RS_set_rcs_data_to_config(S, RCSConfigPlate);
 
         if (reportProgress) {
             [delegate progressUpdated:95.0 message:@"RCS table"];

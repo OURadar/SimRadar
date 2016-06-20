@@ -924,9 +924,11 @@ int main(int argc, char *argv[]) {
 //    RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigWoodBoard));
 
 
-
     RS_set_adm_data_to_config(S, ADMConfigModelPlate);
+    RS_set_adm_data_to_config(S, ADMConfigSquarePlate);
+
     RS_set_rcs_data_to_config(S, RCSConfigPlate);
+    RS_set_rcs_data_to_config(S, RCSConfigWoodBoard);
 
     RSBox box = RS_suggest_scan_domain(S, 16);
     

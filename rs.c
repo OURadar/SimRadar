@@ -3028,7 +3028,7 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
 
 
 void RS_set_adm_data_to_config(RSHandle *H, ADMConfig c) {
-    RS_set_adm_data_to_ADM_table(H->A, ADM_get_table(H->A, c));
+    RS_set_adm_data_to_ADM_table(H, ADM_get_table(H->A, c));
 }
 
 
@@ -3242,7 +3242,7 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
 
 
 void RS_set_rcs_data_to_config(RSHandle *H, RCSConfig c) {
-    RS_set_rcs_data_to_RCS_table(H->R, RCS_get_table(H->R, c));
+    RS_set_rcs_data_to_RCS_table(H, RCS_get_table(H->R, c));
 }
 
 
@@ -3972,13 +3972,14 @@ void RS_populate(RSHandle *H) {
     }
 
     // First frame is loaded during RS_init(), now we fill in the buffer
-    for (; H->vel_out_idx < RS_MAX_VEL_TABLES; H->vel_out_idx++) {
+    while (H->vel_count < RS_MAX_VEL_TABLES) {
         LESTable *table = LES_get_frame(H->L, H->vel_out_idx);
         if (table == NULL) {
             rsprint("Error. There is no more frame(s)?");
             exit(EXIT_FAILURE);
         }
         RS_set_vel_data_to_LES_table(H, table);
+        H->vel_out_idx = H->vel_out_idx == H->vel_out_count - 1 ? 0 : H->vel_out_idx + 1;
     }
 
     // All tables must be ready at this point
@@ -4450,10 +4451,10 @@ void RS_advance_time(RSHandle *H) {
     cl_event events[RS_MAX_GPU_DEVICE][H->num_body_types];
     memset(events, 0, sizeof(events));
 	
-	if (H->sim_tic >= H->sim_toc) {
-		H->sim_toc = H->sim_tic + (size_t)(1.0f / H->params.prt);
-	}
-    
+//	if (H->sim_tic >= H->sim_toc) {
+//		H->sim_toc = H->sim_tic + (size_t)(1.0f / H->params.prt);
+//	}
+
 	for (i = 0; i < H->num_workers; i++) {
         r = 0;
         a = 0;
