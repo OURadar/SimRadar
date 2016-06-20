@@ -809,31 +809,31 @@ int main(int argc, char *argv[]) {
 
 #endif
     
-    ADMHandle *A;
-    LESHandle *L;
-    RCSHandle *R;
-    
-    // Initialize the LES ingest
-    L = LES_init();
-    if (L == NULL) {
-        fprintf(stderr, "%s : Some errors occurred during LES_init().\n", now());
-        return EXIT_FAILURE;
-    }
-    
-    // Initialize the ADM ingest
-    A = ADM_init();
-    if (A == NULL) {
-        fprintf(stderr, "%s : Some errors occurred during ADM_init().\n", now());
-        return EXIT_FAILURE;
-    }
-    
-    // Initialize the RCS ingest
-    R = RCS_init();
-    if (R == NULL) {
-        fprintf(stderr, "%s : Some errors occurred during RCS_init().\n", now());
-        return EXIT_FAILURE;
-    }
-    
+//    ADMHandle *A;
+//    LESHandle *L;
+//    RCSHandle *R;
+//    
+//    // Initialize the LES ingest
+//    L = LES_init();
+//    if (L == NULL) {
+//        fprintf(stderr, "%s : Some errors occurred during LES_init().\n", now());
+//        return EXIT_FAILURE;
+//    }
+//    
+//    // Initialize the ADM ingest
+//    A = ADM_init();
+//    if (A == NULL) {
+//        fprintf(stderr, "%s : Some errors occurred during ADM_init().\n", now());
+//        return EXIT_FAILURE;
+//    }
+//    
+//    // Initialize the RCS ingest
+//    R = RCS_init();
+//    if (R == NULL) {
+//        fprintf(stderr, "%s : Some errors occurred during RCS_init().\n", now());
+//        return EXIT_FAILURE;
+//    }
+
     RS_set_concept(S, concept);
     
     // ---------------------------------------------------------------------------------------------------------------
@@ -900,26 +900,28 @@ int main(int argc, char *argv[]) {
 #endif
 
     // Number of LES entries needed based on the number of pulses to be simulated
-    int nvel = 0;
-    if (user.prt == PARAMS_FLOAT_NOT_SUPPLIED) {
-        nvel = (int)ceilf(((float)user.num_pulses * S->params.prt + (float)user.warm_up_pulses * 1.0f / 60.0f) / LES_get_table_period(L));
-    } else {
-        nvel = (int)ceilf(((float)user.num_pulses * user.prt + (float)user.warm_up_pulses * 1.0f / 60.0f) / LES_get_table_period(L));
-    }
-    if (nvel <= 0) {
-        fprintf(stderr, "%s : Error. nvel = 0.\n", now());
-        exit(EXIT_FAILURE);
-    }
-    for (int k = 0; k < MIN(RS_MAX_VEL_TABLES, nvel); k++) {
-        RS_set_vel_data_to_LES_table(S, LES_get_frame(L, k));
-    }
-    
-    RS_set_adm_data_to_ADM_table(S, ADM_get_table(A, ADMConfigModelPlate));
-    RS_set_adm_data_to_ADM_table(S, ADM_get_table(A, ADMConfigSquarePlate));
-    
-    RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigPlate));
-    //RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigLeaf));
-    RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigWoodBoard));
+//    int nvel = 0;
+//    if (user.prt == PARAMS_FLOAT_NOT_SUPPLIED) {
+//        nvel = (int)ceilf(((float)user.num_pulses * S->params.prt + (float)user.warm_up_pulses * 1.0f / 60.0f) / LES_get_table_period(L));
+//    } else {
+//        nvel = (int)ceilf(((float)user.num_pulses * user.prt + (float)user.warm_up_pulses * 1.0f / 60.0f) / LES_get_table_period(L));
+//    }
+//    if (nvel <= 0) {
+//        fprintf(stderr, "%s : Error. nvel = 0.\n", now());
+//        exit(EXIT_FAILURE);
+//    }
+//    for (int k = 0; k < MIN(RS_MAX_VEL_TABLES, nvel); k++) {
+//        RS_set_vel_data_to_LES_table(S, LES_get_frame(L, k));
+//    }
+
+//    RS_set_vel_data_to_config(S, LESConfigSuctionVortices);
+
+//    RS_set_adm_data_to_ADM_table(S, ADM_get_table(A, ADMConfigModelPlate));
+//    RS_set_adm_data_to_ADM_table(S, ADM_get_table(A, ADMConfigSquarePlate));
+//    
+//    RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigPlate));
+//    //RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigLeaf));
+//    RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigWoodBoard));
 
     RSBox box = RS_suggest_scan_domain(S, 16);
     
@@ -1204,12 +1206,12 @@ int main(int argc, char *argv[]) {
 
     RS_free(S);
     
-    LES_free(L);
-    
-    ADM_free(A);
-    
-    RCS_free(R);
-    
+//    LES_free(L);
+//    
+//    ADM_free(A);
+//    
+//    RCS_free(R);
+
 #if defined (_OPEN_MPI)
 
     MPI_Finalize();

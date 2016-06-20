@@ -9,6 +9,7 @@
 #ifndef _radarsim_les_h
 #define _radarsim_les_h
 
+#define LESConfigNull                  ""
 #define LESConfigTwoCell               "twocell"
 #define LESConfigSuctionVortices       "suctvort"
 #define LESConfigSuctionVorticesLarge  "suctvort_large"
@@ -50,7 +51,8 @@ typedef struct _les_table {
 	uint32_t  ny;             // Number of cells in y direction
 	uint32_t  nz;             // Number of cells in z direction
 	uint32_t  nn;             // Number of cells in all directions combined
-	uint32_t  nt;             // Number of time steps
+	uint32_t  nt;             // Number of time steps in a file
+    uint32_t  nc;             // Number of cubes in this set
 	float     tr;             // Replenishing time constant
     float     tp;             // Time period of a table entry
     float     ax;             // Base value "a" in geometric series a r ^ n in x direction
@@ -70,6 +72,7 @@ void LES_free(LESHandle *);
 LESTable *LES_get_frame(const LESHandle *, const int n);
 char *LES_data_path(const LESHandle *);
 float LES_get_table_period(const LESHandle *);
+size_t LES_get_table_count(const LESHandle *);
 
 void LES_show_table_summary(const LESTable *table);
 

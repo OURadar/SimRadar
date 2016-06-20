@@ -18,6 +18,7 @@ typedef struct _les_mem {
     char      files[1024][1024];
     size_t    nfiles;
     size_t    nvol;
+    size_t    ncubes;
 	LESGrid   *enclosing_grid;
 	LESGrid   *data_grid;
 	int       ibuf;
@@ -206,6 +207,7 @@ LESTable *LES_table_create(const LESGrid *grid) {
 	table->nz = grid->nz;
 	table->nn = grid->nz * grid->ny * grid->nx;
 	table->nt = LES_file_nblock;
+    table->nc = 0;
     table->tr = 1.0f;
     table->tp = 5.0f;
 	table->data.x = grid->x;
@@ -334,6 +336,7 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
 		fprintf(stderr, "Unable to allocate resources for LES framework.\n");
 		return NULL;
 	}
+    memset(h, 0, sizeof(LESMem));
 
     snprintf(h->data_path, sizeof(h->data_path), "%s/%s", les_path, config);
 	h->ibuf = 0;
@@ -406,8 +409,10 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
         k++;
     }
 
-    // printf("file count = %zu    nvol = %zu\n", h->nfiles, h->nvol);
+    h->ncubes = h->nfiles * h->nvol;
     
+    printf("DEBUG: file count = %zu    nvol = %zu    ncubes = %zu\n", h->nfiles, h->nvol, h->ncubes);
+
 	// Allocate data boxes
 	for (int i = 0; i < LES_num; i++) {
 		h->data_boxes[i] = LES_table_create(h->data_grid);
@@ -416,6 +421,7 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
             return NULL;
         }
 		h->data_boxes[i]->tr = h->tr;
+        h->data_boxes[i]->nc = (uint32_t)h->ncubes;
 		h->data_id[i] = (size_t)-1;
 	}
 	return (LESHandle *)h;
@@ -539,6 +545,12 @@ char *LES_data_path(const LESHandle *i) {
 float LES_get_table_period(const LESHandle *i) {
     LESMem *h = (LESMem *)i;
     return h->tp;
+}
+
+
+size_t LES_get_table_count(const LESHandle *i) {
+    LESMem *h = (LESMem *)i;
+    return h->ncubes;
 }
 
 

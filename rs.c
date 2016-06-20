@@ -1109,7 +1109,30 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
     #else
         H->verb = 0;
     #endif
+
+    // Initialize the LES ingest
+    H->L = LES_init();
+    if (H->L == NULL) {
+        rsprint("%s : Error. LES_init() failed.");
+        return NULL;
+    }
+    rsprint("Reading first LES table ...");
+    RS_set_vel_data_to_LES_table(H, LES_get_frame(H->L, 0));
+
+    // Initialize the ADM ingest
+    H->A = ADM_init();
+    if (H->A == NULL) {
+        rsprint("%s : Error. ADM_init() failed.");
+        return NULL;
+    }
     
+    // Initialize the RCS ingest
+    H->R = RCS_init();
+    if (H->R == NULL) {
+        rsprint("%s : Error. RCS_init() failed.");
+        return NULL;
+    }
+
     // Set up some basic parameters to default values, H->verb is still 0 so no API message output
     RS_set_prt(H, RS_PARAMS_PRT);
     
@@ -1221,6 +1244,12 @@ void RS_free(RSHandle *H) {
     
 	char v = H->verb;
 	
+    LES_free(H->L);
+    
+    ADM_free(H->A);
+    
+    RCS_free(H->R);
+
 	for (i = 0; i < H->num_workers; i++) {
 		RS_worker_free(&H->worker[i]);
 	}
@@ -1394,203 +1423,6 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count,
 	return param;
 }
 
-
-void RS_init_scat_pos(RSHandle *H) {
-    
-    int i, k, bin;
-    float a;
-    
-    srand(H->random_seed);
-    
-    RSVolume domain = RS_get_domain(H);
-
-    //
-	// Initialize the scatter body positions & velocities
-	//
-	for (i = 0; i < H->num_scats; i++) {
-		H->scat_pos[i].x = (float)rand() / RAND_MAX * domain.size.x + domain.origin.x;
-		H->scat_pos[i].y = (float)rand() / RAND_MAX * domain.size.y + domain.origin.y;
-		H->scat_pos[i].z = (float)rand() / RAND_MAX * domain.size.z + domain.origin.z;
-        H->scat_pos[i].w = 0.0f;                       // Use this to store drop radius in m
-        
-		H->scat_aux[i].s0 = 0.0f;                      // range
-        H->scat_aux[i].s1 = (float)rand() / RAND_MAX;  // age
-		H->scat_aux[i].s2 = 0.0f;                      // dsd bin index
-		H->scat_aux[i].s3 = 1.0f;                      // angular weight [0.0, 1.0]
-		
-		H->scat_vel[i].x = 0.0f;                       // u component of velocity
-		H->scat_vel[i].y = 0.0f;                       // v component of velocity
-		H->scat_vel[i].z = 0.0f;                       // w component of velocity
-		H->scat_vel[i].w = 0.0f;                       // n/a
-
-        // At the reference
-        H->scat_ori[i].x = 0.0f;                       // x of quaternion
-        H->scat_ori[i].y = 0.0f;                       // y of quaternion
-        H->scat_ori[i].z = 0.0f;                       // z of quaternion
-        H->scat_ori[i].w = 1.0f;                       // w of quaternion
-        
-        // Facing the sky
-//        H->scat_ori[i].x =  0.0f;                      // x of quaternion
-//        H->scat_ori[i].y = -0.707106781186547f;        // y of quaternion
-//        H->scat_ori[i].z =  0.0f;                      // z of quaternion
-//        H->scat_ori[i].w =  0.707106781186548f;        // w of quaternion
-
-        // Facing the beam
-        H->scat_ori[i].x =  0.5f;                      // x of quaternion
-        H->scat_ori[i].y = -0.5f;                      // y of quaternion
-        H->scat_ori[i].z = -0.5f;                      // z of quaternion
-        H->scat_ori[i].w =  0.5f;                      // w of quaternion
-        
-        // Some other tests
-//        H->scat_ori[i].x =  0.5f;                      // x of quaternion
-//        H->scat_ori[i].y = -0.5f;                      // y of quaternion
-//        H->scat_ori[i].z =  0.5f;                      // z of quaternion
-//        H->scat_ori[i].w =  0.5f;                      // w of quaternion
-
-        // Rotate by theta
-//        float theta = -70.0f / 180.0f * M_PI;
-//        H->scat_ori[i].x = 0.0f;
-//        H->scat_ori[i].y = sinf(0.5f * theta);
-//        H->scat_ori[i].z = 0.0f;
-//        H->scat_ori[i].w = cosf(0.5f * theta);
-        
-        // Tumbling vector for orientation update
-        H->scat_tum[i].x = 0.0f;                       // x of quaternion
-        H->scat_tum[i].y = 0.0f;                       // y of quaternion
-        H->scat_tum[i].z = 0.0f;                       // z of quaternion
-        H->scat_tum[i].w = 1.0f;                       // w of quaternion
-
-        // Initial return from each point
-        H->scat_rcs[i].s0 = 1.0f;                      // sh_real of rcs
-		H->scat_rcs[i].s1 = 0.0f;                      // sh_imag of rcs
-		H->scat_rcs[i].s2 = 1.0f;                      // sv_real of rcs
-		H->scat_rcs[i].s3 = 0.0f;                      // sv_imag of rcs
-        
-        // Random seeds
-        H->scat_rnd[i].s0 = rand();                    // random seed
-        H->scat_rnd[i].s1 = rand();                    // random seed
-        H->scat_rnd[i].s2 = rand();                    // random seed
-        H->scat_rnd[i].s3 = rand();                    // random seed
-	}
-    
-    // Volume of the simulation domain (m^3)
-    float vol = H->sim_desc.s[RSSimulationDescriptionBoundSizeX] * H->sim_desc.s[RSSimulationDescriptionBoundSizeY] * H->sim_desc.s[RSSimulationDescriptionBoundSizeZ];
-    float drops_per_scat = (vol * H->dsd_nd_sum) / H->num_scats;
-
-    sprintf(H->summary + strlen(H->summary), "Drops / scatterer = %s\n", commafloat(drops_per_scat));
-    
-    // Store a copy of concentration scale in simulation description
-    H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] = sqrt(drops_per_scat);
-
-    
-    // Parameterized drop radius as scat_pos.w if DSD has been set
-    // May want to add maximum relaxation time of each drop size
-    // Potential places: vel.w, aux.s2
-    if (H->dsd_name != RSDropSizeDistributionUndefined) {
-        if (H->sim_concept & RSSimulationConceptUniformDSDScaledRCS) {
-            for (i = 0; i < H->num_scats; i++) {
-                a = (float)rand() / RAND_MAX;
-                bin = (int)(a * (float)H->dsd_count);
-                H->dsd_pop[bin]++;
-                H->scat_pos[i].w = H->dsd_r[bin];                                  // set the drop radius
-                H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // set the dsd bin index (temporary)
-            }
-        } else {
-            for (i = 0; i < H->num_scats; i++) {
-                a = (float)rand() / RAND_MAX;
-                k = H->dsd_count;
-                bin = 0;
-                while (k > 0) {
-                    k--;
-                    if (a >= H->dsd_cdf[k]) {
-                        bin = k;
-                        break;
-                    }
-                }
-                H->dsd_pop[bin]++;
-                H->scat_pos[i].w = H->dsd_r[bin];                                  // set the drop radius
-                H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // set the dsd bin index
-            }
-            
-            // Replace a few for debugging purpose
-            #if defined(DEBUG_DSD)
-            H->scat_pos[0].w = 0.0025f;
-            H->scat_pos[1].w = 0.001f;
-            H->scat_pos[2].w = 0.0005f;
-            #endif
-        }
-        
-        sprintf(H->summary + strlen(H->summary),
-            "DSD Specifications:\n");
-        for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
-            sprintf(H->summary + strlen(H->summary), "  o %.2f mm - P %.5f / %s particles\n", 2000.0f * H->dsd_r[i], (float)H->dsd_pop[i] / (float)H->num_scats, commaint(H->dsd_pop[i]));
-        }
-        if (H->dsd_count > 8) {
-            sprintf(H->summary + strlen(H->summary), "  o  :      -      :     /  :     /\n");
-            sprintf(H->summary + strlen(H->summary), "  o  :      -      :     /  :     /\n");
-            i = MAX(4, H->dsd_count - 1);
-        }
-        for (; i < H->dsd_count; i++) {
-            sprintf(H->summary + strlen(H->summary), "  o %.2f mm - P %.5f / %s particles\n", 2000.0f * H->dsd_r[i], (float)H->dsd_pop[i] / (float)H->num_scats, commaint(H->dsd_pop[i]));
-        }
-        
-        if (H->verb) {
-            rsprint("Actual DSD Specifications:");
-            for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
-                printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %s particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->num_scats, commaint(H->dsd_pop[i]));
-            }
-            if (H->dsd_count > 8) {
-                printf(RS_INDENT "o  :      -      :     /  :     /\n");
-                printf(RS_INDENT "o  :      -      :     /  :     /\n");
-                i = MAX(4, H->dsd_count - 1);
-            }
-            for (; i < H->dsd_count; i++) {
-                printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %s particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->num_scats, commaint(H->dsd_pop[i]));
-            }
-        }
-    } else {
-        rsprint("INFO: No DSD specified. The background drops do not return any power.");
-    }
-	
-    // Replace a few points for debugging purpose.
-    #if defined(DEBUG_RCS)
-	H->scat_pos[0].x = domain.origin.x + 0.5f * domain.size.x;
-    H->scat_pos[0].y = domain.origin.y + 0.5f * domain.size.y;
-    H->scat_pos[0].z = H->scat_pos[0].y * tanf(5.0f / 180.0f * M_PI);
-    #endif
-	
-    // Replace the very first debris particle
-    #if defined(DEBUG_DEBRIS)
-    if (H->debris_population[1] > 0) {
-        k = (int)H->debris_population[0];
-        //printf("k = %d\n", k);
-        H->scat_pos[k].x = 0.0f;
-        H->scat_pos[k].y = H->params.range_start + floorf(H->params.range_count * 0.5f) * H->params.range_delta;
-        H->scat_pos[k].z = 0.5f * domain.size.z;
-        
-        H->scat_aux[k].s0 = H->params.range_start + floorf(H->params.range_count * 0.5f) * H->params.range_delta;
-    }
-    #endif
-	
-	// Restore simulation time, default beam position at unit vector (0, 1, 0)
-	H->sim_tic = 0;
-	H->sim_toc = 0;
-	H->sim_time = 0.0f;
-    H->sim_desc.s[RSSimulationDescriptionBeamUnitX] = 0.0f;
-    H->sim_desc.s[RSSimulationDescriptionBeamUnitY] = 1.0f;
-    H->sim_desc.s[RSSimulationDescriptionBeamUnitZ] = 0.0f;
-    H->sim_desc.s[RSSimulationDescriptionTotalParticles] = H->num_scats;
-    
-    // Make a copy in float so we are maintaining all 32-bits
-    float tmpf; memcpy(&tmpf, &H->sim_concept, sizeof(float));
-    H->sim_desc.s[RSSimulationDescriptionConcept] = tmpf;
-    
-    // Propagate / duplicate some constants to other places for efficient kernel execution
-    for (i = 0; i < H->num_workers; i++) {
-        H->worker[i].range_weight_desc.s[RSTable1DDescriptionUserConstant] = H->sim_desc.s[RSSimulationDescriptionWaveNumber];
-        H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionUserConstant] = H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale];
-    }
-}
 
 #pragma mark -
 #pragma mark Properties
@@ -2864,6 +2696,19 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 }
 
 
+void RS_set_vel_data_to_config(RSHandle *H, LESConfig c) {
+    if (H->L != NULL) {
+        LES_free(H->L);
+    }
+    H->L = LES_init_with_config_path(c, NULL);
+    // Reset the velocity count to 0, as if no table has been uploaded.
+    // The GPU handles are still kept intact, will be released upon framework completion / table replacement
+    H->vel_count = 0;
+    rsprint("Reading first LES table ...");
+    RS_set_vel_data_to_LES_table(H, LES_get_frame(H->L, 0));
+}
+
+
 void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
 	
 	int i;
@@ -3185,6 +3030,11 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
 }
 
 
+void RS_set_adm_data_to_config(RSHandle *H, ADMConfig c) {
+    RS_set_adm_data_to_ADM_table(H->A, ADM_get_table(H->A, c));
+}
+
+
 void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *adam) {
     
     int i;
@@ -3391,6 +3241,11 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
         H->worker[i].mem_usage += ((cl_uint)(real.xm + 1.0f) * (real.ym + 1.0f)) * 2 * sizeof(cl_float4);
     }
     H->rcs_count++;
+}
+
+
+void RS_set_rcs_data_to_config(RSHandle *H, RCSConfig c) {
+    RS_set_rcs_data_to_RCS_table(H->R, RCS_get_table(H->R, c));
 }
 
 
@@ -3806,6 +3661,9 @@ void RS_io_test(RSHandle *H) {
 
 
 void RS_populate(RSHandle *H) {
+
+    int i, k;
+
     // Divide the scatter bodies into (num_workers) chunks
     const size_t sub_num_scats = H->num_scats / MAX(1, H->num_workers);
     
@@ -3829,10 +3687,13 @@ void RS_populate(RSHandle *H) {
         rsprint("ADM & RCS are not consistent. Unexpected behavior may happen.");
     }
     
-    // Use some default tables if there isn't any set
-    if (H->vel_count == 0) {
-        RS_set_vel_data_to_cube27(H);
-    }
+    // Use some default tables if there aren't any set
+//    if (H->vel_count == 0) {
+//        RS_set_vel_data_to_cube27(H);
+//    }
+//    rsprint("Reading first LES table ...");
+//    RS_set_vel_data_to_LES_table(H, LES_get_frame(H->L, 0));
+
     if (H->adm_count == 0) {
         RS_set_adm_data_to_unity(H);
     }
@@ -3880,7 +3741,6 @@ void RS_populate(RSHandle *H) {
 	
     H->mem_size = H->num_scats * (7 * sizeof(cl_float4) + sizeof(cl_uint4)) + H->params.range_count * sizeof(cl_float4);
     
-	int i;
 	char has_null = 0;
 	for (i = 0; i < H->num_workers; i++) {
 		posix_memalign((void **)&H->pulse_tmp[i], RS_ALIGN_SIZE, H->params.range_count * sizeof(cl_float4));
@@ -3920,7 +3780,203 @@ void RS_populate(RSHandle *H) {
     }
 
     // Initialize the scatter body positions on CPU, will upload to the GPU later
-    RS_init_scat_pos(H);
+    //RS_init_scat_pos(H);
+    srand(H->random_seed);
+    
+    RSVolume domain = RS_get_domain(H);
+
+    //
+	// Initialize the scatter body positions & velocities
+	//
+	for (i = 0; i < H->num_scats; i++) {
+		H->scat_pos[i].x = (float)rand() / RAND_MAX * domain.size.x + domain.origin.x;
+		H->scat_pos[i].y = (float)rand() / RAND_MAX * domain.size.y + domain.origin.y;
+		H->scat_pos[i].z = (float)rand() / RAND_MAX * domain.size.z + domain.origin.z;
+        H->scat_pos[i].w = 0.0f;                       // Use this to store drop radius in m
+        
+		H->scat_aux[i].s0 = 0.0f;                      // range
+        H->scat_aux[i].s1 = (float)rand() / RAND_MAX;  // age
+		H->scat_aux[i].s2 = 0.0f;                      // dsd bin index
+		H->scat_aux[i].s3 = 1.0f;                      // angular weight [0.0, 1.0]
+		
+		H->scat_vel[i].x = 0.0f;                       // u component of velocity
+		H->scat_vel[i].y = 0.0f;                       // v component of velocity
+		H->scat_vel[i].z = 0.0f;                       // w component of velocity
+		H->scat_vel[i].w = 0.0f;                       // n/a
+
+        // At the reference
+        H->scat_ori[i].x = 0.0f;                       // x of quaternion
+        H->scat_ori[i].y = 0.0f;                       // y of quaternion
+        H->scat_ori[i].z = 0.0f;                       // z of quaternion
+        H->scat_ori[i].w = 1.0f;                       // w of quaternion
+        
+        // Facing the sky
+//        H->scat_ori[i].x =  0.0f;                      // x of quaternion
+//        H->scat_ori[i].y = -0.707106781186547f;        // y of quaternion
+//        H->scat_ori[i].z =  0.0f;                      // z of quaternion
+//        H->scat_ori[i].w =  0.707106781186548f;        // w of quaternion
+
+        // Facing the beam
+        H->scat_ori[i].x =  0.5f;                      // x of quaternion
+        H->scat_ori[i].y = -0.5f;                      // y of quaternion
+        H->scat_ori[i].z = -0.5f;                      // z of quaternion
+        H->scat_ori[i].w =  0.5f;                      // w of quaternion
+        
+        // Some other tests
+//        H->scat_ori[i].x =  0.5f;                      // x of quaternion
+//        H->scat_ori[i].y = -0.5f;                      // y of quaternion
+//        H->scat_ori[i].z =  0.5f;                      // z of quaternion
+//        H->scat_ori[i].w =  0.5f;                      // w of quaternion
+
+        // Rotate by theta
+//        float theta = -70.0f / 180.0f * M_PI;
+//        H->scat_ori[i].x = 0.0f;
+//        H->scat_ori[i].y = sinf(0.5f * theta);
+//        H->scat_ori[i].z = 0.0f;
+//        H->scat_ori[i].w = cosf(0.5f * theta);
+        
+        // Tumbling vector for orientation update
+        H->scat_tum[i].x = 0.0f;                       // x of quaternion
+        H->scat_tum[i].y = 0.0f;                       // y of quaternion
+        H->scat_tum[i].z = 0.0f;                       // z of quaternion
+        H->scat_tum[i].w = 1.0f;                       // w of quaternion
+
+        // Initial return from each point
+        H->scat_rcs[i].s0 = 1.0f;                      // sh_real of rcs
+		H->scat_rcs[i].s1 = 0.0f;                      // sh_imag of rcs
+		H->scat_rcs[i].s2 = 1.0f;                      // sv_real of rcs
+		H->scat_rcs[i].s3 = 0.0f;                      // sv_imag of rcs
+        
+        // Random seeds
+        H->scat_rnd[i].s0 = rand();                    // random seed
+        H->scat_rnd[i].s1 = rand();                    // random seed
+        H->scat_rnd[i].s2 = rand();                    // random seed
+        H->scat_rnd[i].s3 = rand();                    // random seed
+	}
+    
+    // Volume of the simulation domain (m^3)
+    float vol = H->sim_desc.s[RSSimulationDescriptionBoundSizeX] * H->sim_desc.s[RSSimulationDescriptionBoundSizeY] * H->sim_desc.s[RSSimulationDescriptionBoundSizeZ];
+    float drops_per_scat = (vol * H->dsd_nd_sum) / H->num_scats;
+
+    sprintf(H->summary + strlen(H->summary), "Drops / scatterer = %s\n", commafloat(drops_per_scat));
+    
+    // Store a copy of concentration scale in simulation description
+    H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] = sqrt(drops_per_scat);
+
+    
+    // Parameterized drop radius as scat_pos.w if DSD has been set
+    // May want to add maximum relaxation time of each drop size
+    // Potential places: vel.w, aux.s2
+    float a;
+    int bin;
+    if (H->dsd_name != RSDropSizeDistributionUndefined) {
+        if (H->sim_concept & RSSimulationConceptUniformDSDScaledRCS) {
+            for (i = 0; i < H->num_scats; i++) {
+                a = (float)rand() / RAND_MAX;
+                bin = (int)(a * (float)H->dsd_count);
+                H->dsd_pop[bin]++;
+                H->scat_pos[i].w = H->dsd_r[bin];                                  // set the drop radius
+                H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // set the dsd bin index (temporary)
+            }
+        } else {
+            for (i = 0; i < H->num_scats; i++) {
+                a = (float)rand() / RAND_MAX;
+                k = H->dsd_count;
+                bin = 0;
+                while (k > 0) {
+                    k--;
+                    if (a >= H->dsd_cdf[k]) {
+                        bin = k;
+                        break;
+                    }
+                }
+                H->dsd_pop[bin]++;
+                H->scat_pos[i].w = H->dsd_r[bin];                                  // set the drop radius
+                H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // set the dsd bin index
+            }
+            
+            // Replace a few for debugging purpose
+            #if defined(DEBUG_DSD)
+            H->scat_pos[0].w = 0.0025f;
+            H->scat_pos[1].w = 0.001f;
+            H->scat_pos[2].w = 0.0005f;
+            #endif
+        }
+        
+        sprintf(H->summary + strlen(H->summary),
+            "DSD Specifications:\n");
+        for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
+            sprintf(H->summary + strlen(H->summary), "  o %.2f mm - P %.5f / %s particles\n", 2000.0f * H->dsd_r[i], (float)H->dsd_pop[i] / (float)H->num_scats, commaint(H->dsd_pop[i]));
+        }
+        if (H->dsd_count > 8) {
+            sprintf(H->summary + strlen(H->summary), "  o  :      -      :     /  :     /\n");
+            sprintf(H->summary + strlen(H->summary), "  o  :      -      :     /  :     /\n");
+            i = MAX(4, H->dsd_count - 1);
+        }
+        for (; i < H->dsd_count; i++) {
+            sprintf(H->summary + strlen(H->summary), "  o %.2f mm - P %.5f / %s particles\n", 2000.0f * H->dsd_r[i], (float)H->dsd_pop[i] / (float)H->num_scats, commaint(H->dsd_pop[i]));
+        }
+        
+        if (H->verb) {
+            rsprint("Actual DSD Specifications:");
+            for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
+                printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %s particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->num_scats, commaint(H->dsd_pop[i]));
+            }
+            if (H->dsd_count > 8) {
+                printf(RS_INDENT "o  :      -      :     /  :     /\n");
+                printf(RS_INDENT "o  :      -      :     /  :     /\n");
+                i = MAX(4, H->dsd_count - 1);
+            }
+            for (; i < H->dsd_count; i++) {
+                printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %s particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->num_scats, commaint(H->dsd_pop[i]));
+            }
+        }
+    } else {
+        rsprint("INFO: No DSD specified. The background drops do not return any power.");
+    }
+	
+    // Replace a few points for debugging purpose.
+    #if defined(DEBUG_RCS)
+	H->scat_pos[0].x = domain.origin.x + 0.5f * domain.size.x;
+    H->scat_pos[0].y = domain.origin.y + 0.5f * domain.size.y;
+    H->scat_pos[0].z = H->scat_pos[0].y * tanf(5.0f / 180.0f * M_PI);
+    #endif
+	
+    // Replace the very first debris particle
+    #if defined(DEBUG_DEBRIS)
+    if (H->debris_population[1] > 0) {
+        k = (int)H->debris_population[0];
+        //printf("k = %d\n", k);
+        H->scat_pos[k].x = 0.0f;
+        H->scat_pos[k].y = H->params.range_start + floorf(H->params.range_count * 0.5f) * H->params.range_delta;
+        H->scat_pos[k].z = 0.5f * domain.size.z;
+        
+        H->scat_aux[k].s0 = H->params.range_start + floorf(H->params.range_count * 0.5f) * H->params.range_delta;
+    }
+    #endif
+	
+	// Restore simulation time, default beam position at unit vector (0, 1, 0)
+	H->sim_tic = 0;
+	H->sim_toc = (size_t)(H->vel_desc.tp / H->params.prt);
+	H->sim_time = 0.0f;
+    H->sim_desc.s[RSSimulationDescriptionBeamUnitX] = 0.0f;
+    H->sim_desc.s[RSSimulationDescriptionBeamUnitY] = 1.0f;
+    H->sim_desc.s[RSSimulationDescriptionBeamUnitZ] = 0.0f;
+    H->sim_desc.s[RSSimulationDescriptionTotalParticles] = H->num_scats;
+    
+    // Make a copy in float so we are maintaining all 32-bits
+    float tmpf; memcpy(&tmpf, &H->sim_concept, sizeof(float));
+    H->sim_desc.s[RSSimulationDescriptionConcept] = tmpf;
+    
+    // Propagate / duplicate some constants to other places for efficient kernel execution
+    for (i = 0; i < H->num_workers; i++) {
+        H->worker[i].range_weight_desc.s[RSTable1DDescriptionUserConstant] = H->sim_desc.s[RSSimulationDescriptionWaveNumber];
+        H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionUserConstant] = H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale];
+    }
+
+    for (i = 1; i < MIN(RS_MAX_VEL_TABLES, 10); i++) {
+        RS_set_vel_data_to_LES_table(H, LES_get_frame(H->L, i));
+    }
 
     // All tables must be ready at this point
     // - range weight table
@@ -4251,6 +4307,14 @@ void RS_advance_time(RSHandle *H) {
     if (H->sim_tic >= H->sim_toc) {
         H->sim_toc = H->sim_tic + (size_t)(H->vel_desc.tp / H->params.prt);
         H->vel_idx = H->vel_idx == H->vel_count - 1 ? 0 : H->vel_idx + 1;
+
+//        if (H->vel_idx == (int)LES_get_table_count(H->L) - 1) {
+//            H->vel_idx = 0;
+//        } else {
+//            H->vel_idx++;
+//            RS_set_vel_data_to_LES_table(H->L, LES_get_frame(H->L, H->vel_idx));
+//        }
+
         if (H->vel_idx == 0) {
             rsprint("Wind table restarted.");
         }
