@@ -923,6 +923,11 @@ int main(int argc, char *argv[]) {
 //    //RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigLeaf));
 //    RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigWoodBoard));
 
+
+
+    RS_set_adm_data_to_config(S, ADMConfigModelPlate);
+    RS_set_rcs_data_to_config(S, RCSConfigPlate);
+
     RSBox box = RS_suggest_scan_domain(S, 16);
     
     // Set debris population

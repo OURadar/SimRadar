@@ -371,6 +371,8 @@ struct _rs_handle {
     // Table related variables
     uint32_t               vel_idx;
     uint32_t               vel_count;
+    uint32_t               vel_out_idx;
+    uint32_t               vel_out_count;
     uint32_t               adm_idx;
     uint32_t               adm_count;
     uint32_t               rcs_idx;

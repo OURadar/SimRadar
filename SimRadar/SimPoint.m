@@ -64,22 +64,24 @@
             }
         }
         
+        RS_set_density(S, 50.0f);
+
         // Copy out some convenient constants
         nearest_thousand = (size_t)ceilf(1000.0f / S->preferred_multiple) * S->preferred_multiple;
         nearest_hundred = (size_t)ceilf(100.0f / S->preferred_multiple) * S->preferred_multiple;
         
 //		L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
-        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, NULL);
+//        L = LES_init_with_config_path(LESConfigSuctionVorticesLarge, NULL);
 
         A = ADM_init();
 
         R = RCS_init();
 
-        NSLog(@"LES @ %s", LES_data_path(L));
-        NSLog(@"ADM @ %s", ADM_data_path(A));
-        NSLog(@"RCS @ %s", RCS_data_path(R));
+        NSLog(@"LES @ %s", LES_data_path(S->L));
+        NSLog(@"ADM @ %s", ADM_data_path(S->A));
+        NSLog(@"RCS @ %s", RCS_data_path(S->R));
         
-        if (A == NULL || L == NULL || S == NULL || S == NULL) {
+        if (S == NULL || S->L == NULL || S->A == NULL || S->R == NULL) {
             NSLog(@"Some error(s) in RS_init(), LES_init(), ADM_init() or RCS_init() occurred.");
             [delegate progressUpdated:3.0 message:@"LES / ADM / RCS table not found."];
             return nil;
@@ -117,15 +119,15 @@
         
         RSBox box;
         if (useLES) {
-            for (table_id = 0; table_id < RS_MAX_VEL_TABLES; table_id++) {
-                if (reportProgress) {
-                    [delegate progressUpdated:(10.0 + (double)table_id / RS_MAX_VEL_TABLES * 70.0)
-                                      message:[NSString stringWithFormat:@"Loading LES table %d to GPU ...", table_id]];
-                }
-                LESTable *les = LES_get_frame(L, table_id);
-                //LES_show_table_summary(les);
-                RS_set_vel_data_to_LES_table(S, les);
-            }
+//            for (table_id = 0; table_id < RS_MAX_VEL_TABLES; table_id++) {
+//                if (reportProgress) {
+//                    [delegate progressUpdated:(10.0 + (double)table_id / RS_MAX_VEL_TABLES * 70.0)
+//                                      message:[NSString stringWithFormat:@"Loading LES table %d to GPU ...", table_id]];
+//                }
+//                LESTable *les = LES_get_frame(L, table_id);
+//                //LES_show_table_summary(les);
+//                RS_set_vel_data_to_LES_table(S, les);
+//            }
             box = RS_suggest_scan_domain(S, 16);
         }
         
@@ -133,23 +135,27 @@
         ADMTable *adm = ADM_get_table(A, ADMConfigSquarePlate);
 
         RS_set_adm_data_to_ADM_table(S, adm);
-        
+
         ADM_transform_scale(adm, 1.0f, 3.0f, 3.0f, 1.0f);
         RS_set_adm_data_to_ADM_table(S, adm);
         
         RS_set_adm_data_to_ADM_table(S, adm);
+
+        //RS_set_adm_data_to_config(S, ADMConfigSquarePlate);
 
         if (reportProgress) {
             [delegate progressUpdated:90.0 message:@"ADM table"];
         }
         
         RCSTable *rcs = RCS_get_table(R, RCSConfigLeaf);
-        //RCSTable *rcs = RCS_get_table(R, RCSConfigWoodBoard);
+//        RCSTable *rcs = RCS_get_table(R, RCSConfigWoodBoard);
 
         RS_set_rcs_data_to_RCS_table(S, rcs);
 
-        //RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigWoodBoard));
-        RS_set_rcs_data_to_RCS_table(S, rcs);
+        RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigWoodBoard));
+//        RS_set_rcs_data_to_RCS_table(S, rcs);
+
+//        RS_set_rcs_data_to_config(S, RCSConfigPlate);
 
         if (reportProgress) {
             [delegate progressUpdated:95.0 message:@"RCS table"];
@@ -182,7 +188,7 @@
 - (void)dealloc
 {
 	RS_free(S);
-	LES_free(L);
+	//LES_free(L);
     
 	[super dealloc];
 }

@@ -1110,15 +1110,6 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
         H->verb = 0;
     #endif
 
-    // Initialize the LES ingest
-    H->L = LES_init();
-    if (H->L == NULL) {
-        rsprint("%s : Error. LES_init() failed.");
-        return NULL;
-    }
-    rsprint("Reading first LES table ...");
-    RS_set_vel_data_to_LES_table(H, LES_get_frame(H->L, 0));
-
     // Initialize the ADM ingest
     H->A = ADM_init();
     if (H->A == NULL) {
@@ -1153,6 +1144,10 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 
     H->verb = verb;
 	
+    // Initialize the LES ingest
+    //RS_set_vel_data_to_config(H, LESConfigSuctionVorticesLarge);
+    RS_set_vel_data_to_config(H, LESConfigSuctionVortices);
+
 	return H;
 }
 
@@ -2704,8 +2699,10 @@ void RS_set_vel_data_to_config(RSHandle *H, LESConfig c) {
     // Reset the velocity count to 0, as if no table has been uploaded.
     // The GPU handles are still kept intact, will be released upon framework completion / table replacement
     H->vel_count = 0;
-    rsprint("Reading first LES table ...");
-    RS_set_vel_data_to_LES_table(H, LES_get_frame(H->L, 0));
+    H->vel_out_idx = 0;
+    H->vel_out_count = (uint32_t)LES_get_table_count(H->L);
+    rsprint("Reading LES table (%u out of %u)...", H->vel_out_idx, H->vel_out_count);
+    RS_set_vel_data_to_LES_table(H, LES_get_frame(H->L, H->vel_out_idx++));
 }
 
 
@@ -2741,14 +2738,14 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
     zmax = leslie->az * (1.0f - powf(leslie->rz, (float)(leslie->nz - 1))) / (1.0f - leslie->rz);
     
     if (H->verb > 1) {
-        if (H->vel_count == 0) {
+        if (H->vel_count == 0 && H->vel_out_idx == 1) {
             rsprint("LES stretched x-grid using %.6f * log1p( %.6f * x )    Mid = %.2f m\n",
                    table.xs, table.xo, hmax);
             rsprint("LES stretched z-grid using %.6f * log1p( %.6f * z )    Max = %.2f m\n",
                    table.zs, table.zo, zmax);
         }
-        rsprint("GPU LES[%2d] @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
-                H->vel_count,
+        rsprint("GPU LES[%2d/%2d/%2d] @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
+                H->vel_count, H->vel_out_idx, H->vel_out_count,
                 -hmax, hmax,
                 -hmax, hmax,
                 0.0, zmax);
@@ -3974,8 +3971,14 @@ void RS_populate(RSHandle *H) {
         H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionUserConstant] = H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale];
     }
 
-    for (i = 1; i < MIN(RS_MAX_VEL_TABLES, 10); i++) {
-        RS_set_vel_data_to_LES_table(H, LES_get_frame(H->L, i));
+    // First frame is loaded during RS_init(), now we fill in the buffer
+    for (; H->vel_out_idx < RS_MAX_VEL_TABLES; H->vel_out_idx++) {
+        LESTable *table = LES_get_frame(H->L, H->vel_out_idx);
+        if (table == NULL) {
+            rsprint("Error. There is no more frame(s)?");
+            exit(EXIT_FAILURE);
+        }
+        RS_set_vel_data_to_LES_table(H, table);
     }
 
     // All tables must be ready at this point
@@ -4308,15 +4311,16 @@ void RS_advance_time(RSHandle *H) {
         H->sim_toc = H->sim_tic + (size_t)(H->vel_desc.tp / H->params.prt);
         H->vel_idx = H->vel_idx == H->vel_count - 1 ? 0 : H->vel_idx + 1;
 
-//        if (H->vel_idx == (int)LES_get_table_count(H->L) - 1) {
-//            H->vel_idx = 0;
-//        } else {
-//            H->vel_idx++;
-//            RS_set_vel_data_to_LES_table(H->L, LES_get_frame(H->L, H->vel_idx));
-//        }
-
         if (H->vel_idx == 0) {
-            rsprint("Wind table restarted.");
+            H->vel_count = 0;
+            rsprint("Loading LES tables from files ...");
+            if (H->vel_out_idx == 0) {
+                rsprint("Wind table restarted.");
+            }
+            for (k = 0; k < RS_MAX_VEL_TABLES; k++) {
+                RS_set_vel_data_to_LES_table(H, LES_get_frame(H->L, H->vel_out_idx));
+                H->vel_out_idx = H->vel_out_idx == H->vel_out_count - 1 ? 0 : H->vel_out_idx + 1;
+            }
         }
         if (H->verb > 2) {
             rsprint("Wind table advanced. vel_idx = %d   ( %.2f / %.4f )", H->vel_idx, H->vel_desc.tp, H->params.prt);
