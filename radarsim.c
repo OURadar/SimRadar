@@ -515,7 +515,7 @@ int main(int argc, char *argv[]) {
         {"cpu"           , no_argument      , 0, 'C'},
         {"density"       , required_argument, 0, 'D'},
         {"savestate"     , no_argument      , 0, 'E'},
-        {"noprogress"    , no_argument      , 0, 'F'},
+        {"no-progress"   , no_argument      , 0, 'F'},
         {"mpdsd"         , required_argument, 0, 'G'},
         {"resume-seed"   , no_argument      , 0, 'H'},
         {"preview"       , no_argument      , 0, 'N'},
@@ -539,7 +539,7 @@ int main(int argc, char *argv[]) {
         {"pulsewidth"    , required_argument, 0, 'w'},
         {"quiet"         , no_argument      , 0, 'q'},
         {"verbose"       , no_argument      , 0, 'v'},
-        {"dontask"       , no_argument      , 0, 'y'},
+        {"dont-ask"      , no_argument      , 0, 'y'},
         {0, 0, 0, 0}
     };
     
