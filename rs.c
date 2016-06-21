@@ -2352,7 +2352,7 @@ void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const flo
             return;
         }
         if (H->verb > 2) {
-            printf("worker[%d] created RCS of ellipsoid table @ %p.\n", i, H->worker[i].rcs_ellipsoid);
+            rsprint("worker[%d] created RCS of ellipsoid table @ %p.\n", i, H->worker[i].rcs_ellipsoid);
         }
     }
     
@@ -4796,7 +4796,7 @@ static void RS_show_scat_i(RSHandle *H, const size_t i) {
 
 
 static void RS_show_rcs_i(RSHandle *H, const size_t i) {
-    printf(" %7lu - ( %9.4f, %9.4f, %9.4f, %9.4f )   ( %7.3e %7.3e %7.3e %7.3e )   r = %.2f m  d = %.1f mm\n", i,
+    printf(" %7lu - ( %10.3e, %10.3e, %10.3e, %10.3e )   ( %10.3e %10.3e %10.3e %10.3e )   r = %.2f m  d = %.1f mm\n", i,
            H->scat_sig[i].x, H->scat_sig[i].y, H->scat_sig[i].z, H->scat_sig[i].w,
            H->scat_rcs[i].x, H->scat_rcs[i].y, H->scat_rcs[i].z, H->scat_rcs[i].w,
            H->scat_aux[i].s0, 2000.0f * H->scat_pos[i].w);

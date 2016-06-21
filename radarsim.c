@@ -1054,7 +1054,7 @@ int main(int argc, char *argv[]) {
     
             printf("signal:\n");
             for (int r = 0; r < S->params.range_count; r++) {
-                printf("sig[%d] = (%.4f %.4f %.4f %.4f)   (%.4f %.4f %.4f %.4f) + (%.4f %.4f %.4f %.4f)\n",
+                printf("sig[%2d] = (%10.3e %10.3e %10.3e %10.3e) <- (%10.3e %10.3e %10.3e %10.3e) + (%10.3e %10.3e %10.3e %10.3e)\n",
                        r,
                        S->pulse[r].s0, S->pulse[r].s1, S->pulse[r].s2, S->pulse[r].s3,
                        S->pulse_tmp[0][r].s0, S->pulse_tmp[0][r].s1, S->pulse_tmp[0][r].s2, S->pulse_tmp[0][r].s3,
@@ -1108,7 +1108,6 @@ int main(int argc, char *argv[]) {
     if (verb > 2) {
         printf("%s : Final scatter body positions, velocities and orientations:\n", now());
         RS_show_scat_pos(S);
-        RS_show_scat_sig(S);
     }
 
     // ---------------------------------------------------------------------------------------------------------------
