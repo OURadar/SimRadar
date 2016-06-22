@@ -205,6 +205,10 @@ void show_help() {
            "         based on the current date and time and an output file with name like\n"
            "         sim-20160229-143941-E03.0.iq will be placed in the ~/Downloads folder.\n"
            "\n"
+           "  -O (--out-dir) " UNDERLINE("destination") "\n"
+           "         Sets the output directory to " UNDERLINE("destination") ". There is no\n"
+           "         safe check so the user must make sure it exists.\n"
+           "\n"
            "  -p " UNDERLINE("count") "\n"
            "         Sets the number of pulses to " UNDERLINE("count") ". There is no\n"
            "         hard boundaries on which pulse marks the end of a sweep. If user wants\n"
@@ -519,7 +523,7 @@ int main(int argc, char *argv[]) {
         {"mpdsd"         , required_argument, 0, 'G'},
         {"resume-seed"   , no_argument      , 0, 'H'},
         {"preview"       , no_argument      , 0, 'N'},
-        {"outdir"        , required_argument, 0, 'O'},
+        {"out-dir"       , required_argument, 0, 'O'},
         {"sweep"         , required_argument, 0, 'S'},
         {"tightbox"      , no_argument      , 0, 'T'},
         {"warmup"        , required_argument, 0, 'W'},
@@ -1131,6 +1135,14 @@ int main(int argc, char *argv[]) {
         size_t len = strlen(user.output_dir);
         if (user.output_dir[len - 1] == '/') {
             user.output_dir[len - 1] = '\0';
+        }
+        // Check if directory exists
+        struct stat dir_stat;
+        char os_cmd[1024];
+        snprintf(os_cmd, 1024, "mkdir -p %s", user.output_dir);
+        printf("%s : %s\n", now(), os_cmd);
+        if (stat(user.output_dir, &dir_stat) < 0) {
+            system(os_cmd);
         }
     }
     
