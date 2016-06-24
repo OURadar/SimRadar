@@ -7,7 +7,7 @@ A polarimetric radar time-series emulator utilizing air-drag model for particle 
 Get the Project
 ---------------
 
-To start using or working with this framework, you can just `git clone` the code repository using the HTTPS link on the front page. An `xcodeproj` project is included so you can manage the source codes using Xcode on Mac OS X. Git can be set up under Xcode for the source control to stay up to date. If you would like to contribute to the framework, please me at <boonleng@ou.edu>.
+To start using or working with this framework, you can just do a `git clone http://git.arrc.ou.edu/cheo4524/simradar.git` to clone the entire project. An `xcodeproj` project is included so you can manage the source codes using Xcode on Mac OS X. Git can be set up under Xcode for the source control to stay up to date. If you would like to contribute to the framework, please me at <boonleng@ou.edu>.
 
 ### Requirements ###
 
@@ -28,9 +28,13 @@ On Mac:
 [Xcode 6]: https://developer.apple.com/xcode
 [Sparkle framework]: http://sparkle-project.org
 
+### Sparkle Framework ####
 
-Installing HDF5 on a Mac
-------------------------
+The Sparkle framework is not included as part of the git package simply because it is developed and maintained by a third party (http://sparkle-project.org). The latest release can be downloaded from the official website but the version that is used with this software can be obtained from http://arrc.ou.edu/~boonleng/Sparkle.framework.zip. The extracted folder Sparkle.framework should go into the **SimRadar** project folder.
+
+
+Installing HDF5 on a Mac (Optional)
+-----------------------------------
 
 The easiest way to obtain HDF5 framework on a Mac is through Homebrew (http://brew.sh). Once you have Homebrew installed, simply use the command `brew install hdf5` or `brew install homebrew/science/hdf5` on the terminal. Homebrew handles all the dependency check and installed the pre-requisites for you.
 
@@ -203,11 +207,6 @@ The SimRadar App for Mac OS X
 -----------------------------
 
 A dedicated project SimRadar, which is a Mac OS X implemtation of visualization and graphical user interface, is included. It demonstrates how to wrap the framework in Objective-C. There is currently no plan to make this a full-fledge application that allows users to access all simulation parameters through the GUI.
-
-
-### Sparkle Framework ####
-
-The Sparkle framework is not included as part of the git package simply because it is developed and maintained by a third party (http://sparkle-project.org). The latest release can be downloaded from the official website but the version that is used with this software can be obtained from http://arrc.ou.edu/~boonleng/Sparkle.framework.zip. The extracted folder Sparkle.framework should go into the **SimRadar** project folder.
 
 
 
