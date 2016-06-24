@@ -32,6 +32,7 @@ Follow these steps to get the project
 
 1. Clone a git project using the command:
 
+
     git clone http://git.arrc.ou.edu/cheo4524/simradar.git
     
     
@@ -43,9 +44,9 @@ Follow these steps to get the project
 
 3. Download [LES, ADM & RCS Data], extract and move the folder `tables` into one of the following locations:
 
-- ~/Downloads
-- ~/Documents
-- ~/Desktop
+    - ~/Downloads
+    - ~/Documents
+    - ~/Desktop
     
     NOTE: A zip archive (15.23GB!) with two LES (Large Eddy Simulation) wind cubes, an ADM (Air Drag Model) library and an RCS (Radar Cross Section)
 
