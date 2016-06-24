@@ -9,24 +9,26 @@ Get the Project
 
 Follow these steps to get the project
 
-1. Clone a git project using the command:
+1. Make sure you have the latest [nVidia CUDA Driver].
+
+2. Clone a git project using the command:
 
         git clone http://git.arrc.ou.edu/cheo4524/simradar.git
 
     Note: A .xcodeproj project is included so you can manage the source codes using Xcode on Mac OS X. Git can be set up under Xcode for the source control to stay up to date.
 
-2. Download [Sparkle Framework], extract and move the folder **Sparkle.framework** into the sub-folder **SimRadar**
+3. Download [Sparkle Framework], extract and move the folder **Sparkle.framework** into the sub-folder **SimRadar**
 
     Note: The latest release of Sparkle framework, which is developed and maintained by a third party (http://sparkle-project.org), can be downloaded from the official website but not necessary.
 
-3. Download [LES, ADM & RCS Data], extract and move the folder **tables** into one of the following locations:
+4. Download [LES, ADM & RCS Data], extract and move the folder **tables** into one of the following locations:
     - ~/Downloads
     - ~/Documents
     - ~/Desktop
     
     NOTE: This is a zip archive with two LES (Large Eddy Simulation) wind cubes, an ADM (Air Drag Model) library and an RCS (Radar Cross Section)
 
-4. Download [Matlab Scripts] for reading the I/Q data into Matlab.
+5. Download [Matlab Scripts] for reading the I/Q data into Matlab.
 
 
 Requirements
@@ -50,6 +52,7 @@ On Mac:
 [Sparkle Framework]: http://arrc.ou.edu/~boonleng/files/Sparkle.framework.zip
 [LES, ADM & RCS Data]: http://arrc.ou.edu/~boonleng/simradar/tables.zip
 [Matlab Scripts]: http://arrc.ou.edu/~boonleng/simradar/simradar-matlab.zip
+[nVidia CUDA Driver]: http://www.nvidia.com/object/mac-driver-archive.html
 
 Installing HDF5 on a Mac
 ------------------------

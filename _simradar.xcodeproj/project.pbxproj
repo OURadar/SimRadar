@@ -87,8 +87,6 @@
 		B58F632B1C177EE40010AEE6 /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = B58F632A1C177EE40010AEE6 /* dsa_pub.pem */; };
 		B58F632C1C177EE40010AEE6 /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = B58F632A1C177EE40010AEE6 /* dsa_pub.pem */; };
 		B5916CC61ABC7069007EA0B9 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = B5916CC51ABC7069007EA0B9 /* README.md */; };
-		B59A64271B8CEB0200747CD5 /* arps.c in Sources */ = {isa = PBXBuildFile; fileRef = B59A64251B8CEB0200747CD5 /* arps.c */; };
-		B59A64281B8CF23E00747CD5 /* arps.c in Sources */ = {isa = PBXBuildFile; fileRef = B59A64251B8CEB0200747CD5 /* arps.c */; };
 		B59FE7821D00D2C9007B878E /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = B5916CC51ABC7069007EA0B9 /* README.md */; };
 		B5A5142718328A2F00921ACE /* FullscreenWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = B5A5142618328A2F00921ACE /* FullscreenWindow.m */; };
 		B5BAD55A18B67E8B007AC15D /* rs.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281917D7C4D500E4DE66 /* rs.c */; };
@@ -133,7 +131,7 @@
 			outputFiles = (
 				"${DERIVED_FILES_DIR}/${INPUT_FILE_BASE}.cls",
 			);
-			script = "# <com.apple.compilers.opencl>\ncp ${INPUT_FILE_PATH} ${DERIVED_FILES_DIR}/${INPUT_FILE_BASE}.cls\ncp ${INPUT_FILE_PATH} ${CONFIGURATION_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/${INPUT_FILE_BASE}.cl\n";
+			script = "# <com.apple.compilers.opencl>\ncp \"${INPUT_FILE_PATH}\" \"${DERIVED_FILES_DIR}/${INPUT_FILE_BASE}.cls\"\ncp \"${INPUT_FILE_PATH}\" \"${CONFIGURATION_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/${INPUT_FILE_BASE}.cl\"\n";
 		};
 /* End PBXBuildRule section */
 
@@ -304,8 +302,6 @@
 		B57ADA6117E225EE00B03074 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
 		B58F632A1C177EE40010AEE6 /* dsa_pub.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = dsa_pub.pem; path = delivery/dsa_pub.pem; sourceTree = SOURCE_ROOT; };
 		B5916CC51ABC7069007EA0B9 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		B59A64251B8CEB0200747CD5 /* arps.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = arps.c; sourceTree = "<group>"; };
-		B59A64261B8CEB0200747CD5 /* arps.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = arps.h; sourceTree = "<group>"; };
 		B5A5142518328A2F00921ACE /* FullscreenWindow.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FullscreenWindow.h; sourceTree = "<group>"; };
 		B5A5142618328A2F00921ACE /* FullscreenWindow.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FullscreenWindow.m; sourceTree = "<group>"; };
 		B5B574791B690A45002AD2E7 /* iq.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = iq.h; sourceTree = "<group>"; };
@@ -534,8 +530,6 @@
 				B5F3C31B18F2F85C00092A72 /* les.h */,
 				B567F8B11A6D522F00F40660 /* adm.c */,
 				B567F8B01A6D520C00F40660 /* adm.h */,
-				B59A64251B8CEB0200747CD5 /* arps.c */,
-				B59A64261B8CEB0200747CD5 /* arps.h */,
 				B55716851AB7519D001984E0 /* rcs.c */,
 				B55716841AB75186001984E0 /* rcs.h */,
 				B5B574791B690A45002AD2E7 /* iq.h */,
@@ -992,7 +986,6 @@
 				B5F3C31D18F2F86700092A72 /* les.c in Sources */,
 				B5CFAD201ADFF4D800360E9A /* rcs.c in Sources */,
 				B527893318A13C5F00650679 /* rs.c in Sources */,
-				B59A64281B8CF23E00747CD5 /* arps.c in Sources */,
 				B527893118A13C4400650679 /* radarsim.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1011,7 +1004,6 @@
 			files = (
 				B55716861AB7519D001984E0 /* rcs.c in Sources */,
 				B56077F617E356A70068C6BE /* cldemo.c in Sources */,
-				B59A64271B8CEB0200747CD5 /* arps.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
