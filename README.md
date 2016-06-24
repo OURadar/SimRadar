@@ -33,6 +33,19 @@ On Mac:
 The Sparkle framework is not included as part of the git package simply because it is developed and maintained by a third party (http://sparkle-project.org). The latest release can be downloaded from the official website but the version that is used with this software can be obtained from http://arrc.ou.edu/~boonleng/Sparkle.framework.zip. The extracted folder Sparkle.framework should go into the **SimRadar** project folder.
 
 
+### LES, ADM & RCS Data ###
+
+A zip archive (15.23GB!) with two LES (Large Eddy Simulation) wind cubes, an ADM (Air Drag Model) library and an RCS (Radar Cross Section) library can be downloaded from
+
+http://arrc.ou.edu/~boonleng/simradar/tables.zip
+
+The extracted folder `tables` can be placed in one of the following locations:
+
+- ~/Downloads
+- ~/Documents
+- ~/Desktop
+
+
 Installing HDF5 on a Mac (Optional)
 -----------------------------------
 
@@ -49,18 +62,6 @@ Radar Simulation Framework
 --------------------------
 
 A set of C functions are collected in Radar Simulation (RS) framework, which abstracts the low-level interaction witht the GPU for workload parallelization. OpenCL was selected because of the vendor neutral implementation.
-
-### LES, ADM & RCS Data ###
-
-A zip archive with data of LES (Large Eddy Simulation), ADM (Air Drag Model) and RCS (Radar Cross Section) can be downloaded from
-
-http://arrc.ou.edu/~boonleng/simradar/tables.zip
-
-The extracted folder `tables` can be placed in one of the following locations:
-
-- ~/Downloads
-- ~/Documents
-- ~/Desktop
 
 ### Using the Radar Simulation (RS) Framework ###
 
