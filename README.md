@@ -24,6 +24,7 @@ On Mac:
 [Xcode 6]: https://developer.apple.com/xcode
 [Sparkle Framework]: http://arrc.ou.edu/~boonleng/files/Sparkle.framework.zip
 [LES, ADM & RCS Data]: http://arrc.ou.edu/~boonleng/simradar/tables.zip
+[Matlab Scripts]: http://arrc.ou.edu/~boonleng/simradar/simradar-matlab.zip
 
 Get the Project
 ---------------
@@ -47,6 +48,7 @@ Follow these steps to get the project
     
     NOTE: This is a zip archive with two LES (Large Eddy Simulation) wind cubes, an ADM (Air Drag Model) library and an RCS (Radar Cross Section)
 
+4. Download [Matlab Scripts] for reading the I/Q data into Matlab.
 
 
 Installing HDF5 on a Mac
