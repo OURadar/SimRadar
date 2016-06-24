@@ -4,28 +4,6 @@ Simulation of a Radar
 A polarimetric radar time-series emulator utilizing air-drag model for particle motions and a realistic radar cross library for particle back scattering calculations. Implemented with OpenCL for massive parallel computations. This is awesome!  If you would like to contribute to the framework, please me at <boonleng@ou.edu>.
 
 
-Requirements
-------------
-
-On Linux:
-
-* [GCC] GNU C Compiler
-* [OpenCL] framework version 1.1 or 1.2
-* [HDF5] framework (optional)
-
-On Mac:
-
-* [Xcode 6]
-* [Sparkle Framework]
-
-[GCC]: http://gcc.gnu.org
-[OpenCL]: https://www.khronos.org/opencl
-[HDF5]: https://www.hdfgroup.org/HDF5
-[Xcode 6]: https://developer.apple.com/xcode
-[Sparkle Framework]: http://arrc.ou.edu/~boonleng/files/Sparkle.framework.zip
-[LES, ADM & RCS Data]: http://arrc.ou.edu/~boonleng/simradar/tables.zip
-[Matlab Scripts]: http://arrc.ou.edu/~boonleng/simradar/simradar-matlab.zip
-
 Get the Project
 ---------------
 
@@ -51,6 +29,28 @@ Follow these steps to get the project
 4. Download [Matlab Scripts] for reading the I/Q data into Matlab.
 
 
+Requirements
+------------
+
+On Linux:
+
+* [GCC] GNU C Compiler
+* [OpenCL] framework version 1.1 or 1.2
+* [HDF5] framework (optional)
+
+On Mac:
+
+* [Xcode 6]
+* [Sparkle Framework]
+
+[GCC]: http://gcc.gnu.org
+[OpenCL]: https://www.khronos.org/opencl
+[HDF5]: https://www.hdfgroup.org/HDF5
+[Xcode 6]: https://developer.apple.com/xcode
+[Sparkle Framework]: http://arrc.ou.edu/~boonleng/files/Sparkle.framework.zip
+[LES, ADM & RCS Data]: http://arrc.ou.edu/~boonleng/simradar/tables.zip
+[Matlab Scripts]: http://arrc.ou.edu/~boonleng/simradar/simradar-matlab.zip
+
 Installing HDF5 on a Mac
 ------------------------
 
@@ -64,7 +64,7 @@ There are several GPU equiped nodes and everything needed is installed. However,
 
 
 Radar Simulation Framework
---------------------------
+==========================
 
 A set of C functions are collected in Radar Simulation (RS) framework, which abstracts the low-level interaction witht the GPU for workload parallelization. OpenCL was selected because of the vendor neutral implementation.
 
