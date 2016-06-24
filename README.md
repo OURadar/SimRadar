@@ -22,7 +22,7 @@ On Mac:
 [OpenCL]: https://www.khronos.org/opencl
 [HDF5]: https://www.hdfgroup.org/HDF5
 [Xcode 6]: https://developer.apple.com/xcode
-[Sparkle Framework]: http://arrc.ou.edu/~boonleng/Sparkle.framework.zip
+[Sparkle Framework]: http://arrc.ou.edu/~boonleng/files/Sparkle.framework.zip
 [LES, ADM & RCS Data]: http://arrc.ou.edu/~boonleng/simradar/tables.zip
 
 Get the Project
