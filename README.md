@@ -38,7 +38,7 @@ Follow these steps to get the project
 
 2. Download [Sparkle Framework], extract and move the folder **Sparkle.framework** into the sub-folder **SimRadar**
 
-    Note: The latest Sparkle framework, which is developed and maintained by a third party (http://sparkle-project.org). The latest release can be downloaded from the official website but the version that is used with this software can be obtained from http://arrc.ou.edu/~boonleng/Sparkle.framework.zip.
+    Note: The latest release of Sparkle framework, which is developed and maintained by a third party (http://sparkle-project.org), can be downloaded from the official website but not necessary.
 
 3. Download [LES, ADM & RCS Data], extract and move the folder **tables** into one of the following locations:
     - ~/Downloads
