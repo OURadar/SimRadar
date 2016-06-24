@@ -4,12 +4,8 @@ Simulation of a Radar
 A polarimetric radar time-series emulator utilizing air-drag model for particle motions and a realistic radar cross library for particle back scattering calculations. Implemented with OpenCL for massive parallel computations. This is awesome!
 
 
-Get the Project
----------------
-
-To start using or working with this framework, you can just do a `git clone http://git.arrc.ou.edu/cheo4524/simradar.git` to clone the entire project. An `xcodeproj` project is included so you can manage the source codes using Xcode on Mac OS X. Git can be set up under Xcode for the source control to stay up to date. If you would like to contribute to the framework, please me at <boonleng@ou.edu>.
-
-### Requirements ###
+Requirements
+------------
 
 On Linux:
 
@@ -28,22 +24,28 @@ On Mac:
 [Xcode 6]: https://developer.apple.com/xcode
 [Sparkle framework]: http://sparkle-project.org
 
-### Sparkle Framework ####
+Get the Project
+---------------
 
-The Sparkle framework is not included as part of the git package simply because it is developed and maintained by a third party (http://sparkle-project.org). The latest release can be downloaded from the official website but the version that is used with this software can be obtained from http://arrc.ou.edu/~boonleng/Sparkle.framework.zip. The extracted folder Sparkle.framework should go into the **SimRadar** project folder.
+Follow these steps to get the project
 
+- Clone a git project using the command:
 
-### LES, ADM & RCS Data ###
+    git clone http://git.arrc.ou.edu/cheo4524/simradar.git
+    
+Note: An `xcodeproj` project is included so you can manage the source codes using Xcode on Mac OS X. Git can be set up under Xcode for the source control to stay up to date. If you would like to contribute to the framework, please me at <boonleng@ou.edu>.
 
-A zip archive (15.23GB!) with two LES (Large Eddy Simulation) wind cubes, an ADM (Air Drag Model) library and an RCS (Radar Cross Section) library can be downloaded from
+- Download [Sparkle Framework]: http://arrc.ou.edu/~boonleng/Sparkle.framework.zip, extract and move Sparkle.framework into the sub-folder **SimRadar**
 
-http://arrc.ou.edu/~boonleng/simradar/tables.zip
+Note: The Sparkle framework is not included as part of the git package simply because it is developed and maintained by a third party (http://sparkle-project.org). The latest release can be downloaded from the official website but the version that is used with this software can be obtained from http://arrc.ou.edu/~boonleng/Sparkle.framework.zip.
 
-The extracted folder `tables` can be placed in one of the following locations:
+- Download [LES, ADM & RCS Data]: http://arrc.ou.edu/~boonleng/simradar/tables.zip, extract and move `table` into one of the following locations:
 
 - ~/Downloads
 - ~/Documents
 - ~/Desktop
+
+NOTE: A zip archive (15.23GB!) with two LES (Large Eddy Simulation) wind cubes, an ADM (Air Drag Model) library and an RCS (Radar Cross Section)
 
 
 Installing HDF5 on a Mac (Optional)
