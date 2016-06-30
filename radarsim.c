@@ -1139,7 +1139,7 @@ int main(int argc, char *argv[]) {
         // Check if directory exists
         struct stat dir_stat;
         char os_cmd[1024];
-        snprintf(os_cmd, 1024, "mkdir -p %s", user.output_dir);
+        snprintf(os_cmd, 1024, "mkdir -p \"%s\"", user.output_dir);
         printf("%s : %s\n", now(), os_cmd);
         if (stat(user.output_dir, &dir_stat) < 0) {
             system(os_cmd);
