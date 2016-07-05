@@ -319,7 +319,7 @@ cl_uint read_kernel_source_from_files(char *src_ptr[], ...) {
         // Read in the kernel source
         FILE *fid = fopen(filename, "r");
         if (fid == NULL) {
-            fprintf(stderr, "%s : RS : Error opening kernel source %s.\n", now(), filename);
+            rsprint("Error. Unable to open kernel source %s.\n", filename);
             break;
         }
         while (!feof(fid) && strlen(char_buf) < RS_MAX_KERNEL_SRC && count < RS_MAX_KERNEL_LINES) {
@@ -336,13 +336,13 @@ cl_uint read_kernel_source_from_files(char *src_ptr[], ...) {
     va_end(files);
     
     if (len >= RS_MAX_KERNEL_SRC * 8 / 10) {
-        printf("%s : RS : \e[31mWARNING. Kernel source size = %s / %s (%.2f > 80%%)\e[0m\n",
-               now(), commaint(len), commaint(RS_MAX_KERNEL_SRC), (float)len / RS_MAX_KERNEL_SRC * 100.0f);
+        rsprint("\e[31mWARNING. Kernel source size = %s / %s (%.2f > 80%%)\e[0m\n",
+               commaint(len), commaint(RS_MAX_KERNEL_SRC), (float)len / RS_MAX_KERNEL_SRC * 100.0f);
     }
     
     if (len >= RS_MAX_KERNEL_SRC || count >= RS_MAX_KERNEL_LINES) {
-        fprintf(stderr, "%s : RS : Kernel source exceeds buffer size constraints.  (len = %s / %s, count = %s / %s)\n",
-                now(), commaint(len), commaint(RS_MAX_KERNEL_SRC), commaint(count), commaint(RS_MAX_KERNEL_LINES));
+        rsprint("Error. Kernel source exceeds buffer size constraints.  (len = %s / %s, count = %s / %s)\n",
+                commaint(len), commaint(RS_MAX_KERNEL_SRC), commaint(count), commaint(RS_MAX_KERNEL_LINES));
         return 0;
     }
     
