@@ -160,7 +160,7 @@ void rsprint(const char *format, ...) {
 
 void pfn_prog_notify(cl_program program, void *user_data) {
     if (user_data != NULL) {
-        fprintf(stderr, "%s : RS : Program %p returned %p (via pfn_prog_notify)\n", now(), program, user_data);
+        rsprint("Program %p returned %p (via pfn_prog_notify)\n", program, user_data);
     }
 }
 
