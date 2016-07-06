@@ -963,6 +963,10 @@ int main(int argc, char *argv[]) {
     // Save the framework default PRT for later
     if (user.prt == PARAMS_FLOAT_NOT_SUPPLIED) {
         user.prt = S->params.prt;
+    } else {
+        // Set PRT to the actual one
+        // Do not comment out. I know it will be set to 1 / 60 during warm up but show info needs this.
+        RS_set_prt(S, user.prt);
     }
 
     if (verb) {

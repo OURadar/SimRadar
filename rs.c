@@ -95,7 +95,7 @@ char *commafloat(float num) {
     static char buf[8][64];
     i = i == 7 ? 0 : i + 1;
     int b = i;
-    snprintf(buf[b], 64, "%s.%02d", commaint(num), (int)(100 * (num - floorf(num))));
+    snprintf(buf[b], 64, "%s.%02d", commaint(num), (int)roundf(100.0f * (num - floorf(num))));
     return buf[b];
 }
 
@@ -1626,32 +1626,50 @@ void RS_set_scan_box(RSHandle *H,
 	
 	// Suggest a number of scatter bodies to use
 	H->num_scats = (size_t)(H->params.body_per_cell * nvol);
-	
-	// Round to a GPU preferred number: make_pulse_pass_1 uses 2 x max_work_group_size stride
-    size_t preferred_n = (H->num_scats / H->num_workers) * H->num_workers;
+    H->debris_population[0] = H->num_scats;
+
+    // Get GPU preferred multiplication factor
+    // NOTE: make_pulse_pass_1 uses 2 x max_work_group_size stride
+    size_t max_work_group_size;
+    clGetDeviceInfo(H->worker[0].dev, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max_work_group_size), &max_work_group_size, NULL);
+    const size_t mul = H->num_cus[0] * H->num_workers * max_work_group_size * 2;
+
+    // Round the total population to a GPU preferred number
+    size_t preferred_n = H->num_scats;
     if (H->num_scats > 50000) {
-        size_t max_work_group_size;
-        clGetDeviceInfo(H->worker[0].dev, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max_work_group_size), &max_work_group_size, NULL);
-        size_t mul = H->num_cus[0] * H->num_devs * max_work_group_size * 2;
         preferred_n = (size_t)(H->num_scats / mul) * mul;
-        while (preferred_n < H->params.body_per_cell * 9 / 10) {
+        if (preferred_n < H->params.body_per_cell * 9 / 10) {
             preferred_n += mul;
         }
     }
-    
-    // Drop concentration scaling factor
-    // OLD: Typical volume is about 2500 drops per m^2, each scatterer represents N drops (Radar Equation document example)
-    // NEW: Based on the supplied DSD, the total number of drops has been derived and stored in H->dsd_nd_sum.
-//    float concentration_scale = sqrtf((nvol * svol * H->dsd_nd_sum) / (float)preferred_n);
-    
+
+    // Revise the background (rain)
+    H->debris_population[0] = preferred_n;
+//    ii = RS_MAX_DEBRIS_TYPES;
+//    while (ii > 1) {
+//        ii--;
+//        H->debris_population[0] -= H->debris_population[ii];
+//    }
+
+    // Add in the debris
+    for (ii = 1; ii < RS_MAX_DEBRIS_TYPES; ii++) {
+        if (H->debris_population[ii] > 0) {
+            preferred_n += H->debris_population[ii];
+        }
+    }
+
+    if (preferred_n > 20000000) {
+        exit(0);
+    }
+    // Summary of parameters
     sprintf(H->summary,
             "User domain @\n  R:[ %6.2f ~ %6.2f ] km\n  E:[ %6.2f ~ %6.2f ] deg\n  A:[ %+6.2f ~ %+6.2f ] deg\n",
-            1.0e-3*H->params.range_start, 1e-3*H->params.range_end,
+            1.0e-3 * H->params.range_start, 1e-3 * H->params.range_end,
             H->params.elevation_start_deg, H->params.elevation_end_deg,
             H->params.azimuth_start_deg, H->params.azimuth_end_deg);
     sprintf(H->summary + strlen(H->summary),
             "Work domain @\n  R:[ %6.2f ~ %6.2f ] km  (%d gates)\n  E:[ %6.2f ~ %6.2f ] deg  (%d rays)\n  A:[ %+6.2f ~ %+6.2f ] deg  (%d rays)\n",
-            1.0e-3*r_lo, 1.0e-3*r_hi, H->params.range_count,
+            1.0e-3 * r_lo, 1.0e-3 * r_hi, H->params.range_count,
             el_lo, el_hi, nel,
             az_lo, az_hi, naz);
     sprintf(H->summary + strlen(H->summary),
@@ -1662,7 +1680,7 @@ void RS_set_scan_box(RSHandle *H,
     sprintf(H->summary + strlen(H->summary),
             "nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(svol));
     sprintf(H->summary + strlen(H->summary),
-            "average density = %.2f particles / radar cell\n", (float)preferred_n / nvol);
+            "Average background density = %.2f scatterers / resolution cell\n", (float)H->debris_population[0] / nvol);
     sprintf(H->summary + strlen(H->summary),
             "Concepts used: %s%s%s\n",
             H->sim_concept & RSSimulationConceptDraggedBackground ? "D" : "",
@@ -1671,11 +1689,11 @@ void RS_set_scan_box(RSHandle *H,
     
     if (H->verb) {
         rsprint("User domain @ R:[ %5.2f ~ %5.2f ] km   E:[ %5.2f ~ %5.2f ] deg   A:[ %+6.2f ~ %+6.2f ] deg\n",
-               1.0e-3*H->params.range_start, 1e-3*H->params.range_end,
+               1.0e-3 * H->params.range_start, 1e-3 * H->params.range_end,
                H->params.elevation_start_deg, H->params.elevation_end_deg,
                H->params.azimuth_start_deg, H->params.azimuth_end_deg);
         rsprint("Work domain @ R:[ %5.2f ~ %5.2f ] km   E:[ %5.2f ~ %5.2f ] deg   A:[ %+6.2f ~ %+6.2f ] deg\n",
-               1.0e-3*r_lo, 1.0e-3*r_hi,
+               1.0e-3 * r_lo, 1.0e-3 * r_hi,
                el_lo, el_hi,
                az_lo, az_hi);
         rsprint("            @ R:[       %-3d     ]      E:[       %-3d     ]       A:[        %-3d      ]",
@@ -1687,7 +1705,6 @@ void RS_set_scan_box(RSHandle *H,
         rsprint("              = ( %.2f m x %.2f m x %.2f m )\n",
                xmax - xmin, ymax - ymin, zmax - zmin);
         rsprint("nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(svol));
-        rsprint("average density = %.2f particles / radar cell\n", (float)preferred_n / nvol);
         rsprint("Concepts used:\n");
         if (H->sim_concept == RSSimulationConceptNull) {
             printf(RS_INDENT "o No special concept\n");
@@ -1702,17 +1719,12 @@ void RS_set_scan_box(RSHandle *H,
                 printf(RS_INDENT "o U - Uniform DSD with Scaled RCS\n");
             }
         }
-		rsprint("Set to GPU preferred %s (%.2f bodies / resolution cell)", commaint(preferred_n), (float)preferred_n / nvol);
-//        if (H->verb > 1) {
-//            rsprint("Drop concentration scale to be used later = %s", commafloat(concentration_scale));
-//        }
-	}
+		rsprint("Set to GPU preferred %s (%s total scatterers / resolution cell)", commaint(preferred_n), commafloat((float)preferred_n / nvol));
+        rsprint("Average background density = %s particles / radar cell\n", commafloat((float)H->debris_population[0] / nvol));
+    }
 
     // Now, we actually set it to suggested debris count
 	H->num_scats = preferred_n;
-
-    // Store a copy of concentration scale in simulation description
-//    H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] = concentration_scale;
 
     // Anchor lines to show the volume of interest, which was set by the user. The number is well more than enough
 	H->num_anchor_lines  = 8 * (naz + nel);
@@ -2032,7 +2044,7 @@ void RS_update_debris_count(RSHandle *H) {
     size_t count = H->num_scats;
     
     if (H->num_workers == 0) {
-        rsprint("RS : Expected. Number of workers = 0.");
+        rsprint("Error. Number of workers = 0.");
         return;
     }
     
@@ -2041,7 +2053,15 @@ void RS_update_debris_count(RSHandle *H) {
         k--;
         count -= H->debris_population[k];
     }
-    H->debris_population[0] = count;
+    if (H->debris_population[0] != count) {
+        rsprint("Error. Inconsistent debris counts");
+        return;
+    }
+
+    // Volume of a single resolution cell at the start of the domain (svol = smallest volume)
+    RSfloat r = H->params.range_start;
+    RSfloat svol = (H->params.antenna_bw_rad * r) * (H->params.antenna_bw_rad * r) * (H->params.c * H->params.tau * 0.5f);
+    RSfloat nvol = (H->sim_desc.s[RSSimulationDescriptionBoundSizeX] * H->sim_desc.s[RSSimulationDescriptionBoundSizeY] * H->sim_desc.s[RSSimulationDescriptionBoundSizeZ]) / svol;
 
     if (H->verb) {
         rsprint("RS : Population details:");
@@ -2050,7 +2070,7 @@ void RS_update_debris_count(RSHandle *H) {
                 break;
             }
             //printf("                 o Global debris_population[%d] = %s\n", k, commaint(H->debris_population[k]));
-            printf(RS_INDENT "o Global debris_population[%d] = %s\n", k, commaint(H->debris_population[k]));
+            printf(RS_INDENT "o Global debris_population[%d] = %s (%s scatterers / resolution cell)\n", k, commaint(H->debris_population[k]), commafloat((float)H->debris_population[k] / nvol));
         }
     }
     
