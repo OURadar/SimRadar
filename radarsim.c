@@ -813,31 +813,6 @@ int main(int argc, char *argv[]) {
 
 #endif
     
-//    ADMHandle *A;
-//    LESHandle *L;
-//    RCSHandle *R;
-//    
-//    // Initialize the LES ingest
-//    L = LES_init();
-//    if (L == NULL) {
-//        fprintf(stderr, "%s : Some errors occurred during LES_init().\n", now());
-//        return EXIT_FAILURE;
-//    }
-//    
-//    // Initialize the ADM ingest
-//    A = ADM_init();
-//    if (A == NULL) {
-//        fprintf(stderr, "%s : Some errors occurred during ADM_init().\n", now());
-//        return EXIT_FAILURE;
-//    }
-//    
-//    // Initialize the RCS ingest
-//    R = RCS_init();
-//    if (R == NULL) {
-//        fprintf(stderr, "%s : Some errors occurred during RCS_init().\n", now());
-//        return EXIT_FAILURE;
-//    }
-
     RS_set_concept(S, concept);
     
     // ---------------------------------------------------------------------------------------------------------------

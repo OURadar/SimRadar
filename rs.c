@@ -1428,6 +1428,18 @@ void RS_set_concept(RSHandle *H, RSSimulationConcept c) {
 
 
 void RS_set_prt(RSHandle *H, const RSfloat prt) {
+
+    ssize_t tic_toc_left = H->sim_toc - H->sim_tic;
+
+    ssize_t toc_offset = H->params.prt / prt * tic_toc_left;
+
+    if (tic_toc_left + toc_offset < 0) {
+        H->sim_tic = 0;
+        H->sim_toc = (size_t)(H->vel_desc.tp / prt);
+    } else {
+        H->sim_toc += toc_offset;
+    }
+
 	H->params.prt = prt;
     
     H->sim_desc.s[RSSimulationDescriptionPRT] = H->params.prt;
@@ -3705,12 +3717,6 @@ void RS_populate(RSHandle *H) {
     }
     
     // Use some default tables if there aren't any set
-//    if (H->vel_count == 0) {
-//        RS_set_vel_data_to_cube27(H);
-//    }
-//    rsprint("Reading first LES table ...");
-//    RS_set_vel_data_to_LES_table(H, LES_get_frame(H->L, 0));
-
     if (H->adm_count == 0) {
         RS_set_adm_data_to_unity(H);
     }
@@ -3880,7 +3886,6 @@ void RS_populate(RSHandle *H) {
     // Store a copy of concentration scale in simulation description
     H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] = sqrt(drops_per_scat);
 
-    
     // Parameterized drop radius as scat_pos.w if DSD has been set
     // May want to add maximum relaxation time of each drop size
     // Potential places: vel.w, aux.s2
