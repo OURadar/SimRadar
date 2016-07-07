@@ -11,7 +11,7 @@ Follow these steps to get the project
 
 1. For nVidia GPU users, make sure you have the latest [nVidia CUDA Driver].
 
-2. Clone a git project using the command:
+2. Clone a git project using the command in Terminal:
 
         git clone http://git.arrc.ou.edu/cheo4524/simradar.git
 
