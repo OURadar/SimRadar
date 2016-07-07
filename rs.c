@@ -646,7 +646,7 @@ void RS_worker_free(RSWorker *C) {
 }
 
 
-void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_scats, const size_t offset) {
+void RS_worker_malloc(RSHandle *H, const int worker_id) {
 
     RSWorker *C = &H->worker[worker_id];
     
@@ -654,11 +654,18 @@ void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_sca
         rsprint("Worker[%d] has not been initialized?\n", worker_id);
         return;
     }
-    
-    // Copy the necessary parameters from host to compute workers
-    C->num_scats = sub_num_scats;
-    C->debris_global_offset = offset;
-    
+
+    if ((H->status & RSStatusPopulationDefined) == 0) {
+        rsprint("Error. Population has not been defined.\n");
+        return;
+    }
+
+    // Derive the necessary parameters from host to compute workers
+    if (C->num_scats != H->num_scats / MAX(1, H->num_workers)) {
+        rsprint("Error. Inconsistent number of scatterers.\n");
+        return;
+    }
+
     size_t group_size_multiple = RS_CL_GROUP_ITEMS;
 
 #if !defined (_USE_GCL_)
@@ -998,7 +1005,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 	
 	// Default non-zero parameters
     H->sim_tic = 0;
-	H->status = RSStatusDomainNull;
+	H->status = RSStatusNull;
 	H->params.c = 3.0e8f;
     H->params.tau = 0.2e-6f;
 	H->params.body_per_cell = RS_BODY_PER_CELL;
@@ -1694,9 +1701,10 @@ void RS_set_scan_box(RSHandle *H,
     sprintf(H->summary + strlen(H->summary),
             "Average background density = %.2f scatterers / resolution cell\n", (float)H->debris_population[0] / nvol);
     sprintf(H->summary + strlen(H->summary),
-            "Concepts used: %s%s%s\n",
-            H->sim_concept & RSSimulationConceptDraggedBackground ? "D" : "",
+            "Concepts used: %s%s%s%s\n",
             H->sim_concept & RSSimulationConceptBoundedParticleVelocity ? "B" : "",
+            H->sim_concept & RSSimulationConceptDraggedBackground ? "D" : "",
+            H->sim_concept & RSSimulationConceptTransparentBackground ? "T" : "",
             H->sim_concept & RSSimulationConceptUniformDSDScaledRCS ? "U" : "");
     
     if (H->verb) {
@@ -1721,11 +1729,14 @@ void RS_set_scan_box(RSHandle *H,
         if (H->sim_concept == RSSimulationConceptNull) {
             printf(RS_INDENT "o No special concept\n");
         } else {
+            if (H->sim_concept & RSSimulationConceptBoundedParticleVelocity) {
+                printf(RS_INDENT "o B - Bounded Particle Velocity\n");
+            }
             if (H->sim_concept & RSSimulationConceptDraggedBackground) {
                 printf(RS_INDENT "o D - Dragged Background\n");
             }
-            if (H->sim_concept & RSSimulationConceptBoundedParticleVelocity) {
-                printf(RS_INDENT "o B - Bounded Particle Velocity\n");
+            if (H->sim_concept & RSSimulationConceptTransparentBackground) {
+                printf(RS_INDENT "o T - Transparent Background\n");
             }
             if (H->sim_concept & RSSimulationConceptUniformDSDScaledRCS) {
                 printf(RS_INDENT "o U - Uniform DSD with Scaled RCS\n");
@@ -1737,6 +1748,7 @@ void RS_set_scan_box(RSHandle *H,
 
     // Now, we actually set it to suggested debris count
 	H->num_scats = preferred_n;
+    H->status |= RSStatusPopulationDefined;
 
     // Anchor lines to show the volume of interest, which was set by the user. The number is well more than enough
 	H->num_anchor_lines  = 8 * (naz + nel);
@@ -1992,7 +2004,7 @@ void RS_set_debris_count(RSHandle *H, const int debris_id, const size_t count) {
     }
 
     if (H->sim_tic > 0) {
-        RS_update_debris_count(H);
+        RS_update_origins_offsets(H);
         
 #if defined (_USE_GCL_)
         
@@ -2049,7 +2061,7 @@ RSVolume RS_get_domain(RSHandle *H) {
 }
 
 
-void RS_update_debris_count(RSHandle *H) {
+void RS_update_origins_offsets(RSHandle *H) {
     
     int i, k;
     
@@ -2059,14 +2071,27 @@ void RS_update_debris_count(RSHandle *H) {
         rsprint("Error. Number of workers = 0.");
         return;
     }
-    
+
+    // Divide the scatter bodies into (num_workers) chunks
+    const size_t sub_num_scats = H->num_scats / MAX(1, H->num_workers);
+
+    size_t offset = 0;
+    for (i = 0; i < H->num_workers; i++) {
+        H->offset[i] = offset;
+        H->worker[i].num_scats = sub_num_scats;
+        if (H->verb > 2) {
+            rsprint("worker[%d]   num_scats = %s   offset = %s", i, commaint(sub_num_scats), commaint(H->offset[i]));
+        }
+        offset += sub_num_scats;
+    }
+
     k = RS_MAX_DEBRIS_TYPES;
     while (k > 1) {
         k--;
         count -= H->debris_population[k];
     }
     if (H->debris_population[0] != count) {
-        rsprint("Error. Inconsistent debris counts");
+        rsprint("Error. Inconsistent debris counts.");
         return;
     }
 
@@ -2081,8 +2106,7 @@ void RS_update_debris_count(RSHandle *H) {
             if (H->debris_population[k] == 0) {
                 break;
             }
-            //printf("                 o Global debris_population[%d] = %s\n", k, commaint(H->debris_population[k]));
-            printf(RS_INDENT "o Global debris_population[%d] = %s (%s scatterers / resolution cell)\n", k, commaint(H->debris_population[k]), commafloat((float)H->debris_population[k] / nvol));
+            printf(RS_INDENT "o Global population[%d] = %s (%s scatterers / resolution cell)\n", k, commaint(H->debris_population[k]), commafloat((float)H->debris_population[k] / nvol));
         }
     }
     
@@ -2122,9 +2146,9 @@ void RS_update_debris_count(RSHandle *H) {
     
     if (H->verb > 2) {
         for (i = 0; i < H->num_workers; i++) {
-            rsprint("RS : worker[%d] with total population %s  offset %s\n", i, commaint(H->worker[i].num_scats), commaint(H->worker[i].debris_global_offset));
+            rsprint("RS : worker[%d] with total population %s  offset %s\n", i, commaint(H->worker[i].num_scats), commaint(H->offset[i]));
             for (k = 0; k < H->num_body_types; k++) {
-                printf(RS_INDENT "o debris_population[%d] - [ %9s, %9s, %9s ]\n", k,
+                printf(RS_INDENT "o Local population[%d] - [ %9s, %9s, %9s ]\n", k,
                        commaint(H->worker[i].debris_origin[k]),
                        commaint(H->worker[i].debris_population[k]),
                        commaint(H->worker[i].debris_origin[k] + H->worker[i].debris_population[k]));
@@ -2239,8 +2263,6 @@ void RS_set_dsd_to_mp_with_sizes(RSHandle *H, const float *ds, const int count) 
 
 void RS_set_dsd_to_mp(RSHandle *H) {
     float ds[] = {0.001f, 0.002f, 0.003f, 0.004f, 0.005f};
-    //float ds[] = {0.001f, 0.003f, 0.005f};
-    //float ds[] = {0.003f, 0.004f, 0.005f, 0.006f};
 
     RS_set_dsd_to_mp_with_sizes(H, ds, sizeof(ds) / sizeof(float));
 }
@@ -2264,103 +2286,18 @@ void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const flo
                 table.dx, table.x0, table.xm, table_size);
     }
     
-//    cl_image_format format = {CL_RGBA, CL_FLOAT};
-//    
-//#if defined (CL_VERSION_1_2)
-//    
-//    cl_image_desc desc;
-//    desc.image_type = CL_MEM_OBJECT_IMAGE1D;
-//    desc.image_width  = table_size;
-//    desc.image_height = 1;
-//    desc.image_depth  = 1;
-//    desc.image_array_size = 0;
-//    desc.image_row_pitch = desc.image_width * sizeof(cl_float4);
-//    desc.image_slice_pitch = desc.image_height * desc.image_row_pitch;
-//    desc.num_mip_levels = 0;
-//    desc.num_samples = 0;
-//    desc.buffer = NULL;
-//    
-//#endif
-//    
-//#if defined (_USE_GCL_)
-//    
-//    for (i = 0; i < H->num_workers; i++) {
-//        if (H->worker[i].rcs_ellipsoid != NULL) {
-//            if (H->verb > 1) {
-//                rsprint("worker[%d] setting RCS of ellipsoids.", i);
-//            }
-//            gcl_release_image(H->worker[i].rcs_ellipsoid);
-//            H->worker[i].mem_size -= (cl_uint)(H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionMaximum] + 1.0f) * sizeof(cl_float4);
-//        }
-//        H->worker[i].rcs_ellipsoid = gcl_create_image(&format, table_size, 1, 1, H->worker[i].surf_rcs_ellipsoids);
-//        if (H->worker[i].rcs_ellipsoid == NULL) {
-//            fprintf(stderr, "%s : RS : Error creating RCS of ellipsoid table on CL device.\n", now());
-//            return;
-//        }
-//        for (int i = 0; i < 5; i++ ) {
-//            printf("weights[%d] = %.3e %.3e %.3e %.3e ...\n", i, weights[i].s0, weights[i].s1, weights[i].s2, weights[i].s3);
-//        }
-//        dispatch_async(H->worker[i].que, ^{
-//            size_t origin[3] = {0, 0, 0};
-//            size_t region[3] = {table_size, 1, 1};
-//            gcl_copy_ptr_to_image(H->worker[i].rcs_ellipsoid, (void *)weights, origin, region);
-//            dispatch_semaphore_signal(H->worker[i].sem);
-//        });
-//    }
-//    
-//    for (i = 0; i < H->num_workers; i++) {
-//        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
-//    }
-//    
-//#else
-//    
-//    cl_int ret;
-//    cl_mem_flags flags = CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR;
-//
-//    for (i = 0; i < H->num_workers; i++) {
-//        if (H->worker[i].rcs_ellipsoid != NULL) {
-//            if (H->verb > 1) {
-//                rsprint("worker[%d] setting RCS of ellipsoids.", now(), i);
-//            }
-//            clReleaseMemObject(H->worker[i].rcs_ellipsoid);
-//        }
-//        if (H->verb > 2) {
-//            rsprint("worker[%d] creating RCS of ellipsoids (cl_mem) & copying data from %p.\n", i, table.data);
-//        }
-//        
-//        #if defined (CL_VERSION_1_2)
-//        
-//        H->worker[i].rcs_ellipsoid = clCreateImage(H->worker[i].context, flags, &format, &desc, (void *)weights, &ret);
-//        
-//        #else
-//        
-//        H->worker[i].rcs_ellipsoid = clCreateImage2D(H->worker[i].context, flags, &format, table_size, 1, table_size * sizeof(cl_float4), (void *)weights, &ret);
-//        
-//        #endif
-//        
-//        if (ret != CL_SUCCESS) {
-//            rsprint("Error creating RCS of ellipsoid table on CL device.");
-//            return;
-//        }
-//        if (H->verb > 2) {
-//            rsprint("worker[%d] created RCS of ellipsoids @ %p.", i, H->worker[i].rcs_ellipsoid);
-//        }
-//    }
-//    
-//#endif
-    
 #if defined (_USE_GCL_)
     
     for (i = 0; i < H->num_workers; i++) {
         if (H->worker[i].rcs_ellipsoid != NULL) {
             if (H->verb > 1) {
-                rsprint("worker[%d] setting RCS of ellipsoids.", i);
+                rsprint("worker[%d] setting RCS of ellipsoids.\n", i);
             }
             gcl_free(H->worker[i].rcs_ellipsoid);
         }
         H->worker[i].rcs_ellipsoid = gcl_malloc(table_size * sizeof(cl_float4), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
         if (H->worker[i].rcs_ellipsoid == NULL) {
-            rsprint("Error. Unable to create RCS of ellipsoid table on CL device.");
+            rsprint("Error. Unable to create RCS of ellipsoid table on CL device.\n");
             return;
         }
     }
@@ -2371,16 +2308,16 @@ void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const flo
     for (i = 0; i < H->num_workers; i++) {
         if (H->worker[i].rcs_ellipsoid != NULL) {
             if (H->verb > 1) {
-                rsprint("worker[%d] setting RCS of ellipsoid.", i);
+                rsprint("worker[%d] setting RCS of ellipsoid.\n", i);
             }
             clReleaseMemObject(H->worker[i].rcs_ellipsoid);
         }
         if (H->verb > 2) {
-            rsprint("worker[%d] creating RCS of ellipsoid (cl_mem) & copying data from %p.", i, table.data);
+            rsprint("worker[%d] creating RCS of ellipsoid (cl_mem) & copying data from %p.\n", i, table.data);
         }
         H->worker[i].rcs_ellipsoid = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(cl_float4), table.data, &ret);
         if (ret != CL_SUCCESS) {
-            rsprint("Error. Unable to create RCS of ellipsoid table on CL device.");
+            rsprint("Error. Unable to create RCS of ellipsoid table on CL device.\n");
             return;
         }
         if (H->verb > 2) {
@@ -2397,7 +2334,7 @@ void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const flo
         H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionMaximum] = table.xm;
         H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionUserConstant] = H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale];
         if (H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionUserConstant] == 0.0f) {
-            rsprint("WARNING: Drop concentration scaling not set.");
+            rsprint("WARNING: Drop concentration scale not set.");
         }
         H->worker[i].mem_usage += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
     }
@@ -3691,13 +3628,10 @@ void RS_io_test(RSHandle *H) {
 
 void RS_populate(RSHandle *H) {
 
-    int i, k;
+    int i, k, n, w;
 
-    // Divide the scatter bodies into (num_workers) chunks
-    const size_t sub_num_scats = H->num_scats / MAX(1, H->num_workers);
-    
     if (H->verb > 1) {
-        rsprint("RS_populate()");
+        rsprint("RS_populate()\n");
     }
     
 	if (H->num_scats > RS_MAX_NUM_SCATS) {
@@ -3707,8 +3641,8 @@ void RS_populate(RSHandle *H) {
 	
     size_t max_var_size;
     CL_CHECK(clGetDeviceInfo(H->worker[0].dev, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(max_var_size), &max_var_size, NULL));
-    if (sub_num_scats * sizeof(cl_float4) > max_var_size) {
-        rsprint("Error. Every scatterer attribute occupies %s B > %s B.", commaint(sub_num_scats * sizeof(cl_float4)), commaint(max_var_size));
+    if (H->worker[0].num_scats * sizeof(cl_float4) > max_var_size) {
+        rsprint("Error. Every scatterer attribute occupies %s B > %s B.", commaint(H->worker[0].num_scats * sizeof(cl_float4)), commaint(max_var_size));
         exit(EXIT_FAILURE);
     }
     
@@ -3735,8 +3669,6 @@ void RS_populate(RSHandle *H) {
 	if (H->scat_pos != NULL) {
 		RS_free_scat_memory(H);
 	}
-
-    H->status = RSStatusDomainNull;
 
     posix_memalign((void **)&H->scat_pos, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
 	posix_memalign((void **)&H->scat_vel, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
@@ -3802,8 +3734,10 @@ void RS_populate(RSHandle *H) {
         }
     }
 
+    // Update scatterer origin and offset of each worker
+    RS_update_origins_offsets(H);
+
     // Initialize the scatter body positions on CPU, will upload to the GPU later
-    //RS_init_scat_pos(H);
     srand(H->random_seed);
     
     RSVolume domain = RS_get_domain(H);
@@ -3811,80 +3745,101 @@ void RS_populate(RSHandle *H) {
     //
 	// Initialize the scatter body positions & velocities
 	//
-	for (i = 0; i < H->num_scats; i++) {
-		H->scat_pos[i].x = (float)rand() / RAND_MAX * domain.size.x + domain.origin.x;
-		H->scat_pos[i].y = (float)rand() / RAND_MAX * domain.size.y + domain.origin.y;
-		H->scat_pos[i].z = (float)rand() / RAND_MAX * domain.size.z + domain.origin.z;
-        H->scat_pos[i].w = 0.0f;                       // Use this to store drop radius in m
-        
-		H->scat_aux[i].s0 = 0.0f;                      // range
-        H->scat_aux[i].s1 = (float)rand() / RAND_MAX;  // age
-		H->scat_aux[i].s2 = 0.0f;                      // dsd bin index
-		H->scat_aux[i].s3 = 1.0f;                      // angular weight [0.0, 1.0]
-		
-		H->scat_vel[i].x = 0.0f;                       // u component of velocity
-		H->scat_vel[i].y = 0.0f;                       // v component of velocity
-		H->scat_vel[i].z = 0.0f;                       // w component of velocity
-		H->scat_vel[i].w = 0.0f;                       // n/a
+    for (k = 0; k < H->num_body_types; k++) {
+        for (w = 0; w < H->num_workers; w++) {
 
-        // At the reference
-        H->scat_ori[i].x = 0.0f;                       // x of quaternion
-        H->scat_ori[i].y = 0.0f;                       // y of quaternion
-        H->scat_ori[i].z = 0.0f;                       // z of quaternion
-        H->scat_ori[i].w = 1.0f;                       // w of quaternion
-        
-        // Facing the sky
-//        H->scat_ori[i].x =  0.0f;                      // x of quaternion
-//        H->scat_ori[i].y = -0.707106781186547f;        // y of quaternion
-//        H->scat_ori[i].z =  0.0f;                      // z of quaternion
-//        H->scat_ori[i].w =  0.707106781186548f;        // w of quaternion
+            i = (int)(H->offset[w] + H->worker[w].debris_origin[k]);
 
-        // Facing the beam
-        H->scat_ori[i].x =  0.5f;                      // x of quaternion
-        H->scat_ori[i].y = -0.5f;                      // y of quaternion
-        H->scat_ori[i].z = -0.5f;                      // z of quaternion
-        H->scat_ori[i].w =  0.5f;                      // w of quaternion
-        
-        // Some other tests
-//        H->scat_ori[i].x =  0.5f;                      // x of quaternion
-//        H->scat_ori[i].y = -0.5f;                      // y of quaternion
-//        H->scat_ori[i].z =  0.5f;                      // z of quaternion
-//        H->scat_ori[i].w =  0.5f;                      // w of quaternion
+            for (n = 0; n < H->worker[k].debris_population[k]; n++) {
+                H->scat_pos[i].x = (float)rand() / RAND_MAX * domain.size.x + domain.origin.x;
+                H->scat_pos[i].y = (float)rand() / RAND_MAX * domain.size.y + domain.origin.y;
+                H->scat_pos[i].z = (float)rand() / RAND_MAX * domain.size.z + domain.origin.z;
+                H->scat_pos[i].w = 0.0f;                       // Use this to store drop radius in m
 
-        // Rotate by theta
-//        float theta = -70.0f / 180.0f * M_PI;
-//        H->scat_ori[i].x = 0.0f;
-//        H->scat_ori[i].y = sinf(0.5f * theta);
-//        H->scat_ori[i].z = 0.0f;
-//        H->scat_ori[i].w = cosf(0.5f * theta);
-        
-        // Tumbling vector for orientation update
-        H->scat_tum[i].x = 0.0f;                       // x of quaternion
-        H->scat_tum[i].y = 0.0f;                       // y of quaternion
-        H->scat_tum[i].z = 0.0f;                       // z of quaternion
-        H->scat_tum[i].w = 1.0f;                       // w of quaternion
+                H->scat_aux[i].s0 = 0.0f;                      // range
+                H->scat_aux[i].s1 = (float)rand() / RAND_MAX;  // age
+                H->scat_aux[i].s2 = 0.0f;                      // dsd bin index
+                H->scat_aux[i].s3 = 1.0f;                      // angular weight [0.0, 1.0]
 
-        // Initial return from each point
-        H->scat_rcs[i].s0 = 1.0f;                      // sh_real of rcs
-		H->scat_rcs[i].s1 = 0.0f;                      // sh_imag of rcs
-		H->scat_rcs[i].s2 = 1.0f;                      // sv_real of rcs
-		H->scat_rcs[i].s3 = 0.0f;                      // sv_imag of rcs
-        
-        // Random seeds
-        H->scat_rnd[i].s0 = rand();                    // random seed
-        H->scat_rnd[i].s1 = rand();                    // random seed
-        H->scat_rnd[i].s2 = rand();                    // random seed
-        H->scat_rnd[i].s3 = rand();                    // random seed
+                H->scat_vel[i].x = 0.0f;                       // u component of velocity
+                H->scat_vel[i].y = 0.0f;                       // v component of velocity
+                H->scat_vel[i].z = 0.0f;                       // w component of velocity
+                H->scat_vel[i].w = 0.0f;                       // n/a
+
+                // At the reference
+                H->scat_ori[i].x = 0.0f;                       // x of quaternion
+                H->scat_ori[i].y = 0.0f;                       // y of quaternion
+                H->scat_ori[i].z = 0.0f;                       // z of quaternion
+                H->scat_ori[i].w = 1.0f;                       // w of quaternion
+
+#if defined(QUAT_INIT_FACE_SKY)
+
+                // Facing the sky
+                H->scat_ori[i].x =  0.0f;                      // x of quaternion
+                H->scat_ori[i].y = -0.707106781186547f;        // y of quaternion
+                H->scat_ori[i].z =  0.0f;                      // z of quaternion
+                H->scat_ori[i].w =  0.707106781186548f;        // w of quaternion
+
+#elif defined(QUAT_INIT_OTHER)
+
+                // Some other tests
+                H->scat_ori[i].x =  0.5f;                      // x of quaternion
+                H->scat_ori[i].y = -0.5f;                      // y of quaternion
+                H->scat_ori[i].z =  0.5f;                      // z of quaternion
+                H->scat_ori[i].w =  0.5f;                      // w of quaternion
+
+#elif defined(QUAT_INIT_ROTATE_THETA)
+
+                // Rotate by theta
+                float theta = -70.0f / 180.0f * M_PI;
+                H->scat_ori[i].x = 0.0f;
+                H->scat_ori[i].y = sinf(0.5f * theta);
+                H->scat_ori[i].z = 0.0f;
+                H->scat_ori[i].w = cosf(0.5f * theta);
+
+#endif
+
+                // Facing the beam
+                H->scat_ori[i].x =  0.5f;                      // x of quaternion
+                H->scat_ori[i].y = -0.5f;                      // y of quaternion
+                H->scat_ori[i].z = -0.5f;                      // z of quaternion
+                H->scat_ori[i].w =  0.5f;                      // w of quaternion
+
+                // Tumbling vector for orientation update
+                H->scat_tum[i].x = 0.0f;                       // x of quaternion
+                H->scat_tum[i].y = 0.0f;                       // y of quaternion
+                H->scat_tum[i].z = 0.0f;                       // z of quaternion
+                H->scat_tum[i].w = 1.0f;                       // w of quaternion
+
+                // Initial return from each point
+                H->scat_rcs[i].s0 = 1.0f;                      // sh_real of rcs
+                H->scat_rcs[i].s1 = 0.0f;                      // sh_imag of rcs
+                H->scat_rcs[i].s2 = 1.0f;                      // sv_real of rcs
+                H->scat_rcs[i].s3 = 0.0f;                      // sv_imag of rcs
+                
+                // Random seeds
+                H->scat_rnd[i].s0 = rand();                    // random seed
+                H->scat_rnd[i].s1 = rand();                    // random seed
+                H->scat_rnd[i].s2 = rand();                    // random seed
+                H->scat_rnd[i].s3 = rand();                    // random seed
+
+                i++;
+            }
+        }
 	}
     
     // Volume of the simulation domain (m^3)
     float vol = H->sim_desc.s[RSSimulationDescriptionBoundSizeX] * H->sim_desc.s[RSSimulationDescriptionBoundSizeY] * H->sim_desc.s[RSSimulationDescriptionBoundSizeZ];
-    float drops_per_scat = (vol * H->dsd_nd_sum) / H->num_scats;
+    float drops_per_scat = (vol * H->dsd_nd_sum) / H->debris_population[0];
 
-    sprintf(H->summary + strlen(H->summary), "Drops / scatterer = %s\n", commafloat(drops_per_scat));
+    sprintf(H->summary + strlen(H->summary), "Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->debris_population[0]));
+    rsprint("Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->debris_population[0]));
     
     // Store a copy of concentration scale in simulation description
     H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] = sqrt(drops_per_scat);
+
+    // Re-initialize random seed
+    srand(H->random_seed + H->random_seed);
 
     // Parameterized drop radius as scat_pos.w if DSD has been set
     // May want to add maximum relaxation time of each drop size
@@ -3893,30 +3848,40 @@ void RS_populate(RSHandle *H) {
     int bin;
     if (H->dsd_name != RSDropSizeDistributionUndefined) {
         if (H->sim_concept & RSSimulationConceptUniformDSDScaledRCS) {
-            for (i = 0; i < H->num_scats; i++) {
-                a = (float)rand() / RAND_MAX;
-                bin = (int)(a * (float)H->dsd_count);
-                H->dsd_pop[bin]++;
-                H->scat_pos[i].w = H->dsd_r[bin];                                  // set the drop radius
-                H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // set the dsd bin index (temporary)
+            for (w = 0; w < H->num_workers; w++) {
+                i = (int)(H->offset[w] + H->worker[w].debris_origin[0]);
+                for (n = 0; n < H->worker[w].debris_population[0]; n++) {
+                    a = (float)rand() / RAND_MAX;
+                    bin = (int)(a * (float)H->dsd_count);
+                    H->dsd_pop[bin]++;
+                    H->scat_pos[i].w = H->dsd_r[bin];                                  // set the drop radius
+                    H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // set the dsd bin index (temporary)
+
+                    i++;
+                }
             }
         } else {
-            for (i = 0; i < H->num_scats; i++) {
-                a = (float)rand() / RAND_MAX;
-                k = H->dsd_count;
-                bin = 0;
-                while (k > 0) {
-                    k--;
-                    if (a >= H->dsd_cdf[k]) {
-                        bin = k;
-                        break;
+            for (w = 0; w < H->num_workers; w++) {
+                i = (int)(H->offset[w] + H->worker[w].debris_origin[0]);
+                for (n = 0; n < H->worker[w].debris_population[0]; n++) {
+                    a = (float)rand() / RAND_MAX;
+                    k = H->dsd_count;
+                    bin = 0;
+                    while (k > 0) {
+                        k--;
+                        if (a >= H->dsd_cdf[k]) {
+                            bin = k;
+                            break;
+                        }
                     }
+                    H->dsd_pop[bin]++;
+                    H->scat_pos[i].w = H->dsd_r[bin];                                  // set the drop radius
+                    H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // set the dsd bin index
+
+                    i++;
                 }
-                H->dsd_pop[bin]++;
-                H->scat_pos[i].w = H->dsd_r[bin];                                  // set the drop radius
-                H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // set the dsd bin index
             }
-            
+
             // Replace a few for debugging purpose
             #if defined(DEBUG_DSD)
             H->scat_pos[0].w = 0.0025f;
@@ -3928,7 +3893,7 @@ void RS_populate(RSHandle *H) {
         sprintf(H->summary + strlen(H->summary),
             "DSD Specifications:\n");
         for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
-            sprintf(H->summary + strlen(H->summary), "  o %.2f mm - P %.5f / %s particles\n", 2000.0f * H->dsd_r[i], (float)H->dsd_pop[i] / (float)H->num_scats, commaint(H->dsd_pop[i]));
+            sprintf(H->summary + strlen(H->summary), "  o %.2f mm - P %.5f / %s particles\n", 2000.0f * H->dsd_r[i], (float)H->dsd_pop[i] / (float)H->debris_population[0], commaint(H->dsd_pop[i]));
         }
         if (H->dsd_count > 8) {
             sprintf(H->summary + strlen(H->summary), "  o  :      -      :     /  :     /\n");
@@ -3936,13 +3901,13 @@ void RS_populate(RSHandle *H) {
             i = MAX(4, H->dsd_count - 1);
         }
         for (; i < H->dsd_count; i++) {
-            sprintf(H->summary + strlen(H->summary), "  o %.2f mm - P %.5f / %s particles\n", 2000.0f * H->dsd_r[i], (float)H->dsd_pop[i] / (float)H->num_scats, commaint(H->dsd_pop[i]));
+            sprintf(H->summary + strlen(H->summary), "  o %.2f mm - P %.5f / %s particles\n", 2000.0f * H->dsd_r[i], (float)H->dsd_pop[i] / (float)H->debris_population[0], commaint(H->dsd_pop[i]));
         }
         
         if (H->verb) {
             rsprint("Actual DSD Specifications:");
             for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
-                printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %s particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->num_scats, commaint(H->dsd_pop[i]));
+                printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %s particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->debris_population[0], commaint(H->dsd_pop[i]));
             }
             if (H->dsd_count > 8) {
                 printf(RS_INDENT "o  :      -      :     /  :     /\n");
@@ -3950,7 +3915,7 @@ void RS_populate(RSHandle *H) {
                 i = MAX(4, H->dsd_count - 1);
             }
             for (; i < H->dsd_count; i++) {
-                printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %s particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->num_scats, commaint(H->dsd_pop[i]));
+                printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %s particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->debris_population[0], commaint(H->dsd_pop[i]));
             }
         }
     } else {
@@ -4019,20 +3984,10 @@ void RS_populate(RSHandle *H) {
     //
 	// GPU memory allocation
 	//
-	
-	size_t offset = 0;
-	
     for (i = 0; i < H->num_workers; i++) {
-        H->offset[i] = offset;
-        if (H->verb > 1) {
-            rsprint("worker[%d] num_scats = %s   offset = %s", i, commaint(sub_num_scats), commaint(offset));
-        }
-        RS_worker_malloc(H, i, sub_num_scats, offset);
-        offset += sub_num_scats;
+        RS_worker_malloc(H, i);
     }
 	
-    RS_update_debris_count(H);
-    
 #if defined (_USE_GCL_)
     
     CGLContextObj cobj = CGLGetCurrentContext();
@@ -4813,8 +4768,8 @@ void RS_show_radar_params(RSHandle *H) {
 
 
 static void RS_show_scat_i(RSHandle *H, const size_t i) {
-	printf(" %7lu - ( %9.2f, %9.2f, %9.2f, %4.2f )  %7.2f %7.2f %7.2f   %7.4f %7.4f %7.4f %7.4f\n", i,
-		   H->scat_pos[i].x, H->scat_pos[i].y, H->scat_pos[i].z, H->scat_pos[i].w,
+	printf(" %7lu - ( %9.2f, %9.2f, %9.2f, %4.1f )  %7.2f %7.2f %7.2f   %7.4f %7.4f %7.4f %7.4f\n", i,
+		   H->scat_pos[i].x, H->scat_pos[i].y, H->scat_pos[i].z, 2000.0f * H->scat_pos[i].w,
 		   H->scat_vel[i].x, H->scat_vel[i].y, H->scat_vel[i].z,
            H->scat_ori[i].x, H->scat_ori[i].y, H->scat_ori[i].z, H->scat_ori[i].w);
 }
@@ -4830,18 +4785,21 @@ static void RS_show_rcs_i(RSHandle *H, const size_t i) {
 
 void RS_show_scat_pos(RSHandle *H) {
 	size_t i, w;
-    printf("positions:\n");
+    printf("background positions:\n");
     for (w = 0; w < H->num_workers; w++) {
         for (i = H->worker[w].debris_origin[0];
              i < H->worker[w].debris_origin[0] + H->worker[w].debris_population[0];
              i += H->worker[w].debris_population[0] / 9) {
-            RS_show_scat_i(H, i);
+            RS_show_scat_i(H, H->offset[w] + i);
         }
+    }
+    printf("debris[1] positions:\n");
+    for (w = 0; w < H->num_workers; w++) {
         if (H->worker[w].debris_population[1]) {
             for (i = H->worker[w].debris_origin[1];
                  i < H->worker[w].debris_origin[1] + H->worker[w].debris_population[1];
                  i += H->worker[w].debris_population[1] / 9) {
-                RS_show_scat_i(H, i);
+                RS_show_scat_i(H, H->offset[w] + i);
             }
         }
     }
@@ -4853,8 +4811,7 @@ void RS_show_scat_sig(RSHandle *H) {
     printf("background:\n");
     for (w = 0; w < H->num_workers; w++) {
         for (i = 0; i < H->worker[w].debris_population[0]; i += H->worker[w].debris_population[0] / 9) {
-        //for (i = 0; i < H->worker[w].debris_population[0]; i++) {
-            RS_show_rcs_i(H, H->worker[w].debris_global_offset + H->worker[w].debris_origin[0] + i);
+            RS_show_rcs_i(H, H->offset[w] + H->worker[w].debris_origin[0] + i);
         }
     }
     if (H->debris_population[1] == 0) {
@@ -4865,7 +4822,7 @@ void RS_show_scat_sig(RSHandle *H) {
     printf("debris type #1:\n");
     for (w = 0; w < H->num_workers; w++) {
         for (i = 0; i < H->worker[w].debris_population[1]; i += H->worker[w].debris_population[1] / 9) {
-            RS_show_rcs_i(H, H->worker[w].debris_global_offset + H->worker[w].debris_origin[1] + i);
+            RS_show_rcs_i(H, H->offset[w] + H->worker[w].debris_origin[1] + i);
         }
     }
 }
@@ -4940,6 +4897,7 @@ RSBox RS_suggest_scan_domain(RSHandle *H, const int nbeams) {
     return box;
 }
 
+
 void RS_compute_rcs_ellipsoids(RSHandle *H) {
     
     int i;
@@ -4949,7 +4907,7 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
     const cl_double4 epsilon_r_minus_one = (cl_double4){{78.669, 18.2257, 78.669, 18.2257}};
 
     if (H->verb > 1) {
-        rsprint("RS_compute_rcs_ellipsoids()");
+        rsprint("RS_compute_rcs_ellipsoids()\n");
     }
     
     //
@@ -4957,9 +4915,7 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
     // Coefficient 1.0e-9 for scaling the volume to unit of m^3
     //
     if (H->verb) {
-        i = (int)roundf((H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] * H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale]));
-        rsprint("Drops / scatterer = %s", commaint(i));
-        rsprint("Drop concentration scaling = %s  (k_0 = %.4f)", commafloat(H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale]), k_0);
+        rsprint("Drop concentration scaling = %s  (k_0 = %.4f)\n", commafloat(H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale]), k_0);
     }
     const cl_double sc = k_0 * k_0 / (4.0f * M_PI * epsilon_0) * 1.0e-9f * H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale];
     
@@ -4967,72 +4923,81 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
     const size_t n = 96;
     
     cl_float4 *table = (cl_float4 *)malloc(n * sizeof(cl_float4));
-    
-    for (i = 0; i < n; i++) {
-        // Diameter (mm) to be computed
-        cl_double d = 0.5 + (cl_double)i * 0.1;
-        cl_double d2 = d * d;
-        cl_double d3 = d2 * d;
-        cl_double d4 = d3 * d;
-        cl_double rba = 1.0048 + (0.0057e-1 * d) - (2.628e-2 * d2) + (3.682e-3 * d3) - (1.677e-4 * d4);
-        cl_double rab = 1.0f / rba;
-        cl_double fsq = rab * rab - 1.0;
-        cl_double f = sqrt(fsq);
-        cl_double lz = (1.0 + fsq) / fsq * (1.0 - atan(f) / f);
-        cl_double lx = (1.0 - lz) * 0.5;
-        cl_double vol = M_PI * d3 / 6.0;
-        cl_double4 numer = double_complex_multiply((cl_double4){{vol * epsilon_0, 0.0, vol * epsilon_0, 0.0}}, epsilon_r_minus_one);
-        cl_double4 denom = {{
-            lx * epsilon_r_minus_one.s0 + 1.0,
-            lx * epsilon_r_minus_one.s1,
-            lz * epsilon_r_minus_one.s2 + 1.0,
-            lz * epsilon_r_minus_one.s3
-        }};
-        cl_double4 alxz = double_complex_divide(numer, denom);
-        // Reduced precision at the very last step
-        table[i].s0 = (cl_float)(sc * alxz.s0);
-        table[i].s1 = (cl_float)(sc * alxz.s1);
-        table[i].s2 = (cl_float)(sc * alxz.s2);
-        table[i].s3 = (cl_float)(sc * alxz.s3);
-        
-        #ifdef DEBUG_HEAVY
-        rsprint("D = %.2fmm  rba %.4f  rab %.4f  lz %.4f  lx %.4f  numer = %.3e %.3e %.3e %.3e  denom = %.3f %.3f %.3f %.3f  alxz = %.3e %.3e %.3e %.3e  lx/lz = %.3e %.3e %.3e %.3e",
-                d, rba, rab, lz, lx, numer.s0, numer.s1, numer.s2, numer.s3, denom.s0, denom.s1, denom.s2, denom.s3, alxz.s0, alxz.s1, alxz.s2, alxz.s3, table[i].s0, table[i].s1, table[i].s2, table[i].s3);
-        #endif
-    }
-    
-    // Each size has same probably of occurence, the return power is scaled by the ratio of the
-    if (H->sim_concept & RSSimulationConceptUniformDSDScaledRCS) {
-        
-        int k;
-        float s;
-        const float p = 1.0f / (float)H->dsd_count;
-        cl_float4 *table_copy = (cl_float4 *)malloc(n * sizeof(cl_float4));
-        memcpy(table_copy, table, n * sizeof(cl_float4));
-        memset(table, 0, n * sizeof(cl_float4));
 
-        snprintf(H->summary + strlen(H->summary), sizeof(H->summary), "Drop RCS Scaling:\n");
-        for (i = 0; i < H->dsd_count; i++) {
-            k = (int)(H->dsd_r[i] * 20000.0f) - 5;
-            s = sqrtf(H->dsd_pdf[i] / p);
-            if (H->verb) {
-                printf(RS_INDENT "o %.2f mm scale by %.4f / %.4f = %.4f = %.2f dB  k = %d\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], p, s, 20.0f * log10f(s), k);
-            }
-            snprintf(H->summary + strlen(H->summary), sizeof(H->summary), "  o %.2f mm %.5f -> %.2f dB\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], 20.0f * log10f(s));
-            table[k].s0 = table_copy[k].s0 * s;
-            table[k].s1 = table_copy[k].s1 * s;
-            table[k].s2 = table_copy[k].s2 * s;
-            table[k].s3 = table_copy[k].s3 * s;
-        }
-
-        #ifdef DEBUG_HEAVY
+    if (H->sim_concept & RSSimulationConceptTransparentBackground) {
         for (i = 0; i < n; i++) {
-            cl_double d = 0.5 + (cl_double)i * 0.1;
-            rsprint("D = %.2fmm  %.3e %.3e %.3e %.3e --> %.3e %.3e %.3e %.3e", d, table_copy[i].s0, table_copy[i].s1, table_copy[i].s2, table_copy[i].s3, table[i].s0, table[i].s1, table[i].s2, table[i].s3);
+            table[i].s0 = 0.0f;
+            table[i].s1 = 0.0f;
+            table[i].s2 = 0.0f;
+            table[i].s3 = 0.0f;
         }
-        #endif
-        
-        free(table_copy);
+    } else {
+        for (i = 0; i < n; i++) {
+            // Diameter (mm) to be computed
+            cl_double d = 0.5 + (cl_double)i * 0.1;
+            cl_double d2 = d * d;
+            cl_double d3 = d2 * d;
+            cl_double d4 = d3 * d;
+            cl_double rba = 1.0048 + (0.0057e-1 * d) - (2.628e-2 * d2) + (3.682e-3 * d3) - (1.677e-4 * d4);
+            cl_double rab = 1.0f / rba;
+            cl_double fsq = rab * rab - 1.0;
+            cl_double f = sqrt(fsq);
+            cl_double lz = (1.0 + fsq) / fsq * (1.0 - atan(f) / f);
+            cl_double lx = (1.0 - lz) * 0.5;
+            cl_double vol = M_PI * d3 / 6.0;
+            cl_double4 numer = double_complex_multiply((cl_double4){{vol * epsilon_0, 0.0, vol * epsilon_0, 0.0}}, epsilon_r_minus_one);
+            cl_double4 denom = {{
+                lx * epsilon_r_minus_one.s0 + 1.0,
+                lx * epsilon_r_minus_one.s1,
+                lz * epsilon_r_minus_one.s2 + 1.0,
+                lz * epsilon_r_minus_one.s3
+            }};
+            cl_double4 alxz = double_complex_divide(numer, denom);
+            // Reduced precision at the very last step
+            table[i].s0 = (cl_float)(sc * alxz.s0);
+            table[i].s1 = (cl_float)(sc * alxz.s1);
+            table[i].s2 = (cl_float)(sc * alxz.s2);
+            table[i].s3 = (cl_float)(sc * alxz.s3);
+            
+            #ifdef DEBUG_HEAVY
+            rsprint("D = %.2fmm  rba %.4f  rab %.4f  lz %.4f  lx %.4f  numer = %.3e %.3e %.3e %.3e  denom = %.3f %.3f %.3f %.3f  alxz = %.3e %.3e %.3e %.3e  lx/lz = %.3e %.3e %.3e %.3e",
+                    d, rba, rab, lz, lx, numer.s0, numer.s1, numer.s2, numer.s3, denom.s0, denom.s1, denom.s2, denom.s3, alxz.s0, alxz.s1, alxz.s2, alxz.s3, table[i].s0, table[i].s1, table[i].s2, table[i].s3);
+            #endif
+        }
+
+        // Each size has same probably of occurence, the return power is scaled by the ratio of the
+        if (H->sim_concept & RSSimulationConceptUniformDSDScaledRCS) {
+
+            int k;
+            float s;
+            const float p = 1.0f / (float)H->dsd_count;
+            cl_float4 *table_copy = (cl_float4 *)malloc(n * sizeof(cl_float4));
+            memcpy(table_copy, table, n * sizeof(cl_float4));
+            memset(table, 0, n * sizeof(cl_float4));
+
+            snprintf(H->summary + strlen(H->summary), sizeof(H->summary), "Drop RCS Scaling:\n");
+            for (i = 0; i < H->dsd_count; i++) {
+                k = (int)(H->dsd_r[i] * 20000.0f) - 5;
+                s = sqrtf(H->dsd_pdf[i] / p);
+                if (H->verb) {
+                    printf(RS_INDENT "o %.2f mm scale by %.4f / %.4f = %.4f = %.2f dB  k = %d\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], p, s, 20.0f * log10f(s), k);
+                }
+                snprintf(H->summary + strlen(H->summary), sizeof(H->summary), "  o %.2f mm %.5f -> %.2f dB\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], 20.0f * log10f(s));
+                table[k].s0 = table_copy[k].s0 * s;
+                table[k].s1 = table_copy[k].s1 * s;
+                table[k].s2 = table_copy[k].s2 * s;
+                table[k].s3 = table_copy[k].s3 * s;
+            }
+
+#ifdef DEBUG_HEAVY
+            for (i = 0; i < n; i++) {
+                cl_double d = 0.5 + (cl_double)i * 0.1;
+                rsprint("D = %.2fmm  %.3e %.3e %.3e %.3e --> %.3e %.3e %.3e %.3e", d, table_copy[i].s0, table_copy[i].s1, table_copy[i].s2, table_copy[i].s3, table[i].s0, table[i].s1, table[i].s2, table[i].s3);
+            }
+#endif
+            
+            free(table_copy);
+        }
     }
 
     // Set table lookup in radius in mm

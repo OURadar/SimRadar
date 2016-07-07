@@ -236,8 +236,9 @@ typedef uint32_t RSSimulationConcept;
 enum RSSimulationConcept {
     RSSimulationConceptNull                        = 0,
     RSSimulationConceptDraggedBackground           = 1,
-    RSSimulationConceptBoundedParticleVelocity     = 1 << 1,
-    RSSimulationConceptUniformDSDScaledRCS         = 1 << 2
+    RSSimulationConceptTransparentBackground       = 1 << 1,
+    RSSimulationConceptBoundedParticleVelocity     = 1 << 2,
+    RSSimulationConceptUniformDSDScaledRCS         = 1 << 3
 };
 
 #pragma pack(push, 1)
@@ -257,7 +258,6 @@ typedef struct _rs_worker {
     // Scatter bodies
     size_t                 num_scats;
     
-    size_t                 debris_global_offset;
     size_t                 debris_origin[RS_MAX_DEBRIS_TYPES];
     size_t                 debris_population[RS_MAX_DEBRIS_TYPES];
     

@@ -34,10 +34,13 @@
 #define DTIME(T_begin, T_end)  ((double)(T_end.tv_sec - T_begin.tv_sec) + 1.0e-6 * (double)(T_end.tv_usec - T_begin.tv_usec))
 
 enum RSStatus {
-    RSStatusDomainNull                   = 0,
-    RSStatusDomainPopulated              = 1,
-    RSStatusScattererSignalNeedsUpdate   = 1 << 1,
-    RSStatusDebrisRCSNeedsUpdate         = 1 << 2
+    RSStatusNull                         = 0,
+    RSStatusPopulationDefined            = 1 << 1,
+    RSStatusOriginsOffsetsDefined        = 1 << 2,
+    RSStatusWorkersAllocated             = 1 << 3,
+    RSStatusDomainPopulated              = 1 << 4,
+    RSStatusScattererSignalNeedsUpdate   = 1 << 5,
+    RSStatusDebrisRCSNeedsUpdate         = 1 << 6
 };
 
 enum RS_CL_PASS_2 {

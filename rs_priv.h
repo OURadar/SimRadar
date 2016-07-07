@@ -106,10 +106,10 @@ cl_double4 double_complex_divide(const cl_double4 a, const cl_double4 b);
 
 void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char **src_ptr, cl_context_properties sharegroup, const char verb);
 void RS_worker_free(RSWorker *C);
-void RS_worker_malloc(RSHandle *H, const int worker_id, const size_t sub_num_scats, const size_t offset);
+void RS_worker_malloc(RSHandle *H, const int worker_id);
 
 void RS_merge_pulse_tmp(RSHandle *H);
-void RS_update_debris_count(RSHandle *H);
+void RS_update_origins_offsets(RSHandle *H);
 void RS_update_auxiliary_attributes(RSHandle *H);
 
 void RS_set_vel_data(RSHandle *H, const RSTable3D table);

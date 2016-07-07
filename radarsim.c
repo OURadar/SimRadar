@@ -68,7 +68,6 @@ typedef struct user_params {
     bool skip_questions;
     bool tight_box;
     bool show_progress;
-    bool no_background;
     bool resume_seed;
     
     char output_dir[1024];
@@ -161,6 +160,7 @@ void show_help() {
            "         Sets the simulation concepts to be used, which are OR together for\n"
            "         multiple values that can be combined together.\n"
            "            D - Dragged background.\n"
+           "            T - Transparent background.\n"
            "            U - Uniform rain drop size density with scaled RCS.\n"
            "            V - Bounded particle velocity.\n"
            "         Examples:\n"
@@ -483,7 +483,6 @@ int main(int argc, char *argv[]) {
     user.skip_questions    = false;
     user.show_progress     = true;
     user.tight_box         = false;
-    user.no_background     = false;
     user.resume_seed       = false;
     
     user.output_dir[0]     = '\0';
@@ -528,7 +527,6 @@ int main(int argc, char *argv[]) {
         {"tightbox"      , no_argument      , 0, 'T'},
         {"warmup"        , required_argument, 0, 'W'},
         {"azimuth"       , required_argument, 0, 'a'}, // ASCII 97 - 122 : a - z
-        {"no-background" , no_argument      , 0, 'b'},
         {"concept"       , required_argument, 0, 'c'},
         {"debris"        , required_argument, 0, 'd'},
         {"elevation"     , required_argument, 0, 'e'},
@@ -567,9 +565,6 @@ int main(int argc, char *argv[]) {
             case 'A':
                 user.quiet_mode = false;
                 break;
-            case 'b':
-                user.no_background = true;
-                break;
             case 'c':
                 concept = RSSimulationConceptNull;
                 if (strcasestr(optarg, "B")) {
@@ -580,6 +575,9 @@ int main(int argc, char *argv[]) {
                 }
                 if (strcasestr(optarg, "U")) {
                     concept |= RSSimulationConceptUniformDSDScaledRCS;
+                }
+                if (strcasestr(optarg, "T")) {
+                    concept |= RSSimulationConceptTransparentBackground;
                 }
                 break;
             case 'C':
@@ -742,7 +740,6 @@ int main(int argc, char *argv[]) {
         show_user_param("Output directory", user.output_dir, "", ValueTypeChar, 0);
         show_user_param("User random seed", &user.seed, "", ValueTypeInt, 0);
         show_user_param("User DSD profile", user.dsd_sizes, "mm", ValueTypeFloatArray, user.dsd_count);
-        show_user_param("No background return", &user.no_background, "", ValueTypeBool, 0);
         printf("----------------------------------------------\n");
     }
 
@@ -861,7 +858,7 @@ int main(int argc, char *argv[]) {
     
     if (user.dsd_count > 0) {
         RS_set_dsd_to_mp_with_sizes(S, user.dsd_sizes, user.dsd_count);
-    } else if (user.no_background == false) {
+    } else {
         RS_set_dsd_to_mp(S);
     }
 
