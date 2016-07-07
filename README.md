@@ -9,7 +9,7 @@ Get the Project
 
 Follow these steps to get the project
 
-1. Make sure you have the latest [nVidia CUDA Driver].
+1. For nVidia GPU users, make sure you have the latest [nVidia CUDA Driver].
 
 2. Clone a git project using the command:
 
@@ -21,7 +21,7 @@ Follow these steps to get the project
 
     Note: The latest release of Sparkle framework, which is developed and maintained by a third party (http://sparkle-project.org), can be downloaded from the official website but not necessary.
 
-4. Download [LES, ADM & RCS Data], extract and move the folder **tables** into one of the following locations:
+4. Download [LES, ADM & RCS Data] (15GB), extract and move the folder **tables** into one of the following locations:
     - ~/Downloads
     - ~/Documents
     - ~/Desktop
