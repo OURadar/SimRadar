@@ -1024,7 +1024,6 @@ int main(int argc, char *argv[]) {
         }
         RS_set_beam_pos(S, scan.az, scan.el);
         RS_make_pulse(S);
-        RS_advance_time(S);
 
         // Only download the necessary data
         if (verb > 2) {
@@ -1052,6 +1051,9 @@ int main(int argc, char *argv[]) {
             pulse_headers[k].el_deg = scan.el;
             memcpy(&pulse_cache[k * S->params.range_count], S->pulse, S->params.range_count * sizeof(cl_float4));
         }
+
+        // Advance time
+        RS_advance_time(S);
 
         // Update scan angles for the next pulse
         get_next_scan_angles(&scan);

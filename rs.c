@@ -2317,7 +2317,7 @@ void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const flo
         }
         H->worker[i].rcs_ellipsoid = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(cl_float4), table.data, &ret);
         if (ret != CL_SUCCESS) {
-            rsprint("Error. Unable to create RCS of ellipsoid table on CL device.\n");
+            rsprint("Error. Unable to create RCS of ellipsoid table on CL device.  ret = %d\n", ret);
             return;
         }
         if (H->verb > 2) {
@@ -4011,7 +4011,7 @@ void RS_populate(RSHandle *H) {
     }
     
 	H->status |= RSStatusDomainPopulated;
-    H->status |= RSStatusScattererSignalNeedsUpdate;
+    H->status |= RSStatusDebrisRCSNeedsUpdate;
 
 	return;
 }
@@ -4044,20 +4044,20 @@ void RS_download(RSHandle *H) {
     int k;
 
     cl_event events[H->num_workers][7];
-    
+
     // Non-blocking read, wait for events later when they are all queued up.
-	for (i = 0; i < H->num_workers; i++) {
-		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, &events[i][0]);
-		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_vel, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, &events[i][1]);
-		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, &events[i][2]);
-		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_aux, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_aux + H->offset[i], 0, NULL, &events[i][3]);
+    for (i = 0; i < H->num_workers; i++) {
+        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, &events[i][0]);
+        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_vel, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, &events[i][1]);
+        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, &events[i][2]);
+        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_aux, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_aux + H->offset[i], 0, NULL, &events[i][3]);
         clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_rcs, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_rcs + H->offset[i], 0, NULL, &events[i][4]);
-		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_sig, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, &events[i][5]);
+        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_sig, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, &events[i][5]);
         clEnqueueReadBuffer(H->worker[i].que, H->worker[i].pulse, CL_FALSE, 0, H->params.range_count * sizeof(cl_float4), H->pulse_tmp[i], 0, NULL, &events[i][6]);
-	}
+    }
 
     cl_int ret;
-    
+
     for (i = 0; i < H->num_workers; i++) {
         ret = clWaitForEvents(7, events[i]);
         if (ret != CL_SUCCESS) {
@@ -4067,6 +4067,16 @@ void RS_download(RSHandle *H) {
             clReleaseEvent(events[i][k]);
         }
     }
+
+//    for (i = 0; i < H->num_workers; i++) {
+//        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, NULL);
+//        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_vel, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, NULL);
+//        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, NULL);
+//        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_aux, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_aux + H->offset[i], 0, NULL, NULL);
+//        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_rcs, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_rcs + H->offset[i], 0, NULL, NULL);
+//        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_sig, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, NULL);
+//        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].pulse, CL_TRUE, 0, H->params.range_count * sizeof(cl_float4), H->pulse_tmp[i], 0, NULL, NULL);
+//    }
 
 #endif
 
@@ -4658,7 +4668,7 @@ void RS_make_pulse(RSHandle *H) {
     for (i = 0; i < H->num_workers; i++) {
         RSWorker *C = &H->worker[i];
         if (H->status & RSStatusScattererSignalNeedsUpdate) {
-            //printf("RS_make_pulse: kern_scat_sig_aux : %zu\n", C->num_scats);
+            printf("RS_make_pulse() kern_scat_sig_aux : %zu\n", C->num_scats);
             clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
             clEnqueueNDRangeKernel(C->que, C->kern_scat_sig_aux, 1, NULL, &C->num_scats, NULL, 0, NULL, &events[i][0]);
             clEnqueueNDRangeKernel(C->que, C->kern_make_pulse_pass_1, 1, NULL, &C->make_pulse_params.global[0], &C->make_pulse_params.local[0], 1, &events[i][0], &events[i][1]);
@@ -4785,7 +4795,7 @@ static void RS_show_rcs_i(RSHandle *H, const size_t i) {
 
 void RS_show_scat_pos(RSHandle *H) {
 	size_t i, w;
-    printf("background positions:\n");
+    printf("A subset of background scatterer positions:\n");
     for (w = 0; w < H->num_workers; w++) {
         for (i = H->worker[w].debris_origin[0];
              i < H->worker[w].debris_origin[0] + H->worker[w].debris_population[0];
@@ -4793,7 +4803,7 @@ void RS_show_scat_pos(RSHandle *H) {
             RS_show_scat_i(H, H->offset[w] + i);
         }
     }
-    printf("debris[1] positions:\n");
+    printf("A subset of debris[1] positions:\n");
     for (w = 0; w < H->num_workers; w++) {
         if (H->worker[w].debris_population[1]) {
             for (i = H->worker[w].debris_origin[1];
@@ -4808,7 +4818,7 @@ void RS_show_scat_pos(RSHandle *H) {
 
 void RS_show_scat_sig(RSHandle *H) {
     size_t i, w;
-    printf("background:\n");
+    printf("A subset of signals from background scatterers:\n");
     for (w = 0; w < H->num_workers; w++) {
         for (i = 0; i < H->worker[w].debris_population[0]; i += H->worker[w].debris_population[0] / 9) {
             RS_show_rcs_i(H, H->offset[w] + H->worker[w].debris_origin[0] + i);
@@ -4819,7 +4829,7 @@ void RS_show_scat_sig(RSHandle *H) {
     }
     // Show the debris
     //i = (int)H->debris_population[0] / H->num_workers;
-    printf("debris type #1:\n");
+    printf("A subset of signals from debris[1]:\n");
     for (w = 0; w < H->num_workers; w++) {
         for (i = 0; i < H->worker[w].debris_population[1]; i += H->worker[w].debris_population[1] / 9) {
             RS_show_rcs_i(H, H->offset[w] + H->worker[w].debris_origin[1] + i);
@@ -4925,12 +4935,7 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
     cl_float4 *table = (cl_float4 *)malloc(n * sizeof(cl_float4));
 
     if (H->sim_concept & RSSimulationConceptTransparentBackground) {
-        for (i = 0; i < n; i++) {
-            table[i].s0 = 0.0f;
-            table[i].s1 = 0.0f;
-            table[i].s2 = 0.0f;
-            table[i].s3 = 0.0f;
-        }
+        memset(table, 0, n * sizeof(cl_float4));
     } else {
         for (i = 0; i < n; i++) {
             // Diameter (mm) to be computed
