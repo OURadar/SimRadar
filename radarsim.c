@@ -372,6 +372,7 @@ void write_iq_file(const UserParams user, const ScanParams scan, const IQFileHea
         fwrite(&pulse_cache[k * stride], sizeof(cl_float4), stride, fid);
     }
     printf("%s : Data file with %s B (seed = %s).\n", now(), commaint(ftell(fid)), commaint(file_header->simulation_seed));
+    printf("%.4e%+.4ei  %.4e%+.4ei ...\n", pulse_cache[0].s0, pulse_cache[0].s1, pulse_cache[1].s0, pulse_cache[1].s1);
     fclose(fid);
 }
 
