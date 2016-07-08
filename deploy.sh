@@ -1,7 +1,8 @@
 #!/bin/bash
 
 if [ -z $1 ]; then
-	hosts="boomer.oscer.ou.edu";
+	#hosts="boomer.oscer.ou.edu";
+	hosts="schooner.oscer.ou.edu";
 else
 	hosts=$@;
 fi
