@@ -209,9 +209,6 @@
 - (void)upload
 {
 	RS_upload(S);
-	S->sim_tic = 0;
-	S->sim_toc = 0;
-	S->sim_time = 0.0f;
     S->draw_mode.s1 = S->sim_desc.s[RSSimulationDescriptionBoundOriginY] + 0.5f * S->sim_desc.s[RSSimulationDescriptionBoundSizeY];
 }
 

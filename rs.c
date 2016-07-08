@@ -1004,7 +1004,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 	memset(H, 0, sizeof(RSHandle));
 	
 	// Default non-zero parameters
-    H->sim_tic = 0;
+    H->sim_tic = 0.0f;
 	H->status = RSStatusNull;
 	H->params.c = 3.0e8f;
     H->params.tau = 0.2e-6f;
@@ -1436,16 +1436,16 @@ void RS_set_concept(RSHandle *H, RSSimulationConcept c) {
 
 void RS_set_prt(RSHandle *H, const RSfloat prt) {
 
-    ssize_t tic_toc_left = H->sim_toc - H->sim_tic;
-
-    ssize_t toc_offset = H->params.prt / prt * tic_toc_left;
-
-    if (tic_toc_left + toc_offset < 0) {
-        H->sim_tic = 0;
-        H->sim_toc = (size_t)(H->vel_desc.tp / prt);
-    } else {
-        H->sim_toc += toc_offset;
-    }
+//    RSfloat tic_toc_left = H->sim_toc - H->sim_tic;
+//
+//    RSfloat toc_offset = H->params.prt / prt * tic_toc_left;
+//
+//    if (tic_toc_left + toc_offset < 0) {
+//        H->sim_tic = 0;
+//        H->sim_toc = (size_t)(H->vel_desc.tp / prt);
+//    } else {
+//        H->sim_toc += toc_offset;
+//    }
 
 	H->params.prt = prt;
     
@@ -2003,7 +2003,7 @@ void RS_set_debris_count(RSHandle *H, const int debris_id, const size_t count) {
         rsprint("Total number of body types = %d", (int)H->num_body_types);
     }
 
-    if (H->sim_tic > 0) {
+    if (H->sim_tic > 0.0f) {
         RS_update_origins_offsets(H);
         
 #if defined (_USE_GCL_)
@@ -3749,8 +3749,12 @@ void RS_populate(RSHandle *H) {
         for (w = 0; w < H->num_workers; w++) {
 
             i = (int)(H->offset[w] + H->worker[w].debris_origin[k]);
+            
+            #ifdef DEBUG_HEAVY
+            rsprint(RS_INDENT "type[%d]   worker[%d]   n = %d", k, w,  H->worker[w].debris_population[k]);
+            #endif
 
-            for (n = 0; n < H->worker[k].debris_population[k]; n++) {
+            for (n = 0; n < H->worker[w].debris_population[k]; n++) {
                 H->scat_pos[i].x = (float)rand() / RAND_MAX * domain.size.x + domain.origin.x;
                 H->scat_pos[i].y = (float)rand() / RAND_MAX * domain.size.y + domain.origin.y;
                 H->scat_pos[i].z = (float)rand() / RAND_MAX * domain.size.z + domain.origin.z;
@@ -3943,9 +3947,8 @@ void RS_populate(RSHandle *H) {
     #endif
 	
 	// Restore simulation time, default beam position at unit vector (0, 1, 0)
-	H->sim_tic = 0;
-	H->sim_toc = (size_t)(H->vel_desc.tp / H->params.prt);
-	H->sim_time = 0.0f;
+	H->sim_tic = 0.0f;
+	H->sim_toc = H->vel_desc.tp;
     H->sim_desc.s[RSSimulationDescriptionBeamUnitX] = 0.0f;
     H->sim_desc.s[RSSimulationDescriptionBeamUnitY] = 1.0f;
     H->sim_desc.s[RSSimulationDescriptionBeamUnitZ] = 0.0f;
@@ -4011,7 +4014,12 @@ void RS_populate(RSHandle *H) {
     }
     
 	H->status |= RSStatusDomainPopulated;
-    H->status |= RSStatusDebrisRCSNeedsUpdate;
+
+    // Advance time with 0 time so that all attributes kernels (el_atts, db_atts or bg_atts) are called once.
+    H->sim_desc.s[RSSimulationDescriptionPRT] = 0.0f;
+    RS_advance_time(H);
+    H->sim_desc.s[RSSimulationDescriptionPRT] = H->params.prt;
+    H->sim_desc.s[RSSimulationDescriptionSimTic] = H->sim_tic - H->params.prt;
 
 	return;
 }
@@ -4186,7 +4194,7 @@ void RS_download_pulse_only(RSHandle *H) {
 #endif
     
 	RS_merge_pulse_tmp(H);
-//    printf("pulse %zu [ %+11.4e%+11.4ei %+11.4e%+11.4ei (%+6.2f)   %+11.4e%+11.4ei %+11.4e%+11.4ei (%+6.2f)  ... ]\n", H->sim_tic,
+//    printf("pulse %f [ %+11.4e%+11.4ei %+11.4e%+11.4ei (%+6.2f)   %+11.4e%+11.4ei %+11.4e%+11.4ei (%+6.2f)  ... ]\n", H->sim_tic,
 //           H->pulse[0].s0, H->pulse[0].s1, H->pulse[0].s2, H->pulse[0].s3, zdr(H->pulse[0]),
 //           H->pulse[1].s0, H->pulse[1].s1, H->pulse[1].s2, H->pulse[1].s3, zdr(H->pulse[1]));
 }
@@ -4299,7 +4307,7 @@ void RS_advance_time(RSHandle *H) {
 
     // Advance to next wind table when the time comes
     if (H->sim_tic >= H->sim_toc) {
-        H->sim_toc = H->sim_tic + (size_t)(H->vel_desc.tp / H->params.prt);
+        H->sim_toc += H->vel_desc.tp;
         H->vel_idx = H->vel_idx == H->vel_count - 1 ? 0 : H->vel_idx + 1;
 
         if (H->vel_idx == 0) {
@@ -4440,10 +4448,6 @@ void RS_advance_time(RSHandle *H) {
 
     cl_event events[RS_MAX_GPU_DEVICE][H->num_body_types];
     memset(events, 0, sizeof(events));
-	
-//	if (H->sim_tic >= H->sim_toc) {
-//		H->sim_toc = H->sim_tic + (size_t)(1.0f / H->params.prt);
-//	}
 
 	for (i = 0; i < H->num_workers; i++) {
         r = 0;
@@ -4500,8 +4504,8 @@ void RS_advance_time(RSHandle *H) {
 	
 #endif
 	
-    H->sim_time += H->params.prt;
-    H->sim_desc.s[RSSimulationDescriptionSimTic] = ++H->sim_tic;
+    H->sim_tic += H->params.prt;
+    H->sim_desc.s[RSSimulationDescriptionSimTic] = H->sim_tic;
     H->status |= RSStatusScattererSignalNeedsUpdate;
 }
 
@@ -4840,7 +4844,7 @@ void RS_show_scat_sig(RSHandle *H) {
 
 void RS_show_pulse(RSHandle *H) {
 	unsigned int i;
-	printf(" %7zu - [", H->sim_tic);
+	printf(" %7.5fs - [", H->sim_tic);
 	for (i = 0; i < MIN(4, H->params.range_count); i++) {
 		if (i > 0) {
 			printf(",");

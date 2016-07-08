@@ -1032,12 +1032,22 @@ int main(int argc, char *argv[]) {
             RS_show_scat_sig(S);
     
             printf("signal:\n");
-            for (int r = 0; r < S->params.range_count; r++) {
-                printf("sig[%2d] = (%10.3e %10.3e %10.3e %10.3e) <- (%10.3e %10.3e %10.3e %10.3e) + (%10.3e %10.3e %10.3e %10.3e)\n",
-                       r,
-                       S->pulse[r].s0, S->pulse[r].s1, S->pulse[r].s2, S->pulse[r].s3,
-                       S->pulse_tmp[0][r].s0, S->pulse_tmp[0][r].s1, S->pulse_tmp[0][r].s2, S->pulse_tmp[0][r].s3,
-                       S->pulse_tmp[1][r].s0, S->pulse_tmp[1][r].s1, S->pulse_tmp[1][r].s2, S->pulse_tmp[1][r].s3);
+            
+            if (S->num_workers > 1) {
+                for (int r = 0; r < S->params.range_count; r++) {
+                    printf("sig[%2d] = (%10.3e %10.3e %10.3e %10.3e) <- (%10.3e %10.3e %10.3e %10.3e) + (%10.3e %10.3e %10.3e %10.3e)\n",
+                           r,
+                           S->pulse[r].s0, S->pulse[r].s1, S->pulse[r].s2, S->pulse[r].s3,
+                           S->pulse_tmp[0][r].s0, S->pulse_tmp[0][r].s1, S->pulse_tmp[0][r].s2, S->pulse_tmp[0][r].s3,
+                           S->pulse_tmp[1][r].s0, S->pulse_tmp[1][r].s1, S->pulse_tmp[1][r].s2, S->pulse_tmp[1][r].s3);
+                }
+            } else {
+                for (int r = 0; r < S->params.range_count; r++) {
+                    printf("sig[%2d] = (%10.3e %10.3e %10.3e %10.3e) <- (%10.3e %10.3e %10.3e %10.3e)\n",
+                           r,
+                           S->pulse[r].s0, S->pulse[r].s1, S->pulse[r].s2, S->pulse[r].s3,
+                           S->pulse_tmp[0][r].s0, S->pulse_tmp[0][r].s1, S->pulse_tmp[0][r].s2, S->pulse_tmp[0][r].s3);
+                }
             }
             printf("\n");
         } else if (user.output_iq_file) {
@@ -1046,7 +1056,7 @@ int main(int argc, char *argv[]) {
 
         // Gather information for the  pulse header
         if (user.output_iq_file) {
-            pulse_headers[k].time = S->sim_time;
+            pulse_headers[k].time = S->sim_tic;
             pulse_headers[k].az_deg = scan.az;
             pulse_headers[k].el_deg = scan.el;
             memcpy(&pulse_cache[k * S->params.range_count], S->pulse, S->params.range_count * sizeof(cl_float4));

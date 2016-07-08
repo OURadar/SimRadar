@@ -362,9 +362,8 @@ struct _rs_handle {
 
     // Various simualtor state variables
     char                   status;
-    size_t                 sim_tic;
-    size_t                 sim_toc;
-    RSfloat                sim_time;
+    RSfloat                sim_tic;
+    RSfloat                sim_toc;
     cl_float16             sim_desc;
     RSSimulationConcept    sim_concept;
     
