@@ -4019,7 +4019,8 @@ void RS_populate(RSHandle *H) {
     H->sim_desc.s[RSSimulationDescriptionPRT] = 0.0f;
     RS_advance_time(H);
     H->sim_desc.s[RSSimulationDescriptionPRT] = H->params.prt;
-    H->sim_desc.s[RSSimulationDescriptionSimTic] = H->sim_tic - H->params.prt;
+    H->sim_tic -= H->params.prt;
+    H->sim_desc.s[RSSimulationDescriptionSimTic] = H->sim_tic;
 
 	return;
 }
