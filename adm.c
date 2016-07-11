@@ -212,7 +212,7 @@ ADMTable *ADM_get_table(const ADMHandle *in, const ADMConfig config) {
     
     fclose(fid);
     
-    // Physical description
+    // Physical description (dimension in m, density in kg/m^3)
     table->phys.x = 0.002f;
     table->phys.y = 0.040f;
     table->phys.z = 0.040f;

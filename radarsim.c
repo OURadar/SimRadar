@@ -976,7 +976,10 @@ int main(int argc, char *argv[]) {
         gettimeofday(&t1, NULL);
         for (k = 0; k < user.warm_up_pulses; k++) {
             // Skip computing progress if we are not showing progress
-            if (user.show_progress) {
+            if (verb > 2) {
+                RS_download(S);
+                RS_show_scat_pos(S);
+            } else if (user.show_progress) {
                 gettimeofday(&t2, NULL);
                 dt = DTIME(t1, t2);
                 if (dt >= 0.25f) {
@@ -1212,12 +1215,6 @@ int main(int argc, char *argv[]) {
     printf("%s : Session ended\n", now());
 
     RS_free(S);
-    
-//    LES_free(L);
-//    
-//    ADM_free(A);
-//    
-//    RCS_free(R);
 
 #if defined (_OPEN_MPI)
 

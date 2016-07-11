@@ -4493,9 +4493,7 @@ void RS_advance_time(RSHandle *H) {
     }
    
     for (i = 0; i < H->num_workers; i++) {
-        clWaitForEvents(1, &events[i][0]);
-        clReleaseEvent(events[i][0]);
-        for (k = 1; k < H->num_body_types; k++) {
+        for (k = 0; k < H->num_body_types; k++) {
             if (H->worker[i].debris_population[k]) {
                 clWaitForEvents(1, &events[i][k]);
                 clReleaseEvent(events[i][k]);
