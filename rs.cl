@@ -81,14 +81,11 @@ enum RSTable3DStaggeredDescription {
 };
 
 #pragma mark -
+#pragma mark Function Declarations
 
 const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
 
-#pragma mark -
-
 float4 rand(uint4 *seed);
-
-#pragma mark -
 
 float4 quat_mult(float4 left, float4 right);
 float4 quat_conj(float4 quat);
@@ -96,8 +93,6 @@ float4 quat_get_x(float4 quat);
 float4 quat_get_y(float4 quat);
 float4 quat_get_z(float4 quat);
 float4 quat_rotate(float4 vector, float4 quat);
-
-#pragma mark -
 
 float4 cl_complex_multiply(const float4 a, const float4 b);
 float4 cl_complex_divide(const float4 a, const float4 b);
@@ -108,12 +103,13 @@ float4 compute_dudt_dwdt(float4 *dwdt, const float4 vel, const float4 vel_bg, co
 float4 compute_ellipsoid_rcs(const float4 pos, __constant float4 *table, const float4 table_desc);
 float4 compute_debris_rcs(const float4 pos, const float4 ori, __read_only image2d_t rcs_real, __read_only image2d_t rcs_imag, const float16 rcs_desc, const float16 sim_desc);
 
-#pragma mark -
-
 /////////////////////////////////////////////////////////////////////////////////////////
 //
 // Rudimentary function(s)
 //
+
+#pragma mark -
+#pragma mark Basic Functions
 
 float4 rand(uint4 *seed)
 {
