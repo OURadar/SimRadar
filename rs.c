@@ -706,17 +706,17 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
     // printf("Creating cl_mem from vbo ... %d %d %d \n", C->vbo_scat_pos, C->vbo_scat_clr, C->vbo_scat_ori);
     C->scat_pos = gcl_gl_create_ptr_from_buffer(C->vbo_scat_pos);
     if (C->scat_pos == NULL) {
-        fprintf(stderr, "%s : RS : Error in gcl_gl_create_ptr_from_buffer() for scat_pos.\n", now());
+        rsprint("Error. gcl_gl_create_ptr_from_buffer() failed for scat_pos.\n");
         C->scat_pos = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
     }
     C->scat_clr = gcl_gl_create_ptr_from_buffer(C->vbo_scat_clr);
     if (C->scat_clr == NULL) {
-        fprintf(stderr, "%s : RS : Error in gcl_gl_create_ptr_from_buffer() for scat_clr.\n", now());
+        rsprint("Error. gcl_gl_create_ptr_from_buffer() failed for scat_clr.\n");
         C->scat_clr = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
     }
     C->scat_ori = gcl_gl_create_ptr_from_buffer(C->vbo_scat_ori);
     if (C->scat_ori == NULL) {
-        fprintf(stderr, "%s : RS : Error in gcl_gl_create_ptr_from_buffer() for scat_ori.\n", now());
+        rsprint("Error. gcl_gl_create_ptr_from_buffer() failed for scat_ori.\n");
         C->scat_ori = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
     }
     
