@@ -4207,15 +4207,15 @@ void RS_upload(RSHandle *H) {
 	
 	if (H->verb > 3) {
 		for (i = 0; i < H->num_workers; i++) {
-			printf("%s : RS : worker[%d].scat_pos @ %p\n", now(), i, H->worker[i].scat_pos);
-			printf("%s : RS : worker[%d].scat_vel @ %p\n", now(), i, H->worker[i].scat_vel);
+			rsprint("worker[%d].scat_pos @ %p\n", i, H->worker[i].scat_pos);
+			rsprint("worker[%d].scat_vel @ %p\n", i, H->worker[i].scat_vel);
 		}
-		printf("%s : RS : scat_pos @ %p\n", now(), H->scat_pos);
-		printf("%s : RS : scat_vel @ %p\n", now(), H->scat_vel);
+		rsprint("scat_pos @ %p\n", H->scat_pos);
+		rsprint("scat_vel @ %p\n", H->scat_vel);
 	}
 	
     if (H->num_scats == 0) {
-        printf("%s : RS : Abort @ num_scats = 0 during RS_upload()\n", now());
+        rsprint("Abort @ num_scats = 0 during RS_upload()\n");
         return;
     }
 	
