@@ -1699,7 +1699,7 @@ void RS_set_scan_box(RSHandle *H,
     sprintf(H->summary + strlen(H->summary),
             "nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(svol));
     sprintf(H->summary + strlen(H->summary),
-            "Average background density = %.2f scatterers / resolution cell\n", (float)H->debris_population[0] / nvol);
+            "Average meteorological density = %.2f scatterers / resolution cell\n", (float)H->debris_population[0] / nvol);
     sprintf(H->summary + strlen(H->summary),
             "Concepts used: %s%s%s%s\n",
             H->sim_concept & RSSimulationConceptBoundedParticleVelocity ? "B" : "",
@@ -1733,17 +1733,17 @@ void RS_set_scan_box(RSHandle *H,
                 printf(RS_INDENT "o B - Bounded Particle Velocity\n");
             }
             if (H->sim_concept & RSSimulationConceptDraggedBackground) {
-                printf(RS_INDENT "o D - Dragged Background\n");
+                printf(RS_INDENT "o D - Dragged Meteorological Scatterers\n");
             }
             if (H->sim_concept & RSSimulationConceptTransparentBackground) {
-                printf(RS_INDENT "o T - Transparent Background\n");
+                printf(RS_INDENT "o T - Transparent Meteorological Scatterers\n");
             }
             if (H->sim_concept & RSSimulationConceptUniformDSDScaledRCS) {
                 printf(RS_INDENT "o U - Uniform DSD with Scaled RCS\n");
             }
         }
 		rsprint("Set to GPU preferred %s (%s total scatterers / resolution cell)", commaint(preferred_n), commafloat((float)preferred_n / nvol));
-        rsprint("Average background density = %s particles / radar cell\n", commafloat((float)H->debris_population[0] / nvol));
+        rsprint("Average meteorological scatterer density = %s particles / radar cell\n", commafloat((float)H->debris_population[0] / nvol));
     }
 
     // Now, we actually set it to suggested debris count
@@ -3923,7 +3923,7 @@ void RS_populate(RSHandle *H) {
             }
         }
     } else {
-        rsprint("INFO: No DSD specified. The background drops do not return any power.");
+        rsprint("INFO: No DSD specified. The meteorological scatterers do not return any power.");
     }
 	
     // Replace a few points for debugging purpose.
@@ -4798,7 +4798,7 @@ static void RS_show_rcs_i(RSHandle *H, const size_t i) {
 
 void RS_show_scat_pos(RSHandle *H) {
 	size_t i, w;
-    printf("A subset of background scatterer positions:\n");
+    printf("A subset of meteorological scatterer positions:\n");
     for (w = 0; w < H->num_workers; w++) {
         for (i = H->worker[w].debris_origin[0];
              i < H->worker[w].debris_origin[0] + H->worker[w].debris_population[0];
@@ -4821,7 +4821,7 @@ void RS_show_scat_pos(RSHandle *H) {
 
 void RS_show_scat_sig(RSHandle *H) {
     size_t i, w;
-    printf("A subset of signals from background scatterers:\n");
+    printf("A subset of signals from meteorological scatterers:\n");
     for (w = 0; w < H->num_workers; w++) {
         for (i = 0; i < H->worker[w].debris_population[0]; i += H->worker[w].debris_population[0] / 9) {
             RS_show_rcs_i(H, H->offset[w] + H->worker[w].debris_origin[0] + i);
