@@ -74,42 +74,32 @@ A set of C functions are collected in Radar Simulation (RS) framework, which abs
 
 The simulation framework is written is plain C for performance and portability. All calculations are implemented within RS framework with functions prefix RS. To include the RS framework, there is only one header, i.e., `rs.h` is needed. The following example codes create a simple simulation domain and emulate a PPI scan:
 
+    //
+    //  simple_ppi.c
+    //
+    //  This example illustrates a simple usage of the RS Framework to simulate a PPI scan.
+    //
+    //  Created by Boon Leng Cheong on 2/29/16.
+    //  Copyright © 2016 Boon Leng Cheong. All rights reserved.
+    //
+
     #include "rs.h"
 
+    //
+    //
+    //  M A I N
+    //
+    //
     int main(int argc, char *argv[]) {
 
         int k = 0;
 
         RSHandle  *S;
-        ADMHandle *A;
-        LESHandle *L;
-        RCSHandle *R;
 
         // Initialize the RS framework
         S = RS_init();
         if (S == NULL) {
             fprintf(stderr, "%s : Some errors occurred during RS_init().\n", now());
-            return EXIT_FAILURE;
-        }
-
-        // Initialize the LES ingest
-        L = LES_init();
-        if (L == NULL) {
-            fprintf(stderr, "%s : Some errors occurred during LES_init().\n", now());
-            return EXIT_FAILURE;
-        }
-
-        // Initialize the ADM ingest
-        A = ADM_init();
-        if (A == NULL) {
-            fprintf(stderr, "%s : Some errors occurred during ADM_init().\n", now());
-            return EXIT_FAILURE;
-        }
-
-        // Initialize the RCS ingest
-        R = RCS_init();
-        if (R == NULL) {
-            fprintf(stderr, "%s : Some errors occurred during RCS_init().\n", now());
             return EXIT_FAILURE;
         }
 
@@ -120,14 +110,11 @@ The simulation framework is written is plain C for performance and portability. 
 
         RS_set_prt(S, 1.0e-3f);
 
-        // Set one wind table
-        RS_set_vel_data_to_LES_table(S, LES_get_frame(L, k));
-
         // Set the first debris type to be square plate
-        RS_set_adm_data_to_ADM_table(S, ADM_get_table(A, ADMConfigSquarePlate));
+        RS_set_adm_data_to_config(S, ADMConfigSquarePlate);
 
         // Set the first debris type to have RCS of a leaf
-        RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigLeaf));
+        RS_set_rcs_data_to_config(S, RCSConfigLeaf);
 
         // Set the first debris type to have a population of 1024
         RS_set_debris_count(S, 1, 1024);
@@ -140,9 +127,9 @@ The simulation framework is written is plain C for performance and portability. 
 
         // Set the scan box
         RS_set_scan_box(S,
-            box.origin.r, box.origin.r + box.size.r, 15.0f,   // Range
-            box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
-            box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
+        box.origin.r, box.origin.r + box.size.r, 15.0f,   // Range
+        box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
+        box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
 
         // Set the DSD profile
         RS_set_dsd_to_mp(S);
@@ -189,12 +176,6 @@ The simulation framework is written is plain C for performance and portability. 
         RS_show_scat_sig(S);
 
         RS_free(S);
-
-        LES_free(L);
-
-        ADM_free(A);
-
-        RCS_free(R);
 
         return EXIT_SUCCESS;
     }

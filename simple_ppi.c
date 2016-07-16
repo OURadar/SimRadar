@@ -103,6 +103,6 @@ int main(int argc, char *argv[]) {
     RS_show_scat_sig(S);
     
     RS_free(S);
-        
+    
     return EXIT_SUCCESS;
 }
