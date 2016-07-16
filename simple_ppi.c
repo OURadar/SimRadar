@@ -19,35 +19,14 @@ int main(int argc, char *argv[]) {
     int k = 0;
 
     RSHandle  *S;
-    ADMHandle *A;
-    LESHandle *L;
-    RCSHandle *R;
+//    ADMHandle *A;
+//    LESHandle *L;
+//    RCSHandle *R;
     
     // Initialize the RS framework
     S = RS_init();
     if (S == NULL) {
         fprintf(stderr, "%s : Some errors occurred during RS_init().\n", now());
-        return EXIT_FAILURE;
-    }
-    
-    // Initialize the LES ingest
-    L = LES_init();
-    if (L == NULL) {
-        fprintf(stderr, "%s : Some errors occurred during LES_init().\n", now());
-        return EXIT_FAILURE;
-    }
-    
-    // Initialize the ADM ingest
-    A = ADM_init();
-    if (A == NULL) {
-        fprintf(stderr, "%s : Some errors occurred during ADM_init().\n", now());
-        return EXIT_FAILURE;
-    }
-    
-    // Initialize the RCS ingest
-    R = RCS_init();
-    if (R == NULL) {
-        fprintf(stderr, "%s : Some errors occurred during RCS_init().\n", now());
         return EXIT_FAILURE;
     }
     
@@ -58,14 +37,11 @@ int main(int argc, char *argv[]) {
 
     RS_set_prt(S, 1.0e-3f);
 
-    // Set one wind table
-    RS_set_vel_data_to_LES_table(S, LES_get_frame(L, k));
-    
     // Set the first debris type to be square plate
-    RS_set_adm_data_to_ADM_table(S, ADM_get_table(A, ADMConfigSquarePlate));
+    RS_set_adm_data_to_config(S, ADMConfigSquarePlate);
     
     // Set the first debris type to have RCS of a leaf
-    RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigLeaf));
+    RS_set_rcs_data_to_config(S, RCSConfigLeaf);
     
     // Set the first debris type to have a population of 1024
     RS_set_debris_count(S, 1, 1024);
@@ -127,12 +103,6 @@ int main(int argc, char *argv[]) {
     RS_show_scat_sig(S);
     
     RS_free(S);
-    
-    LES_free(L);
-    
-    ADM_free(A);
-    
-    RCS_free(R);
-    
+        
     return EXIT_SUCCESS;
 }
