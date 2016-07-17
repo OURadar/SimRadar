@@ -579,6 +579,7 @@ void RS_table3d_free(RSTable3D T);
 void RS_show_radar_params(RSHandle *H);
 void RS_show_scat_pos(RSHandle *H);
 void RS_show_scat_sig(RSHandle *H);
+void RS_show_scat_att(RSHandle *H);
 void RS_show_pulse(RSHandle *H);
 
 #pragma mark -

@@ -4796,22 +4796,35 @@ static void RS_show_rcs_i(RSHandle *H, const size_t i) {
 }
 
 
+static void RS_show_att_i(RSHandle *H, const size_t i) {
+    printf(" %7lu - p( %9.2f, %9.2f, %9.2f, %4.1f )   v( %7.2f %7.2f %7.2f )   o( %7.4f %7.4f %7.4f %7.4f)   s( %10.3e, %10.3e, %10.3e, %10.3e )   r( %10.3e %10.3e %10.3e %10.3e )   r = %.2f m\n", i,
+           H->scat_pos[i].x, H->scat_pos[i].y, H->scat_pos[i].z, 2000.0f * H->scat_pos[i].w,
+           H->scat_vel[i].x, H->scat_vel[i].y, H->scat_vel[i].z,
+           H->scat_ori[i].x, H->scat_ori[i].y, H->scat_ori[i].z, H->scat_ori[i].w,
+           H->scat_sig[i].x, H->scat_sig[i].y, H->scat_sig[i].z, H->scat_sig[i].w,
+           H->scat_rcs[i].x, H->scat_rcs[i].y, H->scat_rcs[i].z, H->scat_rcs[i].w,
+           H->scat_aux[i].s0);
+}
+
+
+#define RS_SHOW_DIV   9
+
 void RS_show_scat_pos(RSHandle *H) {
 	size_t i, w;
-    printf("A subset of meteorological scatterer positions:\n");
+    printf("A subset of meteorological scatterer positions, velocities & orientations:\n");
     for (w = 0; w < H->num_workers; w++) {
         for (i = H->worker[w].debris_origin[0];
              i < H->worker[w].debris_origin[0] + H->worker[w].debris_population[0];
-             i += H->worker[w].debris_population[0] / 9) {
+             i += H->worker[w].debris_population[0] / RS_SHOW_DIV) {
             RS_show_scat_i(H, H->offset[w] + i);
         }
     }
-    printf("A subset of debris[1] positions:\n");
+    printf("A subset of debris[1] positions, velocities & orientations:\n");
     for (w = 0; w < H->num_workers; w++) {
         if (H->worker[w].debris_population[1]) {
             for (i = H->worker[w].debris_origin[1];
                  i < H->worker[w].debris_origin[1] + H->worker[w].debris_population[1];
-                 i += H->worker[w].debris_population[1] / 9) {
+                 i += H->worker[w].debris_population[1] / RS_SHOW_DIV) {
                 RS_show_scat_i(H, H->offset[w] + i);
             }
         }
@@ -4821,21 +4834,39 @@ void RS_show_scat_pos(RSHandle *H) {
 
 void RS_show_scat_sig(RSHandle *H) {
     size_t i, w;
-    printf("A subset of signals from meteorological scatterers:\n");
+    printf("A subset of meteorological scatterer signal, RCS & aux. attributes:\n");
     for (w = 0; w < H->num_workers; w++) {
-        for (i = 0; i < H->worker[w].debris_population[0]; i += H->worker[w].debris_population[0] / 9) {
+        for (i = 0; i < H->worker[w].debris_population[0]; i += H->worker[w].debris_population[0] / RS_SHOW_DIV) {
             RS_show_rcs_i(H, H->offset[w] + H->worker[w].debris_origin[0] + i);
         }
     }
     if (H->debris_population[1] == 0) {
         return;
     }
-    // Show the debris
-    //i = (int)H->debris_population[0] / H->num_workers;
-    printf("A subset of signals from debris[1]:\n");
+    printf("A subset of debris[1] scatterer signal, RCS & aux. attributes:\n");
     for (w = 0; w < H->num_workers; w++) {
-        for (i = 0; i < H->worker[w].debris_population[1]; i += H->worker[w].debris_population[1] / 9) {
+        for (i = 0; i < H->worker[w].debris_population[1]; i += H->worker[w].debris_population[1] / RS_SHOW_DIV) {
             RS_show_rcs_i(H, H->offset[w] + H->worker[w].debris_origin[1] + i);
+        }
+    }
+}
+
+
+void RS_show_scat_att(RSHandle *H) {
+    size_t i, w;
+    printf("A subset of meteorological scatterer signal, RCS & aux. attributes:\n");
+    for (w = 0; w < H->num_workers; w++) {
+        for (i = 0; i < H->worker[w].debris_population[0]; i += H->worker[w].debris_population[0] / RS_SHOW_DIV) {
+            RS_show_att_i(H, H->offset[w] + H->worker[w].debris_origin[0] + i);
+        }
+    }
+    if (H->debris_population[1] == 0) {
+        return;
+    }
+    printf("A subset of debris[1] scatterer signal, RCS & aux. attributes:\n");
+    for (w = 0; w < H->num_workers; w++) {
+        for (i = 0; i < H->worker[w].debris_population[1]; i += H->worker[w].debris_population[1] / RS_SHOW_DIV) {
+            RS_show_att_i(H, H->offset[w] + H->worker[w].debris_origin[1] + i);
         }
     }
 }

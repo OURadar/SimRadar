@@ -978,7 +978,8 @@ int main(int argc, char *argv[]) {
             // Skip computing progress if we are not showing progress
             if (verb > 2) {
                 RS_download(S);
-                RS_show_scat_pos(S);
+                printf("Warm up pulse %d:\n", k);
+                RS_show_scat_att(S);
             } else if (user.show_progress) {
                 gettimeofday(&t2, NULL);
                 dt = DTIME(t1, t2);
@@ -1033,7 +1034,7 @@ int main(int argc, char *argv[]) {
         if (verb > 2) {
             RS_download(S);
 
-            RS_show_scat_sig(S);
+            RS_show_scat_att(S);
     
             printf("signal:\n");
             
