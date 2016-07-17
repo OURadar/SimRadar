@@ -41,6 +41,5 @@
 # radarsim --concept DBU  -T -p 1000 -t 0.0005 --sweep P:-12:12:0.01 -D 100 -O ~/Downloads/simradar -d 2000 -o
 
 rm -f ~/Downloads/simradar/*.iq
-radarsim -vvv --concept DBUT -T -p 10 -t 0.0005 --sweep P:-12:12:0.01 -D 50 -O ~/Downloads/simradar -d 100 -W 100 > ~/Downloads/simradar/test_db.txt
-radarsim -vvv --concept DBUT -T -p 10 -t 0.0005 --sweep P:-12:12:0.01 -D 50 -O ~/Downloads/simradar -d 100 -W 100 > ~/Downloads/simradar/test_db2.txt
-radarsim -vvv --concept DBU  -T -p 10 -t 0.0005 --sweep P:-12:12:0.01 -D 50 -O ~/Downloads/simradar -d 100 -W 100 > ~/Downloads/simradar/test_wxdb.txt
+radarsim -vvv --concept DBUT -T -p 10 -t 0.0005 --sweep P:-12:12:0.01 -D 50 -O ~/Downloads/simradar -d 100 -W 500 > ~/Downloads/simradar/test_db.txt
+radarsim -vvv --concept DBU  -T -p 10 -t 0.0005 --sweep P:-12:12:0.01 -D 50 -O ~/Downloads/simradar -d 100 -W 500 > ~/Downloads/simradar/test_wxdb.txt

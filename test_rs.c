@@ -117,38 +117,28 @@ int main(int argc, char **argv)
 		fprintf(stderr, "%s : Some errors occurred.\n", now());
 		return EXIT_FAILURE;
 	}
-    ADMHandle *A = ADM_init();
-    if (A == NULL) {
-        fprintf(stderr, "%s : Some errors occurred during ADM_init().\n", now());
-        return EXIT_FAILURE;
-    }
-    RCSHandle *R = RCS_init();
-    if (R == NULL) {
-        fprintf(stderr, "%s : Some errors occurred during RCS_init().\n", now());
-        return EXIT_FAILURE;
-    }
 
     if (density > 0) {
         RS_set_density(H, density);
     }
 	
-	RS_set_scan_box(H,
-					15.0e3f, 20.0e3f, 250.0f,
-					-10.0f, 10.0f, 1.0f,
-					0.0f, 8.0f, 1.0f);
-
 	RS_set_range_weight_to_triangle(H, 250.0f);
 	
 	RS_set_angular_weight_to_standard(H, 2.0f / 180.0f * M_PI);
     
-    RS_set_adm_data_to_ADM_table(H, ADM_get_table(A, ADMConfigModelPlate));
+    RS_set_adm_data_to_config(H, ADMConfigModelPlate);
     
-    RS_set_rcs_data_to_RCS_table(H, RCS_get_table(R, RCSConfigLeaf));
+    RS_set_rcs_data_to_config(H, RCSConfigLeaf);
 
-    RS_set_debris_count(H, 1, 100000);
+    RS_set_debris_count(H, 1, 100 * 1000);
     
     RS_revise_debris_counts_to_gpu_preference(H);
 	
+    RS_set_scan_box(H,
+                    15.0e3f, 20.0e3f, 250.0f,
+                    -10.0f, 10.0f, 1.0f,
+                    0.0f, 5.0f, 1.0f);
+    
 	RS_populate(H);
 	
 	printf("\nTest(s) using %s scatterers and %s debris objects for %s iterations:\n\n",

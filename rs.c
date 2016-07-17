@@ -146,12 +146,13 @@ void rsprint(const char *format, ...) {
         str[len] = '\n';
         str[len+1] = '\0';
     }
-    if (!strncmp(msg, "Error", 5)) {
-        fprintf(stderr, "\033[1;31m%s\033[0m", str);
+    if (!strncmp(msg, "ERROR", 5)) {
+        fprintf(stderr, "%s : RS : \033[1;4;31mERROR\033[0m%s", now(), &msg[5]);
     } else if (!strncmp(msg, "WARNING", 7)) {
-        fprintf(stderr, "%s : RS : \033[1;33m%s\033[0m", now(), msg);
+        fprintf(stderr, "%s : RS : \033[1;33mWARNING\033[0m%s", now(), &msg[7]);
     } else if (!strncmp(msg, "INFO", 4)) {
-        printf("%s : RS : \033[4m%s\033[24m", now(), msg);
+        printf("%s : RS : \033[4mINFO\033[24m%s", now(), &msg[4]);
+        fflush(stdout);
     } else {
         printf("%s", str);
     }
@@ -319,7 +320,7 @@ cl_uint read_kernel_source_from_files(char *src_ptr[], ...) {
         // Read in the kernel source
         FILE *fid = fopen(filename, "r");
         if (fid == NULL) {
-            rsprint("Error. Unable to open kernel source %s.\n", filename);
+            rsprint("ERROR: Unable to open kernel source %s.\n", filename);
             break;
         }
         while (!feof(fid) && strlen(char_buf) < RS_MAX_KERNEL_SRC && count < RS_MAX_KERNEL_LINES) {
@@ -341,7 +342,7 @@ cl_uint read_kernel_source_from_files(char *src_ptr[], ...) {
     }
     
     if (len >= RS_MAX_KERNEL_SRC || count >= RS_MAX_KERNEL_LINES) {
-        rsprint("Error. Kernel source exceeds buffer size constraints.  (len = %s / %s, count = %s / %s)\n",
+        rsprint("ERROR: Kernel source exceeds buffer size constraints.  (len = %s / %s, count = %s / %s)\n",
                 commaint(len), commaint(RS_MAX_KERNEL_SRC), commaint(count), commaint(RS_MAX_KERNEL_LINES));
         return 0;
     }
@@ -362,7 +363,7 @@ ReductionParams *make_reduction_params(cl_uint count, cl_uint user_max_groups, c
     ReductionParams *params = (ReductionParams *)malloc(sizeof(ReductionParams));
     
     if (params == NULL) {
-        rsprint("Error. Unable to allocate memory for ReductionParams.");
+        rsprint("ERROR: Unable to allocate memory for ReductionParams.");
         return NULL;
     }
     
@@ -511,7 +512,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
             0
         };
         
-        rsprint("Error. I do not know how to share GL & CL on this platform.");
+        rsprint("ERROR: I do not know how to share GL & CL on this platform.");
         
     #endif
 
@@ -534,7 +535,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     // Program
     C->prog = clCreateProgramWithSource(C->context, src_size, (const char **)src_ptr, NULL, &ret);
     if (ret != CL_SUCCESS) {
-        fprintf(stderr, "%s : RS : Error. Unable to create OpenCL program.  ret = %d\n", now(), ret);
+        fprintf(stderr, "%s : RS : ERROR: Unable to create OpenCL program.  ret = %d\n", now(), ret);
         clReleaseContext(C->context);
         exit(EXIT_FAILURE);
     }
@@ -547,7 +548,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     if (ret != CL_SUCCESS) {
         char char_buf[RS_MAX_STR] = "";
         clGetProgramBuildInfo(C->prog, C->dev, CL_PROGRAM_BUILD_LOG, RS_MAX_STR, char_buf, NULL);
-        fprintf(stderr, "%s : RS : Error. CL Compilation failed:\n%s", now(), char_buf);
+        fprintf(stderr, "%s : RS : ERROR: CL Compilation failed:\n%s", now(), char_buf);
         clReleaseProgram(C->prog);
         clReleaseContext(C->context);
         exit(EXIT_FAILURE);
@@ -557,7 +558,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
 	
 #define CHECK_CL_CREATE_KERNEL                                                \
     if (ret != CL_SUCCESS) {                                                  \
-        rsprint("Error. Could not create OpenCL kernel.  ret = %d\n", ret);   \
+        rsprint("ERROR: Could not create OpenCL kernel.  ret = %d\n", ret);   \
         clReleaseProgram(C->prog);                                            \
         clReleaseContext(C->context);                                         \
         return;                                                               \
@@ -656,13 +657,13 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
     }
 
     if ((H->status & RSStatusPopulationDefined) == 0) {
-        rsprint("Error. Population has not been defined.\n");
+        rsprint("ERROR: Population has not been defined.\n");
         return;
     }
 
     // Derive the necessary parameters from host to compute workers
     if (C->num_scats != H->num_scats / MAX(1, H->num_workers)) {
-        rsprint("Error. Inconsistent number of scatterers.\n");
+        rsprint("ERROR: Inconsistent number of scatterers.\n");
         return;
     }
 
@@ -675,7 +676,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
 #endif
 
     if (group_size_multiple > RS_CL_GROUP_ITEMS) {
-        rsprint("Error. Potential memory leak. work_items(%d) > RS_CL_GROUP_ITEMS(%d).\n", now(), (int)group_size_multiple, RS_CL_GROUP_ITEMS);
+        rsprint("ERROR: Potential memory leak. work_items(%d) > RS_CL_GROUP_ITEMS(%d).\n", now(), (int)group_size_multiple, RS_CL_GROUP_ITEMS);
         exit(EXIT_FAILURE);
     }
     
@@ -706,17 +707,17 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
     // printf("Creating cl_mem from vbo ... %d %d %d \n", C->vbo_scat_pos, C->vbo_scat_clr, C->vbo_scat_ori);
     C->scat_pos = gcl_gl_create_ptr_from_buffer(C->vbo_scat_pos);
     if (C->scat_pos == NULL) {
-        rsprint("Error. gcl_gl_create_ptr_from_buffer() failed for scat_pos.\n");
+        rsprint("ERROR: gcl_gl_create_ptr_from_buffer() failed for scat_pos.\n");
         C->scat_pos = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
     }
     C->scat_clr = gcl_gl_create_ptr_from_buffer(C->vbo_scat_clr);
     if (C->scat_clr == NULL) {
-        rsprint("Error. gcl_gl_create_ptr_from_buffer() failed for scat_clr.\n");
+        rsprint("ERROR: gcl_gl_create_ptr_from_buffer() failed for scat_clr.\n");
         C->scat_clr = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
     }
     C->scat_ori = gcl_gl_create_ptr_from_buffer(C->vbo_scat_ori);
     if (C->scat_ori == NULL) {
-        rsprint("Error. gcl_gl_create_ptr_from_buffer() failed for scat_ori.\n");
+        rsprint("ERROR: gcl_gl_create_ptr_from_buffer() failed for scat_ori.\n");
         C->scat_ori = gcl_malloc(C->num_scats * sizeof(cl_float4), NULL, 0);
     }
     
@@ -736,7 +737,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
 	
 #define CHECK_CL_CREATE_BUFFER                                       \
     if (ret != CL_SUCCESS) {                                         \
-        rsprint("Error. clCreateBuffer() failed.  ret = %d\n", ret); \
+        rsprint("ERROR: clCreateBuffer() failed.  ret = %d\n", ret); \
         return;                                                      \
     }
     
@@ -764,7 +765,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
         
 #else
         
-        rsprint("Error. This should not happen. Open CL 1.2 is needed.");
+        rsprint("ERROR: This should not happen. Open CL 1.2 is needed.");
         
 #endif
         
@@ -998,7 +999,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 	
 	// Allocate
 	if (posix_memalign((void **)((uintptr_t)&H), RS_ALIGN_SIZE, sizeof(RSHandle))) {
-		rsprint("Error. Unable to initialize RS Framework.");
+		rsprint("ERROR: Unable to initialize RS Framework.");
 		return NULL;
 	}
 	memset(H, 0, sizeof(RSHandle));
@@ -1034,7 +1035,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 		get_device_info(CL_DEVICE_TYPE_CPU, &H->num_devs, H->devs, H->num_cus, H->vendors, 0);
 	}
     if (H->num_devs == 0 || H->num_cus[0] == 0) {
-        rsprint("Error. No OpenCL devices found.");
+        rsprint("ERROR: No OpenCL devices found.");
         return NULL;
     }
 
@@ -1185,7 +1186,7 @@ void RS_free_scat_memory(RSHandle *H) {
 	
 	for (i = 0; i < H->num_workers; i++) {
 		if (H->worker[i].vbo_scat_pos == 0) {
-			rsprint("Error. Unexpected conditions. VBOs were not shared.");
+			rsprint("ERROR: Unexpected conditions. VBOs were not shared.");
 			return;
 		}
 		gcl_free(H->worker[i].scat_pos);
@@ -1379,7 +1380,7 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count,
             param.local[0] = work_items;
             param.local_mem_size[0] = range_count * work_items * sizeof(cl_float4);
         } else {
-            rsprint("Error. Could not resolve local memory size limits.");
+            rsprint("ERROR: Could not resolve local memory size limits.");
             exit(EXIT_FAILURE);
         }
     }
@@ -1468,6 +1469,10 @@ void RS_set_density(RSHandle *H, const RSfloat density) {
     if (H->status & RSStatusDomainPopulated) {
         rsprint("Simulation domain has been populated. Density cannot be changed.");
         return;
+    }
+    if (H->status & RSStatusPopulationDefined) {
+        rsprint("ERROR: Population already defined. RS_set_density() should come before RS_set_scan_box().\n");
+        exit(EXIT_FAILURE);
     }
 	H->params.body_per_cell = density;
     
@@ -1580,7 +1585,7 @@ void RS_set_scan_box(RSHandle *H,
 	}
 	H->anchor_pos = (cl_float4 *)malloc(H->num_anchors * sizeof(cl_float4));
 	if (H->anchor_pos == NULL) {
-		rsprint("Error. Unable to allocate memory for anchors.");
+		rsprint("ERROR: Unable to allocate memory for anchors.");
 		return;
 	}
 	
@@ -1664,11 +1669,6 @@ void RS_set_scan_box(RSHandle *H,
 
     // Revise the background (rain)
     H->debris_population[0] = preferred_n;
-//    ii = RS_MAX_DEBRIS_TYPES;
-//    while (ii > 1) {
-//        ii--;
-//        H->debris_population[0] -= H->debris_population[ii];
-//    }
 
     // Add in the debris
     for (ii = 1; ii < RS_MAX_DEBRIS_TYPES; ii++) {
@@ -1677,9 +1677,11 @@ void RS_set_scan_box(RSHandle *H,
         }
     }
 
+    // A hard limit here. Will do something about this next time.
     if (preferred_n > 20000000) {
         exit(0);
     }
+    
     // Summary of parameters
     sprintf(H->summary,
             "User domain @\n  R:[ %6.2f ~ %6.2f ] km\n  E:[ %6.2f ~ %6.2f ] deg\n  A:[ %+6.2f ~ %+6.2f ] deg\n",
@@ -1725,10 +1727,10 @@ void RS_set_scan_box(RSHandle *H,
         rsprint("              = ( %.2f m x %.2f m x %.2f m )\n",
                xmax - xmin, ymax - ymin, zmax - zmin);
         rsprint("nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(svol));
-        rsprint("Concepts used:\n");
         if (H->sim_concept == RSSimulationConceptNull) {
-            printf(RS_INDENT "o No special concept\n");
+            rsprint("No special concepts are active.\n");
         } else {
+            rsprint("Concepts used:\n");
             if (H->sim_concept & RSSimulationConceptBoundedParticleVelocity) {
                 printf(RS_INDENT "o B - Bounded Particle Velocity\n");
             }
@@ -1761,7 +1763,7 @@ void RS_set_scan_box(RSHandle *H,
 	}
 	H->anchor_lines = (cl_float4 *)malloc(H->num_anchor_lines * sizeof(cl_float4));
 	if (H->anchor_lines == NULL) {
-		rsprint("Error. Unable to allocate memory for anchor_lines.");
+		rsprint("ERROR: Unable to allocate memory for anchor_lines.");
 		return;
 	}
 	ii = 0;
@@ -2068,8 +2070,8 @@ void RS_update_origins_offsets(RSHandle *H) {
     size_t count = H->num_scats;
     
     if (H->num_workers == 0) {
-        rsprint("Error. Number of workers = 0.");
-        return;
+        rsprint("ERROR: Number of workers = 0.");
+        exit(EXIT_FAILURE);
     }
 
     // Divide the scatter bodies into (num_workers) chunks
@@ -2091,8 +2093,12 @@ void RS_update_origins_offsets(RSHandle *H) {
         count -= H->debris_population[k];
     }
     if (H->debris_population[0] != count) {
-        rsprint("Error. Inconsistent debris counts.");
-        return;
+        rsprint("ERROR: Inconsistent debris counts.");
+        printf(RS_INDENT "o sub_num_scats = %s   count = %s\n", commaint(sub_num_scats), commaint(count));
+        for (k = 0; k < H->num_body_types; k++) {
+            printf(RS_INDENT "o population[%d] = %s\n", k, commaint(H->debris_population[k]));
+        }
+        exit(EXIT_FAILURE);
     }
 
     // Volume of a single resolution cell at the start of the domain (svol = smallest volume)
@@ -2201,7 +2207,7 @@ void RS_set_dsd(RSHandle *H, const float *nd, const float *diameters, const int 
     H->dsd_pop = (size_t *)malloc(count * sizeof(size_t));
     
     if (H->dsd_r == NULL || H->dsd_pdf == NULL || H->dsd_cdf == NULL || H->dsd_pop == NULL) {
-        rsprint("Error. Unable to allocate memory for DSD parameterization.");
+        rsprint("ERROR: Unable to allocate memory for DSD parameterization.");
         return;
     }
     
@@ -2297,7 +2303,7 @@ void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const flo
         }
         H->worker[i].rcs_ellipsoid = gcl_malloc(table_size * sizeof(cl_float4), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
         if (H->worker[i].rcs_ellipsoid == NULL) {
-            rsprint("Error. Unable to create RCS of ellipsoid table on CL device.\n");
+            rsprint("ERROR: Unable to create RCS of ellipsoid table on CL device.\n");
             return;
         }
     }
@@ -2317,7 +2323,7 @@ void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const flo
         }
         H->worker[i].rcs_ellipsoid = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(cl_float4), table.data, &ret);
         if (ret != CL_SUCCESS) {
-            rsprint("Error. Unable to create RCS of ellipsoid table on CL device.  ret = %d\n", ret);
+            rsprint("ERROR: Unable to create RCS of ellipsoid table on CL device.  ret = %d\n", ret);
             return;
         }
         if (H->verb > 2) {
@@ -2373,7 +2379,7 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
         }
         H->worker[i].range_weight = gcl_malloc(table_size * sizeof(float), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
         if (H->worker[i].range_weight == NULL) {
-            rsprint("Error. Unable to create range weight table on CL device.");
+            rsprint("ERROR: Unable to create range weight table on CL device.");
             return;
         }
     }
@@ -2393,7 +2399,7 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
         }
         H->worker[i].range_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), table.data, &ret);
         if (ret != CL_SUCCESS) {
-            rsprint("Error. Unable to create range weight table on CL device.");
+            rsprint("ERROR: Unable to create range weight table on CL device.");
             return;
         }
         if (H->verb > 2) {
@@ -2454,7 +2460,7 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
 //        }
         H->worker[i].angular_weight = gcl_malloc(table_size * sizeof(float), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
         if (H->worker[i].angular_weight == NULL) {
-            rsprint("Error. Unable to create angular weight table on CL device.");
+            rsprint("ERROR: Unable to create angular weight table on CL device.");
             return;
         }
     }
@@ -2474,7 +2480,7 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
         }
         H->worker[i].angular_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), table.data, &ret);
         if (ret != CL_SUCCESS) {
-            rsprint("Error. Unable to create angular weight table on CL device.");
+            rsprint("ERROR: Unable to create angular weight table on CL device.");
             return;
         }
         if (H->verb > 2) {
@@ -2594,7 +2600,7 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 #endif
         
         if (H->worker[i].vel[t] == NULL) {
-			rsprint("Error. worker[%d] unable to create wind table on CL device.\n", i);
+			rsprint("ERROR: worker[%d] unable to create wind table on CL device.\n", i);
 			return;
         } else if (H->verb > 2) {
             rsprint("worker[%d] created wind table vel[%d] @ %p\n", i, t, &H->worker[i].vel[t]);
@@ -2682,7 +2688,7 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
 	
 	RSTable3D table = RS_table3d_init(leslie->nn);
     if (table.data == NULL) {
-        rsprint("Error. LES input data cannot be NULL.");
+        rsprint("ERROR: LES input data cannot be NULL.");
         return;
     }
 
@@ -2948,7 +2954,7 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
         
 #endif
         if (H->worker[i].adm_cd[t] == NULL || H->worker[i].adm_cm[t] == NULL) {
-            rsprint("Error. worker[%d] unable to create ADM tables on CL device(s).", i);
+            rsprint("ERROR: worker[%d] unable to create ADM tables on CL device(s).", i);
             return;
         } else if (H->verb > 2) {
             rsprint("worker[%d] created ADM tables adm_cd[%d] & adm_cd[%d] @ %p & %p", i, t, t, &H->worker[i].adm_cd[t], &H->worker[i].adm_cm[t]);
@@ -3166,7 +3172,7 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
         
 #endif
         if (H->worker[i].rcs_real[t] == NULL || H->worker[i].rcs_imag[t] == NULL) {
-            rsprint("Error. worker[%d] unable to create RCS tables on CL device(s).", i);
+            rsprint("ERROR: worker[%d] unable to create RCS tables on CL device(s).", i);
             return;
         } else if (H->verb > 2) {
             rsprint("worker[%d] created RCS tables rcs_real[%d] & rcs_imag[%d] @ %p & %p", i, t, t, &H->worker[i].rcs_real[t], &H->worker[i].rcs_imag[t]);
@@ -3223,7 +3229,7 @@ void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *rosie) {
     RSTable2D imag = RS_table2d_init(rosie->nn);
     
     if (real.data == NULL || imag.data == NULL) {
-        rsprint("Error. RCS input data cannot be NULL.");
+        rsprint("ERROR: RCS input data cannot be NULL.");
         return;
     }
     // Set up the mapping coefficients
@@ -3333,7 +3339,7 @@ void RS_update_auxiliary_attributes(RSHandle *H) {
     int i;
     
     if (!(H->status & RSStatusDomainPopulated)) {
-        rsprint("Error. Simulation domain not populated.");
+        rsprint("ERROR: Simulation domain not populated.");
         return;
     }
     
@@ -3389,7 +3395,7 @@ void RS_update_colors(RSHandle *H) {
     int r, a;
 
     if (!(H->status & RSStatusDomainPopulated)) {
-        rsprint("Error. Simulation domain not populated.");
+        rsprint("ERROR: Simulation domain not populated.");
         return;
     }
 
@@ -3642,7 +3648,7 @@ void RS_populate(RSHandle *H) {
     size_t max_var_size;
     CL_CHECK(clGetDeviceInfo(H->worker[0].dev, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(max_var_size), &max_var_size, NULL));
     if (H->worker[0].num_scats * sizeof(cl_float4) > max_var_size) {
-        rsprint("Error. Every scatterer attribute occupies %s B > %s B.", commaint(H->worker[0].num_scats * sizeof(cl_float4)), commaint(max_var_size));
+        rsprint("ERROR: Every scatterer attribute occupies %s B > %s B.", commaint(H->worker[0].num_scats * sizeof(cl_float4)), commaint(max_var_size));
         exit(EXIT_FAILURE);
     }
     
@@ -3660,7 +3666,7 @@ void RS_populate(RSHandle *H) {
 
     if (H->status & RSStatusDomainPopulated) {
         rsprint("WARNING. Simulation was populated.");
-        return;
+        exit(EXIT_FAILURE);
     }
 
     //
@@ -3690,7 +3696,7 @@ void RS_populate(RSHandle *H) {
 		H->scat_sig == NULL ||
         H->scat_rnd == NULL ||
 		H->pulse == NULL) {
-		rsprint("Error. Unable to allocate memory space for scatterers.");
+		rsprint("ERROR: Unable to allocate memory space for scatterers.");
 		return;
 	}
 	
@@ -3703,7 +3709,7 @@ void RS_populate(RSHandle *H) {
         H->mem_size += H->params.range_count * sizeof(cl_float4);
 	}
 	if (has_null) {
-		rsprint("Error. Unable to allocate memory space for pulses.");
+		rsprint("ERROR: Unable to allocate memory space for pulses.");
 		return;
 	}
 
@@ -3834,14 +3840,7 @@ void RS_populate(RSHandle *H) {
     
     // Volume of the simulation domain (m^3)
     float vol = H->sim_desc.s[RSSimulationDescriptionBoundSizeX] * H->sim_desc.s[RSSimulationDescriptionBoundSizeY] * H->sim_desc.s[RSSimulationDescriptionBoundSizeZ];
-    float drops_per_scat = (vol * H->dsd_nd_sum) / H->debris_population[0];
-
-    sprintf(H->summary + strlen(H->summary), "Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->debris_population[0]));
-    rsprint("Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->debris_population[0]));
     
-    // Store a copy of concentration scale in simulation description
-    H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] = sqrt(drops_per_scat);
-
     // Re-initialize random seed
     srand(H->random_seed + H->random_seed);
 
@@ -3851,6 +3850,14 @@ void RS_populate(RSHandle *H) {
     float a;
     int bin;
     if (H->dsd_name != RSDropSizeDistributionUndefined) {
+        float drops_per_scat = (vol * H->dsd_nd_sum) / H->debris_population[0];
+        
+        sprintf(H->summary + strlen(H->summary), "Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->debris_population[0]));
+        rsprint("Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->debris_population[0]));
+        
+        // Store a copy of concentration scale in simulation description
+        H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] = sqrt(drops_per_scat);
+        
         if (H->sim_concept & RSSimulationConceptUniformDSDScaledRCS) {
             for (w = 0; w < H->num_workers; w++) {
                 i = (int)(H->offset[w] + H->worker[w].debris_origin[0]);
@@ -3924,7 +3931,11 @@ void RS_populate(RSHandle *H) {
         }
     } else {
         rsprint("INFO: No DSD specified. The meteorological scatterers do not return any power.");
-    }
+        float drops_per_scat = (vol * 1000.0f) / H->debris_population[0];
+        
+        sprintf(H->summary + strlen(H->summary), "Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->debris_population[0]));
+        rsprint("Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->debris_population[0]));
+}
 	
     // Replace a few points for debugging purpose.
     #if defined(DEBUG_RCS)
@@ -3968,7 +3979,7 @@ void RS_populate(RSHandle *H) {
     while (H->vel_count < RS_MAX_VEL_TABLES) {
         LESTable *table = LES_get_frame(H->L, H->vel_out_idx);
         if (table == NULL) {
-            rsprint("Error. There is no more frame(s)?");
+            rsprint("ERROR: There is no more frame(s)?");
             exit(EXIT_FAILURE);
         }
         RS_set_vel_data_to_LES_table(H, table);
@@ -3995,7 +4006,7 @@ void RS_populate(RSHandle *H) {
     
     CGLContextObj cobj = CGLGetCurrentContext();
     if (cobj == NULL) {
-        rsprint("Error. No GL context yet.");
+        rsprint("ERROR: No GL context yet.");
         return;
     }
     
@@ -4070,7 +4081,7 @@ void RS_download(RSHandle *H) {
     for (i = 0; i < H->num_workers; i++) {
         ret = clWaitForEvents(7, events[i]);
         if (ret != CL_SUCCESS) {
-            rsprint("Error. Unable to properly read back the values.");
+            rsprint("ERROR: Unable to properly read back the values.");
         }
         for (k = 0; k < 7; k++) {
             clReleaseEvent(events[i][k]);
@@ -4300,7 +4311,7 @@ void RS_advance_time(RSHandle *H) {
     int r, a;
 
     if (!(H->status & RSStatusDomainPopulated)) {
-		rsprint("Error. Simulation domain not yet populated.");
+		rsprint("ERROR: Simulation domain not yet populated.");
 		return;
 	}
 
@@ -4515,7 +4526,7 @@ void RS_make_pulse(RSHandle *H) {
     int r, a;
 	
 	if (!(H->status & RSStatusDomainPopulated)) {
-		rsprint("Error. Simulation domain not populated.");
+		rsprint("ERROR: Simulation domain not populated.");
 		return;
 	}
 
@@ -4704,7 +4715,7 @@ RSTable RS_table_init(size_t numel) {
     RSTable table = {0.0f, 1.0f, 1.0f, 0, NULL};
 	
 	if (posix_memalign((void **)&table.data, RS_ALIGN_SIZE, numel * sizeof(float))) {
-		rsprint("Error. Unable to allocate an RSTable->data.\n", now());
+		rsprint("ERROR: Unable to allocate an RSTable->data.\n", now());
 		return table;
 	}
 	
@@ -4728,7 +4739,7 @@ RSTable2D RS_table2d_init(size_t numel) {
     table.xm = 1.0f;      table.ym = 1.0f;
     
     if (posix_memalign((void **)&table.data, RS_ALIGN_SIZE, numel * sizeof(cl_float4))) {
-        rsprint("Error. Unable to allocate an RSTable2D->data.\n", now());
+        rsprint("ERROR: Unable to allocate an RSTable2D->data.\n", now());
         return table;
     }
     
@@ -4754,7 +4765,7 @@ RSTable3D RS_table3d_init(size_t numel) {
 	table.xm = 1.0f;      table.ym = 1.0f;      table.zm = 1.0f;
 	
 	if (posix_memalign((void **)&table.data, RS_ALIGN_SIZE, numel * sizeof(cl_float4))) {
-        rsprint("Error. Unable to allocate an RSTable3D->data.\n", now());
+        rsprint("ERROR: Unable to allocate an RSTable3D->data.\n", now());
 		return table;
 	}
 	
@@ -4854,7 +4865,7 @@ void RS_show_scat_sig(RSHandle *H) {
 
 void RS_show_scat_att(RSHandle *H) {
     size_t i, w;
-    printf("A subset of meteorological scatterer signal, RCS & aux. attributes:\n");
+    printf("A subset of meteorological scatterer position, velocity, orientation, signal, RCS, etc.:\n");
     for (w = 0; w < H->num_workers; w++) {
         for (i = 0; i < H->worker[w].debris_population[0]; i += H->worker[w].debris_population[0] / RS_SHOW_DIV) {
             RS_show_att_i(H, H->offset[w] + H->worker[w].debris_origin[0] + i);
@@ -4863,7 +4874,7 @@ void RS_show_scat_att(RSHandle *H) {
     if (H->debris_population[1] == 0) {
         return;
     }
-    printf("A subset of debris[1] scatterer signal, RCS & aux. attributes:\n");
+    printf("A subset of debris[1] scatterer position, velocity, orientation, signal, RCS, etc.:\n");
     for (w = 0; w < H->num_workers; w++) {
         for (i = 0; i < H->worker[w].debris_population[1]; i += H->worker[w].debris_population[1] / RS_SHOW_DIV) {
             RS_show_att_i(H, H->offset[w] + H->worker[w].debris_origin[1] + i);
@@ -4917,7 +4928,7 @@ RSBox RS_suggest_scan_domain(RSHandle *H, const int nbeams) {
     float nr = (rmax - rmin) / H->params.dr - 2.0f * RS_DOMAIN_PAD - 1.0f;
     nr = ceilf(nr * 0.5f) * 2.0f;
     if (rmax - rmin < 8.0f * H->params.dr) {
-        rsprint("Error. Range resolution of the radar is too coarse!");
+        rsprint("ERROR: Range resolution of the radar is too coarse!");
         rsprint("rmax = %.3f  rmin = %.3f   dr = %.2f", rmax, rmin, H->params.dr);
         exit(EXIT_FAILURE);
     }

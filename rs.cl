@@ -673,7 +673,9 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
     
     float4 pos = p[i];  // position
     float4 vel = v[i];  // velocity
-
+    float4 rcs = x[i];
+    uint4 seed = y[i];
+    
     const float s5 = sim_desc.s5;
     const uint concept = *(uint *)&s5;
 
@@ -684,67 +686,69 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
     int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
     
     if (is_outside) {
-        uint4 seed = y[i];
+        //uint4 seed = y[i];
         float4 r = rand(&seed);
-        y[i] = seed;
+        //y[i] = seed;
         //pos.xyz = (float3)(fma(r.xy, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT);   // Feed from the bottom
         pos.xyz = fma(r.xyz, sim_desc.hi.s456, sim_desc.hi.s012);
         vel = FLOAT4_ZERO;
         
-        p[i] = pos;
-        v[i] = vel;
-        y[i] = seed;
+        //p[i] = pos;
+        //v[i] = vel;
+        //y[i] = seed;
 
-        return;
-    }
-
-    // Derive the lookup index
-    float4 wind_coord = wind_table_index(pos, wind_desc, sim_desc);
-
-    // Look up the background velocity from the table
-    float4 bg_vel = read_imagef(wind_uvw, sampler, wind_coord);
-
-    // Particle velocity due to drag
-    float4 delta_v = bg_vel - vel;
-    float delta_v_abs = length(delta_v.xyz);
-    
-    if (delta_v_abs > 1.0e-3f) {
-
-        // Calculate Reynold's number with air density and viscousity
-        const float rho_air = 1.225f;                                // 1.225 kg m^-3
-        const float rho_over_mu_air = 6.7308e4f;                     // 1.225 / 1.82e-5 kg m^-1 s^-1 = 6.7308e4 (David)
-        const float area_over_mass_particle = 0.003006012f / pos.w;  // 4 * PI * R ^ 2 / ( ( 4 / 3 ) * PI * R ^ 3 * rho ) = 0.0030054 / r (rho = 998)
-        
-        float re = rho_over_mu_air * (2.0f * pos.w) * delta_v_abs;
-        float cd = 24.0f / re + 6.0f / (1.0f + sqrt(re)) + 0.4f;
-        float4 dudt = (0.5f * rho_air * cd * area_over_mass_particle * delta_v_abs) * delta_v + (float4)(0.0f, 0.0f, -9.8f, 0.0f);
-
-        vel += dudt * dt;
-
-        // Bound the velocity change
-        if (concept & RSSimulationConceptBoundedParticleVelocity && length(vel) > max(1.0f, 3.0f * length(bg_vel))) {
-            //vel = normalize(vel) * length(bg_vel) + (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
-            vel = bg_vel + (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
-        }
-
+        //return;
     } else {
 
-        vel += (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
+        // Derive the lookup index
+        float4 wind_coord = wind_table_index(pos, wind_desc, sim_desc);
 
+        // Look up the background velocity from the table
+        float4 bg_vel = read_imagef(wind_uvw, sampler, wind_coord);
+
+        // Particle velocity due to drag
+        float4 delta_v = bg_vel - vel;
+        float delta_v_abs = length(delta_v.xyz);
+        
+        if (delta_v_abs > 1.0e-3f) {
+
+            // Calculate Reynold's number with air density and viscousity
+            const float rho_air = 1.225f;                                // 1.225 kg m^-3
+            const float rho_over_mu_air = 6.7308e4f;                     // 1.225 / 1.82e-5 kg m^-1 s^-1 = 6.7308e4 (David)
+            const float area_over_mass_particle = 0.003006012f / pos.w;  // 4 * PI * R ^ 2 / ( ( 4 / 3 ) * PI * R ^ 3 * rho ) = 0.0030054 / r (rho = 998)
+            
+            float re = rho_over_mu_air * (2.0f * pos.w) * delta_v_abs;
+            float cd = 24.0f / re + 6.0f / (1.0f + sqrt(re)) + 0.4f;
+            float4 dudt = (0.5f * rho_air * cd * area_over_mass_particle * delta_v_abs) * delta_v + (float4)(0.0f, 0.0f, -9.8f, 0.0f);
+
+            vel += dudt * dt;
+
+            // Bound the velocity change
+            if (concept & RSSimulationConceptBoundedParticleVelocity && length(vel) > max(1.0f, 3.0f * length(bg_vel))) {
+                //vel = normalize(vel) * length(bg_vel) + (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
+                vel = bg_vel + (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
+            }
+
+        } else {
+
+            vel += (float4)(0.0f, 0.0f, -9.8f, 0.0f) * dt;
+
+        }
+        
+        rcs = compute_ellipsoid_rcs(pos, drop_rcs, drop_rcs_desc);
+        
+    //    if (get_global_id(0) < 3) {
+    //        float a = length(rcs.s01);
+    //        float b = length(rcs.s23);
+    //        float r = a / b;
+    //        printf("D %.1fmm   rcs=%.3v4e  a=%.3e  b=%.3e  h/v=%.2f dB\n", pos.w * 2000.0f, rcs, a, b, 20 * log10(r));
+    //    }
     }
-    
-    float4 rcs = compute_ellipsoid_rcs(pos, drop_rcs, drop_rcs_desc);
-    
-//    if (get_global_id(0) < 3) {
-//        float a = length(rcs.s01);
-//        float b = length(rcs.s23);
-//        float r = a / b;
-//        printf("D %.1fmm   rcs=%.3v4e  a=%.3e  b=%.3e  h/v=%.2f dB\n", pos.w * 2000.0f, rcs, a, b, 20 * log10(r));
-//    }
 
     p[i] = pos;
     v[i] = vel;
     x[i] = rcs;
+    y[i] = seed;
 }
 
 //

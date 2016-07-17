@@ -411,7 +411,9 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
 
     h->ncubes = h->nfiles * h->nvol;
     
-    printf("DEBUG: file count = %zu    nvol = %zu    ncubes = %zu\n", h->nfiles, h->nvol, h->ncubes);
+    #ifdef DEBUG
+    printf("LES DEBUG: file count = %zu    nvol = %zu    ncubes = %zu\n", h->nfiles, h->nvol, h->ncubes);
+    #endif
 
 	// Allocate data boxes
 	for (int i = 0; i < LES_num; i++) {

@@ -204,7 +204,7 @@ Implementation
 
 The emulator is implemented with a master handler in a C structure, which collects all the simulator parameters, some of which are user-set radar parameters, environmental velocity, air-drag-model and radar-cross-section tables. The framework is implemented such that minimal interaction is needed to access directly to the big structure that contains these intricate parameters.
 
-The parameters may be set in arbitrary order prior to the key function `RS_populate()`, which farms out the workload to OpenCL devices. After this stage, only limited set of functions are allowed. These include time advancing, radar beam steering and radar pulse composition.
+The radar parameters may be set in arbitrary order prior to the key functions `RS_set_scan_box()` and `RS_populate()`. The `RS_set_scan_box()` function sets the allocates the simulation domain and scatterers, so it is important to call the functions that set the radar and population parameters, i.e., scatterer density, debris counts, etc., prior to this function. On the other hand, the function `RS_populate()` farms out the workload to OpenCL devices. After this stage, only limited set of functions are allowed. These include time advancing, radar beam steering and radar pulse composition.
 
 Details on Scatterer Attributes
 -------------------------------
@@ -230,6 +230,11 @@ Multiple arrays of type `cl_float` are used to keep track of a set of attributes
     RS_set_scan_box()
     RS_set_beam_pos()
     RS_set_debris_count()
+
+### Functions to Finalize the Simulator Setup ###
+
+    RS_set_scan_box()
+    RS_populate()
 
 ### Functions for Simulation Time Evolution ###
 
