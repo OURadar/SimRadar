@@ -667,7 +667,6 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
                       const float4 drop_rcs_desc,
                       const float16 sim_desc)
 {
-    
     const unsigned int i = get_global_id(0);
     const float4 dt = (float4)(sim_desc.sb, sim_desc.sb, sim_desc.sb, 0.0f);
     
@@ -683,21 +682,21 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
     //pos.xyz += vel.xyz * dt.xyz;     // use this as the substitue for the line above.
     pos = fma(vel, dt, pos);
     
+    // Calculate Reynold's number with air density and viscousity
+    const float rho_air = 1.225f;                                // 1.225 kg m^-3
+    const float rho_over_mu_air = 6.7308e4f;                     // 1.225 / 1.82e-5 kg m^-1 s^-1 = 6.7308e4 (David)
+    const float area_over_mass_particle = 0.003006012f / pos.w;  // 4 * PI * R ^ 2 / ( ( 4 / 3 ) * PI * R ^ 3 * rho ) = 0.0030054 / r (rho = 998)
+
     int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
     
     if (is_outside) {
-        //uint4 seed = y[i];
+
         float4 r = rand(&seed);
-        //y[i] = seed;
+
         //pos.xyz = (float3)(fma(r.xy, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT);   // Feed from the bottom
         pos.xyz = fma(r.xyz, sim_desc.hi.s456, sim_desc.hi.s012);
         vel = FLOAT4_ZERO;
-        
-        //p[i] = pos;
-        //v[i] = vel;
-        //y[i] = seed;
 
-        //return;
     } else {
 
         // Derive the lookup index
@@ -712,11 +711,6 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
         
         if (delta_v_abs > 1.0e-3f) {
 
-            // Calculate Reynold's number with air density and viscousity
-            const float rho_air = 1.225f;                                // 1.225 kg m^-3
-            const float rho_over_mu_air = 6.7308e4f;                     // 1.225 / 1.82e-5 kg m^-1 s^-1 = 6.7308e4 (David)
-            const float area_over_mass_particle = 0.003006012f / pos.w;  // 4 * PI * R ^ 2 / ( ( 4 / 3 ) * PI * R ^ 3 * rho ) = 0.0030054 / r (rho = 998)
-            
             float re = rho_over_mu_air * (2.0f * pos.w) * delta_v_abs;
             float cd = 24.0f / re + 6.0f / (1.0f + sqrt(re)) + 0.4f;
             float4 dudt = (0.5f * rho_air * cd * area_over_mass_particle * delta_v_abs) * delta_v + (float4)(0.0f, 0.0f, -9.8f, 0.0f);
