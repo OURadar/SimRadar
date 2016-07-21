@@ -127,9 +127,9 @@ The simulation framework is written is plain C for performance and portability. 
 
         // Set the scan box
         RS_set_scan_box(S,
-        box.origin.r, box.origin.r + box.size.r, 15.0f,   // Range
-        box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
-        box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
+            box.origin.r, box.origin.r + box.size.r, 15.0f,   // Range
+            box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
+            box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
 
         // Set the DSD profile
         RS_set_dsd_to_mp(S);

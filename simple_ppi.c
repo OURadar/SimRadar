@@ -19,9 +19,6 @@ int main(int argc, char *argv[]) {
     int k = 0;
 
     RSHandle  *S;
-//    ADMHandle *A;
-//    LESHandle *L;
-//    RCSHandle *R;
     
     // Initialize the RS framework
     S = RS_init();
