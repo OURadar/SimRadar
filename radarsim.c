@@ -159,14 +159,14 @@ void show_help() {
            "  -c (--concept) " UNDERLINE("concepts") "\n"
            "         Sets the simulation concepts to be used, which are OR together for\n"
            "         multiple values that can be combined together.\n"
-           "            D - Dragged meterorological scatterers.\n"
-           "            T - Transparent meterorological scatterers.\n"
+           "            D - Dragged background.\n"
+           "            T - Transparent background.\n"
            "            U - Uniform rain drop size density with scaled RCS.\n"
            "            V - Bounded particle velocity.\n"
            "         Examples:\n"
            "            --concept DU\n"
-           "                sets simulation to use the concept of dragged  meterorological\n"
-           "                 scatterers and uniform density of rain drop size.\n"
+           "                sets simulation to use the concept of dragged background and\n"
+           "                uniform density of rain drop size.\n"
            "            --concept V\n"
            "                sets simulation to use the concept of bounded particle velocity\n"
            "                but left the others as default.\n"
@@ -976,11 +976,7 @@ int main(int argc, char *argv[]) {
         gettimeofday(&t1, NULL);
         for (k = 0; k < user.warm_up_pulses; k++) {
             // Skip computing progress if we are not showing progress
-            if (verb > 2) {
-                RS_download(S);
-                printf("Warm up pulse %d:\n", k);
-                RS_show_scat_att(S);
-            } else if (user.show_progress) {
+            if (user.show_progress) {
                 gettimeofday(&t2, NULL);
                 dt = DTIME(t1, t2);
                 if (dt >= 0.25f) {
@@ -1034,7 +1030,7 @@ int main(int argc, char *argv[]) {
         if (verb > 2) {
             RS_download(S);
 
-            RS_show_scat_att(S);
+            RS_show_scat_sig(S);
     
             printf("signal:\n");
             
@@ -1145,6 +1141,7 @@ int main(int argc, char *argv[]) {
 
         // Let master node do all the file writing to avoid identical filenames
         if (world_rank == 0) {
+            int count;
             write_iq_file(user, scan, &file_header, pulse_headers, pulse_cache, S->params.range_count, 0);
             // Collect data from worker nodes
             for (k = 1; k < world_size; k++) {
@@ -1154,11 +1151,15 @@ int main(int argc, char *argv[]) {
                 }
                 MPI_Recv(pulse_headers, user.num_pulses * sizeof(IQPulseHeader), MPI_BYTE, k, 1, MPI_COMM_WORLD, &status);
                 if (verb > 1) {
-                    printf("%s : Received pulse headers of %s B from node %d.\n", now(), commaint(status._count), status.MPI_SOURCE);
+                    // printf("%s : Received pulse headers of %s B from node %d.\n", now(), commaint(status._count), status.MPI_SOURCE);
+                    MPI_Get_count(&status, MPI_INT, &count);
+                    printf("%s : Received pulse headers of %s B from node %d.\n", now(), commaint(count), status.MPI_SOURCE);
                 }
                 MPI_Recv(pulse_cache, user.num_pulses * S->params.range_count * sizeof(cl_float4), MPI_BYTE, k, 2, MPI_COMM_WORLD, &status);
                 if (verb > 1) {
-                    printf("%s : Received pulse data of %s B from node %d.\n", now(), commaint(status._count), status.MPI_SOURCE);
+                    // printf("%s : Received pulse data of %s B from node %d.\n", now(), commaint(status._count), status.MPI_SOURCE);
+                    MPI_Get_count(&status, MPI_INT, &count);
+                    printf("%s : Received pulse data of %s B from node %d.\n", now(), commaint(count), status.MPI_SOURCE);
                 }
                 write_iq_file(user, scan, &file_header, pulse_headers, pulse_cache, S->params.range_count, k);
             }
@@ -1216,6 +1217,12 @@ int main(int argc, char *argv[]) {
     printf("%s : Session ended\n", now());
 
     RS_free(S);
+    
+//    LES_free(L);
+//    
+//    ADM_free(A);
+//    
+//    RCS_free(R);
 
 #if defined (_OPEN_MPI)
 
