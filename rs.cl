@@ -787,13 +787,36 @@ __kernel void db_atts(__global float4 *p,
     ori = normalize(ori_next);
     pos += vel * dt;
     
+    float4 rand_no_a, rand_no_b, rand_no_c;
+    float SIN_TH_2, COS_TH_2, SQXZ, SQXYZ, CA, SA;
+    
     int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
     
     if (is_outside) {
         uint4 seed = y[i];
         float4 r = rand(&seed);
         pos.xyz = (float3)(fma(r.xy, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT);  // This is kind of cool!
-        ori = normalize(rand(&seed));
+//        ori = normalize(rand(&seed));
+        
+        rand_no_a = rand(&seed);
+        rand_no_b = rand(&seed);
+        rand_no_c.s0 = sqrt(-2.0f * log(rand_no_a.s0)) * cos(2.0f * M_PI_F * rand_no_a.s1); // X (normal)
+        rand_no_c.s1 = sqrt(-2.0f * log(rand_no_a.s2)) * cos(2.0f * M_PI_F * rand_no_a.s3); // Y (normal)
+        rand_no_c.s2 = sqrt(-2.0f * log(rand_no_b.s0)) * cos(2.0f * M_PI_F * rand_no_b.s1); // Z (normal)
+        // 2 * pi * rand_noc.s3 == THETA (uniform)
+        
+        SIN_TH_2 = sin(M_PI_F * rand_no_c.s3);
+        COS_TH_2 = cos(M_PI_F * rand_no_c.s3);
+        SQXZ = sqrt(rand_no_c.s0 * rand_no_c.s0 + rand_no_c.s2 * rand_no_c.s2);
+        SQXYZ = sqrt(rand_no_c.s0 * rand_no_c.s0 + rand_no_c.s1 * rand_no_c.s1 + rand_no_c.s2 * rand_no_c.s2);
+        CA = cos(0.5f * acos(rand_no_c.s1 / SQXYZ));
+        SA = sin(0.5f * acos(rand_no_c.s1 / SQXYZ));
+        
+        ori.x = rand_no_c.s0*CA*SIN_TH_2/SQXYZ - rand_no_c.s0*rand_no_c.s1*SIN_TH_2/SQXYZ*SA/SQXZ + rand_no_c.s2*COS_TH_2*SA/SQXZ;
+        ori.y = SIN_TH_2/SQXYZ*(SQXZ*SA + rand_no_c.s1*CA);
+        ori.z = rand_no_c.s2*CA*SIN_TH_2/SQXYZ - rand_no_c.s0*COS_TH_2*SA/SQXZ - rand_no_c.s1*rand_no_c.s2*SIN_TH_2*SA/SQXZ/SQXYZ;
+        ori.w = COS_TH_2*CA;
+        
         vel = FLOAT4_ZERO;
         tum = QUAT_IDENTITY;
         rcs = FLOAT4_ZERO;
