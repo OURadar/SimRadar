@@ -53,11 +53,6 @@ On Mac:
 [Matlab Scripts]: http://arrc.ou.edu/~boonleng/simradar/simradar-matlab.zip
 [nVidia CUDA Driver]: http://www.nvidia.com/object/mac-driver-archive.html
 
-Installing HDF5 on a Mac
-------------------------
-
-The easiest way to obtain HDF5 framework on a Mac is through Homebrew (http://brew.sh). Once you have Homebrew installed, simply use the command `brew install hdf5` or `brew install homebrew/science/hdf5` on the terminal. Homebrew handles all the dependency check and installed the pre-requisites for you.
-
 
 OSCER Boomer
 ------------
