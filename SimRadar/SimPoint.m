@@ -64,7 +64,7 @@
             }
         }
         
-        RS_set_density(S, 50.0f);
+        //RS_set_density(S, 50.0f);
 
         // Copy out some convenient constants
         nearest_thousand = (size_t)ceilf(1000.0f / S->preferred_multiple) * S->preferred_multiple;
@@ -112,7 +112,7 @@
         RS_set_debris_count(S, 1, 10000);
 //        RS_set_debris_count(S, 2, 256);
         RS_revise_debris_counts_to_gpu_preference(S);
-        
+
         RS_set_prt(S, 1.0f / 60.0f);
         
         BOOL useLES = TRUE;
