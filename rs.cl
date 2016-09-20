@@ -804,6 +804,7 @@ __kernel void db_atts(__global float4 *p,
         rand_no_c.s1 = sqrt(-2.0f * log(rand_no_a.s2)) * cos(2.0f * M_PI_F * rand_no_a.s3); // Y (normal)
         rand_no_c.s2 = sqrt(-2.0f * log(rand_no_b.s0)) * cos(2.0f * M_PI_F * rand_no_b.s1); // Z (normal)
         // 2 * pi * rand_noc.s3 == THETA (uniform)
+        rand_no_c.s3 = rand_no_b.s2;
         
         SIN_TH_2 = sin(M_PI_F * rand_no_c.s3);
         COS_TH_2 = cos(M_PI_F * rand_no_c.s3);
