@@ -160,6 +160,7 @@
 
 - (void)createSimulation:(NSNumber *)number {
     @autoreleasepool {
+        NSLog(@"Setting up sharedgroup ...");
         CGLShareGroupObj sharegroup = (CGLShareGroupObj)[number longValue];
         sim = [[SimPoint alloc] initWithDelegate:self cglShareGroup:sharegroup];
         if (sim) {

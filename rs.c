@@ -1470,10 +1470,10 @@ void RS_set_density(RSHandle *H, const RSfloat density) {
         rsprint("Simulation domain has been populated. Density cannot be changed.");
         return;
     }
-    if (H->status & RSStatusPopulationDefined) {
-        rsprint("ERROR: Population already defined. RS_set_density() should come before RS_set_scan_box().\n");
-        exit(EXIT_FAILURE);
-    }
+//    if (H->status & RSStatusPopulationDefined) {
+//        rsprint("ERROR: Population already defined. RS_set_density() should come before RS_set_scan_box().\n");
+//        exit(EXIT_FAILURE);
+//    }
 	H->params.body_per_cell = density;
     
     RS_update_computed_properties(H);
@@ -1635,11 +1635,6 @@ void RS_set_scan_box(RSHandle *H,
 	
 	//printf("H->num_anchors = %zu   ii = %d\n", H->num_anchors, ii);
 	
-	// Volume of a single resolution cell at the start of the domain (svol = smallest volume)
-	r = H->params.range_start;
-	RSfloat svol = (H->params.antenna_bw_rad * r) * (H->params.antenna_bw_rad * r) * (H->params.c * H->params.tau * 0.5f);
-	RSfloat nvol = ((xmax - xmin) * (ymax - ymin) * (zmax - zmin)) / svol;
-	
     // The closing domain of the simulation
     H->sim_desc.s[RSSimulationDescriptionBoundSizeX] = xmax - xmin;
     H->sim_desc.s[RSSimulationDescriptionBoundSizeY] = ymax - ymin;
@@ -1648,41 +1643,6 @@ void RS_set_scan_box(RSHandle *H,
     H->sim_desc.s[RSSimulationDescriptionBoundOriginY] = ymin;
     H->sim_desc.s[RSSimulationDescriptionBoundOriginZ] = zmin;
 	
-	// Suggest a number of scatter bodies to use
-	H->num_scats = (size_t)(H->params.body_per_cell * nvol);
-    H->debris_population[0] = H->num_scats;
-
-    // Get GPU preferred multiplication factor
-    // NOTE: make_pulse_pass_1 uses 2 x max_work_group_size stride
-    size_t max_work_group_size;
-    clGetDeviceInfo(H->worker[0].dev, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max_work_group_size), &max_work_group_size, NULL);
-    const size_t mul = H->num_cus[0] * H->num_workers * max_work_group_size * 2;
-
-    // Round the total population to a GPU preferred number
-    size_t preferred_n = H->num_scats;
-    if (H->num_scats > 50000) {
-        preferred_n = (size_t)(H->num_scats / mul) * mul;
-        if (preferred_n < H->params.body_per_cell * 9 / 10) {
-            preferred_n += mul;
-        }
-    }
-
-    // Revise the background (rain)
-    H->debris_population[0] = preferred_n;
-
-    // Add in the debris
-    for (ii = 1; ii < RS_MAX_DEBRIS_TYPES; ii++) {
-        if (H->debris_population[ii] > 0) {
-            preferred_n += H->debris_population[ii];
-        }
-    }
-
-    // A hard limit here. Will do something about this next time.
-    if (preferred_n > 20000000) {
-        exit(0);
-    }
-    
-    // Summary of parameters
     sprintf(H->summary,
             "User domain @\n  R:[ %6.2f ~ %6.2f ] km\n  E:[ %6.2f ~ %6.2f ] deg\n  A:[ %+6.2f ~ %+6.2f ] deg\n",
             1.0e-3 * H->params.range_start, 1e-3 * H->params.range_end,
@@ -1695,38 +1655,33 @@ void RS_set_scan_box(RSHandle *H,
             az_lo, az_hi, naz);
     sprintf(H->summary + strlen(H->summary),
             "==\n  X:[ %7.2f ~ %7.2f ]  (%.2f) m\n  Y:[ %7.2f ~ %7.2f ]  (%.2f) m\n  Z:[ %7.2f ~ %7.2f ]  (%.2f) m\n",
-            xmin, xmax, xmax - xmin,
-            ymin, ymax, ymax - ymin,
-            zmin, zmax, zmax - zmin);
-    sprintf(H->summary + strlen(H->summary),
-            "nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(svol));
-    sprintf(H->summary + strlen(H->summary),
-            "Average meteorological density = %.2f scatterers / resolution cell\n", (float)H->debris_population[0] / nvol);
+            xmin, xmax, H->sim_desc.s[RSSimulationDescriptionBoundSizeX],
+            ymin, ymax, H->sim_desc.s[RSSimulationDescriptionBoundSizeY],
+            zmin, zmax, H->sim_desc.s[RSSimulationDescriptionBoundSizeZ]);
     sprintf(H->summary + strlen(H->summary),
             "Concepts used: %s%s%s%s\n",
             H->sim_concept & RSSimulationConceptBoundedParticleVelocity ? "B" : "",
             H->sim_concept & RSSimulationConceptDraggedBackground ? "D" : "",
             H->sim_concept & RSSimulationConceptTransparentBackground ? "T" : "",
             H->sim_concept & RSSimulationConceptUniformDSDScaledRCS ? "U" : "");
-    
+
     if (H->verb) {
         rsprint("User domain @ R:[ %5.2f ~ %5.2f ] km   E:[ %5.2f ~ %5.2f ] deg   A:[ %+6.2f ~ %+6.2f ] deg\n",
-               1.0e-3 * H->params.range_start, 1e-3 * H->params.range_end,
-               H->params.elevation_start_deg, H->params.elevation_end_deg,
-               H->params.azimuth_start_deg, H->params.azimuth_end_deg);
+                1.0e-3 * H->params.range_start, 1e-3 * H->params.range_end,
+                H->params.elevation_start_deg, H->params.elevation_end_deg,
+                H->params.azimuth_start_deg, H->params.azimuth_end_deg);
         rsprint("Work domain @ R:[ %5.2f ~ %5.2f ] km   E:[ %5.2f ~ %5.2f ] deg   A:[ %+6.2f ~ %+6.2f ] deg\n",
-               1.0e-3 * r_lo, 1.0e-3 * r_hi,
-               el_lo, el_hi,
-               az_lo, az_hi);
+                1.0e-3 * r_lo, 1.0e-3 * r_hi,
+                el_lo, el_hi,
+                az_lo, az_hi);
         rsprint("            @ R:[       %-3d     ]      E:[       %-3d     ]       A:[        %-3d      ]",
                 H->params.range_count, nel, naz);
-		rsprint("            @ X:[ %.2f ~ %.2f ] m   Y:[ %.2f ~ %.2f ] m   Z:[ %.2f ~ %.2f ] m\n",
-			   xmin, xmax,
-			   ymin, ymax,
-               zmin, zmax);
+        rsprint("            @ X:[ %.2f ~ %.2f ] m   Y:[ %.2f ~ %.2f ] m   Z:[ %.2f ~ %.2f ] m\n",
+                xmin, xmax,
+                ymin, ymax,
+                zmin, zmax);
         rsprint("              = ( %.2f m x %.2f m x %.2f m )\n",
-               xmax - xmin, ymax - ymin, zmax - zmin);
-        rsprint("nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(svol));
+                xmax - xmin, ymax - ymin, zmax - zmin);
         if (H->sim_concept == RSSimulationConceptNull) {
             rsprint("No special concepts are active.\n");
         } else {
@@ -1744,13 +1699,9 @@ void RS_set_scan_box(RSHandle *H,
                 printf(RS_INDENT "o U - Uniform DSD with Scaled RCS\n");
             }
         }
-		rsprint("Set to GPU preferred %s (%s total scatterers / resolution cell)", commaint(preferred_n), commafloat((float)preferred_n / nvol));
-        rsprint("Average meteorological scatterer density = %s particles / radar cell\n", commafloat((float)H->debris_population[0] / nvol));
     }
 
-    // Now, we actually set it to suggested debris count
-	H->num_scats = preferred_n;
-    H->status |= RSStatusPopulationDefined;
+    RS_revise_population(H);
 
     // Anchor lines to show the volume of interest, which was set by the user. The number is well more than enough
 	H->num_anchor_lines  = 8 * (naz + nel);
@@ -2018,6 +1969,71 @@ void RS_set_debris_count(RSHandle *H, const int debris_id, const size_t count) {
 }
 
 
+void RS_revise_population(RSHandle *H) {
+    int ii;
+
+    // Volume of a single resolution cell at the start of the domain (svol = smallest volume)
+    RSfloat r = H->params.range_start;
+    RSfloat svol = (H->params.antenna_bw_rad * r) * (H->params.antenna_bw_rad * r) * (H->params.c * H->params.tau * 0.5f);
+    RSfloat nvol = H->sim_desc.s[RSSimulationDescriptionBoundSizeX]
+                 * H->sim_desc.s[RSSimulationDescriptionBoundSizeY]
+                 * H->sim_desc.s[RSSimulationDescriptionBoundSizeZ] / svol;
+
+    // Suggest a number of scatter bodies to use
+    H->num_scats = (size_t)(H->params.body_per_cell * nvol);
+    H->debris_population[0] = H->num_scats;
+
+    // Get GPU preferred multiplication factor
+    // NOTE: make_pulse_pass_1 uses 2 x max_work_group_size stride
+    size_t max_work_group_size;
+    clGetDeviceInfo(H->worker[0].dev, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max_work_group_size), &max_work_group_size, NULL);
+    const size_t mul = H->num_cus[0] * H->num_workers * max_work_group_size * 2;
+
+    // Round the total population to a GPU preferred number
+    size_t preferred_n = H->num_scats;
+    if (H->num_scats > 50000) {
+        preferred_n = (size_t)(H->num_scats / mul) * mul;
+        if (preferred_n < H->params.body_per_cell * 9 / 10) {
+            preferred_n += mul;
+        }
+    }
+
+    // Revise the background (rain)
+    H->debris_population[0] = preferred_n;
+
+    // Add in the debris
+    for (ii = 1; ii < RS_MAX_DEBRIS_TYPES; ii++) {
+        if (H->debris_population[ii] > 0) {
+            preferred_n += H->debris_population[ii];
+        }
+    }
+
+    // A hard limit here. Will do something about this next time.
+    if (preferred_n > 20000000) {
+        rsprint("Too many scatterers.\n");
+        exit(0);
+    }
+
+    sprintf(H->summary + strlen(H->summary),
+            "nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(svol));
+    sprintf(H->summary + strlen(H->summary),
+            "Average meteorological scatterer density = %s scatterers / closest radar cell\n", commafloat((float)H->debris_population[0] / nvol));
+    sprintf(H->summary + strlen(H->summary),
+            "Average meteorological density = %.2f scatterers / resolution cell\n", (float)H->debris_population[0] / nvol);
+    if (H->verb) {
+        rsprint("nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(svol));
+        rsprint("Setting to GPU preferred %s", commaint(preferred_n));
+        rsprint("Average all-type scatterer density = %s scatterers / closest radar cell\n", commafloat((float)preferred_n / nvol));
+        rsprint("Average meteorological scatterer density = %s scatterers / closest radar cell\n", commafloat((float)H->debris_population[0] / nvol));
+    }
+
+
+    // Now, we actually set it to suggested debris count
+    H->num_scats = preferred_n;
+    H->status |= RSStatusPopulationDefined;
+}
+
+
 void RS_revise_debris_counts_to_gpu_preference(RSHandle *H) {
     
     int i;
@@ -2094,8 +2110,9 @@ void RS_update_origins_offsets(RSHandle *H) {
     }
     if (H->debris_population[0] != count) {
         rsprint("ERROR: Inconsistent debris counts.");
-        printf(RS_INDENT "o sub_num_scats = %s   count = %s\n", commaint(sub_num_scats), commaint(count));
-        for (k = 0; k < H->num_body_types; k++) {
+        printf(RS_INDENT "o sub_num_scats = %s\n", commaint(sub_num_scats));
+        printf(RS_INDENT "o population[0] = %s  !=  count = %s\n", commaint(H->debris_population[0]), commaint(count));
+        for (k = 1; k < H->num_body_types; k++) {
             printf(RS_INDENT "o population[%d] = %s\n", k, commaint(H->debris_population[k]));
         }
         exit(EXIT_FAILURE);
