@@ -785,9 +785,9 @@ __kernel void db_atts(__global float4 *p,
     ori = normalize(ori_next);
     pos += vel * dt;
     
-    float4 rand_no_a, rand_no_b, rand_no_c;
+    //float4 rand_no_a, rand_no_b, rand_no_c;
     //float sin_th_2, cos_th_2,
-    float sqxy, sqxyz, ca, sa;
+    //float sqxy, sqxyz, ca, sa;
     
     int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
     
@@ -797,24 +797,39 @@ __kernel void db_atts(__global float4 *p,
         pos.xyz = (float3)(fma(r.xy, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT);  // This is kind of cool!
 //        ori = normalize(rand(&seed));
 
-        rand_no_a = rand(&seed);
-        rand_no_b = rand(&seed);
-        rand_no_c.s0 = sqrt(-2.0f * log(rand_no_a.s0)) * cos(2.0f * M_PI_F * rand_no_a.s1); // X (normal)
-        rand_no_c.s1 = sqrt(-2.0f * log(rand_no_a.s2)) * cos(2.0f * M_PI_F * rand_no_a.s3); // Y (normal)
-        rand_no_c.s2 = sqrt(-2.0f * log(rand_no_b.s0)) * cos(2.0f * M_PI_F * rand_no_b.s1); // Z (normal)
-        // 2 * pi * rand_noc.s3 == THETA (uniform)
-        rand_no_c.s3 = rand_no_b.s2;
-        
-        float cos_th_2, sin_th_2 = sincos(M_PI_F * rand_no_c.s3, &cos_th_2);
+//        rand_no_a = rand(&seed);
+//        rand_no_b = rand(&seed);
+//        rand_no_c.s0 = sqrt(-2.0f * log(rand_no_a.s0)) * cos(2.0f * M_PI_F * rand_no_a.s1); // X (normal)
+//        rand_no_c.s1 = sqrt(-2.0f * log(rand_no_a.s2)) * cos(2.0f * M_PI_F * rand_no_a.s3); // Y (normal)
+//        rand_no_c.s2 = sqrt(-2.0f * log(rand_no_b.s0)) * cos(2.0f * M_PI_F * rand_no_b.s1); // Z (normal)
+//
+//        2 * pi * rand_noc.s3 == THETA (uniform)
+//        rand_no_c.s3 = rand_no_b.s2;
+//
+//        float cos_th_2, sin_th_2 = sincos(M_PI_F * rand_no_c.s3, &cos_th_2);
+//        sqxy = sqrt(rand_no_c.s0 * rand_no_c.s0 + rand_no_c.s2 * rand_no_c.s2);
+//        sqxyz = sqrt(rand_no_c.s0 * rand_no_c.s0 + rand_no_c.s1 * rand_no_c.s1 + rand_no_c.s2 * rand_no_c.s2);
+//        sa = sincos(0.5f * acos(rand_no_c.s1 / sqxyz), &ca);
+//
+//        ori.x = rand_no_c.s0*ca*sin_th_2/sqxyz - rand_no_c.s0*rand_no_c.s1*sin_th_2/sqxyz*sa/sqxy + rand_no_c.s2*cos_th_2*sa/sqxy;
+//        ori.y = sin_th_2/sqxyz*(sqxy*sa + rand_no_c.s1*ca);
+//        ori.z = rand_no_c.s2 * ca*sin_th_2 / sqxyz - rand_no_c.s0 * cos_th_2 * sa / sqxy - rand_no_c.s1 * rand_no_c.s2 * sin_th_2 * sa / sqxy / sqxyz;
+//        ori.w = cos_th_2*ca;
 
-        sqxy = sqrt(rand_no_c.s0 * rand_no_c.s0 + rand_no_c.s2 * rand_no_c.s2);
-        sqxyz = sqrt(rand_no_c.s0 * rand_no_c.s0 + rand_no_c.s1 * rand_no_c.s1 + rand_no_c.s2 * rand_no_c.s2);
-        sa = sincos(0.5f * acos(rand_no_c.s1 / sqxyz), &ca);
+        r = rand(&seed);
+        float4 c = (float4)(sqrt(-2.0f * log(r.s012)), r.s3);
+        r = rand(&seed);
+        c.s012 *= cos(2.0f * M_PI_F * r.s012);
+
+        float cos_th_2, sin_th_2 = sincos(M_PI_F * c.s3, &cos_th_2);
+        float sqxy = sqrt(c.s0 * c.s0 + c.s2 * c.s2);
+        float sqxyz = sqrt(c.s0 * c.s0 + c.s1 * c.s1 + c.s2 * c.s2);
+        float ca, sa = sincos(0.5f * acos(c.s1 / sqxyz), &ca);
         
-        ori.x = rand_no_c.s0*ca*sin_th_2/sqxyz - rand_no_c.s0*rand_no_c.s1*sin_th_2/sqxyz*sa/sqxy + rand_no_c.s2*cos_th_2*sa/sqxy;
-        ori.y = sin_th_2/sqxyz*(sqxy*sa + rand_no_c.s1*ca);
-        ori.z = rand_no_c.s2 * ca*sin_th_2 / sqxyz - rand_no_c.s0 * cos_th_2 * sa / sqxy - rand_no_c.s1 * rand_no_c.s2 * sin_th_2 * sa / sqxy / sqxyz;
-        ori.w = cos_th_2*ca;
+        ori.x = c.s0 * ca * sin_th_2 / sqxyz - c.s0 * c.s1 * sin_th_2 / sqxyz * sa / sqxy + c.s2 * cos_th_2 * sa / sqxy;
+        ori.y = sin_th_2 / sqxyz * (sqxy * sa + c.s1 * ca);
+        ori.z = c.s2 * ca * sin_th_2 / sqxyz - c.s0 * cos_th_2 * sa / sqxy - c.s1 * c.s2 * sin_th_2 * sa / sqxy / sqxyz;
+        ori.w = cos_th_2 * ca;
 
         vel = FLOAT4_ZERO;
         tum = QUAT_IDENTITY;
