@@ -1942,6 +1942,12 @@ void RS_set_debris_count(RSHandle *H, const int debris_id, const size_t count) {
         return;
     }
 
+    // Account for hydrometeors -> debris
+    if (H->status & RSStatusDomainPopulated) {
+        size_t delta = count - H->debris_population[debris_id];
+        rsprint("Readjusting scatterer[0] %s -> %s", commaint(H->debris_population[0]), commaint(H->debris_population[0] - delta));
+        H->debris_population[0] -= delta;
+    }
     H->debris_population[debris_id] = count;
 
     // Always start with one as the background scatterers are always there
@@ -2017,9 +2023,7 @@ void RS_revise_population(RSHandle *H) {
     sprintf(H->summary + strlen(H->summary),
             "nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(svol));
     sprintf(H->summary + strlen(H->summary),
-            "Average meteorological scatterer density = %s scatterers / closest radar cell\n", commafloat((float)H->debris_population[0] / nvol));
-    sprintf(H->summary + strlen(H->summary),
-            "Average meteorological density = %.2f scatterers / resolution cell\n", (float)H->debris_population[0] / nvol);
+            "Average meteor. scatterer density = %s\n", commafloat((float)H->debris_population[0] / nvol));
     if (H->verb) {
         rsprint("nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(svol));
         rsprint("Setting to GPU preferred %s", commaint(preferred_n));

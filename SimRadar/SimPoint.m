@@ -389,7 +389,7 @@
     }
 
     RS_set_debris_count(S, debrisId, pop);
-    
+
     RS_get_all_worker_debris_counts(S, debrisId, returnCounts);
 
     for (int i = 0; i < S->num_workers; i++) {

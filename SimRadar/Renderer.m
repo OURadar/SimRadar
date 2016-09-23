@@ -1253,7 +1253,7 @@ unsigned int grayToBinary(unsigned int num)
                 continue;
             }
             glBindVertexArray(debrisRenderer[k].vao);
-            //glUniform4f(instancedGeometryRenderer.colorUI, debrisRenderer[k].colors[0], debrisRenderer[k].colors[1], debrisRenderer[k].colors[2], debrisRenderer[k].colors[3]);
+            glUniform4f(instancedGeometryRenderer.colorUI, debrisRenderer[k].colors[0], debrisRenderer[k].colors[1], debrisRenderer[k].colors[2], debrisRenderer[k].colors[3]);
             glDrawElementsInstanced(GL_LINE_STRIP, debrisRenderer[k].instanceSize, GL_UNSIGNED_INT, NULL, debrisRenderer[k].count);
         }
 
