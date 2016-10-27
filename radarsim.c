@@ -665,6 +665,7 @@ int main(int argc, char *argv[]) {
                     scan.el = f1;
                 }
                 break;
+                
             case 't':
                 user.prt = atof(optarg);
                 break;
