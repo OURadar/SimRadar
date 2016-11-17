@@ -1,0 +1,32 @@
+//
+//  obj.h
+//  Radar Simulation Framework
+//
+//  Created by Boon Leng Cheong on 11/17/15.
+//  Copyright (c) 2016 Boon Leng Cheong. All rights reserved.
+//
+#ifndef _radarsim_obj_h
+#define _radarsim_obj_h
+
+#include "adm.h"
+#include "rcs.h"
+
+typedef int OBJConfig;
+
+enum OBJConfig {
+    OBJConfigUnknown,
+    OBJConfigWoodboard2x4,
+    OBJConfigWoodboard4x8
+};
+
+typedef void* OBJHandle;
+
+
+
+OBJHandle *OBJ_init_with_path(const char *path);
+OBJHandle *OBJ_init(void);
+void OBJ_free(OBJHandle *);
+
+void OBJ_get_tables(ADMTable *A, RCSTable *R, OBJConfig type);
+
+#endif
