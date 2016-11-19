@@ -1121,14 +1121,18 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
     // Initialize the ADM ingest
     H->A = ADM_init();
     if (H->A == NULL) {
-        rsprint("%s : Error. ADM_init() failed.");
+        if (H->verb) {
+            rsprint("ERROR: ADM_init() failed.");
+        }
         return NULL;
     }
     
     // Initialize the RCS ingest
     H->R = RCS_init();
     if (H->R == NULL) {
-        rsprint("%s : Error. RCS_init() failed.");
+        if (H->verb) {
+            rsprint("ERROR: RCS_init() failed.");
+        }
         return NULL;
     }
 

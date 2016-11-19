@@ -797,7 +797,6 @@ int main(int argc, char *argv[]) {
         S = RS_init_verbose(verb);
     }
     if (S == NULL) {
-        fprintf(stderr, "%s : Some errors occurred during RS_init().\n", now());
         return EXIT_FAILURE;
     }
     
