@@ -436,7 +436,7 @@ LESHandle *LES_init() {
 }
 
 
-LESTable *LES_get_frame(const LESHandle *i, const int n) {
+LESTable *LES_get_frame_0(const LESHandle *i, const int n) {
 	LESTable *table;
 	LESMem *h = (LESMem *)i;
 
@@ -537,7 +537,7 @@ LESTable *LES_get_frame(const LESHandle *i, const int n) {
 }
 
 
-LESTable *LES_get_frame2(const LESHandle *i, const int n) {
+LESTable *LES_get_frame(const LESHandle *i, const int n) {
     LESTable *table;
     LESMem *h = (LESMem *)i;
     
@@ -546,8 +546,10 @@ LESTable *LES_get_frame2(const LESHandle *i, const int n) {
     // Need to read in
     int file_id = n / LES_file_nblock;
     
+    #ifdef DEBUG
     printf("LES DEBUG : Ingest from file %s ... %d\n", h->files[file_id], h->ibuf);
-
+    #endif
+    
     // The table in collection of data boxes
     table = h->data_boxes[h->ibuf];
 
@@ -571,11 +573,10 @@ LESTable *LES_get_frame2(const LESHandle *i, const int n) {
                   + table->nn * sizeof(float) + 2 * sizeof(uint32_t)  // t
                   );
     
-    printf("n = %d  offset = %ld\n", n, offset);
     // Derive filename to ingest a set of LESTables
     FILE *fid = fopen(h->files[file_id], "r");
     if (fid == NULL) {
-        fprintf(stderr, "Error opening LES table file %s %d)\n", h->files[file_id], file_id);
+        fprintf(stderr, "Error opening LES table file %s %d\n", h->files[file_id], file_id);
         return NULL;
     }
     fseek(fid, offset, SEEK_SET);
@@ -609,10 +610,11 @@ LESTable *LES_get_frame2(const LESHandle *i, const int n) {
     }
 
     // Update the index
-    h->data_id[h->ibuf] = file_id * LES_file_nblock + n;
+    h->ibuf = h->ibuf == LES_num - 1 ? 0 : h->ibuf + 1;
 
     return table;
 }
+
 
 char *LES_data_path(const LESHandle *i) {
     LESMem *h = (LESMem *)i;
