@@ -4329,25 +4329,9 @@ void RS_advance_time(RSHandle *H) {
 		return;
 	}
 
-//    const int v = H->vel_idx;
-
     // Advance to next wind table when the time comes
     if (H->sim_tic >= H->sim_toc) {
         H->sim_toc += H->vel_desc.tp;
-        //H->vel_idx = H->vel_idx == H->vel_count - 1 ? 0 : H->vel_idx + 1;
-
-//        if (H->vel_idx == 0) {
-//            H->vel_count = 0;
-//            rsprint("Loading LES tables from files ...");
-//            if (H->vel_out_idx == 0) {
-//                rsprint("Wind table restarted.");
-//            }
-//            for (k = 0; k < RS_MAX_VEL_TABLES; k++) {
-//                RS_set_vel_data_to_LES_table(H, LES_get_frame(H->L, H->vel_out_idx));
-//                H->vel_out_idx = H->vel_out_idx == H->vel_out_count - 1 ? 0 : H->vel_out_idx + 1;
-//            }
-//        }
-
         if (H->vel_idx == 0) {
             rsprint("Wind table restarted.");
         }

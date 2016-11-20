@@ -543,7 +543,7 @@ LESTable *LES_get_frame(const LESHandle *i, const int n) {
     
     const float v0 = h->v0;
     
-    // Need to read in
+    // The file number of the list of files to read
     int file_id = n / LES_file_nblock;
     
     #ifdef DEBUG
@@ -564,7 +564,7 @@ LESTable *LES_get_frame(const LESHandle *i, const int n) {
     table->tr = h->tr;
 
     long offset = sizeof(uint32_t)                                    // version number
-           + n * (
+           + (n % LES_file_nblock) * (
                   sizeof(float) + 2 * sizeof(uint32_t)                // time
                   + table->nn * sizeof(float) + 2 * sizeof(uint32_t)  // u
                   + table->nn * sizeof(float) + 2 * sizeof(uint32_t)  // v
