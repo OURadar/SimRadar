@@ -797,7 +797,6 @@ int main(int argc, char *argv[]) {
         S = RS_init_verbose(verb);
     }
     if (S == NULL) {
-        fprintf(stderr, "%s : Some errors occurred during RS_init().\n", now());
         return EXIT_FAILURE;
     }
     
@@ -1034,7 +1033,7 @@ int main(int argc, char *argv[]) {
     
             printf("signal:\n");
             
-            if (S->num_workers > 1) {
+            if (S->num_workers == 2) {
                 for (int r = 0; r < S->params.range_count; r++) {
                     printf("sig[%2d] = (%10.3e %10.3e %10.3e %10.3e) <- (%10.3e %10.3e %10.3e %10.3e) + (%10.3e %10.3e %10.3e %10.3e)\n",
                            r,
@@ -1108,8 +1107,8 @@ int main(int argc, char *argv[]) {
     // Initialize a file if the user wants output files
     if (user.output_iq_file || user.output_state_file) {
         file_header.params = S->params;
-        for (k = 0; k < S->num_body_types; k++) {
-            file_header.debris_population[k] = (uint32_t)S->debris_population[k];
+        for (k = 0; k < S->num_types; k++) {
+            file_header.counts[k] = (uint32_t)S->counts[k];
         }
         snprintf(file_header.scan_mode, sizeof(file_header.scan_mode), "%s", scan_mode_str(scan.mode));
         file_header.scan_start      = scan.start;

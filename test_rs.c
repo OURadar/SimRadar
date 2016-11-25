@@ -142,7 +142,7 @@ int main(int argc, char **argv)
 	RS_populate(H);
 	
 	printf("\nTest(s) using %s scatterers and %s debris objects for %s iterations:\n\n",
-           commaint(H->num_scats), commaint(H->debris_population[0]), commaint(N));
+           commaint(H->num_scats), commaint(H->counts[0]), commaint(N));
 
 	RS_advance_time(H);
     
@@ -215,20 +215,20 @@ int main(int argc, char **argv)
     //  make_pulse_pass_1
     //
     if (test & TEST_MAKE_PULSE_GPU_PASS_1) {
-        byte_size = H->worker[0].make_pulse_params.entry_counts[0] * 2 * sizeof(cl_float4);
+        byte_size = H->workers[0].make_pulse_params.entry_counts[0] * 2 * sizeof(cl_float4);
         gettimeofday(&t1, NULL);
         for (i=0; i<N; i++) {
-            clEnqueueNDRangeKernel(H->worker[0].que,
-                                   H->worker[0].kern_make_pulse_pass_1,
+            clEnqueueNDRangeKernel(H->workers[0].que,
+                                   H->workers[0].kern_make_pulse_pass_1,
                                    1,
                                    NULL,
-                                   &H->worker[0].make_pulse_params.global[0],
-                                   &H->worker[0].make_pulse_params.local[0],
+                                   &H->workers[0].make_pulse_params.global[0],
+                                   &H->workers[0].make_pulse_params.local[0],
                                    0,
                                    NULL,
                                    NULL);
         }
-        clFinish(H->worker[0].que);
+        clFinish(H->workers[0].que);
         gettimeofday(&t2, NULL);
         dt = DTIME(t1, t2) / (float)N;
         printf(FMT2, "make_pulse_pass_2", 1.0e3f * dt, 1.0e-9f * byte_size / dt);
@@ -238,20 +238,20 @@ int main(int argc, char **argv)
     //  make_pulse_pass_2
     //
     if (test & TEST_MAKE_PULSE_GPU_PASS_2) {
-        byte_size = H->worker[0].make_pulse_params.entry_counts[1] * sizeof(cl_float4);
+        byte_size = H->workers[0].make_pulse_params.entry_counts[1] * sizeof(cl_float4);
         gettimeofday(&t1, NULL);
         for (i=0; i<N; i++) {
-            clEnqueueNDRangeKernel(H->worker[0].que,
-                                   H->worker[0].kern_make_pulse_pass_2,
+            clEnqueueNDRangeKernel(H->workers[0].que,
+                                   H->workers[0].kern_make_pulse_pass_2,
                                    1,
                                    NULL,
-                                   &H->worker[0].make_pulse_params.global[1],
-                                   &H->worker[0].make_pulse_params.local[1],
+                                   &H->workers[0].make_pulse_params.global[1],
+                                   &H->workers[0].make_pulse_params.local[1],
                                    0,
                                    NULL,
                                    NULL);
         }
-        clFinish(H->worker[0].que);
+        clFinish(H->workers[0].que);
         gettimeofday(&t2, NULL);
         dt = DTIME(t1, t2) / (float)N;
         printf(FMT2, "make_pulse_pass_2", 1.0e3f * dt, 1.0e-9f * byte_size / dt);
@@ -261,21 +261,21 @@ int main(int argc, char **argv)
     //  db_atts
     //
     if (test & TEST_DB_ATTS) {
-        byte_size = 6 * H->debris_population[1] * sizeof(cl_float4);
+        byte_size = 6 * H->counts[1] * sizeof(cl_float4);
         gettimeofday(&t1, NULL);
         int k = 1;
         for (i=0; i<N; i++) {
-            clEnqueueNDRangeKernel(H->worker[0].que,
-                                   H->worker[0].kern_db_atts,
+            clEnqueueNDRangeKernel(H->workers[0].que,
+                                   H->workers[0].kern_db_atts,
                                    1,
-                                   &H->worker[0].debris_origin[k],
-                                   &H->worker[0].debris_population[k],
+                                   &H->workers[0].origins[k],
+                                   &H->workers[0].counts[k],
                                    NULL,
                                    0,
                                    NULL,
                                    NULL);
         }
-        clFinish(H->worker[0].que);
+        clFinish(H->workers[0].que);
         gettimeofday(&t2, NULL);
         dt = DTIME(t1, t2) / (float)N;
         printf(FMT2, "db_atts", 1.0e3f * dt, 1.0e-9f * byte_size / dt);
@@ -285,20 +285,20 @@ int main(int argc, char **argv)
     //  el_atts
     //
     if (test & TEST_EL_ATTS) {
-        byte_size = 4 * H->debris_population[0] * sizeof(cl_float4);
+        byte_size = 4 * H->counts[0] * sizeof(cl_float4);
         gettimeofday(&t1, NULL);
         for (i=0; i<N; i++) {
-            clEnqueueNDRangeKernel(H->worker[0].que,
-                                   H->worker[0].kern_el_atts,
+            clEnqueueNDRangeKernel(H->workers[0].que,
+                                   H->workers[0].kern_el_atts,
                                    1,
-                                   &H->worker[0].debris_origin[0],
-                                   &H->worker[0].debris_population[0],
+                                   &H->workers[0].origins[0],
+                                   &H->workers[0].counts[0],
                                    NULL,
                                    0,
                                    NULL,
                                    NULL);
         }
-        clFinish(H->worker[0].que);
+        clFinish(H->workers[0].que);
         gettimeofday(&t2, NULL);
         dt = DTIME(t1, t2) / (float)N;
         printf(FMT2, "el_atts", 1.0e3f * dt, 1.0e-9f * byte_size / dt);
@@ -311,8 +311,8 @@ int main(int argc, char **argv)
         byte_size = 4 * H->num_scats * sizeof(cl_float4);
         gettimeofday(&t1, NULL);
         for (i=0; i<N; i++) {
-            clEnqueueNDRangeKernel(H->worker[0].que,
-                                   H->worker[0].kern_scat_sig_aux,
+            clEnqueueNDRangeKernel(H->workers[0].que,
+                                   H->workers[0].kern_scat_sig_aux,
                                    1,
                                    NULL,
                                    &H->num_scats,
@@ -321,7 +321,7 @@ int main(int argc, char **argv)
                                    NULL,
                                    NULL);
         }
-        clFinish(H->worker[0].que);
+        clFinish(H->workers[0].que);
         gettimeofday(&t2, NULL);
         dt = DTIME(t1, t2) / (float)N;
         printf(FMT2, "scat_sig_aux", 1.0e3f * dt, 1.0e-9f * byte_size / dt);

@@ -36,6 +36,7 @@ typedef struct les_grid {
 } LESGrid;
 
 typedef struct _les_value {
+    float *a;
 	float *x;
 	float *y;
 	float *z;
@@ -69,7 +70,8 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path);
 LESHandle *LES_init(void);
 void LES_free(LESHandle *);
 
-LESTable *LES_get_frame(const LESHandle *, const int n);
+LESTable *LES_get_frame_0(const LESHandle *, const int n);
+LESTable *LES_get_frame(const LESHandle *i, const int n);
 char *LES_data_path(const LESHandle *);
 float LES_get_table_period(const LESHandle *);
 size_t LES_get_table_count(const LESHandle *);

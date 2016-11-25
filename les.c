@@ -213,6 +213,7 @@ LESTable *LES_table_create(const LESGrid *grid) {
 	table->data.x = grid->x;
 	table->data.y = grid->y;
 	table->data.z = grid->z;
+    table->data.a = (float *)malloc(4 * sizeof(float));
 	table->data.u = (float *)malloc(table->nn * sizeof(float));
 	table->data.v = (float *)malloc(table->nn * sizeof(float));
 	table->data.w = (float *)malloc(table->nn * sizeof(float));
@@ -235,6 +236,7 @@ LESTable *LES_table_create(const LESGrid *grid) {
 void LES_table_free(LESTable *table) {
 	// NOTE: table->data.u, table->data.v & table->data.w are allocated but
 	//       table->data.x, table->data.y & table->data.z are assigned to grid->data.x, grid->data.y & grid->data.z
+    free(table->data.a);
 	free(table->data.u);
 	free(table->data.v);
 	free(table->data.w);
@@ -246,7 +248,7 @@ void LES_table_free(LESTable *table) {
 
 void LES_show_table_summary(const LESTable *table) {
 
-    printf(" nx = %d   ny = %d   nz = %d   nt = %d\n\n", table->nx, table->ny, table->nz, table->nt);
+    printf(" time = %.4f   nx = %d   ny = %d   nz = %d   nt = %d\n\n", table->data.a[0], table->nx, table->ny, table->nz, table->nt);
     
 	printf(" u =\n");
 	LES_show_volume(table->data.u, table->nx, table->ny, table->nz);
@@ -434,7 +436,7 @@ LESHandle *LES_init() {
 }
 
 
-LESTable *LES_get_frame(const LESHandle *i, const int n) {
+LESTable *LES_get_frame_0(const LESHandle *i, const int n) {
 	LESTable *table;
 	LESMem *h = (LESMem *)i;
 
@@ -447,11 +449,11 @@ LESTable *LES_get_frame(const LESHandle *i, const int n) {
 	
 	// If it is a table that has been ingested and still in the cache, just return it.
 	if (k < LES_num && h->data_id[k] == n) {
+        printf("Found n = %d @ k = %d\n", n, k);
 		return h->data_boxes[k];
 	} else {
 		// Need to read in
 		int file_id = n / LES_file_nblock;
-
 
         #ifdef DEBUG
 		printf("LES DEBUG : Ingest from file %s ...\n", h->files[file_id]);
@@ -471,8 +473,7 @@ LESTable *LES_get_frame(const LESHandle *i, const int n) {
 		fread(&ver, sizeof(uint32_t), 1, fid);
 //		printf("ver = %d\n", ver);
 		
-		float time;
-		int saved_ibuf = h->ibuf;
+		int rbuf = n % LES_file_nblock;
 
 		// Read in all blocks since there is only a small number of them.
 		for (int b = 0; b < LES_file_nblock; b++) {
@@ -496,10 +497,8 @@ LESTable *LES_get_frame(const LESHandle *i, const int n) {
             table->tr = h->tr;
             
             // Timestamp from the file
-			fread(&time, sizeof(float), 1, fid);
+            fread(table->data.a, sizeof(float), 1, fid);
 			fseek(fid, 2 * sizeof(uint32_t), SEEK_CUR);
-
-			// printf("time = %.4f\n", time * v0 / g);
 
 			//LES_show_grid_summary(h->data_grid);
 
@@ -531,10 +530,89 @@ LESTable *LES_get_frame(const LESHandle *i, const int n) {
 		
 		fclose(fid);
 		
-		table = h->data_boxes[saved_ibuf];
+		table = h->data_boxes[rbuf];
 	}
 	
 	return table;
+}
+
+
+LESTable *LES_get_frame(const LESHandle *i, const int n) {
+    LESTable *table;
+    LESMem *h = (LESMem *)i;
+    
+    const float v0 = h->v0;
+    
+    // The file number of the list of files to read
+    int file_id = n / LES_file_nblock;
+    
+    #ifdef DEBUG
+    printf("LES DEBUG : Ingest from file %s ... %d\n", h->files[file_id], h->ibuf);
+    #endif
+    
+    // The table in collection of data boxes
+    table = h->data_boxes[h->ibuf];
+
+    // Copy over some base parameters
+    table->ax = h->ax;
+    table->ay = h->ay;
+    table->az = h->az;
+    table->rx = h->rx;
+    table->ry = h->ry;
+    table->rz = h->rz;
+    table->tp = h->tp;
+    table->tr = h->tr;
+
+    long offset = sizeof(uint32_t)                                    // version number
+           + (n % LES_file_nblock) * (
+                  sizeof(float) + 2 * sizeof(uint32_t)                // time
+                  + table->nn * sizeof(float) + 2 * sizeof(uint32_t)  // u
+                  + table->nn * sizeof(float) + 2 * sizeof(uint32_t)  // v
+                  + table->nn * sizeof(float) + 2 * sizeof(uint32_t)  // w
+                  + table->nn * sizeof(float) + 2 * sizeof(uint32_t)  // p
+                  + table->nn * sizeof(float) + 2 * sizeof(uint32_t)  // t
+                  );
+    
+    // Derive filename to ingest a set of LESTables
+    FILE *fid = fopen(h->files[file_id], "r");
+    if (fid == NULL) {
+        fprintf(stderr, "Error opening LES table file %s %d\n", h->files[file_id], file_id);
+        return NULL;
+    }
+    fseek(fid, offset, SEEK_SET);
+    // Timestamp of the frame
+    fread(table->data.a, sizeof(float), 1, fid);
+    fseek(fid, 2 * sizeof(uint32_t), SEEK_CUR);
+    // Wind u
+    fread(table->data.u, sizeof(float), table->nn, fid);
+    fseek(fid, 2 * sizeof(int32_t), SEEK_CUR);
+    // Wind v
+    fread(table->data.v, sizeof(float), table->nn, fid);
+    fseek(fid, 2 * sizeof(int32_t), SEEK_CUR);
+    // Wind w
+    fread(table->data.w, sizeof(float), table->nn, fid);
+    fseek(fid, 2 * sizeof(int32_t), SEEK_CUR);
+    // Pressure p
+    fread(table->data.p, sizeof(float), table->nn, fid);
+    fseek(fid, 2 * sizeof(int32_t), SEEK_CUR);
+    // Something t
+    fread(table->data.t, sizeof(float), table->nn, fid);
+    fseek(fid, 2 * sizeof(int32_t), SEEK_CUR);
+    fclose(fid);
+    
+    // Scale back
+    for (int k=0; k<table->nn; k++) {
+        table->data.u[k] *= v0;
+        table->data.v[k] *= v0;
+        table->data.w[k] *= v0;
+        table->data.p[k] *= v0 * v0;
+        table->data.t[k] *= v0 * v0;
+    }
+
+    // Update the index
+    h->ibuf = h->ibuf == LES_num - 1 ? 0 : h->ibuf + 1;
+
+    return table;
 }
 
 
