@@ -478,9 +478,6 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     
     // Set all the surface to null
     int i;
-    for (i = 0; i < RS_MAX_VEL_TABLES; i++) {
-        C->surf_vel[i] = NULL;
-    }
     for (i = 0; i < RS_MAX_ADM_TABLES; i++) {
         C->surf_adm_cd[i] = NULL;
         C->surf_adm_cm[i] = NULL;
@@ -490,6 +487,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
         C->surf_rcs_imag[i] = NULL;
     }
     C->surf_rcs_ellipsoids = NULL;
+    C->surf_vel = NULL;
     
 #else
 	
@@ -649,7 +647,7 @@ void RS_worker_free(RSWorker *C) {
 
 void RS_worker_malloc(RSHandle *H, const int worker_id) {
 
-    RSWorker *C = &H->worker[worker_id];
+    RSWorker *C = &H->workers[worker_id];
     
     if (C == NULL) {
         rsprint("Worker[%d] has not been initialized?\n", worker_id);
@@ -830,7 +828,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &C->scat_rcs);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
-    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
+    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCS,                  sizeof(cl_mem),     &C->rcs_ellipsoid);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCSDescription,       sizeof(cl_float4),  &C->rcs_ellipsoid_desc);
@@ -845,7 +843,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &C->scat_rcs);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
-    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
+    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentEllipsoidRCS,                  sizeof(cl_mem),     &C->rcs_ellipsoid);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentEllipsoidRCSDescription,       sizeof(cl_float4),  &C->rcs_ellipsoid_desc);
@@ -862,7 +860,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentTumble,                        sizeof(cl_mem),     &C->scat_tum);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &C->scat_rcs);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
-    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &C->adm_cd[0]);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelMomentum,          sizeof(cl_mem),     &C->adm_cm[0]);
@@ -960,10 +958,10 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
 #endif
 	
     if (C->mem_usage > C->mem_size / 4 * 3) {
-        rsprint("WARNING: High GPU memory usage by worker[%d]: %s GB out of %s GB.", C->name, commafloat((float)C->mem_usage * 1.0e-9f), commafloat((float)C->mem_size * 1.0e-9f));
+        rsprint("WARNING: High GPU memory usage by workers[%d]: %s GB out of %s GB.", C->name, commafloat((float)C->mem_usage * 1.0e-9f), commafloat((float)C->mem_size * 1.0e-9f));
     }
     if (C->verb) {
-        rsprint("worker[%d] memory usage = %s B\n", C->name, commaint(C->mem_usage));
+        rsprint("workers[%d] memory usage = %s B\n", C->name, commaint(C->mem_usage));
     }
 }
 
@@ -1012,16 +1010,16 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 	H->params.body_per_cell = RS_BODY_PER_CELL;
 	H->params.domain_pad_factor = RS_DOMAIN_PAD;
 	H->num_workers = 1;
-    H->num_body_types = 1;
+    H->num_types = 1;
 	H->method = method;
     H->random_seed = 19760520;
 	
 	for (i = 0; i < RS_MAX_GPU_DEVICE; i++) {
-		H->worker[i].name = i;
+		H->workers[i].name = i;
 	}
     
     for (i = 0; i < RS_MAX_DEBRIS_TYPES; i++) {
-        H->debris_population[i] = 0;
+        H->counts[i] = 0;
     }
 	
 	if (H->method == RS_METHOD_GPU) {
@@ -1066,7 +1064,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
         if (verb > 2) {
             rsprint("Initializing worker %d using %p\n", i, H->devs[i]);
         }
-        RS_worker_init(&H->worker[i], H->devs[i], 0, NULL, 0, verb);
+        RS_worker_init(&H->workers[i], H->devs[i], 0, NULL, 0, verb);
     }
 
 #else
@@ -1106,7 +1104,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
         if (verb > 2) {
             rsprint("Initializing worker %d using %p\n", i, H->devs[i]);
         }
-        RS_worker_init(&H->worker[i], H->devs[i], count, (const char **)src_ptr, sharegroup, verb);
+        RS_worker_init(&H->workers[i], H->devs[i], count, (const char **)src_ptr, sharegroup, verb);
     }
 	
 #endif
@@ -1189,37 +1187,37 @@ void RS_free_scat_memory(RSHandle *H) {
 #if defined (_USE_GCL_)
 	
 	for (i = 0; i < H->num_workers; i++) {
-		if (H->worker[i].vbo_scat_pos == 0) {
+		if (H->workers[i].vbo_scat_pos == 0) {
 			rsprint("ERROR: Unexpected conditions. VBOs were not shared.");
 			return;
 		}
-		gcl_free(H->worker[i].scat_pos);
-		gcl_free(H->worker[i].scat_clr);  // Only the GUI version has this
-		gcl_free(H->worker[i].scat_vel);
-		gcl_free(H->worker[i].scat_ori);
-        gcl_free(H->worker[i].scat_tum);
-		gcl_free(H->worker[i].scat_aux);
-        gcl_free(H->worker[i].scat_rcs);
-		gcl_free(H->worker[i].scat_sig);
-		gcl_free(H->worker[i].work);
-		gcl_free(H->worker[i].pulse);
-		gcl_free(H->worker[i].scat_rnd);
+		gcl_free(H->workers[i].scat_pos);
+		gcl_free(H->workers[i].scat_clr);  // Only the GUI version has this
+		gcl_free(H->workers[i].scat_vel);
+		gcl_free(H->workers[i].scat_ori);
+        gcl_free(H->workers[i].scat_tum);
+		gcl_free(H->workers[i].scat_aux);
+        gcl_free(H->workers[i].scat_rcs);
+		gcl_free(H->workers[i].scat_sig);
+		gcl_free(H->workers[i].work);
+		gcl_free(H->workers[i].pulse);
+		gcl_free(H->workers[i].scat_rnd);
     }
 	
 #else
 	
 	for (i = 0; i < H->num_workers; i++) {
-		clReleaseMemObject(H->worker[i].scat_pos);
-        clReleaseMemObject(H->worker[i].scat_clr);
-		clReleaseMemObject(H->worker[i].scat_vel);
-		clReleaseMemObject(H->worker[i].scat_ori);
-        clReleaseMemObject(H->worker[i].scat_tum);
-		clReleaseMemObject(H->worker[i].scat_aux);
-        clReleaseMemObject(H->worker[i].scat_rcs);
-		clReleaseMemObject(H->worker[i].scat_sig);
-		clReleaseMemObject(H->worker[i].work);
-		clReleaseMemObject(H->worker[i].pulse);
-		clReleaseMemObject(H->worker[i].scat_rnd);
+		clReleaseMemObject(H->workers[i].scat_pos);
+        clReleaseMemObject(H->workers[i].scat_clr);
+		clReleaseMemObject(H->workers[i].scat_vel);
+		clReleaseMemObject(H->workers[i].scat_ori);
+        clReleaseMemObject(H->workers[i].scat_tum);
+		clReleaseMemObject(H->workers[i].scat_aux);
+        clReleaseMemObject(H->workers[i].scat_rcs);
+		clReleaseMemObject(H->workers[i].scat_sig);
+		clReleaseMemObject(H->workers[i].work);
+		clReleaseMemObject(H->workers[i].pulse);
+		clReleaseMemObject(H->workers[i].scat_rnd);
 	}
 	
 #endif
@@ -1258,7 +1256,7 @@ void RS_free(RSHandle *H) {
     RCS_free(H->R);
 
 	for (i = 0; i < H->num_workers; i++) {
-		RS_worker_free(&H->worker[i]);
+		RS_worker_free(&H->workers[i]);
 	}
 	
 	RS_free_scat_memory(H);
@@ -1266,44 +1264,40 @@ void RS_free(RSHandle *H) {
 #if defined (_USE_GCL_)
 
 	for (i = 0; i < H->num_workers; i++) {
-        gcl_free(H->worker[i].angular_weight);
-        gcl_free(H->worker[i].range_weight);
+        gcl_free(H->workers[i].angular_weight);
+        gcl_free(H->workers[i].range_weight);
         
-        gcl_release_image(H->worker[i].rcs_ellipsoid);
+        gcl_release_image(H->workers[i].rcs_ellipsoid);
+        gcl_release_image(H->workers[i].vel);
         
         for (int a = 0; a < H->adm_count; a++) {
-            gcl_release_image(H->worker[i].adm_cd[a]);
-            gcl_release_image(H->worker[i].adm_cm[a]);
+            gcl_release_image(H->workers[i].adm_cd[a]);
+            gcl_release_image(H->workers[i].adm_cm[a]);
         }
         
         for (int r = 0; r < H->rcs_count; r++) {
-            gcl_release_image(H->worker[i].rcs_real[r]);
-            gcl_release_image(H->worker[i].rcs_imag[r]);
-        }
-        
-        for (int v = 0; v < H->vel_count; v++) {
-            gcl_release_image(H->worker[i].vel[v]);
+            gcl_release_image(H->workers[i].rcs_real[r]);
+            gcl_release_image(H->workers[i].rcs_imag[r]);
         }
 	}
 	
 #else
 	
     for (i = 0; i < H->num_workers; i++) {
-        clReleaseMemObject(H->worker[i].angular_weight);
-        clReleaseMemObject(H->worker[i].range_weight);
-        
+        clReleaseMemObject(H->workers[i].angular_weight);
+        clReleaseMemObject(H->workers[i].range_weight);
+
+        clReleaseMemObject(H->workers[i].rcs_ellipsoid);
+        clReleaseMemObject(H->workers[i].vel);
+
         for (int a = 0; a < H->adm_count; a++) {
-            clReleaseMemObject(H->worker[i].adm_cd[a]);
-            clReleaseMemObject(H->worker[i].adm_cm[a]);
+            clReleaseMemObject(H->workers[i].adm_cd[a]);
+            clReleaseMemObject(H->workers[i].adm_cm[a]);
         }
         
         for (int r = 0; r < H->rcs_count; r++) {
-            clReleaseMemObject(H->worker[i].rcs_real[r]);
-            clReleaseMemObject(H->worker[i].rcs_imag[r]);
-        }
-        
-        for (int v = 0; v < H->vel_count; v++) {
-            clReleaseMemObject(H->worker[i].vel[v]);
+            clReleaseMemObject(H->workers[i].rcs_real[r]);
+            clReleaseMemObject(H->workers[i].rcs_imag[r]);
         }
     }
     
@@ -1948,22 +1942,22 @@ void RS_set_debris_count(RSHandle *H, const int debris_id, const size_t count) {
 
     // Account for hydrometeors -> debris
     if (H->status & RSStatusDomainPopulated) {
-        size_t delta = count - H->debris_population[debris_id];
-        rsprint("Readjusting scatterer[0] %s -> %s", commaint(H->debris_population[0]), commaint(H->debris_population[0] - delta));
-        H->debris_population[0] -= delta;
+        size_t delta = count - H->counts[debris_id];
+        rsprint("Readjusting scatterer[0] %s -> %s", commaint(H->counts[0]), commaint(H->counts[0] - delta));
+        H->counts[0] -= delta;
     }
-    H->debris_population[debris_id] = count;
+    H->counts[debris_id] = count;
 
     // Always start with one as the background scatterers are always there
-    H->num_body_types = 1;
+    H->num_types = 1;
     for (i = 1; i < RS_MAX_DEBRIS_TYPES; i++) {
-        if (H->debris_population[i] > 0) {
-            H->num_body_types++;
+        if (H->counts[i] > 0) {
+            H->num_types++;
         }
     }
     
     if (H->verb > 1) {
-        rsprint("Total number of body types = %d", (int)H->num_body_types);
+        rsprint("Total number of body types = %d", (int)H->num_types);
     }
 
     if (H->sim_tic > 0.0f) {
@@ -1991,12 +1985,12 @@ void RS_revise_population(RSHandle *H) {
 
     // Suggest a number of scatter bodies to use
     H->num_scats = (size_t)(H->params.body_per_cell * nvol);
-    H->debris_population[0] = H->num_scats;
+    H->counts[0] = H->num_scats;
 
     // Get GPU preferred multiplication factor
     // NOTE: make_pulse_pass_1 uses 2 x max_work_group_size stride
     size_t max_work_group_size;
-    clGetDeviceInfo(H->worker[0].dev, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max_work_group_size), &max_work_group_size, NULL);
+    clGetDeviceInfo(H->workers[0].dev, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max_work_group_size), &max_work_group_size, NULL);
     const size_t mul = H->num_cus[0] * H->num_workers * max_work_group_size * 2;
 
     // Round the total population to a GPU preferred number
@@ -2009,12 +2003,12 @@ void RS_revise_population(RSHandle *H) {
     }
 
     // Revise the background (rain)
-    H->debris_population[0] = preferred_n;
+    H->counts[0] = preferred_n;
 
     // Add in the debris
     for (ii = 1; ii < RS_MAX_DEBRIS_TYPES; ii++) {
-        if (H->debris_population[ii] > 0) {
-            preferred_n += H->debris_population[ii];
+        if (H->counts[ii] > 0) {
+            preferred_n += H->counts[ii];
         }
     }
 
@@ -2027,12 +2021,12 @@ void RS_revise_population(RSHandle *H) {
     sprintf(H->summary + strlen(H->summary),
             "nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(svol));
     sprintf(H->summary + strlen(H->summary),
-            "Average meteor. scatterer density = %s\n", commafloat((float)H->debris_population[0] / nvol));
+            "Average meteor. scatterer density = %s\n", commafloat((float)H->counts[0] / nvol));
     if (H->verb) {
         rsprint("nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(svol));
         rsprint("Setting to GPU preferred %s", commaint(preferred_n));
         rsprint("Average all-type scatterer density = %s scatterers / closest radar cell\n", commafloat((float)preferred_n / nvol));
-        rsprint("Average meteorological scatterer density = %s scatterers / closest radar cell\n", commafloat((float)H->debris_population[0] / nvol));
+        rsprint("Average meteorological scatterer density = %s scatterers / closest radar cell\n", commafloat((float)H->counts[0] / nvol));
     }
 
 
@@ -2047,20 +2041,20 @@ void RS_revise_debris_counts_to_gpu_preference(RSHandle *H) {
     int i;
     
     for (i = 0; i < RS_MAX_DEBRIS_TYPES; i++) {
-        if (H->debris_population[i]) {
-            H->debris_population[i] = ((H->debris_population[i] + H->preferred_multiple - 1) / H->preferred_multiple) * H->preferred_multiple;
+        if (H->counts[i]) {
+            H->counts[i] = ((H->counts[i] + H->preferred_multiple - 1) / H->preferred_multiple) * H->preferred_multiple;
         }
     }
 }
 
 
 size_t RS_get_debris_count(RSHandle *H, const int debris_id) {
-    return H->debris_population[debris_id];
+    return H->counts[debris_id];
 }
 
 
 size_t RS_get_worker_debris_count(RSHandle *H, const int debris_id, const int worker_id) {
-    return H->worker[worker_id].debris_population[debris_id];
+    return H->workers[worker_id].counts[debris_id];
 }
 
 
@@ -2069,9 +2063,9 @@ size_t RS_get_all_worker_debris_counts(RSHandle *H, const int debris_id, size_t 
     int i;
     
     for (i = 0; i < H->num_workers; i++) {
-        counts[i] = H->worker[i].debris_population[debris_id];
+        counts[i] = H->workers[i].counts[debris_id];
     }
-    return H->debris_population[debris_id];
+    return H->counts[debris_id];
 }
 
 
@@ -2104,9 +2098,9 @@ void RS_update_origins_offsets(RSHandle *H) {
     size_t offset = 0;
     for (i = 0; i < H->num_workers; i++) {
         H->offset[i] = offset;
-        H->worker[i].num_scats = sub_num_scats;
+        H->workers[i].num_scats = sub_num_scats;
         if (H->verb > 2) {
-            rsprint("worker[%d]   num_scats = %s   offset = %s", i, commaint(sub_num_scats), commaint(H->offset[i]));
+            rsprint("workers[%d]   num_scats = %s   offset = %s", i, commaint(sub_num_scats), commaint(H->offset[i]));
         }
         offset += sub_num_scats;
     }
@@ -2114,14 +2108,14 @@ void RS_update_origins_offsets(RSHandle *H) {
     k = RS_MAX_DEBRIS_TYPES;
     while (k > 1) {
         k--;
-        count -= H->debris_population[k];
+        count -= H->counts[k];
     }
-    if (H->debris_population[0] != count) {
+    if (H->counts[0] != count) {
         rsprint("ERROR: Inconsistent debris counts.");
         printf(RS_INDENT "o sub_num_scats = %s\n", commaint(sub_num_scats));
-        printf(RS_INDENT "o population[0] = %s  !=  count = %s\n", commaint(H->debris_population[0]), commaint(count));
-        for (k = 1; k < H->num_body_types; k++) {
-            printf(RS_INDENT "o population[%d] = %s\n", k, commaint(H->debris_population[k]));
+        printf(RS_INDENT "o population[0] = %s  !=  count = %s\n", commaint(H->counts[0]), commaint(count));
+        for (k = 1; k < H->num_types; k++) {
+            printf(RS_INDENT "o population[%d] = %s\n", k, commaint(H->counts[k]));
         }
         exit(EXIT_FAILURE);
     }
@@ -2134,55 +2128,55 @@ void RS_update_origins_offsets(RSHandle *H) {
     if (H->verb) {
         rsprint("RS : Population details:");
         for (k = 0; k < RS_MAX_DEBRIS_TYPES; k++) {
-            if (H->debris_population[k] == 0) {
+            if (H->counts[k] == 0) {
                 break;
             }
-            printf(RS_INDENT "o Global population[%d] = %s (%s scatterers / resolution cell)\n", k, commaint(H->debris_population[k]), commafloat((float)H->debris_population[k] / nvol));
+            printf(RS_INDENT "o Global population[%d] = %s (%s scatterers / resolution cell)\n", k, commaint(H->counts[k]), commafloat((float)H->counts[k] / nvol));
         }
     }
     
     k = RS_MAX_DEBRIS_TYPES;
     while (k > 0) {
         k--;
-        size_t debris_count_left = H->debris_population[k];
+        size_t debris_count_left = H->counts[k];
         if (debris_count_left == 0) {
             for (i = 0; i < H->num_workers; i++) {
-                H->worker[i].debris_population[k] = 0;
+                H->workers[i].counts[k] = 0;
             }
             continue;
         }
         // Groups of debris types
         size_t round_up_down_toggle = H->num_workers > 1 ? k % H->num_workers : k;
-        size_t sub_debris_population = (H->debris_population[k] + round_up_down_toggle) / H->num_workers;
+        size_t sub_counts = (H->counts[k] + round_up_down_toggle) / H->num_workers;
         for (i = 0; i < H->num_workers - 1; i++) {
-            H->worker[i].debris_population[k] = sub_debris_population;
-            debris_count_left -= sub_debris_population;
+            H->workers[i].counts[k] = sub_counts;
+            debris_count_left -= sub_counts;
         }
         // The last worker gets all the remainders
-        H->worker[i].debris_population[k] = debris_count_left;
+        H->workers[i].counts[k] = debris_count_left;
     }
     
     for (i = 0; i < H->num_workers; i++) {
         k = RS_MAX_DEBRIS_TYPES;
-        size_t origin = H->worker[i].num_scats;
+        size_t origin = H->workers[i].num_scats;
         while (k > 1) {
             k--;
-            if (H->worker[i].debris_population[k] == 0) {
+            if (H->workers[i].counts[k] == 0) {
                 continue;
             }
-            origin -= H->worker[i].debris_population[k];
-            H->worker[i].debris_origin[k] = origin;
+            origin -= H->workers[i].counts[k];
+            H->workers[i].origins[k] = origin;
         }
     }
     
     if (H->verb > 2) {
         for (i = 0; i < H->num_workers; i++) {
-            rsprint("RS : worker[%d] with total population %s  offset %s\n", i, commaint(H->worker[i].num_scats), commaint(H->offset[i]));
-            for (k = 0; k < H->num_body_types; k++) {
+            rsprint("RS : workers[%d] with total population %s  offset %s\n", i, commaint(H->workers[i].num_scats), commaint(H->offset[i]));
+            for (k = 0; k < H->num_types; k++) {
                 printf(RS_INDENT "o Local population[%d] - [ %9s, %9s, %9s ]\n", k,
-                       commaint(H->worker[i].debris_origin[k]),
-                       commaint(H->worker[i].debris_population[k]),
-                       commaint(H->worker[i].debris_origin[k] + H->worker[i].debris_population[k]));
+                       commaint(H->workers[i].origins[k]),
+                       commaint(H->workers[i].counts[k]),
+                       commaint(H->workers[i].origins[k] + H->workers[i].counts[k]));
             }
         }
     }
@@ -2320,14 +2314,14 @@ void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const flo
 #if defined (_USE_GCL_)
     
     for (i = 0; i < H->num_workers; i++) {
-        if (H->worker[i].rcs_ellipsoid != NULL) {
+        if (H->workers[i].rcs_ellipsoid != NULL) {
             if (H->verb > 1) {
-                rsprint("worker[%d] setting RCS of ellipsoids.\n", i);
+                rsprint("workers[%d] setting RCS of ellipsoids.\n", i);
             }
-            gcl_free(H->worker[i].rcs_ellipsoid);
+            gcl_free(H->workers[i].rcs_ellipsoid);
         }
-        H->worker[i].rcs_ellipsoid = gcl_malloc(table_size * sizeof(cl_float4), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
-        if (H->worker[i].rcs_ellipsoid == NULL) {
+        H->workers[i].rcs_ellipsoid = gcl_malloc(table_size * sizeof(cl_float4), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+        if (H->workers[i].rcs_ellipsoid == NULL) {
             rsprint("ERROR: Unable to create RCS of ellipsoid table on CL device.\n");
             return;
         }
@@ -2337,22 +2331,22 @@ void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const flo
     
     cl_int ret;
     for (i = 0; i < H->num_workers; i++) {
-        if (H->worker[i].rcs_ellipsoid != NULL) {
+        if (H->workers[i].rcs_ellipsoid != NULL) {
             if (H->verb > 1) {
-                rsprint("worker[%d] setting RCS of ellipsoid.\n", i);
+                rsprint("workers[%d] setting RCS of ellipsoid.\n", i);
             }
-            clReleaseMemObject(H->worker[i].rcs_ellipsoid);
+            clReleaseMemObject(H->workers[i].rcs_ellipsoid);
         }
         if (H->verb > 2) {
-            rsprint("worker[%d] creating RCS of ellipsoid (cl_mem) & copying data from %p.\n", i, table.data);
+            rsprint("workers[%d] creating RCS of ellipsoid (cl_mem) & copying data from %p.\n", i, table.data);
         }
-        H->worker[i].rcs_ellipsoid = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(cl_float4), table.data, &ret);
+        H->workers[i].rcs_ellipsoid = clCreateBuffer(H->workers[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(cl_float4), table.data, &ret);
         if (ret != CL_SUCCESS) {
             rsprint("ERROR: Unable to create RCS of ellipsoid table on CL device.  ret = %d\n", ret);
             return;
         }
         if (H->verb > 2) {
-            rsprint("worker[%d] created RCS of ellipsoid table @ %p.\n", i, H->worker[i].rcs_ellipsoid);
+            rsprint("workers[%d] created RCS of ellipsoid table @ %p.\n", i, H->workers[i].rcs_ellipsoid);
         }
     }
     
@@ -2360,14 +2354,14 @@ void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const flo
 
     for (i = 0; i < H->num_workers; i++) {
         // Copy over to CL workers. A bit wasteful but the codes are easier to ready this way.
-        H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionScale] = table.dx;
-        H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionOrigin] = table.x0;
-        H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionMaximum] = table.xm;
-        H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionUserConstant] = H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale];
-        if (H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionUserConstant] == 0.0f) {
+        H->workers[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionScale] = table.dx;
+        H->workers[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionOrigin] = table.x0;
+        H->workers[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionMaximum] = table.xm;
+        H->workers[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionUserConstant] = H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale];
+        if (H->workers[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionUserConstant] == 0.0f) {
             rsprint("WARNING: Drop concentration scale not set.");
         }
-        H->worker[i].mem_usage += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
+        H->workers[i].mem_usage += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
     }
     
     RS_table_free(table);
@@ -2396,14 +2390,14 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
 #if defined (_USE_GCL_)
 		
     for (i = 0; i < H->num_workers; i++) {
-        if (H->worker[i].range_weight != NULL) {
+        if (H->workers[i].range_weight != NULL) {
             if (H->verb > 1) {
-                rsprint("worker[%d] setting range weight.", i);
+                rsprint("workers[%d] setting range weight.", i);
             }
-            gcl_free(H->worker[i].range_weight);
+            gcl_free(H->workers[i].range_weight);
         }
-        H->worker[i].range_weight = gcl_malloc(table_size * sizeof(float), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
-        if (H->worker[i].range_weight == NULL) {
+        H->workers[i].range_weight = gcl_malloc(table_size * sizeof(float), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+        if (H->workers[i].range_weight == NULL) {
             rsprint("ERROR: Unable to create range weight table on CL device.");
             return;
         }
@@ -2413,22 +2407,22 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
     
     cl_int ret;
     for (i = 0; i < H->num_workers; i++) {
-        if (H->worker[i].range_weight != NULL) {
+        if (H->workers[i].range_weight != NULL) {
             if (H->verb > 1) {
-                rsprint("worker[%d] setting range weight.", i);
+                rsprint("workers[%d] setting range weight.", i);
             }
-            clReleaseMemObject(H->worker[i].range_weight);
+            clReleaseMemObject(H->workers[i].range_weight);
         }
         if (H->verb > 2) {
-            rsprint("worker[%d] creating range weight (cl_mem) & copying data from %p.", now(), i, table.data);
+            rsprint("workers[%d] creating range weight (cl_mem) & copying data from %p.", now(), i, table.data);
         }
-        H->worker[i].range_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), table.data, &ret);
+        H->workers[i].range_weight = clCreateBuffer(H->workers[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), table.data, &ret);
         if (ret != CL_SUCCESS) {
             rsprint("ERROR: Unable to create range weight table on CL device.");
             return;
         }
         if (H->verb > 2) {
-            rsprint("worker[%d] created range weight @ %p.", i, H->worker[i].range_weight);
+            rsprint("workers[%d] created range weight @ %p.", i, H->workers[i].range_weight);
         }
     }
 
@@ -2436,10 +2430,10 @@ void RS_set_range_weight(RSHandle *H, const float *weights, const float table_in
 
     for (i = 0; i < H->num_workers; i++) {
         // Copy over to CL workers. A bit wasteful but the codes are easier to ready this way.
-        H->worker[i].range_weight_desc.s[RSTable1DDescriptionScale] = table.dx;
-        H->worker[i].range_weight_desc.s[RSTable1DDescriptionOrigin] = table.x0;
-        H->worker[i].range_weight_desc.s[RSTable1DDescriptionMaximum] = table.xm;
-        H->worker[i].mem_usage += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float);
+        H->workers[i].range_weight_desc.s[RSTable1DDescriptionScale] = table.dx;
+        H->workers[i].range_weight_desc.s[RSTable1DDescriptionOrigin] = table.x0;
+        H->workers[i].range_weight_desc.s[RSTable1DDescriptionMaximum] = table.xm;
+        H->workers[i].mem_usage += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float);
     }
     
     RS_table_free(table);
@@ -2474,17 +2468,17 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
 #if defined (_USE_GCL_)
 
     for (i = 0; i < H->num_workers; i++) {
-        if (H->worker[i].angular_weight != NULL) {
+        if (H->workers[i].angular_weight != NULL) {
             if (H->verb > 1) {
-                rsprint("worker[%d] setting angular weight.", i);
+                rsprint("workers[%d] setting angular weight.", i);
             }
-            gcl_free(H->worker[i].angular_weight);
+            gcl_free(H->workers[i].angular_weight);
         }
 //        for (int k = 0; k < table_size; k++) {
 //            printf("k=%d  w = %.3f  %.2f\n", k, table.data[k], 10 * log10f(table.data[k]));
 //        }
-        H->worker[i].angular_weight = gcl_malloc(table_size * sizeof(float), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
-        if (H->worker[i].angular_weight == NULL) {
+        H->workers[i].angular_weight = gcl_malloc(table_size * sizeof(float), table.data, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+        if (H->workers[i].angular_weight == NULL) {
             rsprint("ERROR: Unable to create angular weight table on CL device.");
             return;
         }
@@ -2494,22 +2488,22 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
 		
     cl_int ret;
     for (i = 0; i < H->num_workers; i++) {
-        if (H->worker[i].angular_weight != NULL) {
+        if (H->workers[i].angular_weight != NULL) {
             if (H->verb > 1) {
-                rsprint("worker[%d] setting angular weight.\n", i);
+                rsprint("workers[%d] setting angular weight.\n", i);
             }
-            clReleaseMemObject(H->worker[i].angular_weight);
+            clReleaseMemObject(H->workers[i].angular_weight);
         }
         if (H->verb > 2) {
-            rsprint("worker[%d] creating angular weight (cl_mem) & copying data from %p.", i, table.data);
+            rsprint("workers[%d] creating angular weight (cl_mem) & copying data from %p.", i, table.data);
         }
-        H->worker[i].angular_weight = clCreateBuffer(H->worker[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), table.data, &ret);
+        H->workers[i].angular_weight = clCreateBuffer(H->workers[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, table_size * sizeof(float), table.data, &ret);
         if (ret != CL_SUCCESS) {
             rsprint("ERROR: Unable to create angular weight table on CL device.");
             return;
         }
         if (H->verb > 2) {
-            rsprint("worker[%d] created angular weight.", i);
+            rsprint("workers[%d] created angular weight.", i);
         }
     }
 		
@@ -2517,10 +2511,10 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
     
     // Copy over to CL workers. A bit wasteful but the codes are easier to ready this way.
     for (i = 0; i < H->num_workers; i++) {
-        H->worker[i].angular_weight_desc.s[RSTable1DDescriptionScale] = table.dx;
-        H->worker[i].angular_weight_desc.s[RSTable1DDescriptionOrigin] = table.x0;
-        H->worker[i].angular_weight_desc.s[RSTable1DDescriptionMaximum] = table.xm;
-        H->worker[i].mem_usage += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float);
+        H->workers[i].angular_weight_desc.s[RSTable1DDescriptionScale] = table.dx;
+        H->workers[i].angular_weight_desc.s[RSTable1DDescriptionOrigin] = table.x0;
+        H->workers[i].angular_weight_desc.s[RSTable1DDescriptionMaximum] = table.xm;
+        H->workers[i].mem_usage += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float);
     }
 
     RS_table_free(table);
@@ -2567,8 +2561,6 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 	
 	int i;
 		
-    int t = H->vel_count;
-    
 	cl_image_format format = {CL_RGBA, CL_FLOAT};
 	
 #if defined (CL_VERSION_1_2)
@@ -2588,15 +2580,15 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 #endif
     
 	for (i = 0; i < H->num_workers; i++) {
-		if (H->worker[i].vel[t] != NULL) {
+		if (H->workers[i].vel != NULL) {
 
 #if defined (_USE_GCL_)
 
-            gcl_release_image(H->worker[i].vel[t]);
+            gcl_release_image(H->workers[i].vel);
 
 #else
             
-            clReleaseMemObject(H->worker[i].vel[t]);
+            clReleaseMemObject(H->workers[i].vel);
             
 #endif
 
@@ -2604,7 +2596,7 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 
 #if defined (_USE_GCL_)
 
-        H->worker[i].vel[t] = gcl_create_image(&format, desc.image_width, desc.image_height, desc.image_depth, H->worker[i].surf_vel[t]);
+        H->workers[i].vel = gcl_create_image(&format, desc.image_width, desc.image_height, desc.image_depth, H->workers[i].surf_vel);
 
 #else
         
@@ -2613,31 +2605,31 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
         
     #if defined (CL_VERSION_1_2)
         
-        H->worker[i].vel[t] = clCreateImage(H->worker[i].context, flags, &format, &desc, table.data, &ret);
+        H->workers[i].vel = clCreateImage(H->workers[i].context, flags, &format, &desc, table.data, &ret);
         
     #else
         
-        H->worker[i].vel[t] = clCreateImage3D(H->worker[i].context, flags, &format, table.x_, table.y_, table.z_,
-                                              table.x_ * sizeof(cl_float4), table.y_ * table.x_ * sizeof(cl_float4), table.data, &ret);
+        H->workers[i].vel = clCreateImage3D(H->workers[i].context, flags, &format, table.x_, table.y_, table.z_,
+                                           table.x_ * sizeof(cl_float4), table.y_ * table.x_ * sizeof(cl_float4), table.data, &ret);
         
     #endif
         
 #endif
         
-        if (H->worker[i].vel[t] == NULL) {
-			rsprint("ERROR: worker[%d] unable to create wind table on CL device.\n", i);
+        if (H->workers[i].vel == NULL) {
+			rsprint("ERROR: workers[%d] unable to create wind table on CL device.\n", i);
 			return;
         } else if (H->verb > 2) {
-            rsprint("worker[%d] created wind table vel[%d] @ %p\n", i, t, &H->worker[i].vel[t]);
+            rsprint("workers[%d] created wind table @ %p\n", i, &H->workers[i].vel);
         }
 
 #if defined (_USE_GCL_)
 
-        dispatch_async(H->worker[i].que, ^{
+        dispatch_async(H->workers[i].que, ^{
 			size_t origin[3] = {0, 0, 0};
 			size_t region[3] = {table.x_, table.y_, table.z_};
-			gcl_copy_ptr_to_image(H->worker[i].vel[t], table.data, origin, region);
-			dispatch_semaphore_signal(H->worker[i].sem);
+			gcl_copy_ptr_to_image(H->workers[i].vel, table.data, origin, region);
+			dispatch_semaphore_signal(H->workers[i].sem);
 		});
 
 #endif
@@ -2648,46 +2640,44 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 
 #if defined (_USE_GCL_)
 
-        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+        dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
 #endif
 
         // Copy over to CL worker
         float tmpf; memcpy(&tmpf, &table.spacing, sizeof(float));
-        H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionFormat] = tmpf;                   // Make a copy in float so we are maintaining all 32-bits
-        //printf("%s : RS : %d / %.9f\n", now(), table.spacing, H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionFormat]);
+        H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionFormat] = tmpf;                   // Make a copy in float so we are maintaining all 32-bits
+        //printf("%s : RS : %d / %.9f\n", now(), table.spacing, H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionFormat]);
         if (table.spacing & RSTableSpacingStretchedX) {
-            H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionBaseChangeX] = table.xs;      // "m" for stretched grid: m * log1p(n * pos.x) + o;
-            H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionPositionScaleX] = table.xo;   // "n" for stretched grid: m * log1p(n * pos.y) + o;
-            H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionOffsetX] = table.xm;          // "o" for stretched grid: m * log1p(n * pos.z) + o;
+            H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionBaseChangeX] = table.xs;      // "m" for stretched grid: m * log1p(n * pos.x) + o;
+            H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionPositionScaleX] = table.xo;   // "n" for stretched grid: m * log1p(n * pos.y) + o;
+            H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionOffsetX] = table.xm;          // "o" for stretched grid: m * log1p(n * pos.z) + o;
         } else {
-            H->worker[i].vel_desc.s[RSTable3DDescriptionScaleX] = table.xs;
-            H->worker[i].vel_desc.s[RSTable3DDescriptionOriginX] = table.xo;
-            H->worker[i].vel_desc.s[RSTable3DDescriptionMaximumX] = table.xm;
+            H->workers[i].vel_desc.s[RSTable3DDescriptionScaleX] = table.xs;
+            H->workers[i].vel_desc.s[RSTable3DDescriptionOriginX] = table.xo;
+            H->workers[i].vel_desc.s[RSTable3DDescriptionMaximumX] = table.xm;
         }
         if (table.spacing & RSTableSpacingStretchedY) {
-            H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionBaseChangeY] = table.ys;
-            H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionPositionScaleY] = table.yo;
-            H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionOffsetY] = table.ym;
+            H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionBaseChangeY] = table.ys;
+            H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionPositionScaleY] = table.yo;
+            H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionOffsetY] = table.ym;
         } else {
-            H->worker[i].vel_desc.s[RSTable3DDescriptionScaleY] = table.ys;
-            H->worker[i].vel_desc.s[RSTable3DDescriptionOriginY] = table.yo;
-            H->worker[i].vel_desc.s[RSTable3DDescriptionMaximumY] = table.ym;
+            H->workers[i].vel_desc.s[RSTable3DDescriptionScaleY] = table.ys;
+            H->workers[i].vel_desc.s[RSTable3DDescriptionOriginY] = table.yo;
+            H->workers[i].vel_desc.s[RSTable3DDescriptionMaximumY] = table.ym;
         }
         if (table.spacing & RSTableSpacingStretchedZ) {
-            H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionBaseChangeZ] = table.zs;
-            H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionPositionScaleZ] = table.zo;
-            H->worker[i].vel_desc.s[RSTable3DStaggeredDescriptionOffsetZ] = table.zm;
+            H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionBaseChangeZ] = table.zs;
+            H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionPositionScaleZ] = table.zo;
+            H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionOffsetZ] = table.zm;
         } else {
-            H->worker[i].vel_desc.s[RSTable3DDescriptionScaleZ] = table.zs;
-            H->worker[i].vel_desc.s[RSTable3DDescriptionOriginZ] = table.zo;
-            H->worker[i].vel_desc.s[RSTable3DDescriptionMaximumZ] = table.zm;
+            H->workers[i].vel_desc.s[RSTable3DDescriptionScaleZ] = table.zs;
+            H->workers[i].vel_desc.s[RSTable3DDescriptionOriginZ] = table.zo;
+            H->workers[i].vel_desc.s[RSTable3DDescriptionMaximumZ] = table.zm;
         }
-        H->worker[i].vel_desc.s[RSTable3DDescriptionRefreshTime] = table.tr;
+        H->workers[i].vel_desc.s[RSTable3DDescriptionRefreshTime] = table.tr;
 
-        H->worker[i].mem_usage += (cl_uint)((table.xm + 1.0f) * (table.ym + 1.0f) * (table.zm + 1.0f)) * sizeof(cl_float4);
+        H->workers[i].mem_usage += (cl_uint)((table.xm + 1.0f) * (table.ym + 1.0f) * (table.zm + 1.0f)) * sizeof(cl_float4);
 	}
-
-    H->vel_count++;
 }
 
 
@@ -2698,11 +2688,10 @@ void RS_set_vel_data_to_config(RSHandle *H, LESConfig c) {
     H->L = LES_init_with_config_path(c, NULL);
     // Reset the velocity count to 0, as if no table has been uploaded.
     // The GPU handles are still kept intact, will be released upon framework completion / table replacement
-    H->vel_count = 0;
-    H->vel_out_idx = 0;
-    H->vel_out_count = (uint32_t)LES_get_table_count(H->L);
-    rsprint("Reading LES table (%u out of %u)...", H->vel_out_idx, H->vel_out_count);
-    RS_set_vel_data_to_LES_table(H, LES_get_frame(H->L, H->vel_out_idx++));
+    H->vel_count = (uint32_t)LES_get_table_count(H->L);
+    rsprint("Reading LES table (%u out of %u)...", H->vel_idx, H->vel_count);
+    RS_set_vel_data_to_LES_table(H, LES_get_frame(H->L, 0));
+    H->vel_idx = 1;
 }
 
 
@@ -2738,14 +2727,14 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
     zmax = leslie->az * (1.0f - powf(leslie->rz, (float)(leslie->nz - 1))) / (1.0f - leslie->rz);
     
     if (H->verb > 1) {
-        if (H->vel_count == 0 && H->vel_out_idx == 1) {
+        if (H->vel_idx == 0) {
             rsprint("LES stretched x-grid using %.6f * log1p( %.6f * x )    Mid = %.2f m\n",
                    table.xs, table.xo, hmax);
             rsprint("LES stretched z-grid using %.6f * log1p( %.6f * z )    Max = %.2f m\n",
                    table.zs, table.zo, zmax);
         }
-        rsprint("GPU LES[%2d/%2d/%2d] @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
-                H->vel_count, H->vel_out_idx, H->vel_out_count,
+        rsprint("GPU LES[%2d/%2d] @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
+                H->vel_idx, H->vel_count,
                 -hmax, hmax,
                 -hmax, hmax,
                 0.0, zmax);
@@ -2891,12 +2880,11 @@ void RS_set_vel_data_to_cube125(RSHandle *H) {
 void RS_clear_vel_data(RSHandle *H) {
     // Technically the video RAM hasn't been freed but we will assume there is enough room and this memory gets freed when a new table comes in
     for (int i = 0; i < H->num_workers; i++) {
-        cl_uint nx = (cl_uint)H->worker[i].vel_desc.s[RSTable3DDescriptionMaximumX] + 1;
-        cl_uint ny = (cl_uint)H->worker[i].vel_desc.s[RSTable3DDescriptionMaximumY] + 1;
-        cl_uint nz = (cl_uint)H->worker[i].vel_desc.s[RSTable3DDescriptionMaximumZ] + 1;
-        H->worker[i].mem_usage -= nx * ny * nz * H->vel_count * sizeof(cl_float4);
+        cl_uint nx = (cl_uint)H->workers[i].vel_desc.s[RSTable3DDescriptionMaximumX] + 1;
+        cl_uint ny = (cl_uint)H->workers[i].vel_desc.s[RSTable3DDescriptionMaximumY] + 1;
+        cl_uint nz = (cl_uint)H->workers[i].vel_desc.s[RSTable3DDescriptionMaximumZ] + 1;
+        H->workers[i].mem_usage -= nx * ny * nz * sizeof(cl_float4);
     }
-    H->vel_count = 0;
 }
 
 
@@ -2936,29 +2924,29 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
 #endif
     
     for (i = 0; i < H->num_workers; i++) {
-        if (H->worker[i].adm_cd[t] != NULL && H->worker[i].adm_cm[t] != NULL) {
+        if (H->workers[i].adm_cd[t] != NULL && H->workers[i].adm_cm[t] != NULL) {
             
 #if defined (_USE_GCL_)
             
-            gcl_release_image(H->worker[i].adm_cd[t]);
-            gcl_release_image(H->worker[i].adm_cm[t]);
+            gcl_release_image(H->workers[i].adm_cd[t]);
+            gcl_release_image(H->workers[i].adm_cm[t]);
             
 #else
             
-            clReleaseMemObject(H->worker[i].adm_cd[t]);
-            clReleaseMemObject(H->worker[i].adm_cm[t]);
+            clReleaseMemObject(H->workers[i].adm_cd[t]);
+            clReleaseMemObject(H->workers[i].adm_cm[t]);
             
 #endif
             
-            H->worker[i].mem_usage -= ((cl_uint)(H->worker[i].adm_desc[t].s8 + 1.0f) * (H->worker[i].adm_desc[t].s9 + 1.0f)) * 2 * sizeof(cl_float4);
+            H->workers[i].mem_usage -= ((cl_uint)(H->workers[i].adm_desc[t].s8 + 1.0f) * (H->workers[i].adm_desc[t].s9 + 1.0f)) * 2 * sizeof(cl_float4);
         }
         //  adm_cd & adm_cm always have the same desc
         
         
 #if defined (_USE_GCL_)
         
-        H->worker[i].adm_cd[t] = gcl_create_image(&format, cd.x_, cd.y_, 1, H->worker[i].surf_adm_cd[t]);
-        H->worker[i].adm_cm[t] = gcl_create_image(&format, cm.x_, cm.y_, 1, H->worker[i].surf_adm_cm[t]);
+        H->workers[i].adm_cd[t] = gcl_create_image(&format, cd.x_, cd.y_, 1, H->workers[i].surf_adm_cd[t]);
+        H->workers[i].adm_cm[t] = gcl_create_image(&format, cm.x_, cm.y_, 1, H->workers[i].surf_adm_cm[t]);
         
 #else
         
@@ -2967,32 +2955,32 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
         
     #if defined (CL_VERSION_1_2)
         
-        H->worker[i].adm_cd[t] = clCreateImage(H->worker[i].context, flags, &format, &desc, cd.data, &retd);
-        H->worker[i].adm_cm[t] = clCreateImage(H->worker[i].context, flags, &format, &desc, cm.data, &retm);
+        H->workers[i].adm_cd[t] = clCreateImage(H->workers[i].context, flags, &format, &desc, cd.data, &retd);
+        H->workers[i].adm_cm[t] = clCreateImage(H->workers[i].context, flags, &format, &desc, cm.data, &retm);
         
     #else
         
-        H->worker[i].adm_cd[t] = clCreateImage2D(H->worker[i].context, flags, &format, cd.x_, cd.y_, cd.x_ * sizeof(cl_float4), cd.data, &retd);
-        H->worker[i].adm_cm[t] = clCreateImage2D(H->worker[i].context, flags, &format, cm.x_, cm.y_, cm.x_ * sizeof(cl_float4), cm.data, &retm);
+        H->workers[i].adm_cd[t] = clCreateImage2D(H->workers[i].context, flags, &format, cd.x_, cd.y_, cd.x_ * sizeof(cl_float4), cd.data, &retd);
+        H->workers[i].adm_cm[t] = clCreateImage2D(H->workers[i].context, flags, &format, cm.x_, cm.y_, cm.x_ * sizeof(cl_float4), cm.data, &retm);
         
     #endif
         
 #endif
-        if (H->worker[i].adm_cd[t] == NULL || H->worker[i].adm_cm[t] == NULL) {
-            rsprint("ERROR: worker[%d] unable to create ADM tables on CL device(s).", i);
+        if (H->workers[i].adm_cd[t] == NULL || H->workers[i].adm_cm[t] == NULL) {
+            rsprint("ERROR: workers[%d] unable to create ADM tables on CL device(s).", i);
             return;
         } else if (H->verb > 2) {
-            rsprint("worker[%d] created ADM tables adm_cd[%d] & adm_cd[%d] @ %p & %p", i, t, t, &H->worker[i].adm_cd[t], &H->worker[i].adm_cm[t]);
+            rsprint("workers[%d] created ADM tables adm_cd[%d] & adm_cd[%d] @ %p & %p", i, t, t, &H->workers[i].adm_cd[t], &H->workers[i].adm_cm[t]);
         }
         
 #if defined (_USE_GCL_)
         
-        dispatch_async(H->worker[i].que, ^{
+        dispatch_async(H->workers[i].que, ^{
             size_t origin[3] = {0, 0, 0};
             size_t region[3] = {cd.x_, cd.y_, 1};
-            gcl_copy_ptr_to_image(H->worker[i].adm_cd[t], cd.data, origin, region);
-            gcl_copy_ptr_to_image(H->worker[i].adm_cm[t], cm.data, origin, region);
-            dispatch_semaphore_signal(H->worker[i].sem);
+            gcl_copy_ptr_to_image(H->workers[i].adm_cd[t], cd.data, origin, region);
+            gcl_copy_ptr_to_image(H->workers[i].adm_cm[t], cm.data, origin, region);
+            dispatch_semaphore_signal(H->workers[i].sem);
         });
         
 #endif
@@ -3003,25 +2991,25 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
 
 #if defined (_USE_GCL_)
 
-        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+        dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
         
 #endif
         
         // Copy over to CL worker
-        H->worker[i].adm_desc[t].s[RSTable3DDescriptionScaleX] = cd.xs;
-        H->worker[i].adm_desc[t].s[RSTable3DDescriptionScaleY] = cd.ys;
-        H->worker[i].adm_desc[t].s[RSTable3DDescriptionScaleZ] = 0.0f;
-        H->worker[i].adm_desc[t].s[RSTable3DDescriptionOriginX] = cd.xo;
-        H->worker[i].adm_desc[t].s[RSTable3DDescriptionOriginY] = cd.yo;
-        H->worker[i].adm_desc[t].s[RSTable3DDescriptionOriginZ] = 0.0f;
-        H->worker[i].adm_desc[t].s[RSTable3DDescriptionMaximumX] = cd.xm;
-        H->worker[i].adm_desc[t].s[RSTable3DDescriptionMaximumY] = cd.ym;
-        H->worker[i].adm_desc[t].s[RSTable3DDescriptionMaximumZ] = 0.0f;
-        H->worker[i].adm_desc[t].s[RSTable3DDescriptionRecipInLnX] = H->adm_desc[t].phys.inv_inln_x;
-        H->worker[i].adm_desc[t].s[RSTable3DDescriptionRecipInLnY] = H->adm_desc[t].phys.inv_inln_y;
-        H->worker[i].adm_desc[t].s[RSTable3DDescriptionRecipInLnZ] = H->adm_desc[t].phys.inv_inln_z;
-        H->worker[i].adm_desc[t].s[RSTable3DDescriptionTachikawa] = H->adm_desc[t].phys.Ta;
-        H->worker[i].mem_usage += ((cl_uint)(cd.xm + 1.0f) * (cd.ym + 1.0f)) * 2 * sizeof(cl_float4);
+        H->workers[i].adm_desc[t].s[RSTable3DDescriptionScaleX] = cd.xs;
+        H->workers[i].adm_desc[t].s[RSTable3DDescriptionScaleY] = cd.ys;
+        H->workers[i].adm_desc[t].s[RSTable3DDescriptionScaleZ] = 0.0f;
+        H->workers[i].adm_desc[t].s[RSTable3DDescriptionOriginX] = cd.xo;
+        H->workers[i].adm_desc[t].s[RSTable3DDescriptionOriginY] = cd.yo;
+        H->workers[i].adm_desc[t].s[RSTable3DDescriptionOriginZ] = 0.0f;
+        H->workers[i].adm_desc[t].s[RSTable3DDescriptionMaximumX] = cd.xm;
+        H->workers[i].adm_desc[t].s[RSTable3DDescriptionMaximumY] = cd.ym;
+        H->workers[i].adm_desc[t].s[RSTable3DDescriptionMaximumZ] = 0.0f;
+        H->workers[i].adm_desc[t].s[RSTable3DDescriptionRecipInLnX] = H->adm_desc[t].phys.inv_inln_x;
+        H->workers[i].adm_desc[t].s[RSTable3DDescriptionRecipInLnY] = H->adm_desc[t].phys.inv_inln_y;
+        H->workers[i].adm_desc[t].s[RSTable3DDescriptionRecipInLnZ] = H->adm_desc[t].phys.inv_inln_z;
+        H->workers[i].adm_desc[t].s[RSTable3DDescriptionTachikawa] = H->adm_desc[t].phys.Ta;
+        H->workers[i].mem_usage += ((cl_uint)(cd.xm + 1.0f) * (cd.ym + 1.0f)) * 2 * sizeof(cl_float4);
     }
     H->adm_count++;
 }
@@ -3109,9 +3097,9 @@ void RS_set_adm_data_to_unity(RSHandle *H) {
 void RS_clear_adm_data(RSHandle *H) {
     for (int i = 0; i < H->num_workers; i++) {
         for (int t = 0; t < H->adm_count; t++) {
-            cl_uint nx = (cl_uint)H->worker[i].adm_desc[t].s[RSTable3DDescriptionMaximumX] + 1;
-            cl_uint ny = (cl_uint)H->worker[i].adm_desc[t].s[RSTable3DDescriptionMaximumY] + 1;
-            H->worker[i].mem_usage -= nx * ny * 2 * sizeof(cl_float4);
+            cl_uint nx = (cl_uint)H->workers[i].adm_desc[t].s[RSTable3DDescriptionMaximumX] + 1;
+            cl_uint ny = (cl_uint)H->workers[i].adm_desc[t].s[RSTable3DDescriptionMaximumY] + 1;
+            H->workers[i].mem_usage -= nx * ny * 2 * sizeof(cl_float4);
         }
     }
     H->adm_count = 0;
@@ -3154,29 +3142,29 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
 #endif
     
     for (i = 0; i < H->num_workers; i++) {
-        if (H->worker[i].rcs_real[t] != NULL && H->worker[i].rcs_imag[t] != NULL) {
+        if (H->workers[i].rcs_real[t] != NULL && H->workers[i].rcs_imag[t] != NULL) {
             
 #if defined (_USE_GCL_)
             
-            gcl_release_image(H->worker[i].rcs_real[t]);
-            gcl_release_image(H->worker[i].rcs_imag[t]);
+            gcl_release_image(H->workers[i].rcs_real[t]);
+            gcl_release_image(H->workers[i].rcs_imag[t]);
             
 #else
             
-            clReleaseMemObject(H->worker[i].rcs_real[t]);
-            clReleaseMemObject(H->worker[i].rcs_imag[t]);
+            clReleaseMemObject(H->workers[i].rcs_real[t]);
+            clReleaseMemObject(H->workers[i].rcs_imag[t]);
             
 #endif
             
-            H->worker[i].mem_usage -= ((cl_uint)(H->worker[i].rcs_desc[t].s8 + 1.0f) * (H->worker[i].rcs_desc[t].s9 + 1.0f)) * 2 * sizeof(cl_float4);
+            H->workers[i].mem_usage -= ((cl_uint)(H->workers[i].rcs_desc[t].s8 + 1.0f) * (H->workers[i].rcs_desc[t].s9 + 1.0f)) * 2 * sizeof(cl_float4);
         }
         //  rcs_real & rcs_imag always have the same desc
         
         
 #if defined (_USE_GCL_)
         
-        H->worker[i].rcs_real[t] = gcl_create_image(&format, real.x_, real.y_, 1, H->worker[i].surf_rcs_real[t]);
-        H->worker[i].rcs_imag[t] = gcl_create_image(&format, imag.x_, imag.y_, 1, H->worker[i].surf_rcs_imag[t]);
+        H->workers[i].rcs_real[t] = gcl_create_image(&format, real.x_, real.y_, 1, H->workers[i].surf_rcs_real[t]);
+        H->workers[i].rcs_imag[t] = gcl_create_image(&format, imag.x_, imag.y_, 1, H->workers[i].surf_rcs_imag[t]);
         
 #else
         
@@ -3185,32 +3173,32 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
         
     #if defined (CL_VERSION_1_2)
         
-        H->worker[i].rcs_real[t] = clCreateImage(H->worker[i].context, flags, &format, &desc, real.data, &retd);
-        H->worker[i].rcs_imag[t] = clCreateImage(H->worker[i].context, flags, &format, &desc, imag.data, &retm);
+        H->workers[i].rcs_real[t] = clCreateImage(H->workers[i].context, flags, &format, &desc, real.data, &retd);
+        H->workers[i].rcs_imag[t] = clCreateImage(H->workers[i].context, flags, &format, &desc, imag.data, &retm);
         
     #else
         
-        H->worker[i].rcs_real[t] = clCreateImage2D(H->worker[i].context, flags, &format, real.x_, real.y_, real.x_ * sizeof(cl_float4), real.data, &retd);
-        H->worker[i].rcs_imag[t] = clCreateImage2D(H->worker[i].context, flags, &format, imag.x_, imag.y_, imag.x_ * sizeof(cl_float4), imag.data, &retm);
+        H->workers[i].rcs_real[t] = clCreateImage2D(H->workers[i].context, flags, &format, real.x_, real.y_, real.x_ * sizeof(cl_float4), real.data, &retd);
+        H->workers[i].rcs_imag[t] = clCreateImage2D(H->workers[i].context, flags, &format, imag.x_, imag.y_, imag.x_ * sizeof(cl_float4), imag.data, &retm);
         
     #endif
         
 #endif
-        if (H->worker[i].rcs_real[t] == NULL || H->worker[i].rcs_imag[t] == NULL) {
-            rsprint("ERROR: worker[%d] unable to create RCS tables on CL device(s).", i);
+        if (H->workers[i].rcs_real[t] == NULL || H->workers[i].rcs_imag[t] == NULL) {
+            rsprint("ERROR: workers[%d] unable to create RCS tables on CL device(s).", i);
             return;
         } else if (H->verb > 2) {
-            rsprint("worker[%d] created RCS tables rcs_real[%d] & rcs_imag[%d] @ %p & %p", i, t, t, &H->worker[i].rcs_real[t], &H->worker[i].rcs_imag[t]);
+            rsprint("workers[%d] created RCS tables rcs_real[%d] & rcs_imag[%d] @ %p & %p", i, t, t, &H->workers[i].rcs_real[t], &H->workers[i].rcs_imag[t]);
         }
         
 #if defined (_USE_GCL_)
         
-        dispatch_async(H->worker[i].que, ^{
+        dispatch_async(H->workers[i].que, ^{
             size_t origin[3] = {0, 0, 0};
             size_t region[3] = {real.x_, imag.y_, 1};
-            gcl_copy_ptr_to_image(H->worker[i].rcs_real[t], real.data, origin, region);
-            gcl_copy_ptr_to_image(H->worker[i].rcs_imag[t], imag.data, origin, region);
-            dispatch_semaphore_signal(H->worker[i].sem);
+            gcl_copy_ptr_to_image(H->workers[i].rcs_real[t], real.data, origin, region);
+            gcl_copy_ptr_to_image(H->workers[i].rcs_imag[t], imag.data, origin, region);
+            dispatch_semaphore_signal(H->workers[i].sem);
         });
         
 #endif
@@ -3221,21 +3209,21 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
         
 #if defined (_USE_GCL_)
         
-        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+        dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
         
 #endif
         
         // Copy over to CL worker
-        H->worker[i].rcs_desc[t].s[RSTable3DDescriptionScaleX] = real.xs;
-        H->worker[i].rcs_desc[t].s[RSTable3DDescriptionScaleY] = real.ys;
-        H->worker[i].rcs_desc[t].s[RSTable3DDescriptionScaleZ] = 0.0f;
-        H->worker[i].rcs_desc[t].s[RSTable3DDescriptionOriginX] = real.xo;
-        H->worker[i].rcs_desc[t].s[RSTable3DDescriptionOriginY] = real.yo;
-        H->worker[i].rcs_desc[t].s[RSTable3DDescriptionOriginZ] = 0.0f;
-        H->worker[i].rcs_desc[t].s[RSTable3DDescriptionMaximumX] = real.xm;
-        H->worker[i].rcs_desc[t].s[RSTable3DDescriptionMaximumY] = real.ym;
-        H->worker[i].rcs_desc[t].s[RSTable3DDescriptionMaximumZ] = 0.0f;
-        H->worker[i].mem_usage += ((cl_uint)(real.xm + 1.0f) * (real.ym + 1.0f)) * 2 * sizeof(cl_float4);
+        H->workers[i].rcs_desc[t].s[RSTable3DDescriptionScaleX] = real.xs;
+        H->workers[i].rcs_desc[t].s[RSTable3DDescriptionScaleY] = real.ys;
+        H->workers[i].rcs_desc[t].s[RSTable3DDescriptionScaleZ] = 0.0f;
+        H->workers[i].rcs_desc[t].s[RSTable3DDescriptionOriginX] = real.xo;
+        H->workers[i].rcs_desc[t].s[RSTable3DDescriptionOriginY] = real.yo;
+        H->workers[i].rcs_desc[t].s[RSTable3DDescriptionOriginZ] = 0.0f;
+        H->workers[i].rcs_desc[t].s[RSTable3DDescriptionMaximumX] = real.xm;
+        H->workers[i].rcs_desc[t].s[RSTable3DDescriptionMaximumY] = real.ym;
+        H->workers[i].rcs_desc[t].s[RSTable3DDescriptionMaximumZ] = 0.0f;
+        H->workers[i].mem_usage += ((cl_uint)(real.xm + 1.0f) * (real.ym + 1.0f)) * 2 * sizeof(cl_float4);
     }
     H->rcs_count++;
 }
@@ -3334,9 +3322,9 @@ void RS_set_rcs_data_to_unity(RSHandle *H) {
 void RS_clear_rcs_data(RSHandle *H) {
     for (int i = 0; i < H->num_workers; i++) {
         for (int t = 0; t < H->rcs_count; t++) {
-            cl_uint nx = (cl_uint)H->worker[i].rcs_desc[t].s[RSTable3DDescriptionMaximumX] + 1;
-            cl_uint ny = (cl_uint)H->worker[i].rcs_desc[t].s[RSTable3DDescriptionMaximumY] + 1;
-            H->worker[i].mem_usage -= nx * ny * 2 * sizeof(cl_float4);
+            cl_uint nx = (cl_uint)H->workers[i].rcs_desc[t].s[RSTable3DDescriptionMaximumX] + 1;
+            cl_uint ny = (cl_uint)H->workers[i].rcs_desc[t].s[RSTable3DDescriptionMaximumY] + 1;
+            H->workers[i].mem_usage -= nx * ny * 2 * sizeof(cl_float4);
         }
     }
     H->rcs_count = 0;
@@ -3371,21 +3359,21 @@ void RS_update_auxiliary_attributes(RSHandle *H) {
 #if defined (_USE_GCL_)
 
     for (i = 0; i < H->num_workers; i++) {
-        dispatch_async(H->worker[i].que, ^{
-            scat_sig_aux_kernel(&H->worker[i].ndrange_scat_all,
-                                (cl_float4 *)H->worker[i].scat_sig,
-                                (cl_float4 *)H->worker[i].scat_aux,
-                                (cl_float4 *)H->worker[i].scat_pos,
-                                (cl_float4 *)H->worker[i].scat_rcs,
-                                (cl_float *)H->worker[i].angular_weight,
-                                H->worker[i].angular_weight_desc,
+        dispatch_async(H->workers[i].que, ^{
+            scat_sig_aux_kernel(&H->workers[i].ndrange_scat_all,
+                                (cl_float4 *)H->workers[i].scat_sig,
+                                (cl_float4 *)H->workers[i].scat_aux,
+                                (cl_float4 *)H->workers[i].scat_pos,
+                                (cl_float4 *)H->workers[i].scat_rcs,
+                                (cl_float *)H->workers[i].angular_weight,
+                                H->workers[i].angular_weight_desc,
                                 H->sim_desc);
-            dispatch_semaphore_signal(H->worker[i].sem);
+            dispatch_semaphore_signal(H->workers[i].sem);
         });
     }
     
     for (i = 0; i < H->num_workers; i++) {
-        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+        dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
     }
     
 #else
@@ -3394,13 +3382,13 @@ void RS_update_auxiliary_attributes(RSHandle *H) {
     memset(events, 0, sizeof(events));
     
     for (i = 0; i < H->num_workers; i++) {
-        RSWorker *C = &H->worker[i];
+        RSWorker *C = &H->workers[i];
         clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
         clEnqueueNDRangeKernel(C->que, C->kern_scat_sig_aux, 1, NULL, &C->num_scats, NULL, 0, NULL, &events[i]);
     }
     
     for (i = 0; i < H->num_workers; i++) {
-        clFlush(H->worker[i].que);
+        clFlush(H->workers[i].que);
     }
 
     for (i = 0; i < H->num_workers; i++) {
@@ -3430,17 +3418,17 @@ void RS_update_colors(RSHandle *H) {
         for (i = 0; i < H->num_workers; i++) {
             r = 0;
             a = 0;
-            RSWorker *C = &H->worker[i];
-            for (k = 1; k < H->num_body_types; k++) {
-                if (C->debris_population[k]) {
+            RSWorker *C = &H->workers[i];
+            for (k = 1; k < H->num_types; k++) {
+                if (C->counts[k]) {
                     dispatch_async(C->que, ^{
                         db_rcs_kernel(&C->ndrange_scat[k],
                                       (cl_float4 *)C->scat_pos,
                                       (cl_float4 *)C->scat_ori,
                                       (cl_float4 *)C->scat_rcs,
-                                      (cl_image)H->worker[i].rcs_real[r],
-                                      (cl_image)H->worker[i].rcs_imag[r],
-                                      H->worker[i].rcs_desc[r],
+                                      (cl_image)H->workers[i].rcs_real[r],
+                                      (cl_image)H->workers[i].rcs_imag[r],
+                                      H->workers[i].rcs_desc[r],
                                       H->sim_desc);
                         dispatch_semaphore_signal(C->sem);
                     });
@@ -3448,8 +3436,8 @@ void RS_update_colors(RSHandle *H) {
                 r = r == H->rcs_count - 1 ? 0 : r + 1;
                 a = a == H->adm_count - 1 ? 0 : a + 1;
             }
-            for (k = 1; k < H->num_body_types; k++) {
-                if (C->debris_population[k]) {
+            for (k = 1; k < H->num_types; k++) {
+                if (C->counts[k]) {
                     dispatch_semaphore_wait(C->sem, DISPATCH_TIME_FOREVER);
                 }
             }
@@ -3474,8 +3462,8 @@ void RS_update_colors(RSHandle *H) {
         }
     } else {
         for (i = 0; i < H->num_workers; i++) {
-            RSWorker *C = &H->worker[i];
-            dispatch_async(H->worker[i].que, ^{
+            RSWorker *C = &H->workers[i];
+            dispatch_async(H->workers[i].que, ^{
                 // Set individual color based on draw mode
                 scat_clr_kernel(&C->ndrange_scat_all,
                                 (cl_float4 *)C->scat_clr,
@@ -3491,7 +3479,7 @@ void RS_update_colors(RSHandle *H) {
 
 #else
     
-    cl_event events[RS_MAX_GPU_DEVICE][H->num_body_types];
+    cl_event events[RS_MAX_GPU_DEVICE][H->num_types];
     memset(events, 0, sizeof(events));
     
     if (H->status & RSStatusDebrisRCSNeedsUpdate) {
@@ -3499,25 +3487,25 @@ void RS_update_colors(RSHandle *H) {
         for (i = 0; i < H->num_workers; i++) {
             r = 0;
             a = 0;
-            RSWorker *C = &H->worker[i];
-            for (k = 1; k < H->num_body_types; k++) {
-                if (C->debris_population[k]) {
+            RSWorker *C = &H->workers[i];
+            for (k = 1; k < H->num_types; k++) {
+                if (C->counts[k]) {
                     clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &C->rcs_real[r]);
                     clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[r]);
                     clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[r]);
                     clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
-                    clEnqueueNDRangeKernel(C->que, C->kern_db_rcs, 1, &C->debris_origin[k], &C->debris_population[k], NULL, 0, NULL, &events[i][k]);
+                    clEnqueueNDRangeKernel(C->que, C->kern_db_rcs, 1, &C->originsk], &C->counts[k], NULL, 0, NULL, &events[i][k]);
                 }
                 r = r == H->rcs_count - 1 ? 0 : r + 1;
                 a = a == H->adm_count - 1 ? 0 : a + 1;
             }
         }
         for (i = 0; i < H->num_workers; i++) {
-            clFlush(H->worker[i].que);
+            clFlush(H->workers[i].que);
         }
         for (i = 0; i < H->num_workers; i++) {
-            for (k = 1; k < H->num_body_types; k++) {
-                if (H->worker[i].debris_population[k]) {
+            for (k = 1; k < H->num_types; k++) {
+                if (H->workers[i].counts[k]) {
                     clWaitForEvents(1, &events[i][k]);
                     clReleaseEvent(events[i][k]);
                 }
@@ -3527,20 +3515,20 @@ void RS_update_colors(RSHandle *H) {
     }
     for (i = 0; i < H->num_workers; i++) {
         if (H->status & RSStatusScattererSignalNeedsUpdate) {
-            RSWorker *C = &H->worker[i];
+            RSWorker *C = &H->workers[i];
             clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
             clEnqueueNDRangeKernel(C->que, C->kern_scat_sig_aux, 1, NULL, &C->num_scats, NULL, 0, NULL, &events[i][0]);
             
             clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentDrawMode, sizeof(cl_uint4), &H->draw_mode);
             clEnqueueNDRangeKernel(C->que, C->kern_scat_clr, 1, NULL, &C->num_scats, NULL, 1, &events[i][0], &events[i][1]);
         } else {
-            RSWorker *C = &H->worker[i];
+            RSWorker *C = &H->workers[i];
             clSetKernelArg(C->kern_scat_clr, RSScattererColorKernelArgumentDrawMode, sizeof(cl_uint4), &H->draw_mode);
             clEnqueueNDRangeKernel(C->que, C->kern_scat_clr, 1, NULL, &C->num_scats, NULL, 0, NULL, &events[i][1]);
         }
     }
     for (i = 0; i < H->num_workers; i++) {
-        clFlush(H->worker[i].que);
+        clFlush(H->workers[i].que);
     }
     for (i = 0; i < H->num_workers; i++) {
         clWaitForEvents(1, &events[i][1]);
@@ -3566,9 +3554,9 @@ void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[][n]) {
         }
     }
     for (int i = 0; i < H->num_workers; i++) {
-        H->worker[i].vbo_scat_pos = vbo[i][0];
-        H->worker[i].vbo_scat_clr = vbo[i][1];
-        H->worker[i].vbo_scat_ori = vbo[i][2];
+        H->workers[i].vbo_scat_pos = vbo[i][0];
+        H->workers[i].vbo_scat_clr = vbo[i][1];
+        H->workers[i].vbo_scat_ori = vbo[i][2];
     }
     H->has_vbo_from_gl = 1;
 }
@@ -3580,20 +3568,20 @@ void RS_share_mem_with_vbo(RSHandle *H, const int n, unsigned int vbo[][n]) {
 void RS_derive_ndranges(RSHandle *H) {
     for (int i = 0; i < H->num_workers; i++) {
 
-        RSWorker *C = &H->worker[i];
+        RSWorker *C = &H->workers[i];
         
         C->ndrange_scat_all.work_dim = 1;
         C->ndrange_scat_all.global_work_offset[0] = 0;
         C->ndrange_scat_all.global_work_size[0] = C->num_scats;
         C->ndrange_scat_all.local_work_size[0] = 0;
         
-        for (int k = 0; k < H->num_body_types; k++) {
-            if (H->debris_population[k] == 0) {
+        for (int k = 0; k < H->num_types; k++) {
+            if (H->counts[k] == 0) {
                 continue;
             }
             C->ndrange_scat[k].work_dim = 1;
-            C->ndrange_scat[k].global_work_offset[0] = C->debris_origin[k];
-            C->ndrange_scat[k].global_work_size[0] = C->debris_population[k];
+            C->ndrange_scat[k].global_work_offset[0] = C->origins[k];
+            C->ndrange_scat[k].global_work_size[0] = C->counts[k];
             C->ndrange_scat[k].local_work_size[0] = 0;
             if (C->verb > 2) {
                 rsprint("work[%d] offset, size = %d, %d",
@@ -3626,30 +3614,30 @@ void RS_io_test(RSHandle *H) {
 #if defined (_USE_GCL_)
     
 	for (i = 0; i < H->num_workers; i++) {
-		dispatch_async(H->worker[i].que, ^{
-			io_kernel(&H->worker[i].ndrange_scat[0],
-                      (cl_float4 *)H->worker[i].scat_pos,
-                      (cl_float4 *)H->worker[i].scat_aux);
-			dispatch_semaphore_signal(H->worker[i].sem);
+		dispatch_async(H->workers[i].que, ^{
+			io_kernel(&H->workers[i].ndrange_scat[0],
+                      (cl_float4 *)H->workers[i].scat_pos,
+                      (cl_float4 *)H->workers[i].scat_aux);
+			dispatch_semaphore_signal(H->workers[i].sem);
 		});
 	}
     
 	for (i = 0; i < H->num_workers; i++) {
-		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+		dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
 	}
     
 #else
     
 	for (i = 0; i < H->num_workers; i++) {
-        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_io, 1, NULL, &H->worker[i].num_scats, NULL, 0, NULL, NULL);
+        clEnqueueNDRangeKernel(H->workers[i].que, H->workers[i].kern_io, 1, NULL, &H->workers[i].num_scats, NULL, 0, NULL, NULL);
 	}
     
     for (i = 0; i < H->num_workers; i++) {
-        clFlush(H->worker[i].que);
+        clFlush(H->workers[i].que);
     }
 	
     for (i = 0; i < H->num_workers; i++) {
-        clFinish(H->worker[i].que);
+        clFinish(H->workers[i].que);
     }
 
 #endif
@@ -3671,9 +3659,9 @@ void RS_populate(RSHandle *H) {
 	}
 	
     size_t max_var_size;
-    CL_CHECK(clGetDeviceInfo(H->worker[0].dev, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(max_var_size), &max_var_size, NULL));
-    if (H->worker[0].num_scats * sizeof(cl_float4) > max_var_size) {
-        rsprint("ERROR: Every scatterer attribute occupies %s B > %s B.", commaint(H->worker[0].num_scats * sizeof(cl_float4)), commaint(max_var_size));
+    CL_CHECK(clGetDeviceInfo(H->workers[0].dev, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(max_var_size), &max_var_size, NULL));
+    if (H->workers[0].num_scats * sizeof(cl_float4) > max_var_size) {
+        rsprint("ERROR: Every scatterer attribute occupies %s B > %s B.", commaint(H->workers[0].num_scats * sizeof(cl_float4)), commaint(max_var_size));
         exit(EXIT_FAILURE);
     }
     
@@ -3701,6 +3689,7 @@ void RS_populate(RSHandle *H) {
 		RS_free_scat_memory(H);
 	}
 
+    posix_memalign((void **)&H->scat_uid, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_uint4));
     posix_memalign((void **)&H->scat_pos, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
 	posix_memalign((void **)&H->scat_vel, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
 	posix_memalign((void **)&H->scat_ori, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
@@ -3709,10 +3698,10 @@ void RS_populate(RSHandle *H) {
     posix_memalign((void **)&H->scat_rcs, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
 	posix_memalign((void **)&H->scat_sig, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
     posix_memalign((void **)&H->scat_rnd, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_uint4));
-
 	posix_memalign((void **)&H->pulse, RS_ALIGN_SIZE, H->params.range_count * sizeof(cl_float4));
 	
-	if (H->scat_pos == NULL ||
+	if (H->scat_uid == NULL ||
+        H->scat_pos == NULL ||
 		H->scat_vel == NULL ||
 		H->scat_ori == NULL ||
         H->scat_tum == NULL ||
@@ -3725,7 +3714,7 @@ void RS_populate(RSHandle *H) {
 		return;
 	}
 	
-    H->mem_size = H->num_scats * (7 * sizeof(cl_float4) + sizeof(cl_uint4)) + H->params.range_count * sizeof(cl_float4);
+    H->mem_size = H->num_scats * (8 * sizeof(cl_float4) + 2 * sizeof(cl_uint4)) + H->params.range_count * sizeof(cl_float4);
     
 	char has_null = 0;
 	for (i = 0; i < H->num_workers; i++) {
@@ -3776,16 +3765,22 @@ void RS_populate(RSHandle *H) {
     //
 	// Initialize the scatter body positions & velocities
 	//
-    for (k = 0; k < H->num_body_types; k++) {
+    uint32_t uid = 0;
+    for (k = 0; k < H->num_types; k++) {
         for (w = 0; w < H->num_workers; w++) {
 
-            i = (int)(H->offset[w] + H->worker[w].debris_origin[k]);
+            i = (int)(H->offset[w] + H->workers[w].origins[k]);
             
             #ifdef DEBUG_HEAVY
-            rsprint(RS_INDENT "type[%d]   worker[%d]   n = %d", k, w,  H->worker[w].debris_population[k]);
+            rsprint(RS_INDENT "type[%d]   workers[%d]   n = %d", k, w,  H->workers[w].counts[k]);
             #endif
 
-            for (n = 0; n < H->worker[w].debris_population[k]; n++) {
+            for (n = 0; n < H->workers[w].counts[k]; n++) {
+                H->scat_uid[i].s0 = uid++;
+                H->scat_uid[i].s1 = n;
+                H->scat_uid[i].s2 = k;
+                H->scat_uid[i].s3 = w;
+                
                 H->scat_pos[i].x = (float)rand() / RAND_MAX * domain.size.x + domain.origin.x;
                 H->scat_pos[i].y = (float)rand() / RAND_MAX * domain.size.y + domain.origin.y;
                 H->scat_pos[i].z = (float)rand() / RAND_MAX * domain.size.z + domain.origin.z;
@@ -3875,18 +3870,18 @@ void RS_populate(RSHandle *H) {
     float a;
     int bin;
     if (H->dsd_name != RSDropSizeDistributionUndefined) {
-        float drops_per_scat = (vol * H->dsd_nd_sum) / H->debris_population[0];
+        float drops_per_scat = (vol * H->dsd_nd_sum) / H->counts[0];
         
-        sprintf(H->summary + strlen(H->summary), "Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->debris_population[0]));
-        rsprint("Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->debris_population[0]));
+        sprintf(H->summary + strlen(H->summary), "Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->counts[0]));
+        rsprint("Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->counts[0]));
         
         // Store a copy of concentration scale in simulation description
         H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] = sqrt(drops_per_scat);
         
         if (H->sim_concept & RSSimulationConceptUniformDSDScaledRCS) {
             for (w = 0; w < H->num_workers; w++) {
-                i = (int)(H->offset[w] + H->worker[w].debris_origin[0]);
-                for (n = 0; n < H->worker[w].debris_population[0]; n++) {
+                i = (int)(H->offset[w] + H->workers[w].origins[0]);
+                for (n = 0; n < H->workers[w].counts[0]; n++) {
                     a = (float)rand() / RAND_MAX;
                     bin = (int)(a * (float)H->dsd_count);
                     H->dsd_pop[bin]++;
@@ -3898,8 +3893,8 @@ void RS_populate(RSHandle *H) {
             }
         } else {
             for (w = 0; w < H->num_workers; w++) {
-                i = (int)(H->offset[w] + H->worker[w].debris_origin[0]);
-                for (n = 0; n < H->worker[w].debris_population[0]; n++) {
+                i = (int)(H->offset[w] + H->workers[w].origins[0]);
+                for (n = 0; n < H->workers[w].counts[0]; n++) {
                     a = (float)rand() / RAND_MAX;
                     k = H->dsd_count;
                     bin = 0;
@@ -3929,7 +3924,7 @@ void RS_populate(RSHandle *H) {
         sprintf(H->summary + strlen(H->summary),
             "DSD Specifications:\n");
         for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
-            sprintf(H->summary + strlen(H->summary), "  o %.2f mm - P %.5f / %s particles\n", 2000.0f * H->dsd_r[i], (float)H->dsd_pop[i] / (float)H->debris_population[0], commaint(H->dsd_pop[i]));
+            sprintf(H->summary + strlen(H->summary), "  o %.2f mm - P %.5f / %s particles\n", 2000.0f * H->dsd_r[i], (float)H->dsd_pop[i] / (float)H->counts[0], commaint(H->dsd_pop[i]));
         }
         if (H->dsd_count > 8) {
             sprintf(H->summary + strlen(H->summary), "  o  :      -      :     /  :     /\n");
@@ -3937,13 +3932,13 @@ void RS_populate(RSHandle *H) {
             i = MAX(4, H->dsd_count - 1);
         }
         for (; i < H->dsd_count; i++) {
-            sprintf(H->summary + strlen(H->summary), "  o %.2f mm - P %.5f / %s particles\n", 2000.0f * H->dsd_r[i], (float)H->dsd_pop[i] / (float)H->debris_population[0], commaint(H->dsd_pop[i]));
+            sprintf(H->summary + strlen(H->summary), "  o %.2f mm - P %.5f / %s particles\n", 2000.0f * H->dsd_r[i], (float)H->dsd_pop[i] / (float)H->counts[0], commaint(H->dsd_pop[i]));
         }
         
         if (H->verb) {
             rsprint("Actual DSD Specifications:");
             for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
-                printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %s particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->debris_population[0], commaint(H->dsd_pop[i]));
+                printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %s particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->counts[0], commaint(H->dsd_pop[i]));
             }
             if (H->dsd_count > 8) {
                 printf(RS_INDENT "o  :      -      :     /  :     /\n");
@@ -3951,15 +3946,15 @@ void RS_populate(RSHandle *H) {
                 i = MAX(4, H->dsd_count - 1);
             }
             for (; i < H->dsd_count; i++) {
-                printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %s particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->debris_population[0], commaint(H->dsd_pop[i]));
+                printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %s particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->counts[0], commaint(H->dsd_pop[i]));
             }
         }
     } else {
         rsprint("INFO: No DSD specified. The meteorological scatterers do not return any power.");
-        float drops_per_scat = (vol * 1000.0f) / H->debris_population[0];
+        float drops_per_scat = (vol * 1000.0f) / H->counts[0];
         
-        sprintf(H->summary + strlen(H->summary), "Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->debris_population[0]));
-        rsprint("Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->debris_population[0]));
+        sprintf(H->summary + strlen(H->summary), "Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->counts[0]));
+        rsprint("Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->counts[0]));
 }
 	
     // Replace a few points for debugging purpose.
@@ -3971,8 +3966,8 @@ void RS_populate(RSHandle *H) {
 	
     // Replace the very first debris particle
     #if defined(DEBUG_DEBRIS)
-    if (H->debris_population[1] > 0) {
-        k = (int)H->debris_population[0];
+    if (H->counts[1] > 0) {
+        k = (int)H->counts[0];
         //printf("k = %d\n", k);
         H->scat_pos[k].x = 0.0f;
         H->scat_pos[k].y = H->params.range_start + floorf(H->params.range_count * 0.5f) * H->params.range_delta;
@@ -3996,20 +3991,21 @@ void RS_populate(RSHandle *H) {
     
     // Propagate / duplicate some constants to other places for efficient kernel execution
     for (i = 0; i < H->num_workers; i++) {
-        H->worker[i].range_weight_desc.s[RSTable1DDescriptionUserConstant] = H->sim_desc.s[RSSimulationDescriptionWaveNumber];
-        H->worker[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionUserConstant] = H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale];
+        H->workers[i].range_weight_desc.s[RSTable1DDescriptionUserConstant] = H->sim_desc.s[RSSimulationDescriptionWaveNumber];
+        H->workers[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionUserConstant] = H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale];
     }
 
     // First frame is loaded during RS_init(), now we fill in the buffer
-    while (H->vel_count < RS_MAX_VEL_TABLES) {
-        LESTable *table = LES_get_frame(H->L, H->vel_out_idx);
+    //while (H->vel_count < RS_MAX_VEL_TABLES) {
+    rsprint("Reading LES table (%u out of %u)...", H->vel_idx, H->vel_count);
+        LESTable *table = LES_get_frame(H->L, H->vel_idx);
         if (table == NULL) {
             rsprint("ERROR: There is no more frame(s)?");
             exit(EXIT_FAILURE);
         }
         RS_set_vel_data_to_LES_table(H, table);
-        H->vel_out_idx = H->vel_out_idx == H->vel_out_count - 1 ? 0 : H->vel_out_idx + 1;
-    }
+        H->vel_idx = H->vel_idx == H->vel_count - 1 ? 0 : H->vel_idx + 1;
+    //}
 
     // All tables must be ready at this point
     // - range weight table
@@ -4045,7 +4041,7 @@ void RS_populate(RSHandle *H) {
     RS_upload(H);
 
     if (H->verb) {
-        rsprint("VEL / ADM / RCS count = %d / %d / %d", H->vel_count, H->adm_count, H->rcs_count);
+        rsprint("ADM / RCS count = %d / %d", H->adm_count, H->rcs_count);
         rsprint("CL domain synchronized.");
     }
     
@@ -4071,17 +4067,17 @@ void RS_download(RSHandle *H) {
 //    printf("%p <-----------------------\n", H->scat_ori);
     
     for (i = 0; i < H->num_workers; i++) {
-		dispatch_async(H->worker[i].que, ^{
-			gcl_memcpy(H->scat_pos + H->offset[i], H->worker[i].scat_pos, H->worker[i].num_scats * sizeof(cl_float4));
-            gcl_memcpy(H->scat_vel + H->offset[i], H->worker[i].scat_vel, H->worker[i].num_scats * sizeof(cl_float4));
-            gcl_memcpy(H->scat_ori + H->offset[i], H->worker[i].scat_ori, H->worker[i].num_scats * sizeof(cl_float4));
-			gcl_memcpy(H->scat_aux + H->offset[i], H->worker[i].scat_aux, H->worker[i].num_scats * sizeof(cl_float4));
-            gcl_memcpy(H->scat_rcs + H->offset[i], H->worker[i].scat_rcs, H->worker[i].num_scats * sizeof(cl_float4));
-			gcl_memcpy(H->scat_sig + H->offset[i], H->worker[i].scat_sig, H->worker[i].num_scats * sizeof(cl_float4));
-            gcl_memcpy(H->pulse_tmp[i], H->worker[i].pulse, H->params.range_count * sizeof(cl_float4));
-            dispatch_semaphore_signal(H->worker[i].sem);
+		dispatch_async(H->workers[i].que, ^{
+			gcl_memcpy(H->scat_pos + H->offset[i], H->workers[i].scat_pos, H->workers[i].num_scats * sizeof(cl_float4));
+            gcl_memcpy(H->scat_vel + H->offset[i], H->workers[i].scat_vel, H->workers[i].num_scats * sizeof(cl_float4));
+            gcl_memcpy(H->scat_ori + H->offset[i], H->workers[i].scat_ori, H->workers[i].num_scats * sizeof(cl_float4));
+			gcl_memcpy(H->scat_aux + H->offset[i], H->workers[i].scat_aux, H->workers[i].num_scats * sizeof(cl_float4));
+            gcl_memcpy(H->scat_rcs + H->offset[i], H->workers[i].scat_rcs, H->workers[i].num_scats * sizeof(cl_float4));
+			gcl_memcpy(H->scat_sig + H->offset[i], H->workers[i].scat_sig, H->workers[i].num_scats * sizeof(cl_float4));
+            gcl_memcpy(H->pulse_tmp[i], H->workers[i].pulse, H->params.range_count * sizeof(cl_float4));
+            dispatch_semaphore_signal(H->workers[i].sem);
 		});
-        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+        dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
 	}
 
 #else
@@ -4092,13 +4088,13 @@ void RS_download(RSHandle *H) {
 
     // Non-blocking read, wait for events later when they are all queued up.
     for (i = 0; i < H->num_workers; i++) {
-        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, &events[i][0]);
-        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_vel, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, &events[i][1]);
-        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, &events[i][2]);
-        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_aux, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_aux + H->offset[i], 0, NULL, &events[i][3]);
-        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_rcs, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_rcs + H->offset[i], 0, NULL, &events[i][4]);
-        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_sig, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, &events[i][5]);
-        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].pulse, CL_FALSE, 0, H->params.range_count * sizeof(cl_float4), H->pulse_tmp[i], 0, NULL, &events[i][6]);
+        clEnqueueReadBuffer(H->workers[i].que, H->workers[i].scat_pos, CL_FALSE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, &events[i][0]);
+        clEnqueueReadBuffer(H->workers[i].que, H->workers[i].scat_vel, CL_FALSE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, &events[i][1]);
+        clEnqueueReadBuffer(H->workers[i].que, H->workers[i].scat_ori, CL_FALSE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, &events[i][2]);
+        clEnqueueReadBuffer(H->workers[i].que, H->workers[i].scat_aux, CL_FALSE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_aux + H->offset[i], 0, NULL, &events[i][3]);
+        clEnqueueReadBuffer(H->workers[i].que, H->workers[i].scat_rcs, CL_FALSE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_rcs + H->offset[i], 0, NULL, &events[i][4]);
+        clEnqueueReadBuffer(H->workers[i].que, H->workers[i].scat_sig, CL_FALSE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, &events[i][5]);
+        clEnqueueReadBuffer(H->workers[i].que, H->workers[i].pulse, CL_FALSE, 0, H->params.range_count * sizeof(cl_float4), H->pulse_tmp[i], 0, NULL, &events[i][6]);
     }
 
     cl_int ret;
@@ -4114,13 +4110,13 @@ void RS_download(RSHandle *H) {
     }
 
 //    for (i = 0; i < H->num_workers; i++) {
-//        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, NULL);
-//        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_vel, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, NULL);
-//        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, NULL);
-//        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_aux, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_aux + H->offset[i], 0, NULL, NULL);
-//        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_rcs, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_rcs + H->offset[i], 0, NULL, NULL);
-//        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_sig, CL_FALSE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, NULL);
-//        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].pulse, CL_TRUE, 0, H->params.range_count * sizeof(cl_float4), H->pulse_tmp[i], 0, NULL, NULL);
+//        clEnqueueReadBuffer(H->workers[i].que, H->workers[i].scat_pos, CL_TRUE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, NULL);
+//        clEnqueueReadBuffer(H->workers[i].que, H->workers[i].scat_vel, CL_TRUE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, NULL);
+//        clEnqueueReadBuffer(H->workers[i].que, H->workers[i].scat_ori, CL_TRUE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, NULL);
+//        clEnqueueReadBuffer(H->workers[i].que, H->workers[i].scat_aux, CL_TRUE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_aux + H->offset[i], 0, NULL, NULL);
+//        clEnqueueReadBuffer(H->workers[i].que, H->workers[i].scat_rcs, CL_TRUE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_rcs + H->offset[i], 0, NULL, NULL);
+//        clEnqueueReadBuffer(H->workers[i].que, H->workers[i].scat_sig, CL_FALSE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, NULL);
+//        clEnqueueReadBuffer(H->workers[i].que, H->workers[i].pulse, CL_TRUE, 0, H->params.range_count * sizeof(cl_float4), H->pulse_tmp[i], 0, NULL, NULL);
 //    }
 
 #endif
@@ -4136,17 +4132,17 @@ void RS_download_position_only(RSHandle *H) {
 #if defined (_USE_GCL_)
 	
 	for (i = 0; i < H->num_workers; i++) {
-		dispatch_async(H->worker[i].que, ^{
-			gcl_memcpy(H->scat_pos + H->offset[i], H->worker[i].scat_pos, H->worker[i].num_scats * sizeof(cl_float4));
-			dispatch_semaphore_signal(H->worker[i].sem);
+		dispatch_async(H->workers[i].que, ^{
+			gcl_memcpy(H->scat_pos + H->offset[i], H->workers[i].scat_pos, H->workers[i].num_scats * sizeof(cl_float4));
+			dispatch_semaphore_signal(H->workers[i].sem);
 		});
-		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+		dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
 	}
 	
 #else
 	
 	for (i = 0; i < H->num_workers; i++) {
-		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, NULL);
+		clEnqueueReadBuffer(H->workers[i].que, H->workers[i].scat_pos, CL_TRUE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, NULL);
 	}
 	
 #endif
@@ -4160,17 +4156,17 @@ void RS_download_orientation_only(RSHandle *H) {
 #if defined (_USE_GCL_)
     
     for (i = 0; i < H->num_workers; i++) {
-        dispatch_async(H->worker[i].que, ^{
-            gcl_memcpy(H->scat_ori + H->offset[i], H->worker[i].scat_ori, H->worker[i].num_scats * sizeof(cl_float4));
-            dispatch_semaphore_signal(H->worker[i].sem);
+        dispatch_async(H->workers[i].que, ^{
+            gcl_memcpy(H->scat_ori + H->offset[i], H->workers[i].scat_ori, H->workers[i].num_scats * sizeof(cl_float4));
+            dispatch_semaphore_signal(H->workers[i].sem);
         });
-        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+        dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
     }
     
 #else
     
     for (i = 0; i < H->num_workers; i++) {
-        clEnqueueReadBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, NULL);
+        clEnqueueReadBuffer(H->workers[i].que, H->workers[i].scat_ori, CL_TRUE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, NULL);
     }
     
 #endif
@@ -4213,19 +4209,19 @@ void RS_download_pulse_only(RSHandle *H) {
 #if defined (_USE_GCL_)
 	
 	for (i = 0; i < H->num_workers; i++) {
-		dispatch_async(H->worker[i].que, ^{
-			gcl_memcpy(H->pulse_tmp[i], H->worker[i].pulse, H->params.range_count * sizeof(cl_float4));
-			dispatch_semaphore_signal(H->worker[i].sem);
+		dispatch_async(H->workers[i].que, ^{
+			gcl_memcpy(H->pulse_tmp[i], H->workers[i].pulse, H->params.range_count * sizeof(cl_float4));
+			dispatch_semaphore_signal(H->workers[i].sem);
 		});
 	}
 	for (i = 0; i < H->num_workers; i++)
-		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+		dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
 	
 #else
 	
     // Blocking read since there is only one read
 	for (i = 0; i < H->num_workers; i++) {
-		clEnqueueReadBuffer(H->worker[i].que, H->worker[i].pulse, CL_TRUE, 0, H->params.range_count * sizeof(cl_float4), H->pulse_tmp[i], 0, NULL, NULL);
+		clEnqueueReadBuffer(H->workers[i].que, H->workers[i].pulse, CL_TRUE, 0, H->params.range_count * sizeof(cl_float4), H->pulse_tmp[i], 0, NULL, NULL);
 	}
 	
 #endif
@@ -4243,8 +4239,8 @@ void RS_upload(RSHandle *H) {
 	
 	if (H->verb > 3) {
 		for (i = 0; i < H->num_workers; i++) {
-			rsprint("worker[%d].scat_pos @ %p\n", i, H->worker[i].scat_pos);
-			rsprint("worker[%d].scat_vel @ %p\n", i, H->worker[i].scat_vel);
+			rsprint("workers[%d].scat_pos @ %p\n", i, H->workers[i].scat_pos);
+			rsprint("workers[%d].scat_vel @ %p\n", i, H->workers[i].scat_vel);
 		}
 		rsprint("scat_pos @ %p\n", H->scat_pos);
 		rsprint("scat_vel @ %p\n", H->scat_vel);
@@ -4258,30 +4254,30 @@ void RS_upload(RSHandle *H) {
 #if defined (_USE_GCL_)
 	
 	for (i = 0; i < H->num_workers; i++) {
-		dispatch_async(H->worker[i].que, ^{
-			gcl_memcpy(H->worker[i].scat_pos, H->scat_pos + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
-			gcl_memcpy(H->worker[i].scat_vel, H->scat_vel + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
-			gcl_memcpy(H->worker[i].scat_ori, H->scat_ori + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
-            gcl_memcpy(H->worker[i].scat_tum, H->scat_tum + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
-			gcl_memcpy(H->worker[i].scat_aux, H->scat_aux + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
-			gcl_memcpy(H->worker[i].scat_rcs, H->scat_rcs + H->offset[i], H->worker[i].num_scats * sizeof(cl_float4));
-			gcl_memcpy(H->worker[i].scat_rnd, H->scat_rnd + H->offset[i], H->worker[i].num_scats * sizeof(cl_uint4));
-            dispatch_semaphore_signal(H->worker[i].sem);
+		dispatch_async(H->workers[i].que, ^{
+			gcl_memcpy(H->workers[i].scat_pos, H->scat_pos + H->offset[i], H->workers[i].num_scats * sizeof(cl_float4));
+			gcl_memcpy(H->workers[i].scat_vel, H->scat_vel + H->offset[i], H->workers[i].num_scats * sizeof(cl_float4));
+			gcl_memcpy(H->workers[i].scat_ori, H->scat_ori + H->offset[i], H->workers[i].num_scats * sizeof(cl_float4));
+            gcl_memcpy(H->workers[i].scat_tum, H->scat_tum + H->offset[i], H->workers[i].num_scats * sizeof(cl_float4));
+			gcl_memcpy(H->workers[i].scat_aux, H->scat_aux + H->offset[i], H->workers[i].num_scats * sizeof(cl_float4));
+			gcl_memcpy(H->workers[i].scat_rcs, H->scat_rcs + H->offset[i], H->workers[i].num_scats * sizeof(cl_float4));
+			gcl_memcpy(H->workers[i].scat_rnd, H->scat_rnd + H->offset[i], H->workers[i].num_scats * sizeof(cl_uint4));
+            dispatch_semaphore_signal(H->workers[i].sem);
 		});
-		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+		dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
 	}
 
 #else
 
     // Blocking write since there is no need to optimize this too much
     for (i = 0; i < H->num_workers; i++) {
-		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_pos, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, NULL);
-		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_vel, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, NULL);
-		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_ori, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, NULL);
-        clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_tum, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_tum + H->offset[i], 0, NULL, NULL);
-		clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_aux, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_aux + H->offset[i], 0, NULL, NULL);
-        clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_rcs, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, NULL);
-        clEnqueueWriteBuffer(H->worker[i].que, H->worker[i].scat_rnd, CL_TRUE, 0, H->worker[i].num_scats * sizeof(cl_uint4),  H->scat_rnd + H->offset[i], 0, NULL, NULL);
+		clEnqueueWriteBuffer(H->workers[i].que, H->workers[i].scat_pos, CL_TRUE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, NULL);
+		clEnqueueWriteBuffer(H->workers[i].que, H->workers[i].scat_vel, CL_TRUE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_vel + H->offset[i], 0, NULL, NULL);
+		clEnqueueWriteBuffer(H->workers[i].que, H->workers[i].scat_ori, CL_TRUE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, NULL);
+        clEnqueueWriteBuffer(H->workers[i].que, H->workers[i].scat_tum, CL_TRUE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_tum + H->offset[i], 0, NULL, NULL);
+		clEnqueueWriteBuffer(H->workers[i].que, H->workers[i].scat_aux, CL_TRUE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_aux + H->offset[i], 0, NULL, NULL);
+        clEnqueueWriteBuffer(H->workers[i].que, H->workers[i].scat_rcs, CL_TRUE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, NULL);
+        clEnqueueWriteBuffer(H->workers[i].que, H->workers[i].scat_rnd, CL_TRUE, 0, H->workers[i].num_scats * sizeof(cl_uint4),  H->scat_rnd + H->offset[i], 0, NULL, NULL);
 	}
 
 #endif
@@ -4297,15 +4293,15 @@ void RS_upload(RSHandle *H) {
 //#if defined (_USE_GCL_)
 //
 //    for (i = 0; i < H->num_workers; i++) {
-//        dispatch_async(H->worker[i].que, ^{
-//            scat_rcs_kernel(&H->worker[i].ndrange_scat[0],
-//                            (cl_float4 *)H->worker[i].scat_rcs,
-//                            (cl_float4 *)H->worker[i].scat_pos,
-//                            (cl_float4 *)H->worker[i].scat_aux,
+//        dispatch_async(H->workers[i].que, ^{
+//            scat_rcs_kernel(&H->workers[i].ndrange_scat[0],
+//                            (cl_float4 *)H->workers[i].scat_rcs,
+//                            (cl_float4 *)H->workers[i].scat_pos,
+//                            (cl_float4 *)H->workers[i].scat_aux,
 //                            H->sim_desc);
-//            dispatch_semaphore_signal(H->worker[i].sem);
+//            dispatch_semaphore_signal(H->workers[i].sem);
 //        });
-//        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+//        dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
 //    }
 //    
 //#else
@@ -4313,11 +4309,11 @@ void RS_upload(RSHandle *H) {
 //    cl_event events[RS_MAX_GPU_DEVICE];
 //    
 //    for (i = 0; i < H->num_workers; i++) {
-//        clEnqueueNDRangeKernel(H->worker[i].que, H->worker[i].kern_scat_rcs, 1, &H->worker[i].debris_origin[0], &H->worker[i].debris_population[0], NULL, 0, NULL, &events[i]);
+//        clEnqueueNDRangeKernel(H->workers[i].que, H->workers[i].kern_scat_rcs, 1, &H->workers[i].origins0], &H->workers[i].counts[0], NULL, 0, NULL, &events[i]);
 //    }
 //    
 //    for (i = 0; i < H->num_workers; i++) {
-//        clFlush(H->worker[i].que);
+//        clFlush(H->workers[i].que);
 //    }
 //    
 //    for (i = 0; i < H->num_workers; i++) {
@@ -4340,24 +4336,14 @@ void RS_advance_time(RSHandle *H) {
 		return;
 	}
 
-    const int v = H->vel_idx;
-
     // Advance to next wind table when the time comes
     if (H->sim_tic >= H->sim_toc) {
         H->sim_toc += H->vel_desc.tp;
-        H->vel_idx = H->vel_idx == H->vel_count - 1 ? 0 : H->vel_idx + 1;
-
         if (H->vel_idx == 0) {
-            H->vel_count = 0;
-            rsprint("Loading LES tables from files ...");
-            if (H->vel_out_idx == 0) {
-                rsprint("Wind table restarted.");
-            }
-            for (k = 0; k < RS_MAX_VEL_TABLES; k++) {
-                RS_set_vel_data_to_LES_table(H, LES_get_frame(H->L, H->vel_out_idx));
-                H->vel_out_idx = H->vel_out_idx == H->vel_out_count - 1 ? 0 : H->vel_out_idx + 1;
-            }
+            rsprint("Wind table restarted.");
         }
+        RS_set_vel_data_to_LES_table(H, LES_get_frame(H->L, H->vel_idx));
+        H->vel_idx = H->vel_idx == H->vel_count - 1 ? 0 : H->vel_idx + 1;
         if (H->verb > 2) {
             rsprint("Wind table advanced. vel_idx = %d   ( %.2f / %.4f )", H->vel_idx, H->vel_desc.tp, H->params.prt);
         }
@@ -4371,98 +4357,98 @@ void RS_advance_time(RSHandle *H) {
     k = 0;
     r = 0;
     a = 0;
-    dispatch_async(H->worker[i].que, ^{
-        dummy_kernel(&H->worker[i].ndrange_scat_all,
-                     (cl_float4 *)H->worker[i].scat_pos,
-                     (cl_float4 *)H->worker[i].scat_ori,
-                     (cl_float4 *)H->worker[i].scat_rcs,
-                     (cl_image)H->worker[i].rcs_real[r],
-                     (cl_image)H->worker[i].rcs_imag[r],
-                     H->worker[i].rcs_desc[r],
+    dispatch_async(H->workers[i].que, ^{
+        dummy_kernel(&H->workers[i].ndrange_scat_all,
+                     (cl_float4 *)H->workers[i].scat_pos,
+                     (cl_float4 *)H->workers[i].scat_ori,
+                     (cl_float4 *)H->workers[i].scat_rcs,
+                     (cl_image)H->workers[i].rcs_real[r],
+                     (cl_image)H->workers[i].rcs_imag[r],
+                     H->workers[i].rcs_desc[r],
                      H->sim_desc);
-        dispatch_semaphore_signal(H->worker[i].sem);
+        dispatch_semaphore_signal(H->workers[i].sem);
     });
-    dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+    dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
 
     #elif defined (_ALL_DEBRIS_)
     
     i = 0;
     r = 0;
     a = 0;
-    dispatch_async(H->worker[i].que, ^{
-        db_atts_kernel(&H->worker[i].ndrange_scat_all,
-                       (cl_float4 *)H->worker[i].scat_pos,
-                       (cl_float4 *)H->worker[i].scat_ori,
-                       (cl_float4 *)H->worker[i].scat_vel,
-                       (cl_float4 *)H->worker[i].scat_tum,
-                       (cl_float4 *)H->worker[i].scat_sig,
-                       (cl_uint4 *)H->worker[i].scat_rnd,
-                       (cl_image)H->worker[i].vel[v],
-                       H->worker[i].vel_desc,
-                       (cl_image)H->worker[i].adm_cd[a],
-                       (cl_image)H->worker[i].adm_cm[a],
-                       H->worker[i].adm_desc[a],
-                       (cl_image)H->worker[i].rcs_real[r],
-                       (cl_image)H->worker[i].rcs_imag[r],
-                       H->worker[i].rcs_desc[r],
+    dispatch_async(H->workers[i].que, ^{
+        db_atts_kernel(&H->workers[i].ndrange_scat_all,
+                       (cl_float4 *)H->workers[i].scat_pos,
+                       (cl_float4 *)H->workers[i].scat_ori,
+                       (cl_float4 *)H->workers[i].scat_vel,
+                       (cl_float4 *)H->workers[i].scat_tum,
+                       (cl_float4 *)H->workers[i].scat_sig,
+                       (cl_uint4 *)H->workers[i].scat_rnd,
+                       (cl_image)H->workers[i].vel,
+                       H->workers[i].vel_desc,
+                       (cl_image)H->workers[i].adm_cd[a],
+                       (cl_image)H->workers[i].adm_cm[a],
+                       H->workers[i].adm_desc[a],
+                       (cl_image)H->workers[i].rcs_real[r],
+                       (cl_image)H->workers[i].rcs_imag[r],
+                       H->workers[i].rcs_desc[r],
                        H->sim_desc);
-        dispatch_semaphore_signal(H->worker[i].sem);
+        dispatch_semaphore_signal(H->workers[i].sem);
     });
-    dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+    dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
 
     #else
     
     // These kernels are actually independent and, thus, can be parallelized.
     for (i = 0; i < H->num_workers; i++) {
-        dispatch_async(H->worker[i].que, ^{
+        dispatch_async(H->workers[i].que, ^{
             if (H->sim_concept & RSSimulationConceptDraggedBackground) {
-                el_atts_kernel(&H->worker[i].ndrange_scat[0],
-                               (cl_float4 *)H->worker[i].scat_pos,
-                               (cl_float4 *)H->worker[i].scat_vel,
-                               (cl_float4 *)H->worker[i].scat_rcs,
-                               (cl_uint4 *)H->worker[i].scat_rnd,
-                               (cl_image)H->worker[i].vel[v],
-                               H->worker[i].vel_desc,
-                               (cl_float4 *)H->worker[i].rcs_ellipsoid,
-                               H->worker[i].rcs_ellipsoid_desc,
+                el_atts_kernel(&H->workers[i].ndrange_scat[0],
+                               (cl_float4 *)H->workers[i].scat_pos,
+                               (cl_float4 *)H->workers[i].scat_vel,
+                               (cl_float4 *)H->workers[i].scat_rcs,
+                               (cl_uint4 *)H->workers[i].scat_rnd,
+                               (cl_image)H->workers[i].vel,
+                               H->workers[i].vel_desc,
+                               (cl_float4 *)H->workers[i].rcs_ellipsoid,
+                               H->workers[i].rcs_ellipsoid_desc,
                                H->sim_desc);
             } else {
-                bg_atts_kernel(&H->worker[i].ndrange_scat[0],
-                               (cl_float4 *)H->worker[i].scat_pos,
-                               (cl_float4 *)H->worker[i].scat_vel,
-                               (cl_float4 *)H->worker[i].scat_rcs,
-                               (cl_uint4 *)H->worker[i].scat_rnd,
-                               (cl_image)H->worker[i].vel[v],
-                               H->worker[i].vel_desc,
-                               (cl_float4 *)H->worker[i].rcs_ellipsoid,
-                               H->worker[i].rcs_ellipsoid_desc,
+                bg_atts_kernel(&H->workers[i].ndrange_scat[0],
+                               (cl_float4 *)H->workers[i].scat_pos,
+                               (cl_float4 *)H->workers[i].scat_vel,
+                               (cl_float4 *)H->workers[i].scat_rcs,
+                               (cl_uint4 *)H->workers[i].scat_rnd,
+                               (cl_image)H->workers[i].vel,
+                               H->workers[i].vel_desc,
+                               (cl_float4 *)H->workers[i].rcs_ellipsoid,
+                               H->workers[i].rcs_ellipsoid_desc,
                                H->sim_desc);
             }
-            dispatch_semaphore_signal(H->worker[i].sem);
+            dispatch_semaphore_signal(H->workers[i].sem);
 		});
 
         r = 0;
         a = 0;
         for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
-            if (H->worker[i].debris_population[k]) {
-                dispatch_async(H->worker[i].que, ^{
-                    db_atts_kernel(&H->worker[i].ndrange_scat[k],
-                                   (cl_float4 *)H->worker[i].scat_pos,
-                                   (cl_float4 *)H->worker[i].scat_ori,
-                                   (cl_float4 *)H->worker[i].scat_vel,
-                                   (cl_float4 *)H->worker[i].scat_tum,
-                                   (cl_float4 *)H->worker[i].scat_rcs,
-                                   (cl_uint4 *)H->worker[i].scat_rnd,
-                                   (cl_image)H->worker[i].vel[v],
-                                   H->worker[i].vel_desc,
-                                   (cl_image)H->worker[i].adm_cd[a],
-                                   (cl_image)H->worker[i].adm_cm[a],
-                                   H->worker[i].adm_desc[a],
-                                   (cl_image)H->worker[i].rcs_real[r],
-                                   (cl_image)H->worker[i].rcs_imag[r],
-                                   H->worker[i].rcs_desc[r],
+            if (H->workers[i].counts[k]) {
+                dispatch_async(H->workers[i].que, ^{
+                    db_atts_kernel(&H->workers[i].ndrange_scat[k],
+                                   (cl_float4 *)H->workers[i].scat_pos,
+                                   (cl_float4 *)H->workers[i].scat_ori,
+                                   (cl_float4 *)H->workers[i].scat_vel,
+                                   (cl_float4 *)H->workers[i].scat_tum,
+                                   (cl_float4 *)H->workers[i].scat_rcs,
+                                   (cl_uint4 *)H->workers[i].scat_rnd,
+                                   (cl_image)H->workers[i].vel,
+                                   H->workers[i].vel_desc,
+                                   (cl_image)H->workers[i].adm_cd[a],
+                                   (cl_image)H->workers[i].adm_cm[a],
+                                   H->workers[i].adm_desc[a],
+                                   (cl_image)H->workers[i].rcs_real[r],
+                                   (cl_image)H->workers[i].rcs_imag[r],
+                                   H->workers[i].rcs_desc[r],
                                    H->sim_desc);
-                    dispatch_semaphore_signal(H->worker[i].sem);
+                    dispatch_semaphore_signal(H->workers[i].sem);
                 });
             }
             r = r == H->rcs_count - 1 ? 0 : r + 1;
@@ -4471,10 +4457,10 @@ void RS_advance_time(RSHandle *H) {
 	}
 	
 	for (i = 0; i < H->num_workers; i++) {
-		dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+		dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
         for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
-            if (H->worker[i].debris_population[k]) {
-                dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+            if (H->workers[i].counts[k]) {
+                dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
             }
         }
     }
@@ -4483,7 +4469,7 @@ void RS_advance_time(RSHandle *H) {
 
 #else
 
-    cl_event events[RS_MAX_GPU_DEVICE][H->num_body_types];
+    cl_event events[RS_MAX_GPU_DEVICE][H->num_types];
     memset(events, 0, sizeof(events));
 
 	for (i = 0; i < H->num_workers; i++) {
@@ -4491,33 +4477,33 @@ void RS_advance_time(RSHandle *H) {
         a = 0;
 
         // A convenient pointer to reduce dereferencing
-        RSWorker *C = &H->worker[i];
+        RSWorker *C = &H->workers[i];
 
-//        clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->debris_origin[0], &C->num_scats, NULL, 0, NULL, &events[i][0]);
+//        clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->origins0], &C->num_scats, NULL, 0, NULL, &events[i][0]);
         
         // Need to refresh some parameters of the background at each time update
         if (H->sim_concept & RSSimulationConceptDraggedBackground) {
-            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,      sizeof(cl_mem),     &C->vel[v]);
+            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,      sizeof(cl_mem),     &C->vel);
             clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription,   sizeof(cl_float16), &H->sim_desc);
-            clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->debris_origin[0], &C->debris_population[0], NULL, 0, NULL, &events[i][0]);
+            clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->origins[0], &C->counts[0], NULL, 0, NULL, &events[i][0]);
         } else {
-            clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
+            clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel);
             clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-            clEnqueueNDRangeKernel(C->que, C->kern_bg_atts, 1, &C->debris_origin[0], &C->debris_population[0], NULL, 0, NULL, &events[i][0]);
+            clEnqueueNDRangeKernel(C->que, C->kern_bg_atts, 1, &C->origins[0], &C->counts[0], NULL, 0, NULL, &events[i][0]);
         }
         
         // Debris particles
-        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[v]);
+        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel);
         clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
-        for (k = 1; k < H->num_body_types; k++) {
-            if (C->debris_population[k]) {
+        for (k = 1; k < H->num_types; k++) {
+            if (C->counts[k]) {
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &C->adm_cd[a]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelMomentum,          sizeof(cl_mem),     &C->adm_cm[a]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &C->adm_desc);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &C->rcs_real[r]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[r]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[r]);
-                clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->debris_origin[k], &C->debris_population[k], NULL, 0, NULL, &events[i][k]);
+                clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->origins[k], &C->counts[k], NULL, 0, NULL, &events[i][k]);
             }
             r = r == H->rcs_count - 1 ? 0 : r + 1;
             a = a == H->adm_count - 1 ? 0 : a + 1;
@@ -4525,12 +4511,12 @@ void RS_advance_time(RSHandle *H) {
     }
 
     for (i = 0; i < H->num_workers; i++) {
-        clFlush(H->worker[i].que);
+        clFlush(H->workers[i].que);
     }
    
     for (i = 0; i < H->num_workers; i++) {
-        for (k = 0; k < H->num_body_types; k++) {
-            if (H->worker[i].debris_population[k]) {
+        for (k = 0; k < H->num_types; k++) {
+            if (H->workers[i].counts[k]) {
                 clWaitForEvents(1, &events[i][k]);
                 clReleaseEvent(events[i][k]);
             }
@@ -4561,17 +4547,17 @@ void RS_make_pulse(RSHandle *H) {
         for (i = 0; i < H->num_workers; i++) {
             r = 0;
             a = 0;
-            RSWorker *C = &H->worker[i];
-            for (k = 1; k < H->num_body_types; k++) {
-                if (C->debris_population[k]) {
+            RSWorker *C = &H->workers[i];
+            for (k = 1; k < H->num_types; k++) {
+                if (C->counts[k]) {
                     dispatch_async(C->que, ^{
                         db_rcs_kernel(&C->ndrange_scat[k],
                                       (cl_float4 *)C->scat_pos,
                                       (cl_float4 *)C->scat_ori,
                                       (cl_float4 *)C->scat_rcs,
-                                      (cl_image)H->worker[i].rcs_real[r],
-                                      (cl_image)H->worker[i].rcs_imag[r],
-                                      H->worker[i].rcs_desc[r],
+                                      (cl_image)H->workers[i].rcs_real[r],
+                                      (cl_image)H->workers[i].rcs_imag[r],
+                                      H->workers[i].rcs_desc[r],
                                       H->sim_desc);
                         dispatch_semaphore_signal(C->sem);
                     });
@@ -4581,15 +4567,15 @@ void RS_make_pulse(RSHandle *H) {
             }
         }
         for (i = 0; i < H->num_workers; i++) {
-            RSWorker *C = &H->worker[i];
-            for (k = 1; k < H->num_body_types; k++) {
-                if (C->debris_population[k]) {
+            RSWorker *C = &H->workers[i];
+            for (k = 1; k < H->num_types; k++) {
+                if (C->counts[k]) {
                     dispatch_semaphore_wait(C->sem, DISPATCH_TIME_FOREVER);
                 }
             }
         }
         for (i = 0; i < H->num_workers; i++) {
-            RSWorker *C = &H->worker[i];
+            RSWorker *C = &H->workers[i];
             dispatch_async(C->que, ^{
                 scat_sig_aux_kernel(&C->ndrange_scat_all,
                                     (cl_float4 *)C->scat_sig,
@@ -4603,11 +4589,11 @@ void RS_make_pulse(RSHandle *H) {
             });
         }
         for (i = 0; i < H->num_workers; i++) {
-            dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+            dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
         }
     }
     for (i = 0; i < H->num_workers; i++) {
-        RSWorker *C = &H->worker[i];
+        RSWorker *C = &H->workers[i];
         dispatch_async(C->que, ^{
             if (H->status & RSStatusScattererSignalNeedsUpdate) {
                 //printf("RS_make_pulse: kern_scat_sig_aux\n");
@@ -4662,13 +4648,13 @@ void RS_make_pulse(RSHandle *H) {
         });
     }
     for (i = 0; i < H->num_workers; i++) {
-        dispatch_semaphore_wait(H->worker[i].sem, DISPATCH_TIME_FOREVER);
+        dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
     }
     
 
 #else
 
-    cl_event events[H->num_workers][MAX(H->num_body_types, 3)];
+    cl_event events[H->num_workers][MAX(H->num_types, 3)];
     memset(events, 0, sizeof(events));
 
     // In this implementation, kern_make_pulse_pass_2 should point to kern_make_pulse_pass_2_group, kern_make_pulse_pass_2_local or kern_make_pulse_pass_2_range,
@@ -4678,25 +4664,25 @@ void RS_make_pulse(RSHandle *H) {
         for (i = 0; i < H->num_workers; i++) {
             r = 0;
             a = 0;
-            RSWorker *C = &H->worker[i];
-            for (k = 1; k < H->num_body_types; k++) {
-                if (C->debris_population[k]) {
+            RSWorker *C = &H->workers[i];
+            for (k = 1; k < H->num_types; k++) {
+                if (C->counts[k]) {
                     clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &C->rcs_real[r]);
                     clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[r]);
                     clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[r]);
                     clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
-                    clEnqueueNDRangeKernel(C->que, C->kern_db_rcs, 1, &C->debris_origin[k], &C->debris_population[k], NULL, 0, NULL, &events[i][k]);
+                    clEnqueueNDRangeKernel(C->que, C->kern_db_rcs, 1, &C->origins[k], &C->counts[k], NULL, 0, NULL, &events[i][k]);
                 }
                 r = r == H->rcs_count - 1 ? 0 : r + 1;
                 a = a == H->adm_count - 1 ? 0 : a + 1;
             }
         }
         for (i = 0; i < H->num_workers; i++) {
-            clFlush(H->worker[i].que);
+            clFlush(H->workers[i].que);
         }
         for (i = 0; i < H->num_workers; i++) {
-            for (k = 1; k < H->num_body_types; k++) {
-                if (H->worker[i].debris_population[k]) {
+            for (k = 1; k < H->num_types; k++) {
+                if (H->workers[i].counts[k]) {
                     clWaitForEvents(1, &events[i][k]);
                     clReleaseEvent(events[i][k]);
                 }
@@ -4705,7 +4691,7 @@ void RS_make_pulse(RSHandle *H) {
         H->status |= RSStatusScattererSignalNeedsUpdate;
     }
     for (i = 0; i < H->num_workers; i++) {
-        RSWorker *C = &H->worker[i];
+        RSWorker *C = &H->workers[i];
         if (H->status & RSStatusScattererSignalNeedsUpdate) {
             //printf("RS_make_pulse() kern_scat_sig_aux : %zu\n", C->num_scats);
             clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
@@ -4717,7 +4703,7 @@ void RS_make_pulse(RSHandle *H) {
         clEnqueueNDRangeKernel(C->que, C->kern_make_pulse_pass_2, 1, NULL, &C->make_pulse_params.global[1], &C->make_pulse_params.local[1], 1, &events[i][1], &events[i][2]);
     }
     for (i = 0; i < H->num_workers; i++) {
-        clFlush(H->worker[i].que);
+        clFlush(H->workers[i].que);
     }
     for (i = 0; i < H->num_workers; i++) {
         clWaitForEvents(1, &events[i][2]);
@@ -4825,7 +4811,8 @@ static void RS_show_scat_i(RSHandle *H, const size_t i) {
 
 
 static void RS_show_rcs_i(RSHandle *H, const size_t i) {
-    printf(" %7lu - ( %10.3e, %10.3e, %10.3e, %10.3e )   ( %10.3e %10.3e %10.3e %10.3e )   r = %.2f m  d = %.1f mm\n", i,
+    printf(" [%7d %7d %d %d]   ( %10.3e, %10.3e, %10.3e, %10.3e )   ( %10.3e %10.3e %10.3e %10.3e )   r = %.2f m  d = %.1f mm\n",
+           H->scat_uid[i].x, H->scat_uid[i].y, H->scat_uid[i].z, H->scat_uid[i].w,
            H->scat_sig[i].x, H->scat_sig[i].y, H->scat_sig[i].z, H->scat_sig[i].w,
            H->scat_rcs[i].x, H->scat_rcs[i].y, H->scat_rcs[i].z, H->scat_rcs[i].w,
            H->scat_aux[i].s0, 2000.0f * H->scat_pos[i].w);
@@ -4849,18 +4836,18 @@ void RS_show_scat_pos(RSHandle *H) {
 	size_t i, w;
     printf("A subset of meteorological scatterer positions, velocities & orientations:\n");
     for (w = 0; w < H->num_workers; w++) {
-        for (i = H->worker[w].debris_origin[0];
-             i < H->worker[w].debris_origin[0] + H->worker[w].debris_population[0];
-             i += H->worker[w].debris_population[0] / RS_SHOW_DIV) {
+        for (i = H->workers[w].origins[0];
+             i < H->workers[w].origins[0] + H->workers[w].counts[0];
+             i += H->workers[w].counts[0] / RS_SHOW_DIV) {
             RS_show_scat_i(H, H->offset[w] + i);
         }
     }
     printf("A subset of debris[1] positions, velocities & orientations:\n");
     for (w = 0; w < H->num_workers; w++) {
-        if (H->worker[w].debris_population[1]) {
-            for (i = H->worker[w].debris_origin[1];
-                 i < H->worker[w].debris_origin[1] + H->worker[w].debris_population[1];
-                 i += H->worker[w].debris_population[1] / RS_SHOW_DIV) {
+        if (H->workers[w].counts[1]) {
+            for (i = H->workers[w].origins[1];
+                 i < H->workers[w].origins[1] + H->workers[w].counts[1];
+                 i += H->workers[w].counts[1] / RS_SHOW_DIV) {
                 RS_show_scat_i(H, H->offset[w] + i);
             }
         }
@@ -4872,17 +4859,17 @@ void RS_show_scat_sig(RSHandle *H) {
     size_t i, w;
     printf("A subset of meteorological scatterer signal, RCS & aux. attributes:\n");
     for (w = 0; w < H->num_workers; w++) {
-        for (i = 0; i < H->worker[w].debris_population[0]; i += H->worker[w].debris_population[0] / RS_SHOW_DIV) {
-            RS_show_rcs_i(H, H->offset[w] + H->worker[w].debris_origin[0] + i);
+        for (i = 0; i < H->workers[w].counts[0]; i += H->workers[w].counts[0] / RS_SHOW_DIV) {
+            RS_show_rcs_i(H, H->offset[w] + H->workers[w].origins[0] + i);
         }
     }
-    if (H->debris_population[1] == 0) {
+    if (H->counts[1] == 0) {
         return;
     }
     printf("A subset of debris[1] scatterer signal, RCS & aux. attributes:\n");
     for (w = 0; w < H->num_workers; w++) {
-        for (i = 0; i < H->worker[w].debris_population[1]; i += H->worker[w].debris_population[1] / RS_SHOW_DIV) {
-            RS_show_rcs_i(H, H->offset[w] + H->worker[w].debris_origin[1] + i);
+        for (i = 0; i < H->workers[w].counts[1]; i += H->workers[w].counts[1] / RS_SHOW_DIV) {
+            RS_show_rcs_i(H, H->offset[w] + H->workers[w].origins[1] + i);
         }
     }
 }
@@ -4892,17 +4879,17 @@ void RS_show_scat_att(RSHandle *H) {
     size_t i, w;
     printf("A subset of meteorological scatterer position, velocity, orientation, signal, RCS, etc.:\n");
     for (w = 0; w < H->num_workers; w++) {
-        for (i = 0; i < H->worker[w].debris_population[0]; i += H->worker[w].debris_population[0] / RS_SHOW_DIV) {
-            RS_show_att_i(H, H->offset[w] + H->worker[w].debris_origin[0] + i);
+        for (i = 0; i < H->workers[w].counts[0]; i += H->workers[w].counts[0] / RS_SHOW_DIV) {
+            RS_show_att_i(H, H->offset[w] + H->workers[w].origins[0] + i);
         }
     }
-    if (H->debris_population[1] == 0) {
+    if (H->counts[1] == 0) {
         return;
     }
     printf("A subset of debris[1] scatterer position, velocity, orientation, signal, RCS, etc.:\n");
     for (w = 0; w < H->num_workers; w++) {
-        for (i = 0; i < H->worker[w].debris_population[1]; i += H->worker[w].debris_population[1] / RS_SHOW_DIV) {
-            RS_show_att_i(H, H->offset[w] + H->worker[w].debris_origin[1] + i);
+        for (i = 0; i < H->workers[w].counts[1]; i += H->workers[w].counts[1] / RS_SHOW_DIV) {
+            RS_show_att_i(H, H->offset[w] + H->workers[w].origins[1] + i);
         }
     }
 }

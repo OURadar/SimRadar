@@ -320,7 +320,7 @@
 
 - (NSInteger)pointCountForDevice:(cl_uint)deviceId
 {
-    return (NSInteger)S->worker[deviceId].num_scats;
+    return (NSInteger)S->workers[deviceId].num_scats;
 }
 
 - (cl_float4 *)anchors
