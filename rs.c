@@ -4803,7 +4803,7 @@ void RS_show_radar_params(RSHandle *H) {
 
 
 static void RS_show_scat_i(RSHandle *H, const size_t i) {
-	printf(" [%7d %7d %d %d]   ( %9.2f, %9.2f, %9.2f, %4.1f )  %7.2f %7.2f %7.2f   %7.4f %7.4f %7.4f %7.4f\n", i,
+	printf(" [%7d %7d %d %d]   ( %9.2f, %9.2f, %9.2f, %4.1f )  %7.2f %7.2f %7.2f   %7.4f %7.4f %7.4f %7.4f\n",
            H->scat_uid[i].x, H->scat_uid[i].y, H->scat_uid[i].z, H->scat_uid[i].w,
 		   H->scat_pos[i].x, H->scat_pos[i].y, H->scat_pos[i].z, 2000.0f * H->scat_pos[i].w,
 		   H->scat_vel[i].x, H->scat_vel[i].y, H->scat_vel[i].z,
@@ -4821,7 +4821,7 @@ static void RS_show_rcs_i(RSHandle *H, const size_t i) {
 
 
 static void RS_show_att_i(RSHandle *H, const size_t i) {
-    printf(" [%7d %7d %d %d]   p( %9.2f, %9.2f, %9.2f, %4.1f )   v( %7.2f %7.2f %7.2f )   o( %7.4f %7.4f %7.4f %7.4f)   s( %10.3e, %10.3e, %10.3e, %10.3e )   r( %10.3e %10.3e %10.3e %10.3e )   r = %.2f m\n", i,
+    printf(" [%7d %7d %d %d]   p( %9.2f, %9.2f, %9.2f, %4.1f )   v( %7.2f %7.2f %7.2f )   o( %7.4f %7.4f %7.4f %7.4f)   s( %10.3e, %10.3e, %10.3e, %10.3e )   r( %10.3e %10.3e %10.3e %10.3e )   r = %.2f m\n",
            H->scat_uid[i].x, H->scat_uid[i].y, H->scat_uid[i].z, H->scat_uid[i].w,
            H->scat_pos[i].x, H->scat_pos[i].y, H->scat_pos[i].z, 2000.0f * H->scat_pos[i].w,
            H->scat_vel[i].x, H->scat_vel[i].y, H->scat_vel[i].z,
