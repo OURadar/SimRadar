@@ -267,6 +267,7 @@
 		B5201C6D1C22396A00EACF53 /* SplashController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SplashController.h; sourceTree = "<group>"; };
 		B5201C6E1C22396A00EACF53 /* SplashController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SplashController.m; sourceTree = "<group>"; };
 		B5201C711C2239D100EACF53 /* Splash.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = Splash.xib; sourceTree = "<group>"; };
+		B524E9221DE89AE0004C3D7B /* test_wx_db_compare.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = test_wx_db_compare.sh; sourceTree = "<group>"; };
 		B52609D019D665E800709AFD /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		B527892C18A13C0100650679 /* radarsim */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = radarsim; sourceTree = BUILT_PRODUCTS_DIR; };
 		B52B2BD91BE8F75C00F1F91D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
@@ -552,6 +553,7 @@
 				B5F3C31F18F2FD3800092A72 /* test_les.c */,
 				B567F8B41A6D635100F40660 /* test_adm.c */,
 				B5C2D1EE1ADC154900DD91B1 /* test_rcs.c */,
+				B524E9221DE89AE0004C3D7B /* test_wx_db_compare.sh */,
 			);
 			name = Programs;
 			sourceTree = "<group>";
