@@ -71,10 +71,10 @@ ADMHandle *ADM_init_with_path(const char *path) {
     char *ctmp = getenv("HOME");
     if (ctmp != NULL) {
         //printf("[ADM] HOME = %s\n", ctmp);
-        snprintf(search_paths[2], 1024, "%s/Downloads/tables", ctmp);
-        snprintf(search_paths[3], 1024, "%s/Desktop/les", ctmp);
-        snprintf(search_paths[4], 1024, "%s/Douments/les", ctmp);
-        snprintf(search_paths[5], 1024, "%s/Downloads/les", ctmp);
+        snprintf(search_paths[2], 1024, "%s/Desktop/tables", ctmp);
+        snprintf(search_paths[3], 1024, "%s/Documents/tables", ctmp);
+        snprintf(search_paths[4], 1024, "%s/Downloads/tables", ctmp);
+        snprintf(search_paths[5], 1024, "%s/tables", ctmp);
     }
     
     struct stat path_stat;
@@ -85,7 +85,7 @@ ADMHandle *ADM_init_with_path(const char *path) {
     int file_ret;
     int found_dir = 0;
     
-    for (int i=0; i<6; i++) {
+    for (int i = 0; i < sizeof(search_paths) / sizeof(search_paths[0]); i++) {
         dat_path = search_paths[i];
         snprintf(dat_file_path, 1024, "%s/%s.adm", dat_path, ADMConfigSquarePlate);
         dir_ret = stat(dat_path, &path_stat);

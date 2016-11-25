@@ -259,8 +259,8 @@ typedef struct _rs_worker {
     // Scatter bodies
     size_t                 num_scats;
     
-    size_t                 debris_origin[RS_MAX_DEBRIS_TYPES];
-    size_t                 debris_population[RS_MAX_DEBRIS_TYPES];
+    size_t                 origins[RS_MAX_DEBRIS_TYPES];
+    size_t                 counts[RS_MAX_DEBRIS_TYPES];
     
     RSMakePulseParams      make_pulse_params;
     
@@ -294,7 +294,7 @@ typedef struct _rs_worker {
     cl_mem                 rcs_imag[RS_MAX_RCS_TABLES];  // RCS of debris
     cl_float16             rcs_desc[RS_MAX_RCS_TABLES];  // RCS-desc of debris
     
-    cl_mem                 vel[RS_MAX_VEL_TABLES];
+    cl_mem                 vel;
     cl_float16             vel_desc;
     
     size_t                 mem_size;
@@ -318,7 +318,7 @@ typedef struct _rs_worker {
     IOSurfaceRef           surf_adm_cm[RS_MAX_ADM_TABLES];
     IOSurfaceRef           surf_rcs_real[RS_MAX_RCS_TABLES];
     IOSurfaceRef           surf_rcs_imag[RS_MAX_RCS_TABLES];
-    IOSurfaceRef           surf_vel[RS_MAX_VEL_TABLES];
+    IOSurfaceRef           surf_vel;
     IOSurfaceRef           surf_rcs_ellipsoids;
     
 #else
@@ -371,8 +371,6 @@ struct _rs_handle {
     // Table related variables
     uint32_t               vel_idx;
     uint32_t               vel_count;
-    uint32_t               vel_out_idx;
-    uint32_t               vel_out_count;
     uint32_t               adm_idx;
     uint32_t               adm_count;
     uint32_t               rcs_idx;
@@ -385,10 +383,11 @@ struct _rs_handle {
     
     // Scatter bodies
     size_t                 num_scats;
-    size_t                 num_body_types;
-    size_t                 debris_population[RS_MAX_DEBRIS_TYPES];
+    size_t                 num_types;
+    size_t                 counts[RS_MAX_DEBRIS_TYPES];
     
     // CPU side memory (for upload/download)
+    cl_uint4               *scat_uid;       // universal id
     cl_float4              *scat_pos;       // position
     cl_float4              *scat_vel;       // velocity
     cl_float4              *scat_ori;       // orientation
@@ -415,7 +414,7 @@ struct _rs_handle {
     char                   has_vbo_from_gl;
     
     // GPU side memory
-    RSWorker               worker[RS_MAX_GPU_DEVICE];
+    RSWorker               workers[RS_MAX_GPU_DEVICE];
     size_t                 offset[RS_MAX_GPU_DEVICE];
     
     // Anchors
