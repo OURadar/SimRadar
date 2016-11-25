@@ -386,6 +386,7 @@ struct _rs_handle {
     size_t                 debris_population[RS_MAX_DEBRIS_TYPES];
     
     // CPU side memory (for upload/download)
+    cl_uint4               *scat_uid;       // universal id
     cl_float4              *scat_pos;       // position
     cl_float4              *scat_vel;       // velocity
     cl_float4              *scat_ori;       // orientation

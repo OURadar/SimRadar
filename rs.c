@@ -3689,6 +3689,7 @@ void RS_populate(RSHandle *H) {
 		RS_free_scat_memory(H);
 	}
 
+    posix_memalign((void **)&H->scat_uid, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_uint4));
     posix_memalign((void **)&H->scat_pos, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
 	posix_memalign((void **)&H->scat_vel, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
 	posix_memalign((void **)&H->scat_ori, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
@@ -3697,10 +3698,10 @@ void RS_populate(RSHandle *H) {
     posix_memalign((void **)&H->scat_rcs, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
 	posix_memalign((void **)&H->scat_sig, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_float4));
     posix_memalign((void **)&H->scat_rnd, RS_ALIGN_SIZE, H->num_scats * sizeof(cl_uint4));
-
 	posix_memalign((void **)&H->pulse, RS_ALIGN_SIZE, H->params.range_count * sizeof(cl_float4));
 	
-	if (H->scat_pos == NULL ||
+	if (H->scat_uid == NULL ||
+        H->scat_pos == NULL ||
 		H->scat_vel == NULL ||
 		H->scat_ori == NULL ||
         H->scat_tum == NULL ||
@@ -3713,7 +3714,7 @@ void RS_populate(RSHandle *H) {
 		return;
 	}
 	
-    H->mem_size = H->num_scats * (7 * sizeof(cl_float4) + sizeof(cl_uint4)) + H->params.range_count * sizeof(cl_float4);
+    H->mem_size = H->num_scats * (8 * sizeof(cl_float4) + 2 * sizeof(cl_uint4)) + H->params.range_count * sizeof(cl_float4);
     
 	char has_null = 0;
 	for (i = 0; i < H->num_workers; i++) {
@@ -3764,6 +3765,7 @@ void RS_populate(RSHandle *H) {
     //
 	// Initialize the scatter body positions & velocities
 	//
+    uint32_t uid = 0;
     for (k = 0; k < H->num_body_types; k++) {
         for (w = 0; w < H->num_workers; w++) {
 
@@ -3774,6 +3776,11 @@ void RS_populate(RSHandle *H) {
             #endif
 
             for (n = 0; n < H->worker[w].debris_population[k]; n++) {
+                H->scat_uid[i].s0 = uid++;
+                H->scat_uid[i].s1 = n;
+                H->scat_uid[i].s2 = k;
+                H->scat_uid[i].s3 = w;
+                
                 H->scat_pos[i].x = (float)rand() / RAND_MAX * domain.size.x + domain.origin.x;
                 H->scat_pos[i].y = (float)rand() / RAND_MAX * domain.size.y + domain.origin.y;
                 H->scat_pos[i].z = (float)rand() / RAND_MAX * domain.size.z + domain.origin.z;
@@ -4804,7 +4811,8 @@ static void RS_show_scat_i(RSHandle *H, const size_t i) {
 
 
 static void RS_show_rcs_i(RSHandle *H, const size_t i) {
-    printf(" %7lu - ( %10.3e, %10.3e, %10.3e, %10.3e )   ( %10.3e %10.3e %10.3e %10.3e )   r = %.2f m  d = %.1f mm\n", i,
+    printf(" %7lu - [%7d %7d %d %d]   ( %10.3e, %10.3e, %10.3e, %10.3e )   ( %10.3e %10.3e %10.3e %10.3e )   r = %.2f m  d = %.1f mm\n", i,
+           H->scat_uid[i].x, H->scat_uid[i].y, H->scat_uid[i].z, H->scat_uid[i].w,
            H->scat_sig[i].x, H->scat_sig[i].y, H->scat_sig[i].z, H->scat_sig[i].w,
            H->scat_rcs[i].x, H->scat_rcs[i].y, H->scat_rcs[i].z, H->scat_rcs[i].w,
            H->scat_aux[i].s0, 2000.0f * H->scat_pos[i].w);
