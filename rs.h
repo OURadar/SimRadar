@@ -258,8 +258,8 @@ typedef struct _rs_worker {
     // Scatter bodies
     size_t                 num_scats;
     
-    size_t                 debris_origin[RS_MAX_DEBRIS_TYPES];
-    size_t                 debris_population[RS_MAX_DEBRIS_TYPES];
+    size_t                 origins[RS_MAX_DEBRIS_TYPES];
+    size_t                 counts[RS_MAX_DEBRIS_TYPES];
     
     RSMakePulseParams      make_pulse_params;
     
@@ -382,8 +382,8 @@ struct _rs_handle {
     
     // Scatter bodies
     size_t                 num_scats;
-    size_t                 num_body_types;
-    size_t                 debris_population[RS_MAX_DEBRIS_TYPES];
+    size_t                 num_types;
+    size_t                 counts[RS_MAX_DEBRIS_TYPES];
     
     // CPU side memory (for upload/download)
     cl_uint4               *scat_uid;       // universal id
@@ -413,7 +413,7 @@ struct _rs_handle {
     char                   has_vbo_from_gl;
     
     // GPU side memory
-    RSWorker               worker[RS_MAX_GPU_DEVICE];
+    RSWorker               workers[RS_MAX_GPU_DEVICE];
     size_t                 offset[RS_MAX_GPU_DEVICE];
     
     // Anchors

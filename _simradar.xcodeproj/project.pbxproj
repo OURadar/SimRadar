@@ -258,7 +258,7 @@
 		B50A280617D7B1EC00E4DE66 /* cldemo.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = cldemo.c; sourceTree = "<group>"; };
 		B50A281117D7B24500E4DE66 /* OpenCL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenCL.framework; path = System/Library/Frameworks/OpenCL.framework; sourceTree = SDKROOT; };
 		B50A281617D7C21F00E4DE66 /* rs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = rs.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		B50A281717D7C2F400E4DE66 /* radarsim.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = radarsim.c; sourceTree = "<group>"; };
+		B50A281717D7C2F400E4DE66 /* radarsim.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = radarsim.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		B50A281917D7C4D500E4DE66 /* rs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = rs.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		B50CD9EC1BE8117E0034B5BB /* Recorder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Recorder.h; sourceTree = "<group>"; };
 		B50CD9ED1BE8117E0034B5BB /* Recorder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Recorder.m; sourceTree = "<group>"; };
@@ -305,10 +305,10 @@
 		B5916CC51ABC7069007EA0B9 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		B5A5142518328A2F00921ACE /* FullscreenWindow.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FullscreenWindow.h; sourceTree = "<group>"; };
 		B5A5142618328A2F00921ACE /* FullscreenWindow.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FullscreenWindow.m; sourceTree = "<group>"; };
-		B5B574791B690A45002AD2E7 /* iq.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = iq.h; sourceTree = "<group>"; };
+		B5B574791B690A45002AD2E7 /* iq.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = iq.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		B5B9C6541D302D0E00AD8154 /* do_more.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = do_more.sh; sourceTree = "<group>"; };
 		B5B9F5871C6BF2B7007FC9A4 /* rs_const.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rs_const.h; sourceTree = "<group>"; };
-		B5BAD55618B67E80007AC15D /* test_rs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_rs.c; sourceTree = "<group>"; };
+		B5BAD55618B67E80007AC15D /* test_rs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = test_rs.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		B5BAD56218B67E8B007AC15D /* test_make_pulse copy */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "test_make_pulse copy"; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5C2D1EE1ADC154900DD91B1 /* test_rcs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_rcs.c; sourceTree = "<group>"; };
 		B5C2D1F31ADC155700DD91B1 /* test_rcs */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_rcs; sourceTree = BUILT_PRODUCTS_DIR; };
