@@ -1019,7 +1019,9 @@ int main(int argc, char *argv[]) {
                 }
                 eta = (float)(user.num_pulses - k) / fps;
                 k0 = k;
-                printf("k %5d   (e%6.2f, a%5.2f)   %.2f fps   \033[1;33m%.2f%%\033[0m   eta %.0f second%s   \r", k, scan.el, scan.az, fps, prog, eta, eta > 1.5f ? "s" : "");
+                if (verb < 2) {
+                    printf("k %5d   (e%6.2f, a%5.2f)   %.2f fps   \033[1;33m%.2f%%\033[0m   eta %.0f second%s   \r", k, scan.el, scan.az, fps, prog, eta, eta > 1.5f ? "s" : "");
+                 }
             }
         }
         RS_set_beam_pos(S, scan.az, scan.el);
@@ -1232,3 +1234,4 @@ int main(int argc, char *argv[]) {
     
     return EXIT_SUCCESS;
 }
+
