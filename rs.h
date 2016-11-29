@@ -445,6 +445,7 @@ struct _rs_handle {
     LESHandle              L;
     ADMHandle              A;
     RCSHandle              R;
+    OBJHandle              O;
 };
 
 #pragma pack(pop)

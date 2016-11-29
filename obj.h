@@ -16,17 +16,23 @@ typedef int OBJConfig;
 enum OBJConfig {
     OBJConfigUnknown,
     OBJConfigWoodboard2x4,
-    OBJConfigWoodboard4x8
+    OBJConfigWoodboard4x8,
+    OBJConfigLeaf,
+    OBJConfigMetalSheet,
+    OBJConfigBrick
 };
 
+typedef struct _obj_table {
+    ADMTable *adm_table;
+    RCSTable *rcs_table;
+} OBJTable;
+
 typedef void* OBJHandle;
-
-
 
 OBJHandle *OBJ_init_with_path(const char *path);
 OBJHandle *OBJ_init(void);
 void OBJ_free(OBJHandle *);
 
-void OBJ_get_tables(ADMTable *A, RCSTable *R, OBJConfig type);
+OBJTable *OBJ_get_table(const OBJHandle *, OBJConfig);
 
 #endif
