@@ -210,7 +210,7 @@ Multiple arrays of type `cl_float` are used to keep track of a set of attributes
     cl_mem                 scat_vel;   // u, v, w wind components
     cl_mem                 scat_ori;   // orientation descbried by a quaternion
     cl_mem                 scat_tum;   // tumbling motion = change of orientation derived from ADM
-    cl_mem                 scat_aux;   // auxiliary attributes: s0 = range; s1 = none; s2 = DSD bin index; s3 = angular weight
+    cl_mem                 scat_aux;   // auxiliary attributes: s0 = range; s1 = tbd; s2 = DSD bin index; s3 = angular weight
     cl_mem                 scat_rcs;   // radar cross section: Ih Qh Iv Qv
     cl_mem                 scat_sig;   // signal: Ih Qh Iv Qv
     cl_mem                 scat_rnd;   // random seed
