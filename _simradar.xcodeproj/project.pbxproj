@@ -83,6 +83,8 @@
 		B5760EA818A938F2008DAF83 /* test_clreduce.c in Sources */ = {isa = PBXBuildFile; fileRef = B5760EA718A938F2008DAF83 /* test_clreduce.c */; };
 		B5760EAA18A93AA4008DAF83 /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
 		B5760EAC18A93ABC008DAF83 /* rs.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281917D7C4D500E4DE66 /* rs.c */; };
+		B57D8E971DDE131100B69805 /* obj.c in Sources */ = {isa = PBXBuildFile; fileRef = B57D8E951DDE131100B69805 /* obj.c */; };
+		B57D8E981DDE131100B69805 /* obj.c in Sources */ = {isa = PBXBuildFile; fileRef = B57D8E951DDE131100B69805 /* obj.c */; };
 		B582522718BF2F1300ADFCD5 /* rs.cl in CopyFiles */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
 		B58F632B1C177EE40010AEE6 /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = B58F632A1C177EE40010AEE6 /* dsa_pub.pem */; };
 		B58F632C1C177EE40010AEE6 /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = B58F632A1C177EE40010AEE6 /* dsa_pub.pem */; };
@@ -301,6 +303,8 @@
 		B5760EAD18A94328008DAF83 /* reduce.cl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.opencl; path = reduce.cl; sourceTree = "<group>"; };
 		B57ADA6017E21A8900B03074 /* rs_types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = rs_types.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		B57ADA6117E225EE00B03074 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		B57D8E951DDE131100B69805 /* obj.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = obj.c; sourceTree = "<group>"; };
+		B57D8E961DDE131100B69805 /* obj.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = obj.h; sourceTree = "<group>"; };
 		B58F632A1C177EE40010AEE6 /* dsa_pub.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = dsa_pub.pem; path = delivery/dsa_pub.pem; sourceTree = SOURCE_ROOT; };
 		B5916CC51ABC7069007EA0B9 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		B5A5142518328A2F00921ACE /* FullscreenWindow.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FullscreenWindow.h; sourceTree = "<group>"; };
@@ -535,6 +539,8 @@
 				B567F8B01A6D520C00F40660 /* adm.h */,
 				B55716851AB7519D001984E0 /* rcs.c */,
 				B55716841AB75186001984E0 /* rcs.h */,
+				B57D8E951DDE131100B69805 /* obj.c */,
+				B57D8E961DDE131100B69805 /* obj.h */,
 				B5B574791B690A45002AD2E7 /* iq.h */,
 			);
 			name = Sources;
@@ -989,6 +995,7 @@
 				B567F8B21A6D522F00F40660 /* adm.c in Sources */,
 				B5F3C31D18F2F86700092A72 /* les.c in Sources */,
 				B5CFAD201ADFF4D800360E9A /* rcs.c in Sources */,
+				B57D8E981DDE131100B69805 /* obj.c in Sources */,
 				B527893318A13C5F00650679 /* rs.c in Sources */,
 				B527893118A13C4400650679 /* radarsim.c in Sources */,
 			);
@@ -1006,6 +1013,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B57D8E971DDE131100B69805 /* obj.c in Sources */,
 				B55716861AB7519D001984E0 /* rcs.c in Sources */,
 				B56077F617E356A70068C6BE /* cldemo.c in Sources */,
 			);

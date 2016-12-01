@@ -1116,23 +1116,32 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
         H->verb = 0;
     #endif
 
-    // Initialize the ADM ingest
-    H->A = ADM_init();
-    if (H->A == NULL) {
+    H->O = OBJ_init();
+    if (H->O == NULL) {
         if (H->verb) {
-            rsprint("ERROR: ADM_init() failed.");
+            rsprint("ERROR: OBJ_init() failed.");
         }
         return NULL;
     }
     
-    // Initialize the RCS ingest
-    H->R = RCS_init();
-    if (H->R == NULL) {
-        if (H->verb) {
-            rsprint("ERROR: RCS_init() failed.");
-        }
-        return NULL;
-    }
+//    // Old Implementation
+//    // Initialize the ADM ingest
+//    H->A = ADM_init();
+//    if (H->A == NULL) {
+//        if (H->verb) {
+//            rsprint("ERROR: ADM_init() failed.");
+//        }
+//        return NULL;
+//    }
+//    
+//    // Initialize the RCS ingest
+//    H->R = RCS_init();
+//    if (H->R == NULL) {
+//        if (H->verb) {
+//            rsprint("ERROR: RCS_init() failed.");
+//        }
+//        return NULL;
+//    }
 
     // Set up some basic parameters to default values, H->verb is still 0 so no API message output
     RS_set_prt(H, RS_PARAMS_PRT);
@@ -1251,9 +1260,11 @@ void RS_free(RSHandle *H) {
 	
     LES_free(H->L);
     
-    ADM_free(H->A);
+    OBJ_free(H->O);
     
-    RCS_free(H->R);
+//    ADM_free(H->A);
+//    
+//    RCS_free(H->R);
 
 	for (i = 0; i < H->num_workers; i++) {
 		RS_worker_free(&H->workers[i]);
@@ -3330,6 +3341,12 @@ void RS_clear_rcs_data(RSHandle *H) {
     H->rcs_count = 0;
 }
 
+void RS_set_obj_data_to_config(RSHandle *H, OBJConfig type) {
+    OBJTable *obj_table = OBJ_get_table(H->O, type);
+    
+    RS_set_adm_data_to_ADM_table(H, obj_table->adm_table);
+    RS_set_rcs_data_to_RCS_table(H, obj_table->rcs_table);
+}
 
 void RS_set_random_seed(RSHandle *H, const unsigned int seed) {
     if (H->verb) {
@@ -4499,7 +4516,7 @@ void RS_advance_time(RSHandle *H) {
             if (C->counts[k]) {
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &C->adm_cd[a]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelMomentum,          sizeof(cl_mem),     &C->adm_cm[a]);
-                clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &C->adm_desc);
+                clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &C->adm_desc[a]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &C->rcs_real[r]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[r]);
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[r]);

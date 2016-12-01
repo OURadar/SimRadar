@@ -27,8 +27,9 @@
 #include "rs_const.h"
 #include "rs_types.h"
 #include "les.h"
-#include "adm.h"
-#include "rcs.h"
+//#include "adm.h"
+//#include "rcs.h"
+#include "obj.h"
 //#include "arps.h"
 
 #if defined (__APPLE__)
@@ -444,6 +445,7 @@ struct _rs_handle {
     LESHandle              L;
     ADMHandle              A;
     RCSHandle              R;
+    OBJHandle              O;
 };
 
 #pragma pack(pop)
@@ -521,6 +523,9 @@ void RS_set_rcs_data_to_config(RSHandle *, RCSConfig);
 void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *table);
 void RS_set_rcs_data_to_unity(RSHandle *H);
 void RS_clear_rcs_data(RSHandle *H);
+
+// New methods
+void RS_set_obj_data_to_config(RSHandle *, OBJConfig);
 
 void RS_set_random_seed(RSHandle *H, const unsigned int seed);
 
