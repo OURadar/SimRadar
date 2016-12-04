@@ -112,16 +112,15 @@ void RS_merge_pulse_tmp(RSHandle *H);
 void RS_update_origins_offsets(RSHandle *H);
 void RS_update_auxiliary_attributes(RSHandle *H);
 
+// Functions to upload to to GPU memory
 void RS_set_vel_data(RSHandle *H, const RSTable3D table);
 void RS_set_adm_data(RSHandle *H, const RSTable2D table_cd, const RSTable2D table_cm);
 void RS_set_rcs_data(RSHandle *H, const RSTable2D table_real, const RSTable2D table_imag);
 
-//void RS_set_adm_data_to_config(RSHandle *, ADMConfig);
+// Functions to copy a table into master handler
 void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *table);
 void RS_set_adm_data_to_unity(RSHandle *H);
 void RS_clear_adm_data(RSHandle *H);
-//
-//void RS_set_rcs_data_to_config(RSHandle *, RCSConfig);
 void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *table);
 void RS_set_rcs_data_to_unity(RSHandle *H);
 void RS_clear_rcs_data(RSHandle *H);

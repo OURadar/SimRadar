@@ -3003,11 +3003,6 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
 }
 
 
-//void RS_set_adm_data_to_config(RSHandle *H, ADMConfig c) {
-//    RS_set_adm_data_to_ADM_table(H, ADM_get_table(H->A, c));
-//}
-
-
 void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *adam) {
     
     int i;
@@ -3217,11 +3212,6 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
 }
 
 
-//void RS_set_rcs_data_to_config(RSHandle *H, RCSConfig c) {
-//    RS_set_rcs_data_to_RCS_table(H, RCS_get_table(H->R, c));
-//}
-
-
 void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *rosie) {
 
     int i;
@@ -3318,12 +3308,14 @@ void RS_clear_rcs_data(RSHandle *H) {
     H->rcs_count = 0;
 }
 
+
 void RS_set_obj_data_to_config(RSHandle *H, OBJConfig type) {
     OBJTable *obj_table = OBJ_get_table(H->O, type);
     
     RS_set_adm_data_to_ADM_table(H, obj_table->adm_table);
     RS_set_rcs_data_to_RCS_table(H, obj_table->rcs_table);
 }
+
 
 void RS_set_random_seed(RSHandle *H, const unsigned int seed) {
     if (H->verb) {
