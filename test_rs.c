@@ -126,9 +126,7 @@ int main(int argc, char **argv)
 	
 	RS_set_angular_weight_to_standard(H, 2.0f / 180.0f * M_PI);
     
-    RS_set_adm_data_to_config(H, ADMConfigModelPlate);
-    
-    RS_set_rcs_data_to_config(H, RCSConfigLeaf);
+    RS_set_obj_data_to_config(H, OBJConfigLeaf);
 
     RS_set_debris_count(H, 1, 100 * 1000);
     
