@@ -34,11 +34,8 @@ int main(int argc, char *argv[]) {
 
     RS_set_prt(S, 1.0e-3f);
 
-    // Set the first debris type to be square plate
-    RS_set_adm_data_to_config(S, ADMConfigSquarePlate);
-    
-    // Set the first debris type to have RCS of a leaf
-    RS_set_rcs_data_to_config(S, RCSConfigLeaf);
+    // Set the first debris object to be leaf
+    RS_set_obj_data_to_config(S, OBJConfigLeaf);
     
     // Set the first debris type to have a population of 1024
     RS_set_debris_count(S, 1, 1024);

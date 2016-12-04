@@ -1124,25 +1124,6 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
         return NULL;
     }
     
-//    // Old Implementation
-//    // Initialize the ADM ingest
-//    H->A = ADM_init();
-//    if (H->A == NULL) {
-//        if (H->verb) {
-//            rsprint("ERROR: ADM_init() failed.");
-//        }
-//        return NULL;
-//    }
-//    
-//    // Initialize the RCS ingest
-//    H->R = RCS_init();
-//    if (H->R == NULL) {
-//        if (H->verb) {
-//            rsprint("ERROR: RCS_init() failed.");
-//        }
-//        return NULL;
-//    }
-
     // Set up some basic parameters to default values, H->verb is still 0 so no API message output
     RS_set_prt(H, RS_PARAMS_PRT);
     
@@ -1262,10 +1243,6 @@ void RS_free(RSHandle *H) {
     
     OBJ_free(H->O);
     
-//    ADM_free(H->A);
-//    
-//    RCS_free(H->R);
-
 	for (i = 0; i < H->num_workers; i++) {
 		RS_worker_free(&H->workers[i]);
 	}
@@ -3026,9 +3003,9 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
 }
 
 
-void RS_set_adm_data_to_config(RSHandle *H, ADMConfig c) {
-    RS_set_adm_data_to_ADM_table(H, ADM_get_table(H->A, c));
-}
+//void RS_set_adm_data_to_config(RSHandle *H, ADMConfig c) {
+//    RS_set_adm_data_to_ADM_table(H, ADM_get_table(H->A, c));
+//}
 
 
 void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *adam) {
@@ -3240,9 +3217,9 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
 }
 
 
-void RS_set_rcs_data_to_config(RSHandle *H, RCSConfig c) {
-    RS_set_rcs_data_to_RCS_table(H, RCS_get_table(H->R, c));
-}
+//void RS_set_rcs_data_to_config(RSHandle *H, RCSConfig c) {
+//    RS_set_rcs_data_to_RCS_table(H, RCS_get_table(H->R, c));
+//}
 
 
 void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *rosie) {

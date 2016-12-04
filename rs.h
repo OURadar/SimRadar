@@ -27,8 +27,6 @@
 #include "rs_const.h"
 #include "rs_types.h"
 #include "les.h"
-//#include "adm.h"
-//#include "rcs.h"
 #include "obj.h"
 //#include "arps.h"
 
@@ -441,10 +439,8 @@ struct _rs_handle {
     // Summary text
     char                   summary[2048];
     
-    // Other handlers for LES, ADM, RCS
+    // Other handlers for LES and OBJ (ADM, RCS)
     LESHandle              L;
-    ADMHandle              A;
-    RCSHandle              R;
     OBJHandle              O;
 };
 
@@ -513,16 +509,6 @@ void RS_set_vel_data_to_uniform(RSHandle *H, cl_float4 velocity);
 void RS_set_vel_data_to_cube27(RSHandle *H);
 void RS_set_vel_data_to_cube125(RSHandle *H);
 void RS_clear_vel_data(RSHandle *H);
-
-void RS_set_adm_data_to_config(RSHandle *, ADMConfig);
-void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *table);
-void RS_set_adm_data_to_unity(RSHandle *H);
-void RS_clear_adm_data(RSHandle *H);
-
-void RS_set_rcs_data_to_config(RSHandle *, RCSConfig);
-void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *table);
-void RS_set_rcs_data_to_unity(RSHandle *H);
-void RS_clear_rcs_data(RSHandle *H);
 
 // New methods
 void RS_set_obj_data_to_config(RSHandle *, OBJConfig);
