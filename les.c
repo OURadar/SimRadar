@@ -599,7 +599,7 @@ LESTable *LES_get_frame(const LESHandle *i, const int n) {
     fread(table->data.t, sizeof(float), table->nn, fid);
     fseek(fid, 2 * sizeof(int32_t), SEEK_CUR);
     fclose(fid);
-    
+
     // Scale back
     for (int k=0; k<table->nn; k++) {
         table->data.u[k] *= v0;

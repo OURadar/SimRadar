@@ -52,9 +52,11 @@
         
         S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, property, 2);
         if (S == NULL) {
+            NSLog(@"Some error(s) in RS_init() occurred.");
+            [delegate progressUpdated:3.0 message:@"LES / ADM / RCS table not found."];
             return nil;
         }
-        
+
         // Special cases for laptop demos, etc.
         if (S->vendors[0] == RS_GPU_VENDOR_INTEL) {
             if (S->num_cus[0] <= 16) {
@@ -70,16 +72,6 @@
         nearest_thousand = (size_t)ceilf(1000.0f / S->preferred_multiple) * S->preferred_multiple;
         nearest_hundred = (size_t)ceilf(100.0f / S->preferred_multiple) * S->preferred_multiple;
 
-        NSLog(@"LES @ %s", LES_data_path(S->L));
-        NSLog(@"ADM @ %s", ADM_data_path(S->A));
-        NSLog(@"RCS @ %s", RCS_data_path(S->R));
-        
-        if (S == NULL || S->L == NULL || S->A == NULL || S->R == NULL) {
-            NSLog(@"Some error(s) in RS_init(), LES_init(), ADM_init() or RCS_init() occurred.");
-            [delegate progressUpdated:3.0 message:@"LES / ADM / RCS table not found."];
-            return nil;
-        }
-        
         if (reportProgress) {
             [delegate progressUpdated:3.0 message:[NSString stringWithFormat:@"LES @ %s", LES_data_path(L)]];
         }
@@ -113,30 +105,15 @@
         
         RSBox box;
         if (useLES) {
-//            for (table_id = 0; table_id < RS_MAX_VEL_TABLES; table_id++) {
-//                if (reportProgress) {
-//                    [delegate progressUpdated:(10.0 + (double)table_id / RS_MAX_VEL_TABLES * 70.0)
-//                                      message:[NSString stringWithFormat:@"Loading LES table %d to GPU ...", table_id]];
-//                }
-//                LESTable *les = LES_get_frame(L, table_id);
-//                //LES_show_table_summary(les);
-//                RS_set_vel_data_to_LES_table(S, les);
-//            }
             box = RS_suggest_scan_domain(S, 16);
         }
-        
-        RS_set_adm_data_to_config(S, ADMConfigSquarePlate);
+
+        RS_set_obj_data_to_config(S, OBJConfigLeaf);
+        RS_set_obj_data_to_config(S, OBJConfigWoodboard2x4);
 
         if (reportProgress) {
-            [delegate progressUpdated:90.0 message:@"ADM table"];
+            [delegate progressUpdated:95.0 message:@"ADM / RCS table"];
         }
-
-        RS_set_rcs_data_to_config(S, RCSConfigPlate);
-
-        if (reportProgress) {
-            [delegate progressUpdated:95.0 message:@"RCS table"];
-        }
-
         if (useLES) {
             RS_set_scan_box(S,
                             box.origin.r, box.origin.r + box.size.r, 60.0f,   // Range
@@ -164,8 +141,7 @@
 - (void)dealloc
 {
 	RS_free(S);
-	//LES_free(L);
-    
+
 	[super dealloc];
 }
 

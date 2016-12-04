@@ -18,6 +18,7 @@ enum OBJConfig {
     OBJConfigWoodboard2x4,
     OBJConfigWoodboard4x8,
     OBJConfigLeaf,
+    OBJConfigLeafBig,
     OBJConfigMetalSheet,
     OBJConfigBrick
 };

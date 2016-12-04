@@ -85,6 +85,7 @@
 		B5760EAC18A93ABC008DAF83 /* rs.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281917D7C4D500E4DE66 /* rs.c */; };
 		B57D8E971DDE131100B69805 /* obj.c in Sources */ = {isa = PBXBuildFile; fileRef = B57D8E951DDE131100B69805 /* obj.c */; };
 		B57D8E981DDE131100B69805 /* obj.c in Sources */ = {isa = PBXBuildFile; fileRef = B57D8E951DDE131100B69805 /* obj.c */; };
+		B57D8E991DF4BECE00B69805 /* obj.c in Sources */ = {isa = PBXBuildFile; fileRef = B57D8E951DDE131100B69805 /* obj.c */; };
 		B582522718BF2F1300ADFCD5 /* rs.cl in CopyFiles */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
 		B58F632B1C177EE40010AEE6 /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = B58F632A1C177EE40010AEE6 /* dsa_pub.pem */; };
 		B58F632C1C177EE40010AEE6 /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = B58F632A1C177EE40010AEE6 /* dsa_pub.pem */; };
@@ -1096,6 +1097,7 @@
 				B5F3C31E18F2F86700092A72 /* les.c in Sources */,
 				B567F8B31A6D522F00F40660 /* adm.c in Sources */,
 				B56C7FA31ADC221500552B1E /* rcs.c in Sources */,
+				B57D8E991DF4BECE00B69805 /* obj.c in Sources */,
 				B5EF317E18204B5C002DDEFC /* main.m in Sources */,
 				B5EF318518204B5C002DDEFC /* AppDelegate.m in Sources */,
 				B5EF31C51820619E002DDEFC /* RootController.m in Sources */,

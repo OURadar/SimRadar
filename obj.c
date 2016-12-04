@@ -51,10 +51,15 @@ OBJTable *OBJ_get_table(const OBJHandle *in, OBJConfig type) {
 //            ADM_dimension_set(obj_table->adm_table, 0.0f, 0.0f, 0.0f, 0.0f);
             break;
         case OBJConfigLeaf:
+            obj_table->adm_table = ADM_get_table(O->adm_h, ADMConfigModelPlate);
+            obj_table->rcs_table = RCS_get_table(O->rcs_h, RCSConfigLeaf);
+            ADM_dimension_set(obj_table->adm_table, 0.002f, 0.04f, 0.04f, 1120.0f);
+            break;
+        case OBJConfigLeafBig:
 //            obj_table->adm_table = ADM_get_table(O->adm_h, ADMConfigSquarePlate);
             obj_table->adm_table = ADM_get_table(O->adm_h, ADMConfigModelPlate);
             obj_table->rcs_table = RCS_get_table(O->rcs_h, RCSConfigLeaf);
-            // Modify dimensions to 6 x 8x 0.1 cm (w * l * t) and 350 kg / m^3
+            // Modify dimensions to 6 x 8 x 0.1 cm (w * l * t) and 350 kg / m^3
             ADM_dimension_set(obj_table->adm_table, 0.001f, 0.08f, 0.06f, 350.0f);
             break;
         case OBJConfigMetalSheet:
