@@ -280,9 +280,9 @@ void *LES_background_read(LESHandle i) {
         // The file number of the list of files to read
         int file_id = frame / LES_file_nblock;
 
-        //#ifdef DEBUG
+        #ifdef DEBUG
         printf("LES DEBUG : Background ingest from file %s for frame %d to slot %d ...\n", h->files[file_id], h->req, h->ibuf);
-        //#endif
+        #endif
 
         // The table in collection of data boxes
         table = h->data_boxes[h->ibuf];
@@ -352,6 +352,7 @@ void *LES_background_read(LESHandle i) {
         do {
             usleep(100000);
         } while (h->active && frame == h->req);
+        usleep(200000);
     }
     return NULL;
 }

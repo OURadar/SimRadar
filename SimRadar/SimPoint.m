@@ -95,7 +95,8 @@
 
 //        NSLog(@"S->preferred_multiple = %d", (int)S->preferred_multiple);
         RS_set_debris_count(S, 1, 10000);
-//        RS_set_debris_count(S, 2, 256);
+        RS_set_debris_count(S, 2, 512);
+        RS_set_debris_count(S, 3, 512);
 
         RS_revise_debris_counts_to_gpu_preference(S);
 
@@ -109,7 +110,8 @@
         }
 
         RS_set_obj_data_to_config(S, OBJConfigLeaf);
-        RS_set_obj_data_to_config(S, OBJConfigWoodboard2x4);
+        RS_set_obj_data_to_config(S, OBJConfigMetalSheet);
+        RS_set_obj_data_to_config(S, OBJConfigBrick);
 
         if (reportProgress) {
             [delegate progressUpdated:95.0 message:@"ADM / RCS table"];
