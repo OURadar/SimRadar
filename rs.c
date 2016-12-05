@@ -2215,6 +2215,7 @@ void RS_set_dsd(RSHandle *H, const float *nd, const float *diameters, const int 
     
     if (H->dsd_r == NULL || H->dsd_pdf == NULL || H->dsd_cdf == NULL || H->dsd_pop == NULL) {
         rsprint("ERROR: Unable to allocate memory for DSD parameterization.");
+        free(pdf);
         return;
     }
     

@@ -330,9 +330,7 @@ void show_user_param(const char *name, const void* value, const char *unit, cons
             }
         case ValueTypeFloatArray:
             fp = (float *)value;
-            if (count == 0) {
-                value_str = str_buf;
-            } else {
+            if (count > 0) {
                 snprintf(str_buf, 63, "%.2f", fp[0]);
                 for (k = 1; k < count; k++) {
                     snprintf(str_buf + strlen(str_buf), 63 - strlen(str_buf), ", %.2f", fp[k]);
@@ -874,23 +872,6 @@ int main(int argc, char *argv[]) {
     }
     
 #endif
-
-    // Number of LES entries needed based on the number of pulses to be simulated
-//    int nvel = 0;
-//    if (user.prt == PARAMS_FLOAT_NOT_SUPPLIED) {
-//        nvel = (int)ceilf(((float)user.num_pulses * S->params.prt + (float)user.warm_up_pulses * 1.0f / 60.0f) / LES_get_table_period(L));
-//    } else {
-//        nvel = (int)ceilf(((float)user.num_pulses * user.prt + (float)user.warm_up_pulses * 1.0f / 60.0f) / LES_get_table_period(L));
-//    }
-//    if (nvel <= 0) {
-//        fprintf(stderr, "%s : Error. nvel = 0.\n", now());
-//        exit(EXIT_FAILURE);
-//    }
-//    for (int k = 0; k < MIN(RS_MAX_VEL_TABLES, nvel); k++) {
-//        RS_set_vel_data_to_LES_table(S, LES_get_frame(L, k));
-//    }
-
-//    RS_set_vel_data_to_config(S, LESConfigSuctionVortices);
 
     RS_set_obj_data_to_config(S, OBJConfigLeaf);
     RS_set_obj_data_to_config(S, OBJConfigWoodboard2x4);
