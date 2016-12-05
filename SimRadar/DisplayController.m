@@ -486,7 +486,7 @@ NSWindow *standardWindow;
 
 - (void)scrollWheel:(NSEvent *)event
 {
-    if ([event modifierFlags] & NSShiftKeyMask) {
+    if ([event modifierFlags] & NSEventModifierFlagShift) {
 //        GLfloat deltaX = [event scrollingDeltaX];
         GLfloat deltaY = [event scrollingDeltaY];
 

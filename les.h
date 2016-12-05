@@ -17,10 +17,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <pthread.h>
 
 typedef void* LESHandle;
 typedef char* LESConfig;

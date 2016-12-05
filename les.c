@@ -8,8 +8,10 @@
 
 #include "les.h"
 
-#define LES_num           20
+#define LES_num           4
 #define LES_file_nblock   10
+#define LES_FMT           "%+8.4f"
+#define LES_CFMT          "%s" LES_FMT " " LES_FMT "  " LES_FMT " .. " LES_FMT "%s"
 
 // Private structure
 
@@ -31,11 +33,16 @@ typedef struct _les_mem {
     float     rx;             // Ratio value "r" in the geometric series in x direction
     float     ry;             // Ratio value "r" in the geometric series in y direction
     float     rz;             // Ratio value "r" in the geometric series in z direction
-	size_t    data_id[LES_num];
+	int       data_id[LES_num];
 	LESTable  *data_boxes[LES_num];
+    pthread_t tid;
+    bool      active;
+    int       req;
 } LESMem;
 
 // Private functions
+void *LES_background_read(LESHandle i);
+
 void LES_show_row(const char *prefix, const char *posfix, const float *f, const int n);
 void LES_show_slice(const float *values, const int nx, const int ny, const int nz);
 void LES_show_volume(const float *values, const int nx, const int ny, const int nz);
@@ -53,9 +60,305 @@ void LES_table_free(LESTable *table);
 
 //void LES_table_fill(LESTable *table, const LESGrid *grid, const char *filename);
 
+#pragma mark -
 
-#define LES_FMT   "%+8.4f"
-#define LES_CFMT  "%s" LES_FMT " " LES_FMT "  " LES_FMT " .. " LES_FMT "%s"
+LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
+    // Find the path
+    char cwd[1024];
+    if (getcwd(cwd, sizeof(cwd)) == NULL)
+        fprintf(stderr, "Error in getcwd()\n");
+
+    // 10 search paths with the first one being the relative subfolder 'les'
+    char search_paths[10][1024] = {"./les"};
+
+    if (path == NULL) {
+        snprintf(search_paths[1], 1024, "%s/%s", cwd, "Contents/Resources/les");
+    } else {
+        snprintf(search_paths[1], 1024, "%s/%s", path, "tables");
+    }
+
+    char *ctmp = getenv("HOME");
+    if (ctmp != NULL) {
+        //printf("HOME = %s\n", ctmp);
+        snprintf(search_paths[2], 1024, "%s/Desktop/tables", ctmp);
+        snprintf(search_paths[3], 1024, "%s/Documents/tables", ctmp);
+        snprintf(search_paths[4], 1024, "%s/Downloads/tables", ctmp);
+        snprintf(search_paths[5], 1024, "%s/Desktop/les", ctmp);
+        snprintf(search_paths[6], 1024, "%s/Documents/les", ctmp);
+        snprintf(search_paths[7], 1024, "%s/Downloads/les", ctmp);
+    }
+
+    struct stat path_stat;
+    struct stat file_stat;
+    char *les_path = NULL;
+    char les_file_path[1024];
+    int dir_ret;
+    int file_ret;
+    int found_dir = 0;
+
+    for (int i = 0; i < sizeof(search_paths) / sizeof(search_paths[0]); i++) {
+        les_path = search_paths[i];
+        snprintf(les_file_path, 1024, "%s/%s/fort.10_2", les_path, config);
+        dir_ret = stat(les_path, &path_stat);
+        file_ret = stat(les_file_path, &file_stat);
+        if (dir_ret < 0 || file_ret < 0) {
+            continue;
+        }
+        if (dir_ret == 0 && S_ISDIR(path_stat.st_mode) && S_ISREG(file_stat.st_mode)) {
+
+#ifdef DEBUG
+            printf("Found LES folder @ %s\n", les_path);
+#endif
+
+            found_dir = 1;
+            break;
+        }
+    }
+    if (found_dir == 0 || les_path == NULL) {
+        fprintf(stderr, "Unable to find the LES data folder.\n");
+        return NULL;
+    }
+
+    // Initialize a memory location for the handler
+    LESMem *h = (LESMem *)malloc(sizeof(LESMem));
+    if (h == NULL) {
+        fprintf(stderr, "Unable to allocate resources for LES framework.\n");
+        return NULL;
+    }
+    memset(h, 0, sizeof(LESMem));
+
+    snprintf(h->data_path, sizeof(h->data_path), "%s/%s", les_path, config);
+    h->ibuf = 0;
+    h->tr = 50.0f;
+    if (!strcmp(config, LESConfigSuctionVortices) || !strcmp(config, LESConfigSuctionVorticesLarge)) {
+        h->v0 = 100.0f;
+        h->ax = 2.0f;
+        h->ay = 2.0f;
+        h->az = 2.0f;
+        h->rx = 1.0212f;
+        h->ry = 1.0212f;
+        h->rz = 1.05f;
+        h->tp = 2.0f;
+    } else if (!strcmp(config, LESConfigTwoCell)) {
+        h->v0 = 225.0f;
+        h->ax = 1.0f;
+        h->ay = 1.0f;
+        h->az = 1.0f;
+        h->rx = 1.0f;
+        h->ry = 1.0f;
+        h->rz = 1.0f;
+        h->tp = 5.0f;
+    }
+
+    //    char grid_file[1024];
+    //    snprintf(grid_file, 1024, "%s/fort.10_2", h->data_path);
+
+#ifdef DEBUG
+    printf("index @ %s\n", les_file_path);
+#endif
+
+    h->enclosing_grid = LES_enclosing_grid_create_from_file(les_file_path);
+    if (h->enclosing_grid == NULL) {
+        fprintf(stderr, "Unable to get the enclosing grid for LES framework.\n");
+        return NULL;
+    }
+    // printf("enclosing_grid = %u x %u x %u\n", h->enclosing_grid->nx, h->enclosing_grid->ny, h->enclosing_grid->nz);
+
+    // Extract only a sub-domain. This is not complete, will come back for it.
+    h->data_grid = LES_data_grid_create_from_enclosing_grid(h->enclosing_grid, 0, 0);
+
+#define LES_FRAME_TIME_STAMP_BYTES  4
+#define LES_FRAME_PADDING_BYTES     8
+
+    // Go through and check available tables
+    int k = 0;
+    while (true) {
+        snprintf(h->files[k], sizeof(h->files[k]), "%s/LES_mean_1_6_fnum%d.dat", h->data_path, k + 1);
+        if (access(h->files[k], F_OK) != -1) {
+            if (h->nfiles == 0) {
+                // Use the first file to derive the number of volumes in a file
+                file_ret = stat(h->files[k], &file_stat);
+                if (file_ret == 0) {
+                    size_t s = file_stat.st_size;
+                    // 5 variables: u, v, w, p, t
+                    size_t nn = h->enclosing_grid->nx * h->enclosing_grid->ny * h->enclosing_grid->nz * 5;
+                    h->nvol = s / (LES_FRAME_TIME_STAMP_BYTES + LES_FRAME_PADDING_BYTES + nn * sizeof(float) + LES_FRAME_PADDING_BYTES);
+                } else {
+                    fprintf(stderr, "Unable to get filesize. Assume %d\n", LES_file_nblock);
+                    h->nvol = LES_file_nblock;
+                }
+                if (h->nvol != LES_file_nblock) {
+                    fprintf(stderr, "Each LES data file contains %zu volumes, expected %d.\n", h->nvol, LES_file_nblock);
+                }
+            }
+            h->nfiles++;
+        } else {
+            break;
+        }
+        k++;
+    }
+
+    h->ncubes = h->nfiles * h->nvol;
+
+#ifdef DEBUG
+    printf("LES DEBUG: file count = %zu    nvol = %zu    ncubes = %zu\n", h->nfiles, h->nvol, h->ncubes);
+#endif
+
+    // Allocate data boxes
+    for (int i = 0; i < LES_num; i++) {
+        h->data_boxes[i] = LES_table_create(h->data_grid);
+        if (h->data_boxes[i] == NULL) {
+            fprintf(stderr, "[LES] LES_table_create() returned a NULL.\n");
+            return NULL;
+        }
+        h->data_boxes[i]->tr = h->tr;
+        h->data_boxes[i]->nc = (uint32_t)h->ncubes;
+        h->data_id[i] = -1;
+    }
+
+    // Other non-zero parameters
+    h->active = true;
+
+    // Background read
+    int policy = -1;
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    struct sched_param param;
+    param.sched_priority = 99;
+    pthread_attr_setschedpolicy(&attr, SCHED_OTHER);
+    pthread_attr_setschedparam(&attr, &param);
+    if (pthread_create(&h->tid, &attr, LES_background_read, h)) {
+        fprintf(stderr, "LES : Error. Unable to create thread.\n");
+        exit(EXIT_FAILURE);
+    }
+    do {
+        usleep(10000);
+    } while (h->ibuf == 0);
+    if (pthread_attr_getschedparam(&attr, &param) == 0 &&
+        pthread_attr_getschedpolicy(&attr, &policy) == 0) {
+        printf("policy=%s  priority=%d\n",
+               (policy == SCHED_FIFO)  ? "SCHED_FIFO" :
+               (policy == SCHED_RR)    ? "SCHED_RR" :
+               (policy == SCHED_OTHER) ? "SCHED_OTHER" :
+               "???",
+               param.sched_priority);
+    }
+
+    return (LESHandle *)h;
+}
+
+LESHandle *LES_init() {
+    return LES_init_with_config_path(LESConfigSuctionVortices, NULL);
+}
+
+
+void LES_free(LESHandle *i) {
+    LESMem *h = (LESMem *)i;
+    h->active = false;
+    pthread_join(h->tid, NULL);
+    LES_grid_free(h->enclosing_grid);
+    LES_grid_free(h->data_grid);
+    for (int i=0; i<LES_num; i++) {
+        LES_table_free(h->data_boxes[i]);
+    }
+    free(h);
+}
+
+#pragma mark -
+
+void *LES_background_read(LESHandle i) {
+    LESMem *h = (LESMem *)i;
+    int frame;
+    LESTable *table;
+
+    const float v0 = h->v0;
+
+    // Read ahead
+    while (h->active) {
+        frame = h->req;
+
+        // The file number of the list of files to read
+        int file_id = frame / LES_file_nblock;
+
+        #ifdef DEBUG
+        printf("LES DEBUG : Background ingest from file %s for frame %d to slot %d ...\n", h->files[file_id], h->req, h->ibuf);
+        #endif
+
+        // The table in collection of data boxes
+        table = h->data_boxes[h->ibuf];
+
+        // Copy over some base parameters
+        table->ax = h->ax;
+        table->ay = h->ay;
+        table->az = h->az;
+        table->rx = h->rx;
+        table->ry = h->ry;
+        table->rz = h->rz;
+        table->tp = h->tp;
+        table->tr = h->tr;
+
+        long offset = sizeof(uint32_t) +                     // version number
+        (frame % LES_file_nblock) *
+        (sizeof(float) + 2 * sizeof(uint32_t)                // time
+         + table->nn * sizeof(float) + 2 * sizeof(uint32_t)  // u
+         + table->nn * sizeof(float) + 2 * sizeof(uint32_t)  // v
+         + table->nn * sizeof(float) + 2 * sizeof(uint32_t)  // w
+         + table->nn * sizeof(float) + 2 * sizeof(uint32_t)  // p
+         + table->nn * sizeof(float) + 2 * sizeof(uint32_t)  // t
+         );
+
+        // Derive filename to ingest a set of LESTables
+        FILE *fid = fopen(h->files[file_id], "r");
+        if (fid == NULL) {
+            fprintf(stderr, "Error opening LES table file %s %d\n", h->files[file_id], file_id);
+            return NULL;
+        }
+        fseek(fid, offset, SEEK_SET);
+        // Timestamp of the frame
+        fread(table->data.a, sizeof(float), 1, fid);
+        fseek(fid, 2 * sizeof(uint32_t), SEEK_CUR);
+        // Wind u
+        fread(table->data.u, sizeof(float), table->nn, fid);
+        fseek(fid, 2 * sizeof(int32_t), SEEK_CUR);
+        // Wind v
+        fread(table->data.v, sizeof(float), table->nn, fid);
+        fseek(fid, 2 * sizeof(int32_t), SEEK_CUR);
+        // Wind w
+        fread(table->data.w, sizeof(float), table->nn, fid);
+        fseek(fid, 2 * sizeof(int32_t), SEEK_CUR);
+        // Pressure p
+        fread(table->data.p, sizeof(float), table->nn, fid);
+        fseek(fid, 2 * sizeof(int32_t), SEEK_CUR);
+        // Something t
+        fread(table->data.t, sizeof(float), table->nn, fid);
+        fseek(fid, 2 * sizeof(int32_t), SEEK_CUR);
+        fclose(fid);
+
+        // Scale back
+        for (int k = 0; k < table->nn; k++) {
+            table->data.u[k] *= v0;
+            table->data.v[k] *= v0;
+            table->data.w[k] *= v0;
+            table->data.p[k] *= v0 * v0;
+            table->data.t[k] *= v0 * v0;
+        }
+
+        // Record down the frame id
+        h->data_id[h->ibuf] = frame;
+
+        // Update the index
+        h->ibuf = h->ibuf == LES_num - 1 ? 0 : h->ibuf + 1;
+
+        do {
+            usleep(100000);
+        } while (h->active && frame == h->req);
+        usleep(200000);
+    }
+    return NULL;
+}
+
+#pragma mark -
+
 void LES_show_row(const char *prefix, const char *posfix, const float *f, const int n) {
 	printf(LES_CFMT, prefix, f[0], f[1], f[2], f[n-1], posfix);
 }
@@ -97,6 +400,7 @@ void LES_show_dots(const char *prefix, const char *posfix) {
 	}
 	printf("%s", buf);
 }
+
 
 void LES_show_slice_dots() {
 	LES_show_dots("  [ ", " ]");
@@ -275,167 +579,6 @@ void LES_show_handle_summary(const LESHandle *i) {
 }
 
 
-LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
-    // Find the path
-    char cwd[1024];
-    if (getcwd(cwd, sizeof(cwd)) == NULL)
-        fprintf(stderr, "Error in getcwd()\n");
-    
-    // 10 search paths with the first one being the relative subfolder 'les'
-    char search_paths[10][1024] = {"./les"};
-	
-    if (path == NULL) {
-        snprintf(search_paths[1], 1024, "%s/%s", cwd, "Contents/Resources/les");
-    } else {
-		snprintf(search_paths[1], 1024, "%s/%s", path, "tables");
-    }
-
-	char *ctmp = getenv("HOME");
-	if (ctmp != NULL) {
-		//printf("HOME = %s\n", ctmp);
-        snprintf(search_paths[2], 1024, "%s/Desktop/tables", ctmp);
-        snprintf(search_paths[3], 1024, "%s/Documents/tables", ctmp);
-        snprintf(search_paths[4], 1024, "%s/Downloads/tables", ctmp);
-        snprintf(search_paths[5], 1024, "%s/Desktop/les", ctmp);
-        snprintf(search_paths[6], 1024, "%s/Documents/les", ctmp);
-        snprintf(search_paths[7], 1024, "%s/Downloads/les", ctmp);
-	}
-	
-    struct stat path_stat;
-    struct stat file_stat;
-    char *les_path = NULL;
-    char les_file_path[1024];
-    int dir_ret;
-    int file_ret;
-    int found_dir = 0;
-    
-    for (int i = 0; i < sizeof(search_paths) / sizeof(search_paths[0]); i++) {
-        les_path = search_paths[i];
-		snprintf(les_file_path, 1024, "%s/%s/fort.10_2", les_path, config);
-        dir_ret = stat(les_path, &path_stat);
-		file_ret = stat(les_file_path, &file_stat);
-        if (dir_ret < 0 || file_ret < 0) {
-            continue;
-        }
-        if (dir_ret == 0 && S_ISDIR(path_stat.st_mode) && S_ISREG(file_stat.st_mode)) {
-
-            #ifdef DEBUG
-            printf("Found LES folder @ %s\n", les_path);
-            #endif
-            
-            found_dir = 1;
-            break;
-        }
-    }
-    if (found_dir == 0 || les_path == NULL) {
-        fprintf(stderr, "Unable to find the LES data folder.\n");
-        return NULL;
-    }
-	
-    // Initialize a memory location for the handler
-	LESMem *h = (LESMem *)malloc(sizeof(LESMem));
-	if (h == NULL) {
-		fprintf(stderr, "Unable to allocate resources for LES framework.\n");
-		return NULL;
-	}
-    memset(h, 0, sizeof(LESMem));
-
-    snprintf(h->data_path, sizeof(h->data_path), "%s/%s", les_path, config);
-	h->ibuf = 0;
-	h->tr = 50.0f;
-    if (!strcmp(config, LESConfigSuctionVortices) || !strcmp(config, LESConfigSuctionVorticesLarge)) {
-        h->v0 = 100.0f;
-        h->ax = 2.0f;
-        h->ay = 2.0f;
-        h->az = 2.0f;
-        h->rx = 1.0212f;
-        h->ry = 1.0212f;
-        h->rz = 1.05f;
-        h->tp = 2.0f;
-    } else if (!strcmp(config, LESConfigTwoCell)) {
-        h->v0 = 225.0f;
-        h->ax = 1.0f;
-        h->ay = 1.0f;
-        h->az = 1.0f;
-        h->rx = 1.0f;
-        h->ry = 1.0f;
-        h->rz = 1.0f;
-        h->tp = 5.0f;
-    }
-    
-//    char grid_file[1024];
-//    snprintf(grid_file, 1024, "%s/fort.10_2", h->data_path);
-    
-    #ifdef DEBUG
-    printf("index @ %s\n", les_file_path);
-    #endif
-
-	h->enclosing_grid = LES_enclosing_grid_create_from_file(les_file_path);
-    if (h->enclosing_grid == NULL) {
-        fprintf(stderr, "Unable to get the enclosing grid for LES framework.\n");
-        return NULL;
-    }
-    // printf("enclosing_grid = %u x %u x %u\n", h->enclosing_grid->nx, h->enclosing_grid->ny, h->enclosing_grid->nz);
-
-    // Extract only a sub-domain. This is not complete, will come back for it.
-    h->data_grid = LES_data_grid_create_from_enclosing_grid(h->enclosing_grid, 0, 0);
-
-#define LES_FRAME_TIME_STAMP_BYTES  4
-#define LES_FRAME_PADDING_BYTES     8
-
-    // Go through and check available tables
-    int k = 0;
-    while (1) {
-        snprintf(h->files[k], sizeof(h->files[k]), "%s/LES_mean_1_6_fnum%d.dat", h->data_path, k + 1);
-        if (access(h->files[k], F_OK) != -1) {
-            if (h->nfiles == 0) {
-                // Use the first file to derive the number of volumes in a file
-                file_ret = stat(h->files[k], &file_stat);
-                if (file_ret == 0) {
-                    size_t s = file_stat.st_size;
-                    // 5 variables: u, v, w, p, t
-                    size_t nn = h->enclosing_grid->nx * h->enclosing_grid->ny * h->enclosing_grid->nz * 5;
-                    h->nvol = s / (LES_FRAME_TIME_STAMP_BYTES + LES_FRAME_PADDING_BYTES + nn * sizeof(float) + LES_FRAME_PADDING_BYTES);
-                } else {
-                    fprintf(stderr, "Unable to get filesize. Assume %d\n", LES_file_nblock);
-                    h->nvol = LES_file_nblock;
-                }
-                if (h->nvol != LES_file_nblock) {
-                    fprintf(stderr, "Each LES data file contains %zu volumes, expected %d.\n", h->nvol, LES_file_nblock);
-                }
-            }
-            h->nfiles++;
-        } else {
-            break;
-        }
-        k++;
-    }
-
-    h->ncubes = h->nfiles * h->nvol;
-    
-    #ifdef DEBUG
-    printf("LES DEBUG: file count = %zu    nvol = %zu    ncubes = %zu\n", h->nfiles, h->nvol, h->ncubes);
-    #endif
-
-	// Allocate data boxes
-	for (int i = 0; i < LES_num; i++) {
-		h->data_boxes[i] = LES_table_create(h->data_grid);
-        if (h->data_boxes[i] == NULL) {
-            fprintf(stderr, "[LES] LES_table_create() returned a NULL.\n");
-            return NULL;
-        }
-		h->data_boxes[i]->tr = h->tr;
-        h->data_boxes[i]->nc = (uint32_t)h->ncubes;
-		h->data_id[i] = (size_t)-1;
-	}
-	return (LESHandle *)h;
-}
-
-LESHandle *LES_init() {
-    return LES_init_with_config_path(LESConfigSuctionVortices, NULL);
-}
-
-
 LESTable *LES_get_frame_0(const LESHandle *i, const int n) {
 	LESTable *table;
 	LESMem *h = (LESMem *)i;
@@ -538,80 +681,29 @@ LESTable *LES_get_frame_0(const LESHandle *i, const int n) {
 
 
 LESTable *LES_get_frame(const LESHandle *i, const int n) {
-    LESTable *table;
+    LESTable *table = NULL;
     LESMem *h = (LESMem *)i;
-    
-    const float v0 = h->v0;
-    
-    // The file number of the list of files to read
-    int file_id = n / LES_file_nblock;
-    
-    #ifdef DEBUG
-    printf("LES DEBUG : Ingest from file %s ... %d\n", h->files[file_id], h->ibuf);
-    #endif
-    
-    // The table in collection of data boxes
-    table = h->data_boxes[h->ibuf];
-
-    // Copy over some base parameters
-    table->ax = h->ax;
-    table->ay = h->ay;
-    table->az = h->az;
-    table->rx = h->rx;
-    table->ry = h->ry;
-    table->rz = h->rz;
-    table->tp = h->tp;
-    table->tr = h->tr;
-
-    long offset = sizeof(uint32_t)                                    // version number
-           + (n % LES_file_nblock) * (
-                  sizeof(float) + 2 * sizeof(uint32_t)                // time
-                  + table->nn * sizeof(float) + 2 * sizeof(uint32_t)  // u
-                  + table->nn * sizeof(float) + 2 * sizeof(uint32_t)  // v
-                  + table->nn * sizeof(float) + 2 * sizeof(uint32_t)  // w
-                  + table->nn * sizeof(float) + 2 * sizeof(uint32_t)  // p
-                  + table->nn * sizeof(float) + 2 * sizeof(uint32_t)  // t
-                  );
-    
-    // Derive filename to ingest a set of LESTables
-    FILE *fid = fopen(h->files[file_id], "r");
-    if (fid == NULL) {
-        fprintf(stderr, "Error opening LES table file %s %d\n", h->files[file_id], file_id);
-        return NULL;
+    int k = 0;
+    while (n != h->data_id[k] && k < LES_num) {
+        k++;
     }
-    fseek(fid, offset, SEEK_SET);
-    // Timestamp of the frame
-    fread(table->data.a, sizeof(float), 1, fid);
-    fseek(fid, 2 * sizeof(uint32_t), SEEK_CUR);
-    // Wind u
-    fread(table->data.u, sizeof(float), table->nn, fid);
-    fseek(fid, 2 * sizeof(int32_t), SEEK_CUR);
-    // Wind v
-    fread(table->data.v, sizeof(float), table->nn, fid);
-    fseek(fid, 2 * sizeof(int32_t), SEEK_CUR);
-    // Wind w
-    fread(table->data.w, sizeof(float), table->nn, fid);
-    fseek(fid, 2 * sizeof(int32_t), SEEK_CUR);
-    // Pressure p
-    fread(table->data.p, sizeof(float), table->nn, fid);
-    fseek(fid, 2 * sizeof(int32_t), SEEK_CUR);
-    // Something t
-    fread(table->data.t, sizeof(float), table->nn, fid);
-    fseek(fid, 2 * sizeof(int32_t), SEEK_CUR);
-    fclose(fid);
-
-    // Scale back
-    for (int k=0; k<table->nn; k++) {
-        table->data.u[k] *= v0;
-        table->data.v[k] *= v0;
-        table->data.w[k] *= v0;
-        table->data.p[k] *= v0 * v0;
-        table->data.t[k] *= v0 * v0;
+    if (n == h->data_id[k] && k < LES_num) {
+        //printf("Found n = %d @ k = %d\n", n, k);
+        // What to read in next
+        h->req = n == h->ncubes - 1 ? 0 : n + 1;
+        table = h->data_boxes[k];
+    } else {
+        // Let background read ingest the desired frame.
+        h->req = n;
+        //printf("Wait for background read.\n");
+        int ibuf = h->ibuf;
+        do {
+            usleep(10000);
+        } while (ibuf == h->ibuf);
+        // What to read in next
+        h->req = n == h->ncubes - 1 ? 0 : n + 1;
+        table = h->data_boxes[ibuf];
     }
-
-    // Update the index
-    h->ibuf = h->ibuf == LES_num - 1 ? 0 : h->ibuf + 1;
-
     return table;
 }
 
@@ -631,15 +723,4 @@ float LES_get_table_period(const LESHandle *i) {
 size_t LES_get_table_count(const LESHandle *i) {
     LESMem *h = (LESMem *)i;
     return h->ncubes;
-}
-
-
-void LES_free(LESHandle *i) {
-	LESMem *h = (LESMem *)i;
-	LES_grid_free(h->enclosing_grid);
-	LES_grid_free(h->data_grid);
-	for (int i=0; i<LES_num; i++) {
-		LES_table_free(h->data_boxes[i]);
-	}
-	free(h);
 }
