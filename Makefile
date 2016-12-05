@@ -20,8 +20,12 @@ else
 # These options are for Linux systems, boomer at OSCER included
 CC = gcc
 CFLAGS += -D_GNU_SOURCE
-CFLAGS += -I /usr/local/cuda/include
-LDFLAGS += -L /usr/local/cuda/lib64 -lOpenCL
+#CFLAGS += -I /usr/local/cuda/include
+#LDFLAGS += -L /usr/local/cuda/lib64 -lOpenCL
+#CFLAGS += -I /opt/oscer/software/CUDA/7.5.18-GCC-4.9.3-2.25/include
+#LDFLAGS += -L /opt/oscer/software/CUDA/7.5.18-GCC-4.9.3-2.25/lib64 -L /opt/oscer/software/OpenCL/2.2-GCC-4.9.3-2.25/lib64 -lOpenCL
+CFLAGS += -I /opt/oscer/software/CUDA/8.0.44-GCC-4.9.3-2.25/include -I /opt/oscer/software/OpenMPI/1.10.2-GCC-4.9.3-2.25/include
+LDFLAGS += -L /opt/oscer/software/CUDA/8.0.44-GCC-4.9.3-2.25/lib64 -L /opt/oscer/software/OpenCL/2.2-GCC-4.9.3-2.25/lib64 -lOpenCL
 endif
 
 LDFLAGS += -lm -lpthread
@@ -40,7 +44,8 @@ lib/librs.a: $(OBJS)
 
 $(MPI_PROGS): %: %.c $(MYLIB)
 ifdef OPEN_MPI_CLUSTER
-	mpicc $(CFLAGS) -D_OPEN_MPI -o $@ $@.c $(LDFLAGS)
+#	mpicc $(CFLAGS) -D_OPEN_MPI -o $@ $@.c $(LDFLAGS)
+	$(CC) $(CFLAGS) -I /opt/oscer/software/OpenMPI/1.10.2-GCC-4.9.3-2.25/include -o $@ $@.c $(LDFLAGS) -L /opt/oscer/software/OpenMPI/1.10.2-GCC-4.9.3-2.25/lib -lmpi
 else
 	$(CC) $(CFLAGS) -o $@ $@.c $(LDFLAGS)
 endif
@@ -49,4 +54,3 @@ clean:
 	rm -f *.o *.a
 	rm -f $(MYLIB) $(PROGS) $(MPI_PROGS)
 	rm -rf *.dSYM
-
