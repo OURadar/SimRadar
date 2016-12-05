@@ -86,6 +86,7 @@
 		B57D8E971DDE131100B69805 /* obj.c in Sources */ = {isa = PBXBuildFile; fileRef = B57D8E951DDE131100B69805 /* obj.c */; };
 		B57D8E981DDE131100B69805 /* obj.c in Sources */ = {isa = PBXBuildFile; fileRef = B57D8E951DDE131100B69805 /* obj.c */; };
 		B57D8E991DF4BECE00B69805 /* obj.c in Sources */ = {isa = PBXBuildFile; fileRef = B57D8E951DDE131100B69805 /* obj.c */; };
+		B57D8E9A1DF5FB5800B69805 /* obj.c in Sources */ = {isa = PBXBuildFile; fileRef = B57D8E951DDE131100B69805 /* obj.c */; };
 		B582522718BF2F1300ADFCD5 /* rs.cl in CopyFiles */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
 		B58F632B1C177EE40010AEE6 /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = B58F632A1C177EE40010AEE6 /* dsa_pub.pem */; };
 		B58F632C1C177EE40010AEE6 /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = B58F632A1C177EE40010AEE6 /* dsa_pub.pem */; };
@@ -1039,6 +1040,7 @@
 				B57241B21C0CA11500B76BCB /* les.c in Sources */,
 				B57241B31C0CA11700B76BCB /* adm.c in Sources */,
 				B57241B51C0CA11D00B76BCB /* rcs.c in Sources */,
+				B57D8E9A1DF5FB5800B69805 /* obj.c in Sources */,
 				B57241BB1C0CA20C00B76BCB /* RootController.m in Sources */,
 				B57241BC1C0CA21000B76BCB /* DisplayController.m in Sources */,
 				B57241BD1C0CA21300B76BCB /* Renderer.m in Sources */,

@@ -3480,7 +3480,7 @@ void RS_update_colors(RSHandle *H) {
                     clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[r]);
                     clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[r]);
                     clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
-                    clEnqueueNDRangeKernel(C->que, C->kern_db_rcs, 1, &C->originsk], &C->counts[k], NULL, 0, NULL, &events[i][k]);
+                    clEnqueueNDRangeKernel(C->que, C->kern_db_rcs, 1, &C->origins[k], &C->counts[k], NULL, 0, NULL, &events[i][k]);
                 }
                 r = r == H->rcs_count - 1 ? 0 : r + 1;
                 a = a == H->adm_count - 1 ? 0 : a + 1;
@@ -4693,7 +4693,8 @@ void RS_make_pulse(RSHandle *H) {
     }
     for (i = 0; i < H->num_workers; i++) {
         clWaitForEvents(1, &events[i][2]);
-        clReleaseEvent(events[i][0]);
+        if (H->status & RSStatusScattererSignalNeedsUpdate)
+            clReleaseEvent(events[i][0]);
         clReleaseEvent(events[i][1]);
         clReleaseEvent(events[i][2]);
     }

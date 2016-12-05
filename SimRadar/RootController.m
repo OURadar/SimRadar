@@ -142,7 +142,7 @@
     [alert addButtonWithTitle:@"Cancel"];
     [alert setMessageText:@"Error"];
     [alert setInformativeText:@"Required resource(s) cannot be found in any of the search paths. Check Console log for more details."];
-    [alert setAlertStyle:NSCriticalAlertStyle];
+    [alert setAlertStyle:NSAlertStyleCritical];
     if ([alert runModal] == NSAlertFirstButtonReturn) {
         return;
     }

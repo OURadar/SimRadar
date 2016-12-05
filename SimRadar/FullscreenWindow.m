@@ -17,7 +17,7 @@
 	
 	// Initialize the window making it size of the screen and borderless
 	self = [super initWithContentRect:screenRect
-							styleMask:NSBorderlessWindowMask
+							styleMask:NSWindowStyleMaskBorderless
 							  backing:NSBackingStoreBuffered
 								defer:YES];
 
