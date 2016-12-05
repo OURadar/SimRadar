@@ -190,7 +190,7 @@ RCSTable *RCS_get_table(const RCSHandle *in, const RCSConfig config) {
     // Now, we open the file for reading
     FILE *fid = fopen(fullpath, "r");
     if (fid == NULL) {
-        fprintf(stderr, "Error opening file.\n");
+        fprintf(stderr, "Error opening file %s.\n", fullpath);
         return NULL;
     }
 

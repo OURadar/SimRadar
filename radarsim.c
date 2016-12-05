@@ -553,7 +553,7 @@ int main(int argc, char *argv[]) {
         snprintf(str + strlen(str), 1024, "%c%s", o->val, o->has_arg == required_argument ? ":" : (o->has_arg == optional_argument ? "::" : ""));
     }
     //printf("str = '%s'\n", str);
-    
+
     char c1, *pc1, *pc2;
     float f1, f2, f3;
     // Process the input arguments and set the simulator parameters
@@ -892,24 +892,11 @@ int main(int argc, char *argv[]) {
 
 //    RS_set_vel_data_to_config(S, LESConfigSuctionVortices);
 
-//    RS_set_adm_data_to_ADM_table(S, ADM_get_table(A, ADMConfigModelPlate));
-//    RS_set_adm_data_to_ADM_table(S, ADM_get_table(A, ADMConfigSquarePlate));
-//    
-//    RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigPlate));
-//    //RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigLeaf));
-//    RS_set_rcs_data_to_RCS_table(S, RCS_get_table(R, RCSConfigWoodBoard));
-    
     RS_set_obj_data_to_config(S, OBJConfigLeaf);
     RS_set_obj_data_to_config(S, OBJConfigWoodboard2x4);
     RS_set_obj_data_to_config(S, OBJConfigMetalSheet);
     RS_set_obj_data_to_config(S, OBJConfigBrick);
     
-//    RS_set_adm_data_to_config(S, ADMConfigModelPlate);
-//    RS_set_adm_data_to_config(S, ADMConfigSquarePlate);
-//    
-//    RS_set_rcs_data_to_config(S, RCSConfigPlate);
-//    RS_set_rcs_data_to_config(S, RCSConfigWoodBoard);
-
     RSBox box = RS_suggest_scan_domain(S, 16);
     
     // Set debris population
@@ -1224,12 +1211,6 @@ int main(int argc, char *argv[]) {
 
     RS_free(S);
     
-//    LES_free(L);
-//    
-//    ADM_free(A);
-//    
-//    RCS_free(R);
-
 #if defined (_OPEN_MPI)
 
     MPI_Finalize();

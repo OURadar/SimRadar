@@ -161,7 +161,7 @@ ADMTable *ADM_get_table(const ADMHandle *in, const ADMConfig config) {
     // Now, we open the file
     FILE *fid = fopen(fullpath, "r");
     if (fid == NULL) {
-        fprintf(stderr, "Error opening file.\n");
+        fprintf(stderr, "Error opening file %s.\n", fullpath);
         return NULL;
     }
     
