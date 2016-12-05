@@ -21,7 +21,7 @@ Follow these steps to get the project
 
     Note: The latest release of Sparkle framework, which is developed and maintained by a third party (http://sparkle-project.org), can be downloaded from the official website but not necessary. The provided link works just as well.
 
-4. Download [LES, ADM & RCS Data] in a zip archive (15GB), extract and move the folder **tables** into one of the following locations:
+4. Download the [LES, ADM & RCS Data] in a zip archive (15GB), extract and move the folder **tables** into one of the following locations:
     - ~/Downloads
     - ~/Documents
     - ~/Desktop
