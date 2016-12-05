@@ -11,22 +11,22 @@ Follow these steps to get the project
 
 1. For nVidia GPU users, make sure you have the latest [nVidia CUDA Driver].
 
-2. Clone a git project using the command in Terminal:
+2. Clone a git project using the following command in Terminal:
 
         git clone http://git.arrc.ou.edu/cheo4524/simradar.git
 
-    Note: A .xcodeproj project is included so you can manage the source codes using Xcode on Mac OS X. Git can be set up under Xcode for the source control to stay up to date.
+    Note: A `.xcodeproj` project is included so you can manage the source codes using Xcode on Mac OS X. Git is readily supported under Xcode.
 
 3. Download [Sparkle Framework], extract and move the folder **Sparkle.framework** into the sub-folder **SimRadar**
 
-    Note: The latest release of Sparkle framework, which is developed and maintained by a third party (http://sparkle-project.org), can be downloaded from the official website but not necessary.
+    Note: The latest release of Sparkle framework, which is developed and maintained by a third party (http://sparkle-project.org), can be downloaded from the official website but not necessary. The provided link works just as well.
 
-4. Download [LES, ADM & RCS Data] in a zip archive (15GB), extract and move the folder **tables** into one of the following locations:
+4. Download the [LES, ADM & RCS Data] in a zip archive (15GB), extract and move the folder **tables** into one of the following locations:
     - ~/Downloads
     - ~/Documents
     - ~/Desktop
     
-    NOTE: This is a zip archive with two LES (Large Eddy Simulation) wind cubes, an ADM (Air Drag Model) library and an RCS (Radar Cross Section)
+    NOTE: This is a zip archive with two LES (Large Eddy Simulation) wind cubes, an ADM (Air Drag Model) library and an RCS (Radar Cross Section) library.
 
 5. Download [Matlab Scripts] for reading the I/Q data into Matlab.
 
@@ -54,20 +54,14 @@ On Mac:
 [nVidia CUDA Driver]: http://www.nvidia.com/object/mac-driver-archive.html
 
 
-OSCER Boomer
-------------
-
-There are several GPU equiped nodes and everything needed is installed. However, the `git` software does not have HTTP access to to the ARRC git repository. Until then, manually the software project folder to your home folder. Batch scripts are included to schedule jobs for the GPU compute nodes, i.e., CUDA pool.
-
-
 Radar Simulation Framework
 ==========================
 
-A set of C functions are collected in Radar Simulation (RS) framework, which abstracts the low-level interaction witht the GPU for workload parallelization. OpenCL was selected because of the vendor neutral implementation.
+Radar Simulation (RS) framework is a simply collection of C functions which abstract low-level interactions with the GPU for workload parallelization. OpenCL was selected because of the vendor neutral implementation.
 
 ### Using the Radar Simulation (RS) Framework ###
 
-The simulation framework is written is plain C for performance and portability. All calculations are implemented within RS framework with functions prefix RS. To include the RS framework, there is only one header, i.e., `rs.h` is needed. The following example codes create a simple simulation domain and emulate a PPI scan:
+The simulation framework is developed is plain C for performance and portability. All calculations are implemented within the RS framework with functions prefix RS. To include the RS framework, there is only one header, i.e., `rs.h` is needed. The following example code creates a simple simulation domain and emulate a PPI scan:
 
     //
     //  simple_ppi.c
@@ -176,7 +170,7 @@ The simulation framework is written is plain C for performance and portability. 
     }
 
 
-Assuming you already have the library compile successfully and the archived library is placed under `lib/librs.a`, this example can be compiled on a Mac using the following command:
+Assuming that you already have the library compiled successfully and the archived library is placed under `lib/librs.a`, this example can be compiled on a Mac using the following command:
 
     gcc -I./ -L./lib -o simple_ppi simple_ppi.c -lrs -framework OpenCL -lm -lpthread
 
