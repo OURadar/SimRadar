@@ -220,7 +220,6 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
     h->active = true;
 
     // Background read
-    int policy = -1;
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     struct sched_param param;
@@ -234,6 +233,8 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
     do {
         usleep(10000);
     } while (h->ibuf == 0);
+#ifdef DEBUG
+    int policy = -1;
     if (pthread_attr_getschedparam(&attr, &param) == 0 &&
         pthread_attr_getschedpolicy(&attr, &policy) == 0) {
         printf("policy=%s  priority=%d\n",
@@ -243,6 +244,7 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
                "???",
                param.sched_priority);
     }
+#endif
 
     return (LESHandle *)h;
 }

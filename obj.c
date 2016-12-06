@@ -41,14 +41,13 @@ void OBJ_free(OBJHandle *in) {
 OBJTable *OBJ_get_table(const OBJHandle *in, OBJConfig type) {
     OBJMem *O = (OBJMem *)in;
     OBJTable *obj_table = &O->obj_table[O->count];
-    printf("OBJ count : %d \n", O->count);
+    //printf("OBJ count : %d \n", O->count);
     switch (type) {
         case OBJConfigWoodboard2x4:
             obj_table->adm_table = ADM_get_table(O->adm_h, ADMConfigSquarePlate);
             obj_table->rcs_table = RCS_get_table(O->rcs_h, RCSConfigWoodBoard);
             // Modify dimensions to 2 x 4 x 12 in (h * w * l) and 500 kg / m^3
             ADM_dimension_set(obj_table->adm_table, 0.0508f, 0.3048f, 0.1016f, 500.0f);
-//            ADM_dimension_set(obj_table->adm_table, 0.0f, 0.0f, 0.0f, 0.0f);
             break;
         case OBJConfigLeaf:
             obj_table->adm_table = ADM_get_table(O->adm_h, ADMConfigModelPlate);
@@ -56,7 +55,6 @@ OBJTable *OBJ_get_table(const OBJHandle *in, OBJConfig type) {
             ADM_dimension_set(obj_table->adm_table, 0.002f, 0.04f, 0.04f, 1120.0f);
             break;
         case OBJConfigLeafBig:
-//            obj_table->adm_table = ADM_get_table(O->adm_h, ADMConfigSquarePlate);
             obj_table->adm_table = ADM_get_table(O->adm_h, ADMConfigModelPlate);
             obj_table->rcs_table = RCS_get_table(O->rcs_h, RCSConfigLeaf);
             // Modify dimensions to 6 x 8 x 0.1 cm (w * l * t) and 350 kg / m^3

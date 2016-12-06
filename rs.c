@@ -206,34 +206,37 @@ void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device
     cl_uint buf_uint;
     cl_ulong buf_ulong;
     
+    int s = 0;
+    char str[RS_MAX_STR];
+
     CL_CHECK(clGetPlatformIDs(RS_MAX_GPU_PLATFORM, platforms, &num_platforms));
     
     if (detail_level)
-        printf("* Number of OpenCL platforms: %d\n", num_platforms);
-    
+        s += snprintf(str + s, RS_MAX_STR, "* Number of OpenCL platforms: %d\n", num_platforms);
+
     for (; i < num_platforms; i++) {
         
         CL_CHECK(clGetDeviceIDs(platforms[i], device_type, RS_MAX_GPU_DEVICE - *num_devices, &devices[*num_devices], &platform_num_devices));
         
         *num_devices += platform_num_devices;
         if (*num_devices >= RS_MAX_GPU_DEVICE) {
-            fprintf(stderr, "%s : RS : Sweet. A lot of devices found. Upgrade! Upgrade!\n", now());
+            fprintf(stderr, "%s : RS : Sweet. A lot of devices found. Upgrade! Upgrade! Upgrade! \n", now());
             *num_devices = RS_MAX_GPU_DEVICE;
             return;
         }
         
         if (detail_level) {
-            printf("  > PLATFORM %d:\n", i);
+            s += snprintf(str + s, RS_MAX_STR, "  > PLATFORM %d:\n", i);
             CL_CHECK(clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, RS_MAX_STR, buf_char, NULL));
-            printf("    * NAME = %s\n", buf_char);
+            s += snprintf(str + s, RS_MAX_STR, "    * NAME = %s\n", buf_char);
             if (detail_level > 1) {
                 CL_CHECK(clGetPlatformInfo(platforms[i], CL_PLATFORM_VENDOR, RS_MAX_STR, buf_char, NULL));
-                printf("    * VENDOR = %s\n", buf_char);
+                s += snprintf(str + s, RS_MAX_STR, "    * VENDOR = %s\n", buf_char);
             }
             CL_CHECK(clGetPlatformInfo(platforms[i], CL_PLATFORM_PROFILE, RS_MAX_STR, buf_char, NULL));
-            printf("    * PROFILE = %s\n", buf_char);
+            s += snprintf(str + s, RS_MAX_STR, "    * PROFILE = %s\n", buf_char);
             CL_CHECK(clGetPlatformInfo(platforms[i], CL_PLATFORM_VERSION, RS_MAX_STR, buf_char, NULL));
-            printf("    * VERSION = %s\n", buf_char);
+            s += snprintf(str + s, RS_MAX_STR, "    * VERSION = %s\n", buf_char);
             if (detail_level > 2) {
                 CL_CHECK(clGetPlatformInfo(platforms[i], CL_PLATFORM_EXTENSIONS, RS_MAX_STR, buf_char, NULL));
                 if (strlen(buf_char)) {
@@ -244,9 +247,9 @@ void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device
                             *e = '\0';
                         }
                         if (b == buf_char) {
-                            printf("    * EXTENSIONS = %s\n", b);
+                            s += snprintf(str + s, RS_MAX_STR, "    * EXTENSIONS = %s\n", b);
                         } else {
-                            printf("                   %s\n", b);
+                            s += snprintf(str + s, RS_MAX_STR, "                   %s\n", b);
                         }
                         if (e) {
                             b = e + 1;
@@ -256,12 +259,12 @@ void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device
                     }
                 }
             }
-            printf("    * Number of OpenCL devices = %d\n", *num_devices);
+            s += snprintf(str + s, RS_MAX_STR, "    * Number of OpenCL devices = %d\n", *num_devices);
             
             for (j = 0; j < platform_num_devices; j++) {
-                printf("      > DEVICE %d:\n", j);
+                s += snprintf(str + s, RS_MAX_STR, "      > DEVICE %d:\n", j);
                 CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_NAME, RS_MAX_STR, buf_char, NULL));
-                printf("        - " RS_FMT " = %s\n", "CL_DEVICE_NAME", buf_char);
+                s += snprintf(str + s, RS_MAX_STR, "        - " RS_FMT " = %s\n", "CL_DEVICE_NAME", buf_char);
                 CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_VENDOR, RS_MAX_STR, buf_char, NULL));
                 if (strcasestr(buf_char, "intel")) {
                     vendors[j] = RS_GPU_VENDOR_INTEL;
@@ -272,41 +275,41 @@ void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device
                 } else {
                     vendors[j] = RS_GPU_VENDOR_UNKNOWN;
                 }
-                printf("        - " RS_FMT " = %s (%d)\n", "CL_DEVICE_VENDOR", buf_char, vendors[j]);
+                s += snprintf(str + s, RS_MAX_STR, "        - " RS_FMT " = %s (%d)\n", "CL_DEVICE_VENDOR", buf_char, vendors[j]);
                 CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(buf_ulong), &buf_ulong, NULL));
-                printf("        - " RS_FMT " = %s B\n", "CL_DEVICE_GLOBAL_MEM_SIZE", commaint(buf_ulong));
+                s += snprintf(str + s, RS_MAX_STR, "        - " RS_FMT " = %s B\n", "CL_DEVICE_GLOBAL_MEM_SIZE", commaint(buf_ulong));
                 CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(buf_ulong), &buf_ulong, NULL));
-                printf("        - " RS_FMT " = %s B\n", "CL_DEVICE_MAX_MEM_ALLOC_SIZE", commaint(buf_ulong));
+                s += snprintf(str + s, RS_MAX_STR, "        - " RS_FMT " = %s B\n", "CL_DEVICE_MAX_MEM_ALLOC_SIZE", commaint(buf_ulong));
                 CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(buf_uint), &num_cus[j], NULL));
-                printf("        - " RS_FMT " = %u\n", "CL_DEVICE_MAX_COMPUTE_UNITS", (unsigned int)num_cus[j]);
+                s += snprintf(str + s, RS_MAX_STR, "        - " RS_FMT " = %u\n", "CL_DEVICE_MAX_COMPUTE_UNITS", (unsigned int)num_cus[j]);
                 if (detail_level > 1) {
                     CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_VERSION, RS_MAX_STR, buf_char, NULL));
-                    printf("        - " RS_FMT " = %s\n", "CL_DEVICE_VERSION", buf_char);
+                    s += snprintf(str + s, RS_MAX_STR, "        - " RS_FMT " = %s\n", "CL_DEVICE_VERSION", buf_char);
                     CL_CHECK(clGetDeviceInfo(devices[j], CL_DRIVER_VERSION, RS_MAX_STR, buf_char, NULL));
-                    printf("        - " RS_FMT " = %s\n", "CL_DRIVER_VERSION", buf_char);
+                    s += snprintf(str + s, RS_MAX_STR, "        - " RS_FMT " = %s\n", "CL_DRIVER_VERSION", buf_char);
                     CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(buf_uint), &buf_uint, NULL));
-                    printf("        - " RS_FMT " = %s MHz\n", "CL_DEVICE_MAX_CLOCK_FREQUENCY", commaint(buf_uint));
+                    s += snprintf(str + s, RS_MAX_STR, "        - " RS_FMT " = %s MHz\n", "CL_DEVICE_MAX_CLOCK_FREQUENCY", commaint(buf_uint));
                     if (detail_level > 2) {
                         size_t work_sizes[3];
                         clGetDeviceInfo(devices[j], CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(work_sizes), &work_sizes, NULL);
-                        printf("        - " RS_FMT " = %zu / %zu / %zu\n", "CL_DEVICE_MAX_WORK_ITEM_SIZES", work_sizes[0], work_sizes[1], work_sizes[2]);
+                        s += snprintf(str + s, RS_MAX_STR, "        - " RS_FMT " = %zu / %zu / %zu\n", "CL_DEVICE_MAX_WORK_ITEM_SIZES", work_sizes[0], work_sizes[1], work_sizes[2]);
                         clGetDeviceInfo(devices[j], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), work_sizes, NULL);
-                        printf("        - " RS_FMT " = %zu\n", "CL_DEVICE_MAX_WORK_GROUP_SIZE", work_sizes[0]);
+                        s += snprintf(str + s, RS_MAX_STR, "        - " RS_FMT " = %zu\n", "CL_DEVICE_MAX_WORK_GROUP_SIZE", work_sizes[0]);
                         clGetDeviceInfo(devices[j], CL_DEVICE_LOCAL_MEM_SIZE, sizeof(cl_ulong), &buf_ulong, NULL);
-                        printf("        - " RS_FMT " = %s B\n", "CL_DEVICE_LOCAL_MEM_SIZE", commaint(buf_ulong));
+                        s += snprintf(str + s, RS_MAX_STR, "        - " RS_FMT " = %s B\n", "CL_DEVICE_LOCAL_MEM_SIZE", commaint(buf_ulong));
                         clGetDeviceInfo(devices[j], CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE, sizeof(cl_ulong), &buf_ulong, NULL);
-                        printf("        - " RS_FMT " = %s B\n\n", "CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE", commaint(buf_ulong));
+                        s += snprintf(str + s, RS_MAX_STR, "        - " RS_FMT " = %s B\n\n", "CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE", commaint(buf_ulong));
                         
                         clGetDeviceInfo(devices[j], CL_DEVICE_IMAGE2D_MAX_WIDTH, sizeof(size_t), work_sizes, NULL);
-                        printf("        - " RS_FMT "   " RS_FMT2 " %7s\n", "CL_DEVICE_IMAGE <dim>", "2D_MAX_WIDTH", commaint(work_sizes[0]));
+                        s += snprintf(str + s, RS_MAX_STR, "        - " RS_FMT "   " RS_FMT2 " %7s\n", "CL_DEVICE_IMAGE <dim>", "2D_MAX_WIDTH", commaint(work_sizes[0]));
                         clGetDeviceInfo(devices[j], CL_DEVICE_IMAGE2D_MAX_HEIGHT, sizeof(size_t), work_sizes, NULL);
-                        printf("          " RS_FMT "   " RS_FMT2 " %7s\n", "", "2D_MAX_HEIGHT", commaint(work_sizes[0]));
+                        s += snprintf(str + s, RS_MAX_STR, "          " RS_FMT "   " RS_FMT2 " %7s\n", "", "2D_MAX_HEIGHT", commaint(work_sizes[0]));
                         clGetDeviceInfo(devices[j], CL_DEVICE_IMAGE3D_MAX_WIDTH, sizeof(size_t), work_sizes, NULL);
-                        printf("          " RS_FMT "   " RS_FMT2 " %7s\n", "", "3D_MAX_WIDTH", commaint(work_sizes[0]));
+                        s += snprintf(str + s, RS_MAX_STR, "          " RS_FMT "   " RS_FMT2 " %7s\n", "", "3D_MAX_WIDTH", commaint(work_sizes[0]));
                         clGetDeviceInfo(devices[j], CL_DEVICE_IMAGE3D_MAX_HEIGHT, sizeof(size_t), work_sizes, NULL);
-                        printf("          " RS_FMT "   " RS_FMT2 " %7s\n", "", "3D_MAX_HEIGHT", commaint(work_sizes[0]));
+                        s += snprintf(str + s, RS_MAX_STR, "          " RS_FMT "   " RS_FMT2 " %7s\n", "", "3D_MAX_HEIGHT", commaint(work_sizes[0]));
                         clGetDeviceInfo(devices[j], CL_DEVICE_IMAGE3D_MAX_DEPTH, sizeof(size_t), work_sizes, NULL);
-                        printf("          " RS_FMT "   " RS_FMT2 " %7s\n\n", "", "3D_MAX_DEPTH", commaint(work_sizes[0]));
+                        s += snprintf(str + s, RS_MAX_STR, "          " RS_FMT "   " RS_FMT2 " %7s\n\n", "", "3D_MAX_DEPTH", commaint(work_sizes[0]));
                     }
                 }
             } // for (; j < platform_num_devices; j++)
@@ -315,6 +318,7 @@ void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device
                 CL_CHECK(clGetDeviceInfo(devices[j], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(buf_uint), &num_cus[j], NULL));
         }
     } // for (; i < num_platforms; i++)
+    printf("%s", str);
 }
 
 
