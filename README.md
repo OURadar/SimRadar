@@ -11,25 +11,21 @@ Follow these steps to get the project
 
 1. For nVidia GPU users, make sure you have the latest [nVidia CUDA Driver].
 
-2. Clone a git project using the following command in Terminal:
+2. Clone a git project[^1] using the following command in Terminal:
 
         git clone http://git.arrc.ou.edu/cheo4524/simradar.git
-        
-    A `.xcodeproj` project is included so you can manage the source codes using Xcode on Mac OS X. Git is readily supported under Xcode.
 
-3. Download [Sparkle Framework], extract and move the folder **Sparkle.framework** into the sub-folder **SimRadar**
+3. Download [Sparkle Framework], extract and move the folder **Sparkle.framework**[^2] into the sub-folder **SimRadar**
 
-    The latest release of Sparkle framework, which is developed and maintained by a third party (http://sparkle-project.org), can be downloaded from the official website but not necessary. The provided link works just as well.
-
-4. Download the [LES, ADM & RCS Data] in a zip archive (15GB), extract and move the folder **tables** into one of the following locations:
+4. Download the [LES, ADM & RCS data] in a zip archive (15GB), extract and move the folder **tables** into one of the following locations:
     - ~/Downloads
     - ~/Documents
     - ~/Desktop
     
-    This is a zip archive with two LES (Large Eddy Simulation) wind cubes, an ADM (Air Drag Model) library and an RCS (Radar Cross Section) library.
-
 5. Download [Matlab Scripts] for reading the I/Q data into Matlab.
 
+[^1]: An Xcode project is included so you can manage the source codes using Xcode on Mac OS X. Git is readily supported under Xcode.
+[^2]: The latest release of Sparkle framework, which is developed and maintained by a third party (http://sparkle-project.org), can be downloaded from the official website but not necessary. The provided link works just as well.
 
 Requirements
 ------------
@@ -94,16 +90,11 @@ The simulation framework is developed is plain C for performance and portability
 
         // Set up the parameters: use the setter functions to change the state.
         RS_set_antenna_params(S, 1.0f, 44.5f);
-
         RS_set_tx_params(S, 0.2e-6f, 50.0e3f);
-
         RS_set_prt(S, 1.0e-3f);
 
-        // Set the first debris type to be square plate
-        RS_set_adm_data_to_config(S, ADMConfigSquarePlate);
-
-        // Set the first debris type to have RCS of a leaf
-        RS_set_rcs_data_to_config(S, RCSConfigLeaf);
+        // Set the first debris object to be leaf
+        RS_set_obj_data_to_config(S, OBJConfigLeaf);
 
         // Set the first debris type to have a population of 1024
         RS_set_debris_count(S, 1, 1024);
@@ -218,6 +209,7 @@ Multiple arrays of type `cl_float` are used to keep track of a set of attributes
     RS_set_tx_params()
     RS_set_scan_box()
     RS_set_beam_pos()
+    RS_set_obj_data_to_config()
     RS_set_debris_count()
 
 ### Functions to Finalize the Simulator Setup ###
@@ -236,7 +228,13 @@ Multiple arrays of type `cl_float` are used to keep track of a set of attributes
     RS_suggest_scan_domain()
     RS_revise_debris_counts_to_gpu_preference()
 
-### Functions to Interact Directly with GPUs (Private API) ###
+
+For the Masters
+---------------
+
+These functions are of lower levels. Normal usage should not need to tinker with these.
+
+### Functions to Interact Directly with GPUs ###
 
 These functions take input format that are readily suitable for GPU array buffers. These functions are appropriate when the data layout is identical to array buffer data on GPUs. It is important that the corresponding table parameters are first cached at the master handler, i.e., `vel_desc`, `adm_desc` and `rcs_desc`. These are not the same as the CL worker correspondence.
 
