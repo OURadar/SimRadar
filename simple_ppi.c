@@ -29,9 +29,7 @@ int main(int argc, char *argv[]) {
     
     // Set up the parameters: use the setter functions to change the state.
     RS_set_antenna_params(S, 1.0f, 44.5f);
-    
     RS_set_tx_params(S, 0.2e-6f, 50.0e3f);
-
     RS_set_prt(S, 1.0e-3f);
 
     // Set the first debris object to be leaf
