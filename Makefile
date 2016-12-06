@@ -25,12 +25,14 @@ CFLAGS += -I /opt/oscer/software/CUDA/8.0.44-GCC-4.9.3-2.25/include -I /opt/osce
 LDFLAGS += -L /opt/oscer/software/CUDA/8.0.44-GCC-4.9.3-2.25/lib64 -lOpenCL
 ifeq ($(MPIVER), 1.10.2)
 MPI_PROGS += radarsim-mpi
+MPI_CFLAGS = -I /opt/oscer/software/OpenMPI/1.10.2-GCC-4.9.3-2.25/include
+MPI_LDFLAGS = -L /opt/oscer/software/OpenMPI/1.10.2-GCC-4.9.3-2.25/lib -lmpi
 endif
 endif
 
 LDFLAGS += -lm -lpthread
 
-all: prep $(MYLIB) $(PROGS) $(MPI_PROGS)
+all: $(MYLIB) $(PROGS) $(MPI_PROGS)
 
 $(OBJS): %.o: %.c %.h rs_types.h
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -43,7 +45,7 @@ lib/librs.a: $(OBJS)
 	ar rvcs $@ $(OBJS)
 
 $(MPI_PROGS): %: %.c $(MYLIB)
-	$(CC) $(CFLAGS) -D_OPEN_MPI -I /opt/oscer/software/OpenMPI/1.10.2-GCC-4.9.3-2.25/include -o $@ $@.c $(LDFLAGS) -L /opt/oscer/software/OpenMPI/1.10.2-GCC-4.9.3-2.25/lib -lmpi
+	$(CC) $(CFLAGS) -D_OPEN_MPI $(MPI_CFLAGS) -o $@ $@.c $(LDFLAGS) $(MPI_LDFLAGS)
 
 prep: radarsim-mpi.c
 	@ln -sfn radarsim.c radarsim-mpi.c
@@ -52,4 +54,3 @@ clean:
 	rm -f *.o *.a
 	rm -f $(MYLIB) $(PROGS) $(MPI_PROGS)
 	rm -rf *.dSYM
-
