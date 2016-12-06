@@ -4,8 +4,8 @@ Simulation of a Radar
 A polarimetric radar time-series emulator utilizing air-drag model for particle motions and a realistic radar cross library for particle back scattering calculations. Implemented with OpenCL for massive parallel computations. This is awesome!  If you would like to contribute to the framework, please me at <boonleng@ou.edu>.
 
 
-Get the Project
----------------
+Getting the Project
+-------------------
 
 Follow these steps to get the project
 
@@ -55,7 +55,8 @@ Radar Simulation Framework
 
 Radar Simulation (RS) framework is a simply collection of C functions which abstract low-level interactions with the GPU for workload parallelization. OpenCL was selected because of the vendor neutral implementation.
 
-### Using the Radar Simulation (RS) Framework ###
+Using the Radar Simulation (RS) Framework
+-----------------------------------------
 
 The simulation framework is developed is plain C for performance and portability. All calculations are implemented within the RS framework with functions prefix RS. To include the RS framework, there is only one header, i.e., `rs.h` is needed. The following example code creates a simple simulation domain and emulate a PPI scan:
 
@@ -186,8 +187,8 @@ The emulator is implemented with a master handler in a C structure, which collec
 
 The radar parameters may be set in arbitrary order prior to the key functions `RS_set_scan_box()` and `RS_populate()`. The `RS_set_scan_box()` function sets the allocates the simulation domain and scatterers, so it is important to call the functions that set the radar and population parameters, i.e., scatterer density, debris counts, etc., prior to this function. On the other hand, the function `RS_populate()` farms out the workload to OpenCL devices. After this stage, only limited set of functions are allowed. These include time advancing, radar beam steering and radar pulse composition.
 
-Details on Scatterer Attributes
--------------------------------
+Basic Attributes and Functions
+------------------------------
 
 Multiple arrays of type `cl_float` are used to keep track of a set of attributes associated with each scatterer. The following list provides a summary of the attriutes and the variables used on the C-level abstraction.
 
@@ -200,7 +201,7 @@ Multiple arrays of type `cl_float` are used to keep track of a set of attributes
     cl_mem                 scat_sig;   // signal: Ih Qh Iv Qv
     cl_mem                 scat_rnd;   // random seed
 
-### Functions to Set Up the Simulator ###
+### Setup Functions to Parameterize the Simulator ###
 
     RS_set_prt()
     RS_set_lambda()
@@ -208,31 +209,29 @@ Multiple arrays of type `cl_float` are used to keep track of a set of attributes
     RS_set_antenna_params()
     RS_set_tx_params()
     RS_set_scan_box()
-    RS_set_beam_pos()
     RS_set_obj_data_to_config()
     RS_set_debris_count()
-
-### Functions to Finalize the Simulator Setup ###
-
-    RS_set_scan_box()
-    RS_populate()
-
-### Functions for Simulation Time Evolution ###
-
-    RS_set_beam_pos()
-    RS_advance_time()
-    RS_make_pulse()
 
 ### Convenient Functions for Simulation Setup ###
 
     RS_suggest_scan_domain()
     RS_revise_debris_counts_to_gpu_preference()
 
+### Start Function to Bring the Simulator Online ###
 
-For the Masters
----------------
+    RS_populate()
 
-These functions are of lower levels. Normal usage should not need to tinker with these.
+### Online Functions for Simulation Time Evolution ###
+
+    RS_set_beam_pos()
+    RS_advance_time()
+    RS_make_pulse()
+
+
+For the Programming Masters
+---------------------------
+
+These functions are of low levels. Normal usage should not need to tinker with these.
 
 ### Functions to Interact Directly with GPUs ###
 
@@ -250,3 +249,7 @@ These functions take input format that are in native format from the data suppli
     RS_set_adm_data_to_ADM_table()
     RS_set_rcs_data_to_RCS_table()
 
+References
+==========
+
+B. L. Cheong, D. J. Bodine, C. J. Fulton, S. M. Torres, T. Maruyama, R. D. Palmer, SimRadar: A Polarimetric Radar Time-Series Simulator for Tornadic Debris Studies, *IEEE Trans. Geos. Remote Sensi.*, accepted.
