@@ -23,8 +23,8 @@
 #define RCSConfigWoodBoard         "woodboard"
 #define RCSConfigWoodBoardDish     "woodboardish"
 
-typedef void* RCSHandle;
-typedef char* RCSConfig;
+typedef void * RCSHandle;
+typedef char * RCSConfig;
 
 typedef struct _rcs_data {
     float *a;
@@ -47,12 +47,12 @@ typedef struct _rcs_table {
     float     lambda;
 } RCSTable;
 
-RCSHandle *RCS_init_with_path(const char *path);
-RCSHandle *RCS_init(void);
-void RCS_free(RCSHandle *);
+RCSHandle RCS_init_with_path(const char *path);
+RCSHandle RCS_init(void);
+void RCS_free(RCSHandle);
 
-RCSTable *RCS_get_table(const RCSHandle *, const RCSConfig config);
-char *RCS_data_path(const RCSHandle *);
+RCSTable *RCS_get_table(const RCSHandle, const RCSConfig config);
+char *RCS_data_path(const RCSHandle);
 
 void RCS_show_table_summary(const RCSTable *);
 

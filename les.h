@@ -24,8 +24,8 @@
 #include <sys/types.h>
 #include <pthread.h>
 
-typedef void* LESHandle;
-typedef char* LESConfig;
+typedef void * LESHandle;
+typedef char * LESConfig;
 
 typedef struct les_grid {
 	uint32_t  rev;            // Revision number, perhaps?
@@ -68,18 +68,20 @@ typedef struct _les_table {
 } LESTable;
 
 
-LESHandle *LES_init_with_config_path(const LESConfig config, const char *path);
-LESHandle *LES_init(void);
-void LES_free(LESHandle *);
+LESHandle LES_init_with_config_path(const LESConfig config, const char *path);
+LESHandle LES_init(void);
+void LES_free(LESHandle);
 
-LESTable *LES_get_frame_0(const LESHandle *, const int n);
-LESTable *LES_get_frame(const LESHandle *i, const int n);
-char *LES_data_path(const LESHandle *);
-float LES_get_table_period(const LESHandle *);
-size_t LES_get_table_count(const LESHandle *);
+void LES_set_delayed_read(LESHandle);
+
+LESTable *LES_get_frame_0(const LESHandle, const int n);
+LESTable *LES_get_frame(const LESHandle, const int n);
+char *LES_data_path(const LESHandle);
+float LES_get_table_period(const LESHandle);
+size_t LES_get_table_count(const LESHandle);
 
 void LES_show_table_summary(const LESTable *table);
 
-void LES_show_handle_summary(const LESHandle *);
+void LES_show_handle_summary(const LESHandle);
 
 #endif

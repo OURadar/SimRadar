@@ -1,4 +1,5 @@
 .DS_Store
+._*
 *.o
 o
 r
@@ -21,9 +22,15 @@ ref/
 *stdout.txt
 *stderr.txt
 
+# Symbolic links
+o
+radarsim-mpi.c
+
 # Programs
 test_*
 cldemo
 radarsim
+radarsim-mpi
 simple_ppi
 lsiq
+

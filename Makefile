@@ -8,9 +8,9 @@ OBJS = rs.o les.o adm.o rcs.o obj.o
 
 MYLIB = lib/librs.a
 
-PROGS = cldemo test_clreduce test_make_pulse test_rs test_les test_adm test_rcs simple_ppi lsiq
+PROGS = cldemo test_clreduce test_make_pulse test_rs test_les test_adm test_rcs simple_ppi lsiq radarsim
 
-MPI_PROGS = radarsim
+MPI_PROGS = radarsim-mpi
 
 ifeq ($(UNAME), Darwin)
 CC = clang
@@ -44,14 +44,11 @@ lib/librs.a: $(OBJS)
 
 $(MPI_PROGS): %: %.c $(MYLIB)
 ifdef OPEN_MPI_CLUSTER
-#	mpicc $(CFLAGS) -D_OPEN_MPI -o $@ $@.c $(LDFLAGS)
-#	$(CC) $(CFLAGS) -I /opt/oscer/software/OpenMPI/1.10.2-GCC-4.9.3-2.25/include -o $@ $@.c $(LDFLAGS) -L /opt/oscer/software/OpenMPI/1.10.2-GCC-4.9.3-2.25/lib -lmpi
-	$(CC) $(CFLAGS) -o $@ $@.c $(LDFLAGS)
-else
-	$(CC) $(CFLAGS) -o $@ $@.c $(LDFLAGS)
+	$(CC) $(CFLAGS) -D_OPEN_MPI -I /opt/oscer/software/OpenMPI/1.10.2-GCC-4.9.3-2.25/include -o $@ $@.c $(LDFLAGS) -L /opt/oscer/software/OpenMPI/1.10.2-GCC-4.9.3-2.25/lib -lmpi
 endif
 
 clean:
 	rm -f *.o *.a
 	rm -f $(MYLIB) $(PROGS) $(MPI_PROGS)
 	rm -rf *.dSYM
+

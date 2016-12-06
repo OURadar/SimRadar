@@ -8,10 +8,12 @@
 
 #include "les.h"
 
-#define LES_num           4
-#define LES_file_nblock   10
-#define LES_FMT           "%+8.4f"
-#define LES_CFMT          "%s" LES_FMT " " LES_FMT "  " LES_FMT " .. " LES_FMT "%s"
+#define LES_num                     4
+#define LES_file_nblock             10
+#define LES_FMT                     "%+8.4f"
+#define LES_CFMT                    "%s" LES_FMT " " LES_FMT "  " LES_FMT " .. " LES_FMT "%s"
+#define LES_FRAME_TIME_STAMP_BYTES  4
+#define LES_FRAME_PADDING_BYTES     8
 
 // Private structure
 
@@ -37,6 +39,7 @@ typedef struct _les_mem {
 	LESTable  *data_boxes[LES_num];
     pthread_t tid;
     bool      active;
+    bool      delayed_read;
     int       req;
 } LESMem;
 
@@ -62,7 +65,7 @@ void LES_table_free(LESTable *table);
 
 #pragma mark -
 
-LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
+LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
     // Find the path
     char cwd[1024];
     if (getcwd(cwd, sizeof(cwd)) == NULL)
@@ -167,9 +170,6 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
     // Extract only a sub-domain. This is not complete, will come back for it.
     h->data_grid = LES_data_grid_create_from_enclosing_grid(h->enclosing_grid, 0, 0);
 
-#define LES_FRAME_TIME_STAMP_BYTES  4
-#define LES_FRAME_PADDING_BYTES     8
-
     // Go through and check available tables
     int k = 0;
     while (true) {
@@ -230,6 +230,7 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
         fprintf(stderr, "LES : Error. Unable to create thread.\n");
         exit(EXIT_FAILURE);
     }
+    // Wait until one frame is ingested.
     do {
         usleep(10000);
     } while (h->ibuf == 0);
@@ -246,15 +247,15 @@ LESHandle *LES_init_with_config_path(const LESConfig config, const char *path) {
     }
 #endif
 
-    return (LESHandle *)h;
+    return (LESHandle)h;
 }
 
-LESHandle *LES_init() {
+LESHandle LES_init() {
     return LES_init_with_config_path(LESConfigSuctionVortices, NULL);
 }
 
 
-void LES_free(LESHandle *i) {
+void LES_free(LESHandle i) {
     LESMem *h = (LESMem *)i;
     h->active = false;
     pthread_join(h->tid, NULL);
@@ -264,6 +265,13 @@ void LES_free(LESHandle *i) {
         LES_table_free(h->data_boxes[i]);
     }
     free(h);
+}
+
+#pragma mark -
+
+void LES_set_delayed_read(LESHandle i) {
+    LESMem *h = (LESMem *)i;
+    h->delayed_read = true;
 }
 
 #pragma mark -
@@ -282,9 +290,9 @@ void *LES_background_read(LESHandle i) {
         // The file number of the list of files to read
         int file_id = frame / LES_file_nblock;
 
-        #ifdef DEBUG
+        //#ifdef DEBUG
         printf("LES DEBUG : Background ingest from file %s for frame %d to slot %d ...\n", h->files[file_id], h->req, h->ibuf);
-        #endif
+        //#endif
 
         // The table in collection of data boxes
         table = h->data_boxes[h->ibuf];
@@ -354,7 +362,9 @@ void *LES_background_read(LESHandle i) {
         do {
             usleep(100000);
         } while (h->active && frame == h->req);
-        usleep(200000);
+        if (h->delayed_read) {
+            usleep(200000);
+        }
     }
     return NULL;
 }
@@ -573,7 +583,7 @@ void LES_show_table_summary(const LESTable *table) {
 }
 
 
-void LES_show_handle_summary(const LESHandle *i) {
+void LES_show_handle_summary(const LESHandle i) {
     LESMem *h = (LESMem *)i;
     printf("LES Configuration:\n");
     printf(" path: %s\n", h->data_path);
@@ -581,7 +591,7 @@ void LES_show_handle_summary(const LESHandle *i) {
 }
 
 
-LESTable *LES_get_frame_0(const LESHandle *i, const int n) {
+LESTable *LES_get_frame_0(const LESHandle i, const int n) {
 	LESTable *table;
 	LESMem *h = (LESMem *)i;
 
@@ -682,15 +692,15 @@ LESTable *LES_get_frame_0(const LESHandle *i, const int n) {
 }
 
 
-LESTable *LES_get_frame(const LESHandle *i, const int n) {
+LESTable *LES_get_frame(const LESHandle i, const int n) {
     LESTable *table = NULL;
     LESMem *h = (LESMem *)i;
-    int k = 0;
-    while (n != h->data_id[k] && k < LES_num) {
-        k++;
-    }
-    if (n == h->data_id[k] && k < LES_num) {
-        //printf("Found n = %d @ k = %d\n", n, k);
+    int k = LES_num;
+    do {
+        k--;
+    } while (n != h->data_id[k] && k > 0);
+    if (n == h->data_id[k]) {
+        printf("LES DEBUG : Found n = %d = %d @ k = %d / %d\n", n, h->data_id[k], k, LES_num);
         table = h->data_boxes[k];
         // What to read in next
         h->req = n == h->ncubes - 1 ? 0 : n + 1;
@@ -710,19 +720,19 @@ LESTable *LES_get_frame(const LESHandle *i, const int n) {
 }
 
 
-char *LES_data_path(const LESHandle *i) {
+char *LES_data_path(const LESHandle i) {
     LESMem *h = (LESMem *)i;
     return h->data_path;
 }
 
 
-float LES_get_table_period(const LESHandle *i) {
+float LES_get_table_period(const LESHandle i) {
     LESMem *h = (LESMem *)i;
     return h->tp;
 }
 
 
-size_t LES_get_table_count(const LESHandle *i) {
+size_t LES_get_table_count(const LESHandle i) {
     LESMem *h = (LESMem *)i;
     return h->ncubes;
 }

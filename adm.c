@@ -53,7 +53,7 @@ void ADM_show_slice(const float *values, const int nb, const int na) {
 }
 
 
-ADMHandle *ADM_init_with_path(const char *path) {
+ADMHandle ADM_init_with_path(const char *path) {
     
     char search_paths[10][1024] = {"./les"};
     
@@ -126,12 +126,12 @@ ADMHandle *ADM_init_with_path(const char *path) {
 }
 
 
-ADMHandle *ADM_init(void) {
+ADMHandle ADM_init(void) {
     return ADM_init_with_path(NULL);
 }
 
 
-void ADM_free(ADMHandle *i) {
+void ADM_free(ADMHandle i) {
     ADMMem *h = (ADMMem *)i;
     for (int i = 0; i < h->count; i++) {
         // Free each table that has been allocated previously
@@ -149,7 +149,7 @@ void ADM_free(ADMHandle *i) {
 }
 
 
-ADMTable *ADM_get_table(const ADMHandle *in, const ADMConfig config) {
+ADMTable *ADM_get_table(const ADMHandle in, const ADMConfig config) {
     ADMMem *h = (ADMMem *)in;
     
     int i;
@@ -225,7 +225,7 @@ ADMTable *ADM_get_table(const ADMHandle *in, const ADMConfig config) {
 }
 
 
-char *ADM_data_path(const ADMHandle *i) {
+char *ADM_data_path(const ADMHandle i) {
     ADMMem *h = (ADMMem * )i;
     return h->data_path;
 }

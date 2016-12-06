@@ -85,12 +85,12 @@ void RCS_show_slice_complex(const float *values_real, const float *values_imag, 
 }
 
 
-RCSHandle *RCS_init(void) {
+RCSHandle RCS_init(void) {
     return RCS_init_with_path("rcs");
 }
 
 
-RCSHandle *RCS_init_with_path(const char *path) {
+RCSHandle RCS_init_with_path(const char *path) {
     char search_paths[10][1024] = {"./rcs"};
     
     if (path == NULL) {
@@ -160,7 +160,7 @@ RCSHandle *RCS_init_with_path(const char *path) {
     return (RCSHandle *)h;
 }
 
-void RCS_free(RCSHandle *i) {
+void RCS_free(RCSHandle i) {
     RCSMem *h = (RCSMem *)i;
     for (int i=0; i<h->count; i++) {
         // Free each table that has been allocated previously
@@ -178,7 +178,7 @@ void RCS_free(RCSHandle *i) {
 }
 
 
-RCSTable *RCS_get_table(const RCSHandle *in, const RCSConfig config) {
+RCSTable *RCS_get_table(const RCSHandle in, const RCSConfig config) {
     RCSMem *h = (RCSMem *)in;
     
     int i;
@@ -245,7 +245,7 @@ RCSTable *RCS_get_table(const RCSHandle *in, const RCSConfig config) {
 }
 
 
-char *RCS_data_path(const RCSHandle *i) {
+char *RCS_data_path(const RCSHandle i) {
     RCSMem *h = (RCSMem *)i;
     return h->data_path;
 }

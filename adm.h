@@ -21,8 +21,8 @@
 #define ADMConfigSquarePlate       "square_plate"
 #define ADMConfigRoofTile          "roof_tile"
 
-typedef void* ADMHandle;
-typedef char* ADMConfig;
+typedef void * ADMHandle;
+typedef char * ADMConfig;
 
 //typedef struct adm_grid {
 //    uint32_t  rev;            // Revision number, perhaps?
@@ -65,12 +65,12 @@ typedef struct _adm_table {
     char      path[1024];
 } ADMTable;
 
-ADMHandle *ADM_init_with_path(const char *path);
-ADMHandle *ADM_init(void);
-void ADM_free(ADMHandle *);
+ADMHandle ADM_init_with_path(const char *path);
+ADMHandle ADM_init(void);
+void ADM_free(ADMHandle);
 
-ADMTable *ADM_get_table(const ADMHandle *, const ADMConfig config);
-char *ADM_data_path(const ADMHandle *);
+ADMTable *ADM_get_table(const ADMHandle, const ADMConfig config);
+char *ADM_data_path(const ADMHandle);
 
 void ADM_show_table_summary(const ADMTable *);
 void ADM_transform_scale(ADMTable *T, const float x, const float y, const float z, const float r);

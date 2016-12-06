@@ -28,12 +28,12 @@ typedef struct _obj_table {
     RCSTable *rcs_table;
 } OBJTable;
 
-typedef void* OBJHandle;
+typedef void * OBJHandle;
 
-OBJHandle *OBJ_init_with_path(const char *path);
-OBJHandle *OBJ_init(void);
-void OBJ_free(OBJHandle *);
+OBJHandle OBJ_init_with_path(const char *path);
+OBJHandle OBJ_init(void);
+void OBJ_free(OBJHandle);
 
-OBJTable *OBJ_get_table(const OBJHandle *, OBJConfig);
+OBJTable *OBJ_get_table(const OBJHandle, OBJConfig);
 
 #endif

@@ -8,7 +8,7 @@ int main(int argc, const char **argv) {
 
 	LESTable *table;
 
-	LESHandle *L = LES_init();
+	LESHandle L = LES_init();
 	
     if (L == NULL) {
         return EXIT_FAILURE;

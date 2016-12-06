@@ -15,7 +15,7 @@ typedef struct _obj_mem {
     int count;
 } OBJMem;
 
-OBJHandle *OBJ_init_with_path(const char *path) {
+OBJHandle OBJ_init_with_path(const char *path) {
     // Initialize a memory location for the handler
     OBJMem *h = (OBJMem *)malloc(sizeof(OBJMem));
     
@@ -26,11 +26,11 @@ OBJHandle *OBJ_init_with_path(const char *path) {
     return (OBJHandle *)h;
 }
 
-OBJHandle *OBJ_init(void) {
+OBJHandle OBJ_init(void) {
     return OBJ_init_with_path(NULL);
 }
 
-void OBJ_free(OBJHandle *in) {
+void OBJ_free(OBJHandle in) {
     OBJMem *h = (OBJMem *)in;
     
     ADM_free(h->adm_h);
@@ -38,7 +38,7 @@ void OBJ_free(OBJHandle *in) {
     free(h);
 }
 
-OBJTable *OBJ_get_table(const OBJHandle *in, OBJConfig type) {
+OBJTable *OBJ_get_table(const OBJHandle in, OBJConfig type) {
     OBJMem *O = (OBJMem *)in;
     OBJTable *obj_table = &O->obj_table[O->count];
     //printf("OBJ count : %d \n", O->count);
