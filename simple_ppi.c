@@ -32,6 +32,9 @@ int main(int argc, char *argv[]) {
     RS_set_tx_params(S, 0.2e-6f, 50.0e3f);
     RS_set_prt(S, 1.0e-3f);
 
+    // Set the DSD profile
+    RS_set_dsd_to_mp(S);
+
     // Set the first debris object to be leaf
     RS_set_obj_data_to_config(S, OBJConfigLeaf);
     
@@ -49,10 +52,7 @@ int main(int argc, char *argv[]) {
                     box.origin.r, box.origin.r + box.size.r, 15.0f,   // Range
                     box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
                     box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
-    
-    // Set the DSD profile
-    RS_set_dsd_to_mp(S);
-    
+
     // Populate the domain with scatter bodies.
     // This is also the function that triggers kernel compilation, GPU memory allocation and
     // upload all the parameters to the GPU.
