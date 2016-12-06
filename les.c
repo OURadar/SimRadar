@@ -290,9 +290,9 @@ void *LES_background_read(LESHandle i) {
         // The file number of the list of files to read
         int file_id = frame / LES_file_nblock;
 
-        //#ifdef DEBUG
+        #ifdef DEBUG
         printf("LES DEBUG : Background ingest from file %s for frame %d to slot %d ...\n", h->files[file_id], h->req, h->ibuf);
-        //#endif
+        #endif
 
         // The table in collection of data boxes
         table = h->data_boxes[h->ibuf];
@@ -700,7 +700,9 @@ LESTable *LES_get_frame(const LESHandle i, const int n) {
         k--;
     } while (n != h->data_id[k] && k > 0);
     if (n == h->data_id[k]) {
+        #ifdef DEBUG
         printf("LES DEBUG : Found n = %d = %d @ k = %d / %d\n", n, h->data_id[k], k, LES_num);
+        #endif
         table = h->data_boxes[k];
         // What to read in next
         h->req = n == h->ncubes - 1 ? 0 : n + 1;
