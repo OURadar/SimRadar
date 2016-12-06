@@ -691,20 +691,20 @@ LESTable *LES_get_frame(const LESHandle *i, const int n) {
     }
     if (n == h->data_id[k] && k < LES_num) {
         //printf("Found n = %d @ k = %d\n", n, k);
+        table = h->data_boxes[k];
         // What to read in next
         h->req = n == h->ncubes - 1 ? 0 : n + 1;
-        table = h->data_boxes[k];
     } else {
         // Let background read ingest the desired frame.
+        int ibuf = h->ibuf;
         h->req = n;
         //printf("Wait for background read.\n");
-        int ibuf = h->ibuf;
         do {
             usleep(10000);
         } while (ibuf == h->ibuf);
+        table = h->data_boxes[ibuf];
         // What to read in next
         h->req = n == h->ncubes - 1 ? 0 : n + 1;
-        table = h->data_boxes[ibuf];
     }
     return table;
 }
