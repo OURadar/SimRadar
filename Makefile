@@ -10,7 +10,7 @@ MYLIB = lib/librs.a
 
 PROGS = cldemo test_clreduce test_make_pulse test_rs test_les test_adm test_rcs simple_ppi lsiq radarsim
 
-MPI_PROGS = radarsim-mpi
+MPI_PROGS =
 
 ifeq ($(UNAME), Darwin)
 CC = clang
@@ -26,6 +26,9 @@ CFLAGS += -D_GNU_SOURCE
 #LDFLAGS += -L /opt/oscer/software/CUDA/7.5.18-GCC-4.9.3-2.25/lib64 -L /opt/oscer/software/OpenCL/2.2-GCC-4.9.3-2.25/lib64 -lOpenCL
 CFLAGS += -I /opt/oscer/software/CUDA/8.0.44-GCC-4.9.3-2.25/include -I /opt/oscer/software/OpenMPI/1.10.2-GCC-4.9.3-2.25/include
 LDFLAGS += -L /opt/oscer/software/CUDA/8.0.44-GCC-4.9.3-2.25/lib64 -lOpenCL
+ifdef OPEN_MPI_CLUSTER
+MPI_PROGS = radarsim-mpi
+endif
 endif
 
 LDFLAGS += -lm -lpthread
