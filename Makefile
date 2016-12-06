@@ -1,4 +1,5 @@
 UNAME := $(shell uname)
+MPIVER := $(shell echo ${EBVERSIONOPENMPI})
 
 CFLAGS = -std=gnu99 -Wall -Wno-unknown-pragmas -Os -msse2 -mavx -I /usr/local/include
 
@@ -20,20 +21,16 @@ else
 # These options are for Linux systems, boomer at OSCER included
 CC = gcc
 CFLAGS += -D_GNU_SOURCE
-#CFLAGS += -I /usr/local/cuda/include
-#LDFLAGS += -L /usr/local/cuda/lib64 -lOpenCL
-#CFLAGS += -I /opt/oscer/software/CUDA/7.5.18-GCC-4.9.3-2.25/include
-#LDFLAGS += -L /opt/oscer/software/CUDA/7.5.18-GCC-4.9.3-2.25/lib64 -L /opt/oscer/software/OpenCL/2.2-GCC-4.9.3-2.25/lib64 -lOpenCL
 CFLAGS += -I /opt/oscer/software/CUDA/8.0.44-GCC-4.9.3-2.25/include -I /opt/oscer/software/OpenMPI/1.10.2-GCC-4.9.3-2.25/include
 LDFLAGS += -L /opt/oscer/software/CUDA/8.0.44-GCC-4.9.3-2.25/lib64 -lOpenCL
-ifdef OPEN_MPI_CLUSTER
-MPI_PROGS = radarsim-mpi
+ifeq ($(MPIVER), 1.10.2)
+MPI_PROGS += radarsim-mpi
 endif
 endif
 
 LDFLAGS += -lm -lpthread
 
-all: $(MYLIB) $(PROGS) $(MPI_PROGS)
+all: prep $(MYLIB) $(PROGS) $(MPI_PROGS)
 
 $(OBJS): %.o: %.c %.h rs_types.h
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -46,9 +43,10 @@ lib/librs.a: $(OBJS)
 	ar rvcs $@ $(OBJS)
 
 $(MPI_PROGS): %: %.c $(MYLIB)
-ifdef OPEN_MPI_CLUSTER
 	$(CC) $(CFLAGS) -D_OPEN_MPI -I /opt/oscer/software/OpenMPI/1.10.2-GCC-4.9.3-2.25/include -o $@ $@.c $(LDFLAGS) -L /opt/oscer/software/OpenMPI/1.10.2-GCC-4.9.3-2.25/lib -lmpi
-endif
+
+prep: radarsim-mpi.c
+	@ln -sfn radarsim.c radarsim-mpi.c
 
 clean:
 	rm -f *.o *.a
