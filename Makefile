@@ -1,5 +1,8 @@
+# Check for OS - Linux or Darwin (macOS)
 UNAME := $(shell uname)
-MPIVER := $(shell echo ${EBVERSIONOPENMPI})
+
+# Check for availability of MPI
+MPIVER := $(shell [ ! -z ${EBVERSIONOPENMPI} ] && echo true || echo false)
 
 CFLAGS = -std=gnu99 -Wall -Wno-unknown-pragmas -Os -msse2 -mavx -I /usr/local/include
 
@@ -14,20 +17,23 @@ PROGS = cldemo test_clreduce test_make_pulse test_rs test_les test_adm test_rcs 
 MPI_PROGS =
 
 ifeq ($(UNAME), Darwin)
-CC = clang
-CFLAGS += -D_DARWIN_C_SOURCE
-LDFLAGS += -framework OpenCL
+    # macOS
+    CC = clang
+    CFLAGS += -D_DARWIN_C_SOURCE
+    LDFLAGS += -framework OpenCL
 else
-# These options are for Linux systems, boomer at OSCER included
-CC = gcc
-CFLAGS += -D_GNU_SOURCE
-CFLAGS += -I /opt/oscer/software/CUDA/8.0.44-GCC-4.9.3-2.25/include -I /opt/oscer/software/OpenMPI/1.10.2-GCC-4.9.3-2.25/include
-LDFLAGS += -L /opt/oscer/software/CUDA/8.0.44-GCC-4.9.3-2.25/lib64 -lOpenCL
-ifeq ($(MPIVER), 1.10.2)
-MPI_PROGS += radarsim-mpi
-MPI_CFLAGS = -I /opt/oscer/software/OpenMPI/1.10.2-GCC-4.9.3-2.25/include
-MPI_LDFLAGS = -L /opt/oscer/software/OpenMPI/1.10.2-GCC-4.9.3-2.25/lib -lmpi
-endif
+    # Linux systems, schooner of OSCER included
+    CC = gcc
+    CFLAGS += -D_GNU_SOURCE
+    CFLAGS += -I /opt/oscer/software/CUDA/8.0.44-GCC-4.9.3-2.25/include
+    CFLAGS += -I /opt/oscer/software/OpenMPI/1.10.2-GCC-4.9.3-2.25/include
+    LDFLAGS += -L /opt/oscer/software/CUDA/8.0.44-GCC-4.9.3-2.25/lib64 -lOpenCL
+    ifeq ($(MPIVER), true)
+        # Cluster with OpenMPI support
+        MPI_PROGS += radarsim-mpi
+        MPI_CFLAGS = -I /opt/oscer/software/OpenMPI/1.10.2-GCC-4.9.3-2.25/include
+        MPI_LDFLAGS = -L /opt/oscer/software/OpenMPI/1.10.2-GCC-4.9.3-2.25/lib -lmpi
+    endif
 endif
 
 LDFLAGS += -lm -lpthread
