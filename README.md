@@ -14,19 +14,19 @@ Follow these steps to get the project
 2. Clone a git project using the following command in Terminal:
 
         git clone http://git.arrc.ou.edu/cheo4524/simradar.git
-
-    Note: A `.xcodeproj` project is included so you can manage the source codes using Xcode on Mac OS X. Git is readily supported under Xcode.
+        
+    A `.xcodeproj` project is included so you can manage the source codes using Xcode on Mac OS X. Git is readily supported under Xcode.
 
 3. Download [Sparkle Framework], extract and move the folder **Sparkle.framework** into the sub-folder **SimRadar**
 
-    Note: The latest release of Sparkle framework, which is developed and maintained by a third party (http://sparkle-project.org), can be downloaded from the official website but not necessary. The provided link works just as well.
+    The latest release of Sparkle framework, which is developed and maintained by a third party (http://sparkle-project.org), can be downloaded from the official website but not necessary. The provided link works just as well.
 
 4. Download the [LES, ADM & RCS Data] in a zip archive (15GB), extract and move the folder **tables** into one of the following locations:
     - ~/Downloads
     - ~/Documents
     - ~/Desktop
     
-    NOTE: This is a zip archive with two LES (Large Eddy Simulation) wind cubes, an ADM (Air Drag Model) library and an RCS (Radar Cross Section) library.
+    This is a zip archive with two LES (Large Eddy Simulation) wind cubes, an ADM (Air Drag Model) library and an RCS (Radar Cross Section) library.
 
 5. Download [Matlab Scripts] for reading the I/Q data into Matlab.
 
