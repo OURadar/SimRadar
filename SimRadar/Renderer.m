@@ -1252,8 +1252,16 @@ unsigned int grayToBinary(unsigned int num)
                 continue;
             }
             glBindVertexArray(debrisRenderer[k].vao);
-            glUniform4f(instancedGeometryRenderer.colorUI, debrisRenderer[k].colors[0], debrisRenderer[k].colors[1], debrisRenderer[k].colors[2], debrisRenderer[k].colors[3]);
-            glDrawElementsInstanced(GL_LINE_STRIP, debrisRenderer[k].instanceSize, GL_UNSIGNED_INT, NULL, debrisRenderer[k].count);
+
+            if (showDebrisAttributes) {
+                glUniform1i(instancedGeometryRenderer.pingPongUI, 1);
+                glUniform4f(instancedGeometryRenderer.colorUI, bodyRenderer[0].colormapIndexNormalized, 1.0f, 1.0f, 1.0f);
+            } else {
+                glUniform1i(instancedGeometryRenderer.pingPongUI, 0);
+                glUniform4f(instancedGeometryRenderer.colorUI, debrisRenderer[k].colors[0], debrisRenderer[k].colors[1], debrisRenderer[k].colors[2], debrisRenderer[k].colors[3]);
+            }
+
+            glDrawElementsInstanced(debrisRenderer[k].drawMode, debrisRenderer[k].instanceSize, GL_UNSIGNED_INT, NULL, debrisRenderer[k].count);
         }
 
         // Draw the grid
