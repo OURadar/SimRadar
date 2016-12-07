@@ -1,7 +1,8 @@
 #!/bin/bash
 #
 #SBATCH --partition=gpu
-#SBATCH --ntasks=4
+#SBATCH --ntasks=3
+#SBATCH --ntasks-per-node=1
 #SBATCH --mem=1GB
 #SBATCH --time=00:05:00
 #SBATCH --job-name=simradar
