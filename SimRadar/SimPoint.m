@@ -246,15 +246,15 @@
 
 - (void)setScattererColorMode:(int)mode
 {
+    int k;
     S->draw_mode.s0 = mode;
     switch (S->draw_mode.s0) {
         case 'S':
-            tick_lab = [NSArray arrayWithObjects:@"1.00", @"2.00", @"3.00", @"4.00", @"5.00", nil];
-            tick_pos[0] = 0.00f;
-            tick_pos[1] = 0.25f;
-            tick_pos[2] = 0.50f;
-            tick_pos[3] = 0.75f;
-            tick_pos[4] = 1.00f;
+            tick_lab = [NSArray array];
+            for (k = 0; k < S->dsd_count; k++) {
+                tick_lab = [tick_lab arrayByAddingObject:[NSString stringWithFormat:@"%.2f", S->dsd_r[k] * 2000.0f]];
+                tick_pos[k] = (k + 0.5f) / S->dsd_count;
+            }
             strcpy(tick_title, "Drop Size (mm)");
             break;
         case 'A':

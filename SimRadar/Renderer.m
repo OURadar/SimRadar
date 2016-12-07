@@ -1513,7 +1513,7 @@ unsigned int grayToBinary(unsigned int num)
         glBufferData(GL_ARRAY_BUFFER, sizeof(texCoord), texCoord, GL_STATIC_DRAW);
     }
     glUniformMatrix4fv(meshRenderer.mvpUI, 1, GL_FALSE, meshRenderer.modelViewProjection.m);
-    glUniform4f(meshRenderer.colorUI, 1.0f, 1.0f, 1.0f, 0.9f);
+    glUniform4f(meshRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
     glBindTexture(GL_TEXTURE_2D, meshRenderer.textureID);
     glDrawArrays(GL_TRIANGLE_STRIP, lineRenderer.segmentOrigins[RendererLineSegmentBasicRectangle], 4);
 
@@ -1521,7 +1521,7 @@ unsigned int grayToBinary(unsigned int num)
     origin.y = 45.0f;
     [textRenderer drawText:colorbarTitle origin:origin scale:0.25f];
 
-    origin.y = 21.0f;
+    origin.y = 20.0f;
     for (k = 0; k < colorbarTickCount; k++) {
         origin.x = (0.25f + 0.5f * colorbarTickPositions[k]) * width;
         [textRenderer drawText:colorbarTickLabels[k] origin:origin scale:0.25f align:GLTextAlignmentCenter];
@@ -1764,6 +1764,7 @@ unsigned int grayToBinary(unsigned int num)
     colorbarNeedsUpdate = true;
 }
 
+
 - (void)setColormapTitle:(char *)title tickLabels:(NSArray *)labels positions:(GLfloat *)positions;
 {
     colorbarTitle = title;
@@ -1773,13 +1774,16 @@ unsigned int grayToBinary(unsigned int num)
         NSString *label = [labels objectAtIndex:k];
         strncpy(colorbarTickLabels[k], label.UTF8String, 16);
     }
+    overlayNeedsUpdate = true;
 }
+
 
 - (void)cycleFBO
 {
     ifbo = ifbo >= 4 ? 0 : ifbo + 1;
     statusMessageNeedsUpdate = true;
 }
+
 
 - (void)cycleFBOReverse
 {

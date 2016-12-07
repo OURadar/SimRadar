@@ -217,10 +217,10 @@
             GLuint pop = [sim populationForDebris:k];
             [dc.glView.renderer setPopulationTo:pop forDebris:k forDevice:0];
         }
-        
+        [sim setScattererColorMode:'S'];
         // Get some information from the simulator
         [dc.glView.renderer setOverlayText:sim.simulationDescription withTitle:@"Basic Parameters"];
-        
+        [dc.glView.renderer setColormapTitle:sim.scattererColorTitle tickLabels:sim.scattererColorTickLabels positions:sim.scattererColorTickPositions];
     } else {
         NSLog(@"No simulation yet.");
     }
