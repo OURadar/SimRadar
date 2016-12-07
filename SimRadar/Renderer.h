@@ -178,6 +178,11 @@ enum RendererLineSegment {
 
     char statusMessage[16][256];
 
+    char *colorbarTitle;
+    char colorbarTickLabels[10][16];
+    float *colorbarTickPositions;
+    int colorbarTickCount;
+
     int itic, iframe;
     NSTimeInterval tics[RENDERER_TIC_COUNT];
     float fps;
@@ -229,6 +234,7 @@ enum RendererLineSegment {
 
 - (void)cycleForwardColormap;
 - (void)cycleReverseColormap;
+- (void)setColormapTitle:(char *)title tickLabels:(NSArray *)labels positions:(GLfloat *)positions;
 
 - (void)cycleFBO;
 - (void)cycleFBOReverse;

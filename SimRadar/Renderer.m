@@ -848,8 +848,6 @@ unsigned int grayToBinary(unsigned int num)
     glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
 	// Always use this clear color: I use 16-bit internal FBO texture format, so minimum can only be sqrt ( 1 / 65536 ) = 1 / 256
-	//glClearColor(0.0f, 0.2f, 0.25f, 1.0f);
-	//glClearColor(0.0f, 0.0f, 0.0f, 0.01f);
     glClearColor(0.0f, 0.0f, 0.0f, 4.0f / 256.0f);
 
     [self makePrimitives];
@@ -1519,6 +1517,16 @@ unsigned int grayToBinary(unsigned int num)
     glBindTexture(GL_TEXTURE_2D, meshRenderer.textureID);
     glDrawArrays(GL_TRIANGLE_STRIP, lineRenderer.segmentOrigins[RendererLineSegmentBasicRectangle], 4);
 
+    origin.x = 0.76f * width;
+    origin.y = 45.0f;
+    [textRenderer drawText:colorbarTitle origin:origin scale:0.25f];
+
+    origin.y = 21.0f;
+    for (k = 0; k < colorbarTickCount; k++) {
+        origin.x = (0.25f + 0.5f * colorbarTickPositions[k]) * width;
+        [textRenderer drawText:colorbarTickLabels[k] origin:origin scale:0.25f align:GLTextAlignmentCenter];
+    }
+
     glBindVertexArray(0);
     glUseProgram(0);
     iframe++;
@@ -1566,7 +1574,7 @@ unsigned int grayToBinary(unsigned int num)
     beamModelViewProjection = GLKMatrix4Multiply(beamProjection, mat);
     
     float cx = roundf(0.25f * width);
-    float cy = 25.0f;
+    float cy = 45.0f;
     float cw = roundf(0.5f * width);
     float ch = 20.0f;
     
@@ -1756,18 +1764,32 @@ unsigned int grayToBinary(unsigned int num)
     colorbarNeedsUpdate = true;
 }
 
-- (void)cycleFBO {
+- (void)setColormapTitle:(char *)title tickLabels:(NSArray *)labels positions:(GLfloat *)positions;
+{
+    colorbarTitle = title;
+    colorbarTickPositions = positions;
+    colorbarTickCount = (int)[labels count];
+    for (int k = 0; k < colorbarTickCount; k++) {
+        NSString *label = [labels objectAtIndex:k];
+        strncpy(colorbarTickLabels[k], label.UTF8String, 16);
+    }
+}
+
+- (void)cycleFBO
+{
     ifbo = ifbo >= 4 ? 0 : ifbo + 1;
     statusMessageNeedsUpdate = true;
 }
 
-- (void)cycleFBOReverse {
+- (void)cycleFBOReverse
+{
     ifbo = ifbo == 0 ? 4 : ifbo - 1;
     statusMessageNeedsUpdate = true;
 }
 
 
-- (void)setOverlayText:(NSString *)bodyText withTitle:(NSString *)title {
+- (void)setOverlayText:(NSString *)bodyText withTitle:(NSString *)title
+{
     NSColor *color1 = [NSColor colorWithWhite:0.0f alpha:0.65f];
     NSColor *color2 = [NSColor colorWithRed:1.0f green:0.8f blue:0.2f alpha:1.0f];
     NSColor *color3 = [NSColor colorWithRed:0.5f green:0.9f blue:1.0f alpha:1.0f];
@@ -1780,7 +1802,7 @@ unsigned int grayToBinary(unsigned int num)
     NSSize bodySize = [bodyText sizeWithAttributes:bodyAtts];
     
     // The overall canvas size in points
-    NSRect drawRect = NSMakeRect(20.0f, 60.0f, ceilf(bodySize.width + 30.0f), ceilf(bodySize.height + 50.0f));
+    NSRect drawRect = NSMakeRect(20.0f, 80.0f, ceilf(bodySize.width + 30.0f), ceilf(bodySize.height + 50.0f));
     [overlayRenderer setDrawRect:drawRect];
     [overlayRenderer beginCanvas];
     

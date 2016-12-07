@@ -49,7 +49,7 @@
         }
 
         cl_context_properties property = (cl_context_properties)shareGroup;
-        
+
         S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, property, 2);
         if (S == NULL) {
             NSLog(@"Some error(s) in RS_init() occurred.");
@@ -71,10 +71,6 @@
         // Copy out some convenient constants
         nearest_thousand = (size_t)ceilf(1000.0f / S->preferred_multiple) * S->preferred_multiple;
         nearest_hundred = (size_t)ceilf(100.0f / S->preferred_multiple) * S->preferred_multiple;
-
-        if (reportProgress) {
-            [delegate progressUpdated:3.0 message:[NSString stringWithFormat:@"LES @ %s", LES_data_path(L)]];
-        }
 
 		#ifdef DEBUG_HEAVY
 		RS_set_verbosity(S, 3);
@@ -248,8 +244,82 @@
 //    return (int)S->draw_mode.s0;
 //}
 
-- (void)setScattererColorMode:(int)mode {
+- (void)setScattererColorMode:(int)mode
+{
     S->draw_mode.s0 = mode;
+    switch (S->draw_mode.s0) {
+        case 'S':
+            tick_lab = [NSArray arrayWithObjects:@"1.00", @"2.00", @"3.00", @"4.00", @"5.00", nil];
+            tick_pos[0] = 0.00f;
+            tick_pos[1] = 0.25f;
+            tick_pos[2] = 0.50f;
+            tick_pos[3] = 0.75f;
+            tick_pos[4] = 1.00f;
+            strcpy(tick_title, "Drop Size (mm)");
+            break;
+        case 'A':
+            tick_lab = [NSArray arrayWithObjects:@"0.0", @"0.5", @"1.0", nil];
+            tick_pos[0] = 0.0f;
+            tick_pos[1] = 0.5f;
+            tick_pos[2] = 1.0f;
+            strcpy(tick_title, "Beam Pattern (Linear)");
+            break;
+        case 'B':
+            tick_lab = [NSArray arrayWithObjects:@"0.0", @"0.5", @"1.0", nil];
+            tick_pos[0] = -40.0f;
+            tick_pos[1] = -20.0f;
+            tick_pos[2] = 0.0f;
+            strcpy(tick_title, "Beam Pattern (dB)");
+            break;
+        case 'R':
+            tick_lab = [NSArray arrayWithObjects:@"0.0", @"0.5", @"1.0", nil];
+            tick_pos[0] = 0.0f;
+            tick_pos[1] = 0.5f;
+            tick_pos[2] = 1.0f;
+            strcpy(tick_title, "Range Weight (Linear)");
+            break;
+        case 'H':
+            tick_lab = [NSArray arrayWithObjects:@"0.0", @"10.0", @"20.0", nil];
+            tick_pos[0] = 0.0f;
+            tick_pos[1] = 0.5f;
+            tick_pos[2] = 1.0f;
+            strcpy(tick_title, "RCS H");
+            break;
+        case 'V':
+            tick_lab = [NSArray arrayWithObjects:@"0.0", @"10.0", @"20.0", nil];
+            tick_pos[0] = 0.0f;
+            tick_pos[1] = 0.5f;
+            tick_pos[2] = 1.0f;
+            strcpy(tick_title, "RCS V");
+            break;
+        case 'D':
+            tick_lab = [NSArray arrayWithObjects:@"-6.0", @"-3.0", @"0.0", @"+3.0", @"+6.0", nil];
+            tick_pos[0] = 0.00f;
+            tick_pos[1] = 0.25f;
+            tick_pos[2] = 0.50f;
+            tick_pos[3] = 0.75f;
+            tick_pos[4] = 1.00f;
+            strcpy(tick_title, "H : V (dB)");
+            break;
+        default:
+            tick_lab = [NSArray array];
+            break;
+    }
+}
+
+- (NSArray *)scattererColorTickLabels
+{
+    return tick_lab;
+}
+
+- (float *)scattererColorTickPositions
+{
+    return tick_pos;
+}
+
+- (char *)scattererColorTitle
+{
+    return tick_title;
 }
 
 #pragma mark -

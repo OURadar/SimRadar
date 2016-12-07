@@ -418,55 +418,55 @@ NSWindow *standardWindow;
     }
     switch (mkey) {
         case 0:
-        ind = 'U';
-        mode = 'S';
-        trans = 'O';
-        break;
-        
+            ind = 'U';
+            mode = 'S';
+            trans = 'O';
+            break;
+
         case 1:
-        ind = 'U';
-        mode = 'S';
-        trans = 'T';
-        break;
-        
+            ind = 'U';
+            mode = 'S';
+            trans = 'T';
+            break;
+
         case 2:
-        ind = 'U';
-        mode = 'A';
-        trans = 'O';
-        break;
-        
+            ind = 'U';
+            mode = 'A';
+            trans = 'O';
+            break;
+
         case 3:
-        ind = 'U';
-        mode = 'B';
-        trans = 'O';
-        break;
-        
+            ind = 'U';
+            mode = 'B';
+            trans = 'O';
+            break;
+
         case 4:
-        ind = 'U';
-        mode = 'R';
-        trans = 'O';
-        break;
-        
+            ind = 'U';
+            mode = 'R';
+            trans = 'O';
+            break;
+
         case 5:
-        ind = 'I';
-        mode = 'H';
-        trans = 'O';
-        break;
-        
+            ind = 'I';
+            mode = 'H';
+            trans = 'O';
+            break;
+
         case 6:
-        ind = 'I';
-        mode = 'V';
-        trans = 'O';
-        break;
-        
+            ind = 'I';
+            mode = 'V';
+            trans = 'O';
+            break;
+
         case 7:
-        ind = 'I';
-        mode = 'D';
-        trans = 'O';
-        break;
-        
+            ind = 'I';
+            mode = 'D';
+            trans = 'O';
+            break;
+            
         default:
-        break;
+            break;
     }
     
     [sim setScattererColorMode:mode];
@@ -481,6 +481,7 @@ NSWindow *standardWindow;
         [glView.renderer setFadeSmallScatterers:FALSE];
     }
     [glView.renderer setSubtitleString:[NSString stringWithFormat:@"Draw mode %c%c%c (%d)", ind, trans, mode, mkey]];
+    [glView.renderer setColormapTitle:sim.scattererColorTitle tickLabels:sim.scattererColorTickLabels positions:sim.scattererColorTickPositions];
     [glView.renderer setViewParametersNeedUpdate:TRUE];
 }
 
