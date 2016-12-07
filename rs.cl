@@ -999,7 +999,7 @@ __kernel void scat_clr(__global float4 *c,
         // Magnitude of VV
         m = clamp(length(rcs.s23) * 20.0f, 0.0f, 1.0f);
     } else if (draw_mode == 'D') {
-        m = clamp(10.0f * native_log10(dot(rcs.s01, rcs.s01) / dot(rcs.s23, rcs.s23)), -3.0f, 3.0f) / 6.0f;
+        m = clamp(10.0f * native_log10(dot(rcs.s01, rcs.s01) / dot(rcs.s23, rcs.s23)), -3.0f, 3.0f) / 6.0f + 0.5f;
         w = clamp(length(rcs) * 25.0f, 0.0f, 1.0f);
     } else {
         m = 0.5f;

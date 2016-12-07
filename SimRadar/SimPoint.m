@@ -258,39 +258,39 @@
             strcpy(tick_title, "Drop Size (mm)");
             break;
         case 'A':
-            tick_lab = [NSArray arrayWithObjects:@"0.0", @"0.5", @"1.0", nil];
-            tick_pos[0] = 0.0f;
-            tick_pos[1] = 0.5f;
-            tick_pos[2] = 1.0f;
-            strcpy(tick_title, "Beam Pattern (Linear)");
-            break;
-        case 'B':
-            tick_lab = [NSArray arrayWithObjects:@"0.0", @"0.5", @"1.0", nil];
-            tick_pos[0] = -40.0f;
-            tick_pos[1] = -20.0f;
-            tick_pos[2] = 0.0f;
-            strcpy(tick_title, "Beam Pattern (dB)");
-            break;
         case 'R':
             tick_lab = [NSArray arrayWithObjects:@"0.0", @"0.5", @"1.0", nil];
-            tick_pos[0] = 0.0f;
-            tick_pos[1] = 0.5f;
-            tick_pos[2] = 1.0f;
-            strcpy(tick_title, "Range Weight (Linear)");
+            tick_pos[0] = 0.00f;
+            tick_pos[1] = 0.25f;
+            tick_pos[2] = 0.50f;
+            tick_pos[3] = 0.75f;
+            tick_pos[4] = 1.00f;
+            if (S->draw_mode.s0 == 'A') {
+                strcpy(tick_title, "Beam Pattern (Linear)");
+            } else {
+                strcpy(tick_title, "Range Weight (Linear)");
+            }
+            break;
+        case 'B':
+            tick_lab = [NSArray arrayWithObjects:@"-40.0", @"-30.0", @"-20.0", @"-10.0", @"0.0", nil];
+            tick_pos[0] = 0.00f;
+            tick_pos[1] = 0.25f;
+            tick_pos[2] = 0.50f;
+            tick_pos[3] = 0.75f;
+            tick_pos[4] = 1.00f;
+            strcpy(tick_title, "Beam Pattern (dB)");
             break;
         case 'H':
-            tick_lab = [NSArray arrayWithObjects:@"0.0", @"10.0", @"20.0", nil];
-            tick_pos[0] = 0.0f;
-            tick_pos[1] = 0.5f;
-            tick_pos[2] = 1.0f;
-            strcpy(tick_title, "RCS H");
-            break;
         case 'V':
             tick_lab = [NSArray arrayWithObjects:@"0.0", @"10.0", @"20.0", nil];
             tick_pos[0] = 0.0f;
             tick_pos[1] = 0.5f;
             tick_pos[2] = 1.0f;
-            strcpy(tick_title, "RCS V");
+            if (S->draw_mode.s0 == 'H') {
+                strcpy(tick_title, "RCS H");
+            } else {
+                strcpy(tick_title, "RCS V");
+            }
             break;
         case 'D':
             tick_lab = [NSArray arrayWithObjects:@"-6.0", @"-3.0", @"0.0", @"+3.0", @"+6.0", nil];
