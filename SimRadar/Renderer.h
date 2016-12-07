@@ -165,7 +165,7 @@ enum RendererLineSegment {
     RenderResource frameRenderer;
     RenderResource blurRenderer;
 
-    RenderPrimitive primitives[4];
+    RenderPrimitive primitives[8];
 
     GLfloat backgroundOpacity;
     GLfloat theta, phase;

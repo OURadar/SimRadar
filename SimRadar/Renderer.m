@@ -307,7 +307,7 @@ unsigned int grayToBinary(unsigned int num)
     prim->drawMode = GL_LINE_STRIP;
 
 
-    // Box
+    // Plate
     
     prim = &primitives[1];
     pos = prim->vertices;
@@ -321,8 +321,8 @@ unsigned int grayToBinary(unsigned int num)
     pos[28] =  1.0f;   pos[29] =  1.0f;   pos[30] =  1.0f;   pos[31] = 0.0f;
     for (int i = 0; i < 8; i++) {
         pos[4 * i    ] *= 1.0f;
-        pos[4 * i + 1] *= 5.0f;
-        pos[4 * i + 2] *= 9.0f;
+        pos[4 * i + 1] *= 6.0f;
+        pos[4 * i + 2] *= 12.0f;
     }
     prim->vertexSize = 32 * sizeof(GLfloat);
     GLuint ind1[] = {
@@ -335,9 +335,36 @@ unsigned int grayToBinary(unsigned int num)
     prim->drawMode = GL_LINES;
 
 
+    // Rectangular
+
+    prim = &primitives[2];
+    pos = prim->vertices;
+    pos[0]  = -1.0f;   pos[1]  = -1.0f;   pos[2]  = -1.0f;   pos[3]  = 0.0f;
+    pos[4]  =  1.0f;   pos[5]  = -1.0f;   pos[6]  = -1.0f;   pos[7]  = 0.0f;
+    pos[8]  = -1.0f;   pos[9]  =  1.0f;   pos[10] = -1.0f;   pos[11] = 0.0f;
+    pos[12] =  1.0f;   pos[13] =  1.0f;   pos[14] = -1.0f;   pos[15] = 0.0f;
+    pos[16] = -1.0f;   pos[17] = -1.0f;   pos[18] =  1.0f;   pos[19] = 0.0f;
+    pos[20] =  1.0f;   pos[21] = -1.0f;   pos[22] =  1.0f;   pos[23] = 0.0f;
+    pos[24] = -1.0f;   pos[25] =  1.0f;   pos[26] =  1.0f;   pos[27] = 0.0f;
+    pos[28] =  1.0f;   pos[29] =  1.0f;   pos[30] =  1.0f;   pos[31] = 0.0f;
+    for (int i = 0; i < 8; i++) {
+        pos[4 * i    ] *= 6.0f;
+        pos[4 * i + 1] *= 3.0f;
+        pos[4 * i + 2] *= 3.0f;
+    }
+    prim->vertexSize = 32 * sizeof(GLfloat);
+    GLuint ind2[] = {
+        0, 1, 1, 3, 3, 2, 2, 0,
+        4, 5, 5, 7, 7, 6, 6, 4,
+        0, 4, 1, 5, 3, 7, 2, 6
+    };
+    prim->instanceSize = sizeof(ind2) / sizeof(GLuint);
+    memcpy(prim->indices, ind2, prim->instanceSize * sizeof(GLuint));
+    prim->drawMode = GL_LINES;
+
     // Stick
     
-    prim = &primitives[2];
+    prim = &primitives[3];
     pos = prim->vertices;
     pos[0]  = -1.0f;   pos[1]  = -1.0f;   pos[2]  = -1.0f;   pos[3]  = 0.0f;
     pos[4]  =  1.0f;   pos[5]  = -1.0f;   pos[6]  = -1.0f;   pos[7]  = 0.0f;
@@ -355,14 +382,14 @@ unsigned int grayToBinary(unsigned int num)
         pos[4 * i + 2] *= 1.0f;
     }
     prim->vertexSize = 40 * sizeof(GLfloat);
-    GLuint ind2[] = {
+    GLuint ind3[] = {
         0, 1, 1, 3, 3, 2, 2, 0,
         4, 5, 5, 7, 7, 6, 6, 4,
         0, 4, 1, 5, 3, 7, 2, 6,
         0, 8, 4, 8, 5, 8, 1, 8,
         2, 9, 3, 9, 7, 9, 6, 9
     };
-    prim->instanceSize = sizeof(ind2) / sizeof(GLuint);
+    prim->instanceSize = sizeof(ind3) / sizeof(GLuint);
     memcpy(prim->indices, ind2, prim->instanceSize * sizeof(GLuint));
     prim->drawMode = GL_LINES;
 }
