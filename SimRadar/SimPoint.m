@@ -49,7 +49,7 @@
         }
 
         cl_context_properties property = (cl_context_properties)shareGroup;
-        
+
         S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, property, 2);
         if (S == NULL) {
             NSLog(@"Some error(s) in RS_init() occurred.");
@@ -71,10 +71,6 @@
         // Copy out some convenient constants
         nearest_thousand = (size_t)ceilf(1000.0f / S->preferred_multiple) * S->preferred_multiple;
         nearest_hundred = (size_t)ceilf(100.0f / S->preferred_multiple) * S->preferred_multiple;
-
-        if (reportProgress) {
-            [delegate progressUpdated:3.0 message:[NSString stringWithFormat:@"LES @ %s", LES_data_path(L)]];
-        }
 
 		#ifdef DEBUG_HEAVY
 		RS_set_verbosity(S, 3);
@@ -98,6 +94,10 @@
         RS_set_debris_count(S, 2, 512);
         RS_set_debris_count(S, 3, 512);
 
+        RS_set_obj_data_to_config(S, OBJConfigLeaf);
+        RS_set_obj_data_to_config(S, OBJConfigMetalSheet);
+        RS_set_obj_data_to_config(S, OBJConfigBrick);
+
         RS_revise_debris_counts_to_gpu_preference(S);
 
         RS_set_prt(S, 1.0f / 60.0f);
@@ -108,10 +108,6 @@
         if (useLES) {
             box = RS_suggest_scan_domain(S, 16);
         }
-
-        RS_set_obj_data_to_config(S, OBJConfigLeaf);
-        RS_set_obj_data_to_config(S, OBJConfigMetalSheet);
-        RS_set_obj_data_to_config(S, OBJConfigBrick);
 
         if (reportProgress) {
             [delegate progressUpdated:95.0 message:@"ADM / RCS table"];
@@ -248,8 +244,84 @@
 //    return (int)S->draw_mode.s0;
 //}
 
-- (void)setScattererColorMode:(int)mode {
+- (void)setScattererColorMode:(int)mode
+{
+    int k;
     S->draw_mode.s0 = mode;
+    switch (S->draw_mode.s0) {
+        case 'S':
+            tick_lab = [NSArray array];
+            for (k = 0; k < S->dsd_count; k++) {
+                tick_lab = [tick_lab arrayByAddingObject:[NSString stringWithFormat:@"%.2f", S->dsd_r[k] * 2000.0f]];
+                tick_pos[k] = (k + 0.5f) / S->dsd_count;
+            }
+            strcpy(tick_title, "Drop Size (mm)");
+            break;
+        case 'A':
+        case 'R':
+            tick_lab = [NSArray arrayWithObjects:@"0", @"0.25", @"0.50", @"0.75", @"1.00", nil];
+            tick_pos[0] = 0.00f;
+            tick_pos[1] = 0.25f;
+            tick_pos[2] = 0.50f;
+            tick_pos[3] = 0.75f;
+            tick_pos[4] = 1.00f;
+            if (S->draw_mode.s0 == 'A') {
+                strcpy(tick_title, "Beam Pattern (Linear)");
+            } else {
+                strcpy(tick_title, "Range Weight (Linear)");
+            }
+            break;
+        case 'B':
+            tick_lab = [NSArray arrayWithObjects:@"-80.0", @"-60.0", @"-40.0", @"-20.0", @"0", nil];
+            tick_pos[0] = 0.00f;
+            tick_pos[1] = 0.25f;
+            tick_pos[2] = 0.50f;
+            tick_pos[3] = 0.75f;
+            tick_pos[4] = 1.00f;
+            strcpy(tick_title, "Beam Pattern (dB)");
+            break;
+        case 'H':
+        case 'V':
+            tick_lab = [NSArray arrayWithObjects:@"-80.0", @"-60.0", @"-40.0", @"-20.0", @"0", nil];
+            tick_pos[0] = 0.00f;
+            tick_pos[1] = 0.25f;
+            tick_pos[2] = 0.50f;
+            tick_pos[3] = 0.75f;
+            tick_pos[4] = 1.00f;
+            if (S->draw_mode.s0 == 'H') {
+                strcpy(tick_title, "RCS H");
+            } else {
+                strcpy(tick_title, "RCS V");
+            }
+            break;
+        case 'D':
+            tick_lab = [NSArray arrayWithObjects:@"-6.0", @"-3.0", @"0", @"+3.0", @"+6.0", nil];
+            tick_pos[0] = 0.00f;
+            tick_pos[1] = 0.25f;
+            tick_pos[2] = 0.50f;
+            tick_pos[3] = 0.75f;
+            tick_pos[4] = 1.00f;
+            strcpy(tick_title, "H : V (dB)");
+            break;
+        default:
+            tick_lab = [NSArray array];
+            break;
+    }
+}
+
+- (NSArray *)scattererColorTickLabels
+{
+    return tick_lab;
+}
+
+- (float *)scattererColorTickPositions
+{
+    return tick_pos;
+}
+
+- (char *)scattererColorTitle
+{
+    return tick_title;
 }
 
 #pragma mark -

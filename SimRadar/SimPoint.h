@@ -32,10 +32,6 @@
 	
 	RSHandle *S;
 
-    ADMHandle *A;
-    RCSHandle *R;
-	LESHandle *L;
-	
 	int table_id;
 
     size_t returnCounts[RS_MAX_GPU_DEVICE];
@@ -44,6 +40,10 @@
     size_t nearest_hundred;
 
     FILE *ori_fid;
+
+    float tick_pos[10];
+    NSArray *tick_lab;
+    char tick_title[32];
 }
 
 @property (nonatomic, readonly) BOOL busy;
@@ -68,6 +68,9 @@
 //- (int)cycleScattererColorMode;
 //- (int)cycleReverseScattererColorMode;
 - (void)setScattererColorMode:(int)mode;
+- (NSArray *)scattererColorTickLabels;
+- (float *)scattererColorTickPositions;
+- (char *)scattererColorTitle;
 
 - (NSInteger)deviceCount;
 

@@ -165,7 +165,7 @@ enum RendererLineSegment {
     RenderResource frameRenderer;
     RenderResource blurRenderer;
 
-    RenderPrimitive primitives[4];
+    RenderPrimitive primitives[8];
 
     GLfloat backgroundOpacity;
     GLfloat theta, phase;
@@ -177,6 +177,11 @@ enum RendererLineSegment {
     GLOverlay *overlayRenderer;
 
     char statusMessage[16][256];
+
+    char *colorbarTitle;
+    char colorbarTickLabels[10][16];
+    float *colorbarTickPositions;
+    int colorbarTickCount;
 
     int itic, iframe;
     NSTimeInterval tics[RENDERER_TIC_COUNT];
@@ -229,6 +234,7 @@ enum RendererLineSegment {
 
 - (void)cycleForwardColormap;
 - (void)cycleReverseColormap;
+- (void)setColormapTitle:(char *)title tickLabels:(NSArray *)labels positions:(GLfloat *)positions;
 
 - (void)cycleFBO;
 - (void)cycleFBOReverse;

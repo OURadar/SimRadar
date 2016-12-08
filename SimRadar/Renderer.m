@@ -307,7 +307,7 @@ unsigned int grayToBinary(unsigned int num)
     prim->drawMode = GL_LINE_STRIP;
 
 
-    // Box
+    // Plate
     
     prim = &primitives[1];
     pos = prim->vertices;
@@ -321,8 +321,8 @@ unsigned int grayToBinary(unsigned int num)
     pos[28] =  1.0f;   pos[29] =  1.0f;   pos[30] =  1.0f;   pos[31] = 0.0f;
     for (int i = 0; i < 8; i++) {
         pos[4 * i    ] *= 1.0f;
-        pos[4 * i + 1] *= 5.0f;
-        pos[4 * i + 2] *= 9.0f;
+        pos[4 * i + 1] *= 6.0f;
+        pos[4 * i + 2] *= 12.0f;
     }
     prim->vertexSize = 32 * sizeof(GLfloat);
     GLuint ind1[] = {
@@ -335,9 +335,36 @@ unsigned int grayToBinary(unsigned int num)
     prim->drawMode = GL_LINES;
 
 
+    // Rectangular
+
+    prim = &primitives[2];
+    pos = prim->vertices;
+    pos[0]  = -1.0f;   pos[1]  = -1.0f;   pos[2]  = -1.0f;   pos[3]  = 0.0f;
+    pos[4]  =  1.0f;   pos[5]  = -1.0f;   pos[6]  = -1.0f;   pos[7]  = 0.0f;
+    pos[8]  = -1.0f;   pos[9]  =  1.0f;   pos[10] = -1.0f;   pos[11] = 0.0f;
+    pos[12] =  1.0f;   pos[13] =  1.0f;   pos[14] = -1.0f;   pos[15] = 0.0f;
+    pos[16] = -1.0f;   pos[17] = -1.0f;   pos[18] =  1.0f;   pos[19] = 0.0f;
+    pos[20] =  1.0f;   pos[21] = -1.0f;   pos[22] =  1.0f;   pos[23] = 0.0f;
+    pos[24] = -1.0f;   pos[25] =  1.0f;   pos[26] =  1.0f;   pos[27] = 0.0f;
+    pos[28] =  1.0f;   pos[29] =  1.0f;   pos[30] =  1.0f;   pos[31] = 0.0f;
+    for (int i = 0; i < 8; i++) {
+        pos[4 * i    ] *= 6.0f;
+        pos[4 * i + 1] *= 3.0f;
+        pos[4 * i + 2] *= 3.0f;
+    }
+    prim->vertexSize = 32 * sizeof(GLfloat);
+    GLuint ind2[] = {
+        0, 1, 1, 3, 3, 2, 2, 0,
+        4, 5, 5, 7, 7, 6, 6, 4,
+        0, 4, 1, 5, 3, 7, 2, 6
+    };
+    prim->instanceSize = sizeof(ind2) / sizeof(GLuint);
+    memcpy(prim->indices, ind2, prim->instanceSize * sizeof(GLuint));
+    prim->drawMode = GL_LINES;
+
     // Stick
     
-    prim = &primitives[2];
+    prim = &primitives[3];
     pos = prim->vertices;
     pos[0]  = -1.0f;   pos[1]  = -1.0f;   pos[2]  = -1.0f;   pos[3]  = 0.0f;
     pos[4]  =  1.0f;   pos[5]  = -1.0f;   pos[6]  = -1.0f;   pos[7]  = 0.0f;
@@ -355,14 +382,14 @@ unsigned int grayToBinary(unsigned int num)
         pos[4 * i + 2] *= 1.0f;
     }
     prim->vertexSize = 40 * sizeof(GLfloat);
-    GLuint ind2[] = {
+    GLuint ind3[] = {
         0, 1, 1, 3, 3, 2, 2, 0,
         4, 5, 5, 7, 7, 6, 6, 4,
         0, 4, 1, 5, 3, 7, 2, 6,
         0, 8, 4, 8, 5, 8, 1, 8,
         2, 9, 3, 9, 7, 9, 6, 9
     };
-    prim->instanceSize = sizeof(ind2) / sizeof(GLuint);
+    prim->instanceSize = sizeof(ind3) / sizeof(GLuint);
     memcpy(prim->indices, ind2, prim->instanceSize * sizeof(GLuint));
     prim->drawMode = GL_LINES;
 }
@@ -848,8 +875,6 @@ unsigned int grayToBinary(unsigned int num)
     glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
 	// Always use this clear color: I use 16-bit internal FBO texture format, so minimum can only be sqrt ( 1 / 65536 ) = 1 / 256
-	//glClearColor(0.0f, 0.2f, 0.25f, 1.0f);
-	//glClearColor(0.0f, 0.0f, 0.0f, 0.01f);
     glClearColor(0.0f, 0.0f, 0.0f, 4.0f / 256.0f);
 
     [self makePrimitives];
@@ -1254,8 +1279,16 @@ unsigned int grayToBinary(unsigned int num)
                 continue;
             }
             glBindVertexArray(debrisRenderer[k].vao);
-            glUniform4f(instancedGeometryRenderer.colorUI, debrisRenderer[k].colors[0], debrisRenderer[k].colors[1], debrisRenderer[k].colors[2], debrisRenderer[k].colors[3]);
-            glDrawElementsInstanced(GL_LINE_STRIP, debrisRenderer[k].instanceSize, GL_UNSIGNED_INT, NULL, debrisRenderer[k].count);
+
+            if (showDebrisAttributes) {
+                glUniform1i(instancedGeometryRenderer.pingPongUI, 1);
+                glUniform4f(instancedGeometryRenderer.colorUI, bodyRenderer[0].colormapIndexNormalized, 1.0f, 1.0f, 1.0f);
+            } else {
+                glUniform1i(instancedGeometryRenderer.pingPongUI, 0);
+                glUniform4f(instancedGeometryRenderer.colorUI, debrisRenderer[k].colors[0], debrisRenderer[k].colors[1], debrisRenderer[k].colors[2], debrisRenderer[k].colors[3]);
+            }
+
+            glDrawElementsInstanced(debrisRenderer[k].drawMode, debrisRenderer[k].instanceSize, GL_UNSIGNED_INT, NULL, debrisRenderer[k].count);
         }
 
         // Draw the grid
@@ -1515,9 +1548,19 @@ unsigned int grayToBinary(unsigned int num)
         glBufferData(GL_ARRAY_BUFFER, sizeof(texCoord), texCoord, GL_STATIC_DRAW);
     }
     glUniformMatrix4fv(meshRenderer.mvpUI, 1, GL_FALSE, meshRenderer.modelViewProjection.m);
-    glUniform4f(meshRenderer.colorUI, 1.0f, 1.0f, 1.0f, 0.9f);
+    glUniform4f(meshRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
     glBindTexture(GL_TEXTURE_2D, meshRenderer.textureID);
     glDrawArrays(GL_TRIANGLE_STRIP, lineRenderer.segmentOrigins[RendererLineSegmentBasicRectangle], 4);
+
+    origin.x = 0.76f * width;
+    origin.y = 45.0f;
+    [textRenderer drawText:colorbarTitle origin:origin scale:0.25f];
+
+    origin.y = 20.0f;
+    for (k = 0; k < colorbarTickCount; k++) {
+        origin.x = (0.25f + 0.5f * colorbarTickPositions[k]) * width;
+        [textRenderer drawText:colorbarTickLabels[k] origin:origin scale:0.25f align:GLTextAlignmentCenter];
+    }
 
     glBindVertexArray(0);
     glUseProgram(0);
@@ -1566,7 +1609,7 @@ unsigned int grayToBinary(unsigned int num)
     beamModelViewProjection = GLKMatrix4Multiply(beamProjection, mat);
     
     float cx = roundf(0.25f * width);
-    float cy = 25.0f;
+    float cy = 45.0f;
     float cw = roundf(0.5f * width);
     float ch = 20.0f;
     
@@ -1756,18 +1799,36 @@ unsigned int grayToBinary(unsigned int num)
     colorbarNeedsUpdate = true;
 }
 
-- (void)cycleFBO {
+
+- (void)setColormapTitle:(char *)title tickLabels:(NSArray *)labels positions:(GLfloat *)positions;
+{
+    colorbarTitle = title;
+    colorbarTickPositions = positions;
+    colorbarTickCount = (int)[labels count];
+    for (int k = 0; k < colorbarTickCount; k++) {
+        NSString *label = [labels objectAtIndex:k];
+        strncpy(colorbarTickLabels[k], label.UTF8String, 16);
+    }
+    overlayNeedsUpdate = true;
+}
+
+
+- (void)cycleFBO
+{
     ifbo = ifbo >= 4 ? 0 : ifbo + 1;
     statusMessageNeedsUpdate = true;
 }
 
-- (void)cycleFBOReverse {
+
+- (void)cycleFBOReverse
+{
     ifbo = ifbo == 0 ? 4 : ifbo - 1;
     statusMessageNeedsUpdate = true;
 }
 
 
-- (void)setOverlayText:(NSString *)bodyText withTitle:(NSString *)title {
+- (void)setOverlayText:(NSString *)bodyText withTitle:(NSString *)title
+{
     NSColor *color1 = [NSColor colorWithWhite:0.0f alpha:0.65f];
     NSColor *color2 = [NSColor colorWithRed:1.0f green:0.8f blue:0.2f alpha:1.0f];
     NSColor *color3 = [NSColor colorWithRed:0.5f green:0.9f blue:1.0f alpha:1.0f];
@@ -1780,7 +1841,7 @@ unsigned int grayToBinary(unsigned int num)
     NSSize bodySize = [bodyText sizeWithAttributes:bodyAtts];
     
     // The overall canvas size in points
-    NSRect drawRect = NSMakeRect(20.0f, 60.0f, ceilf(bodySize.width + 30.0f), ceilf(bodySize.height + 50.0f));
+    NSRect drawRect = NSMakeRect(20.0f, 80.0f, ceilf(bodySize.width + 30.0f), ceilf(bodySize.height + 50.0f));
     [overlayRenderer setDrawRect:drawRect];
     [overlayRenderer beginCanvas];
     
