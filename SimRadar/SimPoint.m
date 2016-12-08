@@ -183,23 +183,28 @@
     }
 }
 
+- (void)advanceNone
+{
+    RS_update_colors(S);
+}
+
 - (void)advanceTime
 {
 	RS_advance_time(S);
+
+    //RS_make_pulse(S);
     RS_update_colors(S);
 
-    RS_make_pulse(S);
-
-    RS_download_pulse_only(S);
-//    NSLog(@"%.2f%+.2fi %.2f%+.2fi ...", S->pulse[0].s0, S->pulse[0].s1, S->pulse[1].s0, S->pulse[1].s1);
+    //RS_download_pulse_only(S);
 }
 
 - (void)advanceBeamPosition
 {
-//	az_deg = fmodf(az_deg + 0.05f + 15.0f, 30.0f) - 15.0f;
+    //az_deg = fmodf(az_deg + 0.05f + 15.0f, 30.0f) - 15.0f;
     el_deg = fmodf(el_deg + 0.05f, 20.0f);
 	RS_set_beam_pos(S, az_deg, el_deg);
-//    RS_make_pulse(S);
+
+    //RS_make_pulse(S);
     RS_update_colors(S);
 }
 
@@ -208,9 +213,11 @@
     //az_deg = fmodf(az_deg + 0.05f + 12.0f, 24.0f) - 12.0f;
     el_deg = fmodf(el_deg + 0.05f, 20.0f);
 	RS_set_beam_pos(S, az_deg, el_deg);
+
     //RS_make_pulse(S);
     RS_update_colors(S);
-	RS_advance_time(S);
+
+    //RS_advance_time(S);
 }
 
 - (void)randomBeamPosition

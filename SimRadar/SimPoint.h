@@ -59,6 +59,7 @@
 - (void)shareVBOsWithGL:(GLuint [][8])vbos;
 - (void)upload;
 - (void)populate;
+- (void)advanceNone;
 - (void)advanceTime;
 - (void)advanceBeamPosition;
 - (void)advanceTimeAndBeamPosition;

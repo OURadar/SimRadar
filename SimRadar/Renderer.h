@@ -10,13 +10,12 @@
 #import "GLText.h"
 #import "GLOverlay.h"
 
-#define RENDERER_NEAR_RANGE                 100.0f
-#define RENDERER_FAR_RANGE                  100000.0f
-#define RENDERER_TIC_COUNT                  10
-#define RENDERER_MAX_DEBRIS_TYPES           4
+#define RENDERER_NEAR_RANGE                 100.0f      // View range in m
+#define RENDERER_FAR_RANGE                  100000.0f   // View range in m
+#define RENDERER_TIC_COUNT                  10          //
+#define RENDERER_MAX_DEBRIS_TYPES           8           // Actual plus one
 #define RENDERER_MAX_VBO_GROUPS             8
-#define RENDERER_DEFAULT_BODY_COLOR_INDEX   27
-#define RENDERER_DEFAULT_BODY_OPACITY       0.33
+#define RENDERER_DEFAULT_BODY_COLOR_INDEX   27          // Default colormap index
 #define RENDERER_FBO_COUNT                  5
 
 enum hudConfig {
@@ -155,7 +154,7 @@ enum RendererLineSegment {
     BOOL overlayNeedsUpdate;
     GLchar spinModel;
     
-    RenderResource bodyRenderer[8];
+    RenderResource bodyRenderer[RENDERER_MAX_DEBRIS_TYPES];
     RenderResource instancedGeometryRenderer;
 
     RenderResource anchorRenderer;

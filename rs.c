@@ -3340,7 +3340,7 @@ void RS_set_random_seed(RSHandle *H, const unsigned int seed) {
 
 // Compute auxiliary attributes: range, angular weight, etc.
 // Users should not need to call this directly. It's either RS_make_pulse() or RS_update_colors()
-// The framework will check the status to avoid redundant compuations.
+// The framework will check the status to avoid redundant computations.
 void RS_update_auxiliary_attributes(RSHandle *H) {
     
     int i;

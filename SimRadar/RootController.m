@@ -243,7 +243,7 @@
 			break;
 
 		case 1:
-			// Nothing moves
+            [sim advanceNone];
 			break;
 			
 		case 2:

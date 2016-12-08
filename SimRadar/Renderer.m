@@ -650,22 +650,31 @@ unsigned int grayToBinary(unsigned int num)
 
 - (void)updateStatusMessage
 {
-    sprintf(statusMessage[0],
-            "Particle Count: %s",
-            [GLText commaint:bodyRenderer[0].count]);
+    if (statusMessage[0][0] == 0) {
+        sprintf(statusMessage[0],
+                "Particle Count: %s",
+                [GLText commaint:bodyRenderer[0].count]);
+    }
     sprintf(statusMessage[1],
-            "Debris: %s; %s; %s",
+            "Debris 1-4: %s; %s; %s; %s",
             [GLText commaint:debrisRenderer[1].count],
             [GLText commaint:debrisRenderer[2].count],
-            [GLText commaint:debrisRenderer[3].count]);
+            [GLText commaint:debrisRenderer[3].count],
+            [GLText commaint:debrisRenderer[4].count]);
     sprintf(statusMessage[2],
+            "Debris 5-8: %s; %s; %s; %s",
+            [GLText commaint:debrisRenderer[5].count],
+            [GLText commaint:debrisRenderer[6].count],
+            [GLText commaint:debrisRenderer[7].count],
+            [GLText commaint:debrisRenderer[8].count]);
+    sprintf(statusMessage[3],
             "Color %d / %.3f",
             bodyRenderer[0].colormapIndex,
             backgroundOpacity);
-    sprintf(statusMessage[3],
+    sprintf(statusMessage[4],
             "HUD %d%d%d%d / %d",
             (hudConfigGray & 0x08) >> 3, (hudConfigGray & 0x04) >> 2, (hudConfigGray & 0x02) >> 1, hudConfigGray & 0x01, hudConfigDecimal);
-    sprintf(statusMessage[4],
+    sprintf(statusMessage[5],
             "FBO %u   VFX %u", ifbo, applyVFX);
 }
 
@@ -743,7 +752,6 @@ unsigned int grayToBinary(unsigned int num)
         
         hudModelViewProjection = GLKMatrix4Identity;
         beamModelViewProjection = GLKMatrix4Identity;
-        backgroundOpacity = RENDERER_DEFAULT_BODY_OPACITY;
         
         // Add device pixel ratio here
         devicePixelRatio = pixelRatio;
@@ -779,7 +787,7 @@ unsigned int grayToBinary(unsigned int num)
 	if (instancedGeometryRenderer.positions != NULL) {
 		free(instancedGeometryRenderer.positions);
 	}
-    for (int k=0; k<RENDERER_MAX_DEBRIS_TYPES; k++) {
+    for (int k = 0; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
         free(debrisRenderer[k].colors);
     }
 	[super dealloc];
@@ -987,7 +995,7 @@ unsigned int grayToBinary(unsigned int num)
 	#endif
 	
     GLuint vbos[RENDERER_MAX_VBO_GROUPS][8];
-    for (int i=0; i<clDeviceCount; i++) {
+    for (int i = 0; i < clDeviceCount; i++) {
         vbos[i][0] = bodyRenderer[i].vbo[0];
         vbos[i][1] = bodyRenderer[i].vbo[1];
         vbos[i][2] = bodyRenderer[i].vbo[2];
@@ -1079,7 +1087,8 @@ unsigned int grayToBinary(unsigned int num)
     }
     
     // Various Debris
-    for (int k = 1; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
+    for (k = 1; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
+        NSLog(@"Mapping debris %d  count = %d", k, debrisRenderer[k].count);
         if (debrisRenderer[k].count == 0) {
             continue;
         }
@@ -1090,7 +1099,7 @@ unsigned int grayToBinary(unsigned int num)
         }
         glGenBuffers(5, debrisRenderer[k].vbo);
         
-        RenderPrimitive *prim = &primitives[(k + 2) % 3];
+        RenderPrimitive *prim = &primitives[(k + 3) % 4];
 
         debrisRenderer[k].instanceSize = prim->instanceSize;
         debrisRenderer[k].drawMode = prim->drawMode;
@@ -1224,7 +1233,8 @@ unsigned int grayToBinary(unsigned int num)
     glUseProgram(instancedGeometryRenderer.program);
     glUniformMatrix4fv(instancedGeometryRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
     for (i = 0; i < clDeviceCount; i++) {
-        for (k = 1; k < RENDERER_MAX_DEBRIS_TYPES > 0; k++) {
+        for (k = 1; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
+            //NSLog(@"k = %d  debris count = %d", k, debrisRenderer[k].count);
             if (debrisRenderer[k].count == 0) {
                 continue;
             }
@@ -1274,7 +1284,7 @@ unsigned int grayToBinary(unsigned int num)
         // Draw the debris again
         glUseProgram(instancedGeometryRenderer.program);
         glUniformMatrix4fv(instancedGeometryRenderer.mvpUI, 1, GL_FALSE, beamModelViewProjection.m);
-        for (int k = 1; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
+        for (k = 1; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
             if (debrisRenderer[k].count == 0) {
                 continue;
             }
@@ -1734,13 +1744,14 @@ unsigned int grayToBinary(unsigned int num)
 
 - (void)cycleVFX
 {
+    int k;
     applyVFX = applyVFX >= 4 ? 0 : applyVFX + 1;
     // The following needs a better way to get organized
     switch (applyVFX) {
         case 1:
         case 2:
             backgroundOpacity = 0.12f;
-            for (int k = 0; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
+            for (k = 0; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
                 debrisRenderer[k].colors[3] = 0.05f;
             }
             break;
@@ -1751,7 +1762,7 @@ unsigned int grayToBinary(unsigned int num)
                 backgroundOpacity = 1.0f;
             }
             backgroundOpacity = 1.0f;
-            for (int k = 0; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
+            for (k = 0; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
                 debrisRenderer[k].colors[3] = 1.0f;
             }
             break;
