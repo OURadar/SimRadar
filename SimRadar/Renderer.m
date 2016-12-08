@@ -196,7 +196,7 @@ unsigned int grayToBinary(unsigned int num)
 - (void)setBodyCount:(GLuint)number forDevice:(GLuint)deviceId
 {
 	bodyRenderer[deviceId].count = number;
-    backgroundOpacity = 50.0f / sqrtf((float)number);
+    backgroundOpacity = 250.0f / powf((float)number, 0.6f);
 	vbosNeedUpdate = true;
 }
 
