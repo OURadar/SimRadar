@@ -973,7 +973,8 @@ __kernel void scat_clr(__global float4 *c,
         m = aux.s3;
     } else if (draw_mode == 'B') {
         // Angular weight in log scale
-        m = clamp(fma(native_log10(100.0f * aux.s3), 0.1f, 0.8f), 0.0f, 1.0f);
+        // clamp(20 * log10(b), -80, 0) / 80 + 1
+        m = clamp(fma(native_log10(aux.s3), 0.25f, 1.0f), 0.0f, 1.0f);
     } else if (draw_mode == 'R') {
         // Range weight
         m = clamp((aux.s0 - 2000.0f) * 0.0005f, 0.0f, 1.0f);
@@ -994,10 +995,11 @@ __kernel void scat_clr(__global float4 *c,
         m = mix(range_weight[iidx_int.s0], range_weight[iidx_int.s1], fidx_dec.s0);
     } else if (draw_mode == 'H') {
         // Magnitude of HH
-        m = clamp(length(rcs.s01) * 20.0f, 0.0f, 1.0f);
+        // clamp(20 * log10(H), -80, 0) / 80 + 1 --> [-80, 0] dB on [0, 1] colorspace
+        m = clamp(fma(native_log10(length(rcs.s01)), 0.25f, 1.0f), 0.0f, 1.0f);
     } else if (draw_mode == 'V') {
         // Magnitude of VV
-        m = clamp(length(rcs.s23) * 20.0f, 0.0f, 1.0f);
+        m = clamp(fma(native_log10(length(rcs.s23)), 0.25f, 1.0f), 0.0f, 1.0f);
     } else if (draw_mode == 'D') {
         m = clamp(10.0f * native_log10(dot(rcs.s01, rcs.s01) / dot(rcs.s23, rcs.s23)), -3.0f, 3.0f) / 6.0f + 0.5f;
         w = clamp(length(rcs) * 25.0f, 0.0f, 1.0f);

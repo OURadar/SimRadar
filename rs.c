@@ -2542,9 +2542,8 @@ void RS_set_angular_weight_to_standard(RSHandle *H, float beamwidth_rad) {
             w[i] = 0.0f;
         } else {
             w[i] = 8.0f * jn(2, c) / (c * c);
-            w[i] *= w[i];
         }
-        //printf("angle=%.4f deg  w[%d] = %.4f dB\n", a / M_PI * 180.0f, i, 10.0f * log10f(w[i]));
+        //printf("angle=%.4f deg  w[%d] = %.4f dB\n", a / M_PI * 180.0f, i, 20.0f * log10f(w[i]));
     }
     
     RS_set_angular_weight(H, w, 0.0f, delta, n);

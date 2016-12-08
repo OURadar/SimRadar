@@ -259,7 +259,7 @@
             break;
         case 'A':
         case 'R':
-            tick_lab = [NSArray arrayWithObjects:@"0.0", @"0.5", @"1.0", nil];
+            tick_lab = [NSArray arrayWithObjects:@"0", @"0.25", @"0.50", @"0.75", @"1.00", nil];
             tick_pos[0] = 0.00f;
             tick_pos[1] = 0.25f;
             tick_pos[2] = 0.50f;
@@ -272,7 +272,7 @@
             }
             break;
         case 'B':
-            tick_lab = [NSArray arrayWithObjects:@"-40.0", @"-30.0", @"-20.0", @"-10.0", @"0.0", nil];
+            tick_lab = [NSArray arrayWithObjects:@"-80.0", @"-60.0", @"-40.0", @"-20.0", @"0", nil];
             tick_pos[0] = 0.00f;
             tick_pos[1] = 0.25f;
             tick_pos[2] = 0.50f;
@@ -282,10 +282,12 @@
             break;
         case 'H':
         case 'V':
-            tick_lab = [NSArray arrayWithObjects:@"0.0", @"10.0", @"20.0", nil];
-            tick_pos[0] = 0.0f;
-            tick_pos[1] = 0.5f;
-            tick_pos[2] = 1.0f;
+            tick_lab = [NSArray arrayWithObjects:@"-80.0", @"-60.0", @"-40.0", @"-20.0", @"0", nil];
+            tick_pos[0] = 0.00f;
+            tick_pos[1] = 0.25f;
+            tick_pos[2] = 0.50f;
+            tick_pos[3] = 0.75f;
+            tick_pos[4] = 1.00f;
             if (S->draw_mode.s0 == 'H') {
                 strcpy(tick_title, "RCS H");
             } else {
@@ -293,7 +295,7 @@
             }
             break;
         case 'D':
-            tick_lab = [NSArray arrayWithObjects:@"-6.0", @"-3.0", @"0.0", @"+3.0", @"+6.0", nil];
+            tick_lab = [NSArray arrayWithObjects:@"-6.0", @"-3.0", @"0", @"+3.0", @"+6.0", nil];
             tick_pos[0] = 0.00f;
             tick_pos[1] = 0.25f;
             tick_pos[2] = 0.50f;
