@@ -26,6 +26,7 @@
 
 typedef void * LESHandle;
 typedef char * LESConfig;
+typedef float LESFloat4[4];
 
 typedef struct les_grid {
 	uint32_t  rev;            // Revision number, perhaps?
@@ -64,7 +65,8 @@ typedef struct _les_table {
     float     rx;             // Ratio value "r" in the geometric series in x direction
     float     ry;             // Ratio value "r" in the geometric series in y direction
     float     rz;             // Ratio value "r" in the geometric series in z direction
-    LESValue  data;
+    LESValue  data;           // Raw data from LES table
+    LESFloat4 *uvwt;          // Remapped (u, v, w, t) data for efficient transfer in RS framework
 } LESTable;
 
 

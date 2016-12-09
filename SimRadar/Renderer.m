@@ -196,7 +196,7 @@ unsigned int grayToBinary(unsigned int num)
 - (void)setBodyCount:(GLuint)number forDevice:(GLuint)deviceId
 {
 	bodyRenderer[deviceId].count = number;
-    backgroundOpacity = 250.0f / powf((float)number, 0.6f);
+    backgroundOpacity = MIN(1.0f, 1000.0f / ((float)number * 0.02f));
 	vbosNeedUpdate = true;
 }
 
@@ -650,11 +650,9 @@ unsigned int grayToBinary(unsigned int num)
 
 - (void)updateStatusMessage
 {
-    if (statusMessage[0][0] == 0) {
-        sprintf(statusMessage[0],
-                "Particle Count: %s",
-                [GLText commaint:bodyRenderer[0].count]);
-    }
+    sprintf(statusMessage[0],
+            "Particle Count: %s",
+            [GLText commaint:bodyRenderer[0].count]);
     sprintf(statusMessage[1],
             "Debris 1-4: %s; %s; %s; %s",
             [GLText commaint:debrisRenderer[1].count],
@@ -1467,10 +1465,12 @@ unsigned int grayToBinary(unsigned int num)
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     } else {
-        // Just the framebuffer for final presentation
+
+        // The framebuffer for final presentation
         glUseProgram(frameRenderer.program);
         glUniformMatrix4fv(frameRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
         glUniform4f(frameRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
+
     }
 
     // Show the framebuffer on the window
@@ -1502,7 +1502,7 @@ unsigned int grayToBinary(unsigned int num)
 
     // Text
     //sprintf(statusMessage[5], "Frame %s", [GLText commaint:iframe]);
-    sprintf(statusMessage[6], "EL %.2f   AZ %.2f", beamElevation / M_PI * 180.0f, beamAzimuth / M_PI * 180.0f);
+    sprintf(statusMessage[7], "EL %.2f   AZ %.2f", beamElevation / M_PI * 180.0f, beamAzimuth / M_PI * 180.0f);
     
     NSPoint origin = NSMakePoint(25.0f, height - tTextRenderer.pointSize * 0.5f - 35.0f);
     
@@ -1510,13 +1510,14 @@ unsigned int grayToBinary(unsigned int num)
         [tTextRenderer drawText:[titleString UTF8String] origin:origin scale:0.5f red:0.2f green:1.0f blue:0.9f alpha:1.0f];
         origin.y -= 32.0f;
     }
+    GLfloat scale = 0.5f * (GLfloat)height / 1080.0f;
     if (subtitleString) {
-        [fwTextRenderer drawText:[subtitleString UTF8String] origin:origin scale:0.5f];
-        origin.y -= 28.0f;
+        [fwTextRenderer drawText:[subtitleString UTF8String] origin:origin scale:scale];
+        origin.y -= scale * 56.0f;
     }
     for (k = 0; k < 6; k++) {
-        [fwTextRenderer drawText:statusMessage[k] origin:origin scale:0.5f];
-        origin.y -= 28.0f;
+        [fwTextRenderer drawText:statusMessage[k] origin:origin scale:scale];
+        origin.y -= scale * 56.0f;
     }
 
 #ifndef GEN_IMG
@@ -1865,12 +1866,13 @@ unsigned int grayToBinary(unsigned int num)
     CGContextSetFillColorWithColor(context, color1.CGColor);
     CGContextFillRect(context, rect);
     
-    rect = CGRectInset(rect, 1.5f, 1.5f);
+    rect = CGRectInset(rect, 3.0f, 3.0f);
     //    CGContextSetStrokeColorWithColor(context, [NSColor whiteColor].CGColor);
     //    CGContextSetLineWidth(context, 1.0f);
     //    CGContextStrokeRect(context, rect);
     
     CGContextSetStrokeColorWithColor(context, color2.CGColor);
+    CGContextSetLineWidth(context, 2.0f);
     CGContextStrokeRect(context, rect);
     
     NSDictionary *atts = [NSDictionary dictionaryWithObjectsAndKeys:

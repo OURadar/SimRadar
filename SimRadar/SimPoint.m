@@ -67,6 +67,7 @@
         } else {
             RS_set_density(S, 50.0f);
         }
+//        RS_set_density(S, 1.6f);
 
         // Copy out some convenient constants
         nearest_thousand = (size_t)ceilf(1000.0f / S->preferred_multiple) * S->preferred_multiple;
@@ -192,10 +193,7 @@
 {
 	RS_advance_time(S);
 
-    //RS_make_pulse(S);
     RS_update_colors(S);
-
-    //RS_download_pulse_only(S);
 }
 
 - (void)advanceBeamPosition
@@ -215,9 +213,10 @@
 	RS_set_beam_pos(S, az_deg, el_deg);
 
     //RS_make_pulse(S);
-    RS_update_colors(S);
 
-    //RS_advance_time(S);
+    RS_advance_time(S);
+
+    RS_update_colors(S);
 }
 
 - (void)randomBeamPosition

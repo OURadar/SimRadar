@@ -340,6 +340,7 @@ typedef struct _rs_worker {
     cl_kernel              kern_make_pulse_pass_2_range;
     
     cl_command_queue       que;
+    cl_event               *upload_event;
     
 #endif
     

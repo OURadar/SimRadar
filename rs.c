@@ -2630,14 +2630,14 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 #endif
         
     }
-    
+
     for (i = 0; i < H->num_workers; i++) {
         
 #if defined (_USE_GCL_)
         
         dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
 #endif
-        
+
         // Copy over to CL worker
         float tmpf; memcpy(&tmpf, &table.spacing, sizeof(float));
         H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionFormat] = tmpf;                   // Make a copy in float so we are maintaining all 32-bits
@@ -2670,8 +2670,6 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
             H->workers[i].vel_desc.s[RSTable3DDescriptionMaximumZ] = table.zm;
         }
         H->workers[i].vel_desc.s[RSTable3DDescriptionRefreshTime] = table.tr;
-        
-        H->workers[i].mem_usage += (cl_uint)((table.xm + 1.0f) * (table.ym + 1.0f) * (table.zm + 1.0f)) * sizeof(cl_float4);
     }
 }
 
@@ -2692,7 +2690,7 @@ void RS_set_vel_data_to_config(RSHandle *H, LESConfig c) {
 
 void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
     
-    int i;
+//    int i;
     float hmax, zmax;
     
     RSTable3D table = RS_table3d_init(leslie->nn);
@@ -2739,20 +2737,9 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
     table.tr = leslie->tr;
     table.spacing = RSTableSpacingStretchedX | RSTableSpacingStretchedY | RSTableSpacingStretchedZ;
     
-    // Need to arrange LES values into float4, then upload to GPU's global memory
-    for (i = 0; i < leslie->nn; i++) {
-        table.data[i].x = leslie->data.u[i];
-        table.data[i].y = leslie->data.v[i];
-        table.data[i].z = leslie->data.w[i];
-        table.data[i].w = 0.0f;
-        if (!(isfinite(table.data[i].x) &&
-              isfinite(table.data[i].y) &&
-              isfinite(table.data[i].z))) {
-            rsprint("WARNING. Some LES entries are not finite  (i = %d, vel = %.2f, %.2f, %.2f).",
-                    i, table.data[i].x, table.data[i].y, table.data[i].z);
-        }
-    }
-    
+    // There is a toll-free bridge: LESTable has a remapped data structure
+    memcpy(table.data, leslie->uvwt, leslie->nn * sizeof(cl_float4));
+
     // Cache a copy of the parameters but not the data, the data could be deallocated immediately after this function call.
     H->vel_desc = *leslie;
     memset(&H->vel_desc.data, 0, sizeof(LESValue));
