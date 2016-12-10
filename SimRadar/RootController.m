@@ -164,7 +164,6 @@
         CGLShareGroupObj sharegroup = (CGLShareGroupObj)[number longValue];
         sim = [[SimPoint alloc] initWithDelegate:self cglShareGroup:sharegroup];
         if (sim) {
-            NSLog(@"New simulation domain initiated.");
             // Wire the simulator to the controller.
             // The displayController will tell the renderer how many scatter body
             // the simulator is using and pass the anchor points from RS framework to
@@ -213,7 +212,7 @@
         
         [sim populate];
         
-        for (int k=1; k<RENDERER_MAX_DEBRIS_TYPES; k++) {
+        for (int k = 1; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
             GLuint pop = [sim populationForDebris:k];
             [dc.glView.renderer setPopulationTo:pop forDebris:k forDevice:0];
         }

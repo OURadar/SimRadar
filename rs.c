@@ -1117,7 +1117,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 #endif
     
     // Temporary supress the verbose output for setting default values; or very verbosy for heavy debug version
-#ifdef DEBUG_HEAVY
+#if defined(DEBUG_HEAVY)
     H->verb = 3;
 #else
     H->verb = 0;
@@ -1951,7 +1951,7 @@ void RS_set_debris_count(RSHandle *H, const int debris_id, const size_t count) {
         }
     }
     
-    if (H->verb > 1) {
+    if (H->verb > 2) {
         rsprint("Total number of body types = %d", (int)H->num_types);
     }
     
@@ -2679,6 +2679,13 @@ void RS_set_vel_data_to_config(RSHandle *H, LESConfig c) {
         LES_free(H->L);
     }
     H->L = LES_init_with_config_path(c, NULL);
+
+#if defined(GUI)
+
+    LES_set_delayed_read(H->L);
+    
+#endif
+    
     // Reset the velocity count to 0, as if no table has been uploaded.
     // The GPU handles are still kept intact, will be released upon framework completion / table replacement
     H->vel_count = (uint32_t)LES_get_table_count(H->L);
