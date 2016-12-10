@@ -36,6 +36,7 @@
 - (IBAction)newLiveDisplay:(id)sender;
 - (IBAction)playPause:(id)sender;
 - (IBAction)resetSimulator:(id)sender;
+- (IBAction)topView:(id)sender;
 - (IBAction)startRecord:(id)sender;
 - (IBAction)stopRecord:(id)sender;
 

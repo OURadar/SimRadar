@@ -87,6 +87,11 @@
 	[sim upload];
 }
 
+- (IBAction)topView:(id)sender
+{
+    [dc.glView.renderer topView];
+}
+
 - (IBAction)startRecord:(id)sender
 {
     if ([dc.glView recorder]) {

@@ -651,22 +651,22 @@ unsigned int grayToBinary(unsigned int num)
 - (void)updateStatusMessage
 {
     sprintf(statusMessage[0],
-            "Particle Count: %s",
+            "Meteorological Scatterers: %s",
             [GLText commaint:bodyRenderer[0].count]);
     sprintf(statusMessage[1],
-            "Debris 1-4: %s; %s; %s; %s",
+            "Debris 1-4: %s  %s  %s  %s",
             [GLText commaint:debrisRenderer[1].count],
             [GLText commaint:debrisRenderer[2].count],
             [GLText commaint:debrisRenderer[3].count],
             [GLText commaint:debrisRenderer[4].count]);
     sprintf(statusMessage[2],
-            "Debris 5-8: %s; %s; %s; %s",
+            "Debris 5-8: %s  %s  %s  %s",
             [GLText commaint:debrisRenderer[5].count],
             [GLText commaint:debrisRenderer[6].count],
             [GLText commaint:debrisRenderer[7].count],
             [GLText commaint:debrisRenderer[8].count]);
     sprintf(statusMessage[3],
-            "Color %d / %.3f",
+            "Colormap %d   Opacity %.3f",
             bodyRenderer[0].colormapIndex,
             backgroundOpacity);
     sprintf(statusMessage[4],
@@ -1510,7 +1510,6 @@ unsigned int grayToBinary(unsigned int num)
 
     // Text
     //sprintf(statusMessage[5], "Frame %s", [GLText commaint:iframe]);
-    sprintf(statusMessage[7], "EL %.2f   AZ %.2f", beamElevation / M_PI * 180.0f, beamAzimuth / M_PI * 180.0f);
     
     NSPoint origin = NSMakePoint(25.0f, height - tTextRenderer.pointSize * 0.5f - 35.0f);
     
@@ -1521,11 +1520,11 @@ unsigned int grayToBinary(unsigned int num)
     GLfloat scale = 0.5f * (GLfloat)height / 1080.0f;
     if (subtitleString) {
         [fwTextRenderer drawText:[subtitleString UTF8String] origin:origin scale:scale];
-        origin.y -= scale * 56.0f;
+        origin.y -= scale * 54.0f;
     }
     for (k = 0; k < 6; k++) {
         [fwTextRenderer drawText:statusMessage[k] origin:origin scale:scale];
-        origin.y -= scale * 56.0f;
+        origin.y -= scale * 54.0f;
     }
 
 #ifndef GEN_IMG
@@ -1537,7 +1536,8 @@ unsigned int grayToBinary(unsigned int num)
     }
 
     if (hudConfigGray & hudConfigShowRadarView) {
-        [textRenderer drawText:statusMessage[6] origin:NSMakePoint(hudOrigin.x + 15.0f, hudOrigin.y - 30.0f) scale:0.25f];
+        sprintf(statusMessage[7], "EL %.2f   AZ %.2f", beamElevation / M_PI * 180.0f, beamAzimuth / M_PI * 180.0f);
+        [textRenderer drawText:statusMessage[7] origin:NSMakePoint(hudOrigin.x + 15.0f, hudOrigin.y - 30.0f) scale:0.25f];
     }
 
     // Colorbar
@@ -1662,7 +1662,12 @@ unsigned int grayToBinary(unsigned int num)
 {
     range = resetRange;
     modelRotate = resetModelRotate;
-    
+    viewParametersNeedUpdate = true;
+}
+
+- (void)topView
+{
+    modelRotate = GLKMatrix4MakeRotation(M_PI_2, 1.0f, 0.0f, 0.0f);
     viewParametersNeedUpdate = true;
 }
 

@@ -220,6 +220,7 @@ enum RendererLineSegment {
 - (void)magnify:(GLfloat)scale;
 - (void)rotate:(GLfloat)angle;
 - (void)resetViewParameters;
+- (void)topView;
 
 - (void)startSpinModel;
 - (void)stopSpinModel;
