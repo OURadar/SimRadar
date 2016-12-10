@@ -14,6 +14,7 @@
 #define RENDERER_FAR_RANGE                  100000.0f   // View range in m
 #define RENDERER_TIC_COUNT                  10          //
 #define RENDERER_MAX_DEBRIS_TYPES           8           // Actual plus one
+#define RENDERER_MAX_CL_DEVICE              1
 #define RENDERER_MAX_VBO_GROUPS             8
 #define RENDERER_DEFAULT_BODY_COLOR_INDEX   27          // Default colormap index
 #define RENDERER_FBO_COUNT                  5
@@ -154,7 +155,7 @@ enum RendererLineSegment {
     BOOL overlayNeedsUpdate;
     GLchar spinModel;
     
-    RenderResource bodyRenderer[RENDERER_MAX_DEBRIS_TYPES];
+    RenderResource bodyRenderer[RENDERER_MAX_CL_DEVICE];
     RenderResource instancedGeometryRenderer;
 
     RenderResource anchorRenderer;

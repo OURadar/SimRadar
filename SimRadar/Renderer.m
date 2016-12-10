@@ -958,6 +958,7 @@ unsigned int grayToBinary(unsigned int num)
     // Mesh 1 : colorbar
     glBindVertexArray(meshRenderer.vao);
     
+    // Two VBOs for position and texture coordinates
     glDeleteBuffers(2, meshRenderer.vbo);
     glGenBuffers(2, meshRenderer.vbo);
     
@@ -973,14 +974,16 @@ unsigned int grayToBinary(unsigned int num)
         0.0f, 0.0f
     };
     
-    glBindBuffer(GL_ARRAY_BUFFER, meshRenderer.vbo[0]);  // position
+    // position
+    glBindBuffer(GL_ARRAY_BUFFER, meshRenderer.vbo[0]);
     //glBufferData(GL_ARRAY_BUFFER, sizeof(pos), pos, GL_STATIC_DRAW);
     //NSLog(@"basic rect is length %u", lineRenderer.segmentLengths[RendererLineSegmentBasicRectangle]);
     glBufferData(GL_ARRAY_BUFFER, lineRenderer.segmentLengths[RendererLineSegmentBasicRectangle] * 4 * sizeof(GLfloat), &lineRenderer.positions[lineRenderer.segmentOrigins[RendererLineSegmentBasicRectangle]], GL_STATIC_DRAW);
     glVertexAttribPointer(meshRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(meshRenderer.positionAI);
 
-    glBindBuffer(GL_ARRAY_BUFFER, meshRenderer.vbo[1]);  // textureCoord
+    // textureCoord
+    glBindBuffer(GL_ARRAY_BUFFER, meshRenderer.vbo[1]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(texCoord), texCoord, GL_STATIC_DRAW);
     glVertexAttribPointer(meshRenderer.textureCoordAI, 2, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(meshRenderer.textureCoordAI);
@@ -993,7 +996,7 @@ unsigned int grayToBinary(unsigned int num)
 	#endif
 	
     GLuint vbos[RENDERER_MAX_VBO_GROUPS][8];
-    for (int i = 0; i < clDeviceCount; i++) {
+    for (i = 0; i < clDeviceCount; i++) {
         vbos[i][0] = bodyRenderer[i].vbo[0];
         vbos[i][1] = bodyRenderer[i].vbo[1];
         vbos[i][2] = bodyRenderer[i].vbo[2];
@@ -1102,27 +1105,32 @@ unsigned int grayToBinary(unsigned int num)
         debrisRenderer[k].instanceSize = prim->instanceSize;
         debrisRenderer[k].drawMode = prim->drawMode;
         
-        glBindBuffer(GL_ARRAY_BUFFER, debrisRenderer[k].vbo[0]);           // 1-st VBO for geometry (primitive, we are instancing)
+        // 1-st VBO for geometry (primitive, we are instancing)
+        glBindBuffer(GL_ARRAY_BUFFER, debrisRenderer[k].vbo[0]);
         glBufferData(GL_ARRAY_BUFFER, prim->vertexSize, prim->vertices, GL_STATIC_DRAW);
         glVertexAttribPointer(debrisRenderer[k].positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
         glEnableVertexAttribArray(debrisRenderer[k].positionAI);
         
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, debrisRenderer[k].vbo[1]);   // 2-nd VBO for position index
+        // 2-nd VBO for position index
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, debrisRenderer[k].vbo[1]);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, prim->instanceSize * sizeof(GLuint), prim->indices, GL_STATIC_DRAW);
         
-        glBindBuffer(GL_ARRAY_BUFFER, debrisRenderer[k].vbo[2]);           // 3-rd VBO for translation
+        // 3-rd VBO for translation (position)
+        glBindBuffer(GL_ARRAY_BUFFER, debrisRenderer[k].vbo[2]);
         glBufferData(GL_ARRAY_BUFFER, debrisRenderer[k].count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
         glVertexAttribPointer(debrisRenderer[k].translationAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
         glVertexAttribDivisor(debrisRenderer[k].translationAI, 1);
         glEnableVertexAttribArray(debrisRenderer[k].translationAI);
         
-        glBindBuffer(GL_ARRAY_BUFFER, debrisRenderer[k].vbo[3]);           // 4-th VBO for quaternion (rotation)
+        // 4-th VBO for quaternion (rotation)
+        glBindBuffer(GL_ARRAY_BUFFER, debrisRenderer[k].vbo[3]);
         glBufferData(GL_ARRAY_BUFFER, debrisRenderer[k].count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
         glVertexAttribPointer(debrisRenderer[k].quaternionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
         glVertexAttribDivisor(debrisRenderer[k].quaternionAI, 1);
         glEnableVertexAttribArray(debrisRenderer[k].quaternionAI);
 
-        glBindBuffer(GL_ARRAY_BUFFER, debrisRenderer[k].vbo[4]);           // 5-th VBO for color index
+        // 5-th VBO for color index
+        glBindBuffer(GL_ARRAY_BUFFER, debrisRenderer[k].vbo[4]);
         glBufferData(GL_ARRAY_BUFFER, debrisRenderer[k].count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
         glVertexAttribPointer(debrisRenderer[k].colorAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
         glVertexAttribDivisor(debrisRenderer[k].colorAI, 1);
