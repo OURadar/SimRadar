@@ -2583,17 +2583,11 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 #if defined (_USE_GCL_)
             
             H->workers[i].vel = gcl_create_image(&format, desc.image_width, desc.image_height, desc.image_depth, H->workers[i].surf_vel);
-            if (H->workers[i].vel == NULL) {
-                rsprint("ERROR: workers[%d] unable to create wind table on CL device.\n", i);
-                exit(EXIT_FAILURE);
-            } else if (H->verb > 2) {
-                rsprint("workers[%d] created wind table @ %p\n", i, &H->workers[i].vel);
-            }
-            
+
 #else
         
             cl_int ret;
-            cl_mem_flags flags = CL_MEM_READ_ONLY;
+            cl_mem_flags flags = CL_MEM_READ_WRITE;
             
 #if defined (CL_VERSION_1_2)
             
@@ -2607,7 +2601,7 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 #endif
             
             if (H->workers[i].vel == NULL) {
-                rsprint("ERROR: workers[%d] unable to create wind table on CL device.\n", i);
+                rsprint("ERROR: workers[%d] unable to create wind table on CL device.  ret = %d\n", i, ret);
                 exit(EXIT_FAILURE);
             } else if (H->verb > 2) {
                 rsprint("workers[%d] created wind table @ %p\n", i, &H->workers[i].vel);
