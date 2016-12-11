@@ -2562,29 +2562,13 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
     
     cl_image_format format = {CL_RGBA, CL_FLOAT};
     
-#if defined (CL_VERSION_1_2)
-    
-    cl_image_desc desc;
-    desc.image_type = CL_MEM_OBJECT_IMAGE3D;
-    desc.image_width  = table.x_;
-    desc.image_height = table.y_;
-    desc.image_depth  = table.z_;
-    desc.image_array_size = 0;
-    desc.image_row_pitch = desc.image_width * sizeof(cl_float4);
-    desc.image_slice_pitch = desc.image_height * desc.image_row_pitch;
-    desc.num_mip_levels = 0;
-    desc.num_samples = 0;
-    desc.buffer = NULL;
-    
-#endif
-    
     for (i = 0; i < H->num_workers; i++) {
         if (H->workers[i].vel[0] == NULL) {
 
 #if defined (_USE_GCL_)
             
-            H->workers[i].vel[0] = gcl_create_image(&format, desc.image_width, desc.image_height, desc.image_depth, H->workers[i].surf_vel[0]);
-            H->workers[i].vel[1] = gcl_create_image(&format, desc.image_width, desc.image_height, desc.image_depth, H->workers[i].surf_vel[1]);
+            H->workers[i].vel[0] = gcl_create_image(&format, table.x_, table.y_, table.z_, H->workers[i].surf_vel[0]);
+            H->workers[i].vel[1] = gcl_create_image(&format, table.x_, table.y_, table.z_, H->workers[i].surf_vel[1]);
             
 #else
         
@@ -2593,20 +2577,29 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
             
 #if defined (CL_VERSION_1_2)
             
+            cl_image_desc desc;
+            desc.image_type = CL_MEM_OBJECT_IMAGE3D;
+            desc.image_width  = table.x_;
+            desc.image_height = table.y_;
+            desc.image_depth  = table.z_;
+            desc.image_array_size = 0;
+            desc.image_row_pitch = 0;
+            desc.image_slice_pitch = 0;
+            desc.num_mip_levels = 0;
+            desc.num_samples = 0;
+            desc.buffer = NULL;
             H->workers[i].vel[0] = clCreateImage(H->workers[i].context, flags, &format, &desc, NULL, &ret);
-            H->workers[i].vel[1] = clCreateImage(H->workers[i].context, flags, &format, &desc, NULL, &ret);
+            H->workers[i].vel[1] = clCreateImage(H->workers[i].context, flags, &format, &desc, NULL, NULL);
             
 #else
             
-            H->workers[i].vel[0] = clCreateImage3D(H->workers[i].context, flags, &format, table.x_, table.y_, table.z_,
-                                                   table.x_ * sizeof(cl_float4), table.y_ * table.x_ * sizeof(cl_float4), table.data, &ret);
-            H->workers[i].vel[1] = clCreateImage3D(H->workers[i].context, flags, &format, table.x_, table.y_, table.z_,
-                                                   table.x_ * sizeof(cl_float4), table.y_ * table.x_ * sizeof(cl_float4), table.data, &ret);
+            H->workers[i].vel[0] = clCreateImage3D(H->workers[i].context, flags, &format, table.x_, table.y_, table.z_, 0, 0, NULL, &ret);
+            H->workers[i].vel[1] = clCreateImage3D(H->workers[i].context, flags, &format, table.x_, table.y_, table.z_, 0, 0, NULL, NULL);
             
 #endif
             
             if (H->workers[i].vel[0] == NULL || H->workers[i].vel[1] == NULL) {
-                rsprint("ERROR: workers[%d] unable to create wind table on CL device.\n", i);
+                rsprint("ERROR: workers[%d] unable to create wind table on CL device.  ret = %d\n", i, ret);
                 exit(EXIT_FAILURE);
             } else if (H->verb > 2) {
                 rsprint("workers[%d] created wind table @ %p %p\n", i, &H->workers[i].vel[0], &H->workers[i].vel[1]);
@@ -2629,8 +2622,8 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
         
         size_t origin[3] = {0, 0, 0};
         size_t region[3] = {table.x_, table.y_, table.z_};
-        clEnqueueWriteImage(H->workers[i].que, H->workers[i].vel[H->workers[i].vel_id], CL_FALSE, origin, region,
-                            table.x_ * sizeof(cl_float4), table.y_ * table.x_ * sizeof(cl_float4), table.data, 0, NULL, &H->workers[i].event_upload);
+        clEnqueueWriteImage(H->workers[i].que, H->workers[i].vel[H->workers[i].vel_id], CL_TRUE, origin, region,
+                            table.x_ * sizeof(cl_float4), table.y_ * table.x_ * sizeof(cl_float4), table.data, 0, NULL, NULL);
 
 #endif
         
@@ -2638,16 +2631,11 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 
     for (i = 0; i < H->num_workers; i++) {
         
-//#if defined (_USE_GCL_)
-//        
-//        dispatch_semaphore_wait(H->workers[i].sem_upload, DISPATCH_TIME_FOREVER);
-//
-//#else
-//        
-//        clWaitForEvents(1, &H->workers[i].event_upload);
-//        clReleaseEvent(H->workers[i].event_upload);
-//        
-//#endif
+#if defined (_USE_GCL_)
+        
+        dispatch_semaphore_wait(H->workers[i].sem_upload, DISPATCH_TIME_FOREVER);
+
+#endif
 
         // Copy over to CL worker
         float tmpf; memcpy(&tmpf, &table.spacing, sizeof(float));
@@ -4294,24 +4282,11 @@ void RS_advance_time(RSHandle *H) {
         if (H->vel_idx == 0) {
             rsprint("Wind table restarted.");
         }
-//        for (i = 0; i < H->num_workers; i++) {
-//            H->workers[i].vel_id = H->workers[i].vel_id == 1 ? 0 : 1;
-//        }
-//        RS_set_vel_data_to_LES_table(H, LES_get_frame(H->L, H->vel_idx));
-//        H->vel_idx = H->vel_idx == H->vel_count - 1 ? 0 : H->vel_idx + 1;
-
         for (i = 0; i < H->num_workers; i++) {
-#if defined (_USE_GCL_)
-
-            dispatch_semaphore_wait(H->workers[i].sem_upload, DISPATCH_TIME_FOREVER);
-
-#else
-
-            clWaitForEvents(1, &H->workers[i].event_upload);
-            clReleaseEvent(H->workers[i].event_upload);
-        
-#endif
+            H->workers[i].vel_id = H->workers[i].vel_id == 1 ? 0 : 1;
         }
+        RS_set_vel_data_to_LES_table(H, LES_get_frame(H->L, H->vel_idx));
+        H->vel_idx = H->vel_idx == H->vel_count - 1 ? 0 : H->vel_idx + 1;
         
         if (H->verb > 2) {
             rsprint("Wind table advanced. vel_idx = %d   ( tp = %.2f / prt = %.4f )  vel_id = %d", H->vel_idx, H->vel_desc.tp, H->params.prt, H->workers[0].vel_id);
@@ -4535,16 +4510,6 @@ void RS_advance_time(RSHandle *H) {
     H->sim_tic += H->params.prt;
     H->sim_desc.s[RSSimulationDescriptionSimTic] = H->sim_tic;
     H->status |= RSStatusScattererSignalNeedsUpdate;
-
-    // Schedule a table upload if the next frame is going to use the next table.
-    if (H->sim_tic >= H->sim_toc) {
-        for (i = 0; i < H->num_workers; i++) {
-            H->workers[i].vel_id = H->workers[i].vel_id == 1 ? 0 : 1;
-        }
-        RS_set_vel_data_to_LES_table(H, LES_get_frame(H->L, H->vel_idx));
-        H->vel_idx = H->vel_idx == H->vel_count - 1 ? 0 : H->vel_idx + 1;
-    }
-
 }
 
 
