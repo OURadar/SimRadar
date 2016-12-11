@@ -2574,58 +2574,59 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
     
 #endif
     
+    size_t origin[3] = {0, 0, 0};
+    size_t region[3] = {table.x_, table.y_, table.z_};
+
     for (i = 0; i < H->num_workers; i++) {
-        if (H->workers[i].vel != NULL) {
-            
-#if defined (_USE_GCL_)
-            
-            gcl_release_image(H->workers[i].vel);
-            
-#else
-            
-            clReleaseMemObject(H->workers[i].vel);
-            
-#endif
-            
-        }
-        
-#if defined (_USE_GCL_)
-        
-        H->workers[i].vel = gcl_create_image(&format, desc.image_width, desc.image_height, desc.image_depth, H->workers[i].surf_vel);
-        
-#else
-        
-        cl_int ret;
-        cl_mem_flags flags = CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR;
-        
-#if defined (CL_VERSION_1_2)
-        
-        H->workers[i].vel = clCreateImage(H->workers[i].context, flags, &format, &desc, table.data, &ret);
-        
-#else
-        
-        H->workers[i].vel = clCreateImage3D(H->workers[i].context, flags, &format, table.x_, table.y_, table.z_,
-                                            table.x_ * sizeof(cl_float4), table.y_ * table.x_ * sizeof(cl_float4), table.data, &ret);
-        
-#endif
-        
-#endif
-        
         if (H->workers[i].vel == NULL) {
-            rsprint("ERROR: workers[%d] unable to create wind table on CL device.\n", i);
-            return;
-        } else if (H->verb > 2) {
-            rsprint("workers[%d] created wind table @ %p\n", i, &H->workers[i].vel);
+
+#if defined (_USE_GCL_)
+            
+            H->workers[i].vel = gcl_create_image(&format, desc.image_width, desc.image_height, desc.image_depth, H->workers[i].surf_vel);
+            if (H->workers[i].vel == NULL) {
+                rsprint("ERROR: workers[%d] unable to create wind table on CL device.\n", i);
+                exit(EXIT_FAILURE);
+            } else if (H->verb > 2) {
+                rsprint("workers[%d] created wind table @ %p\n", i, &H->workers[i].vel);
+            }
+            
+#else
+        
+            cl_int ret;
+            cl_mem_flags flags = CL_MEM_READ_ONLY;
+            
+#if defined (CL_VERSION_1_2)
+            
+            H->workers[i].vel = clCreateImage(H->workers[i].context, flags, &format, &desc, NULL, &ret);
+            
+#else
+            
+            H->workers[i].vel = clCreateImage3D(H->workers[i].context, flags, &format, table.x_, table.y_, table.z_,
+                                                table.x_ * sizeof(cl_float4), table.y_ * table.x_ * sizeof(cl_float4), table.data, &ret);
+            
+#endif
+            
+            if (H->workers[i].vel == NULL) {
+                rsprint("ERROR: workers[%d] unable to create wind table on CL device.\n", i);
+                exit(EXIT_FAILURE);
+            } else if (H->verb > 2) {
+                rsprint("workers[%d] created wind table @ %p\n", i, &H->workers[i].vel);
+            }
         }
         
-#if defined (_USE_GCL_)
+#endif
         
+#if defined (_USE_GCL_)
+
         dispatch_async(H->workers[i].que, ^{
-            size_t origin[3] = {0, 0, 0};
-            size_t region[3] = {table.x_, table.y_, table.z_};
             gcl_copy_ptr_to_image(H->workers[i].vel, table.data, origin, region);
             dispatch_semaphore_signal(H->workers[i].sem);
         });
+        
+#else
+        
+        clEnqueueWriteImage(H->workers[i].que, H->workers[i].vel, CL_FALSE, origin, region,
+                            table.x_ * sizeof(cl_float4), table.y_ * table.x_ * sizeof(cl_float4), table.data, 0, NULL, &H->workers[i].upload_event);
         
 #endif
         
@@ -2636,6 +2637,11 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 #if defined (_USE_GCL_)
         
         dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
+
+#else
+        
+        clWaitForEvents(1, &H->workers[i].upload_event);
+        
 #endif
 
         // Copy over to CL worker
@@ -2744,14 +2750,19 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
     table.tr = leslie->tr;
     table.spacing = RSTableSpacingStretchedX | RSTableSpacingStretchedY | RSTableSpacingStretchedZ;
     
-    // There is a toll-free bridge: LESTable has a remapped data structure
-    memcpy(table.data, leslie->uvwt, leslie->nn * sizeof(cl_float4));
+    // There is a toll-free bridge: LESTable has a remapped data structure during background read so there is no need to copy, just reassign the pointer, gotta love C!
+    void *tmp = table.data;
+    table.data = (cl_float4 *)leslie->uvwt;
 
     // Cache a copy of the parameters but not the data, the data could be deallocated immediately after this function call.
     H->vel_desc = *leslie;
     memset(&H->vel_desc.data, 0, sizeof(LESValue));
     
+    // Now we call the function to upload to GPU memory
     RS_set_vel_data(H, table);
+    
+    // Restore the pointer so that it can be freed as expected.
+    table.data = tmp;
     
     RS_table3d_free(table);
 }
