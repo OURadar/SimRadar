@@ -1577,6 +1577,7 @@
 					/usr/local/lib,
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				OPENCL_COMPILER_VERSION = CL1.2;
 				OTHER_CFLAGS = (
 					"-D_USE_GCL_",
 					"-DDEBUG_GL",
@@ -2593,6 +2594,7 @@
 					/usr/local/lib,
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				OPENCL_COMPILER_VERSION = CL1.2;
 				OTHER_CFLAGS = (
 					"-D_USE_GCL_",
 					"-DGEN_IMG",
@@ -3059,6 +3061,7 @@
 					/usr/local/lib,
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				OPENCL_COMPILER_VERSION = CL1.2;
 				OTHER_CFLAGS = "-D_USE_GCL_";
 				OTHER_LDFLAGS = (
 					"-L",
@@ -3122,6 +3125,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				ONLY_ACTIVE_ARCH = YES;
+				OPENCL_COMPILER_VERSION = CL1.2;
 				OTHER_CFLAGS = "-D_USE_GCL_";
 				OTHER_LDFLAGS = (
 					"-L",
@@ -3469,6 +3473,7 @@
 					/usr/local/lib,
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				OPENCL_COMPILER_VERSION = CL1.2;
 				OTHER_CFLAGS = (
 					"-D_USE_GCL_",
 					"-D_DUMMY_",

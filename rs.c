@@ -491,8 +491,9 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     // A queue & semaphore for the CL work
     C->que = gcl_create_dispatch_queue(CL_DEVICE_TYPE_GPU, C->dev);
     C->sem = dispatch_semaphore_create(0);
+    C->sem_upload = dispatch_semaphore_create(0);
     
-    if (C->sem == NULL) {
+    if (C->sem == NULL || C->sem_upload == NULL) {
         fprintf(stderr, "%s : RS : Error creating semaphore for the CL worker.\n", now());
         return;
     }
@@ -508,7 +509,8 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
         C->surf_rcs_imag[i] = NULL;
     }
     C->surf_rcs_ellipsoids = NULL;
-    C->surf_vel = NULL;
+    C->surf_vel[0] = NULL;
+    C->surf_vel[1] = NULL;
     
 #else
     
@@ -835,7 +837,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &C->scat_rcs);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
-    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel);
+    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCS,                  sizeof(cl_mem),     &C->rcs_ellipsoid);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCSDescription,       sizeof(cl_float4),  &C->rcs_ellipsoid_desc);
@@ -850,7 +852,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &C->scat_rcs);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
-    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel);
+    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentEllipsoidRCS,                  sizeof(cl_mem),     &C->rcs_ellipsoid);
     ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentEllipsoidRCSDescription,       sizeof(cl_float4),  &C->rcs_ellipsoid_desc);
@@ -867,7 +869,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentTumble,                        sizeof(cl_mem),     &C->scat_tum);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &C->scat_rcs);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
-    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &C->adm_cd[0]);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelMomentum,          sizeof(cl_mem),     &C->adm_cm[0]);
@@ -1263,7 +1265,8 @@ void RS_free(RSHandle *H) {
         gcl_free(H->workers[i].range_weight);
         
         gcl_release_image(H->workers[i].rcs_ellipsoid);
-        gcl_release_image(H->workers[i].vel);
+        gcl_release_image(H->workers[i].vel[0]);
+        gcl_release_image(H->workers[i].vel[1]);
         
         for (int a = 0; a < H->adm_count; a++) {
             gcl_release_image(H->workers[i].adm_cd[a]);
@@ -1283,7 +1286,8 @@ void RS_free(RSHandle *H) {
         clReleaseMemObject(H->workers[i].range_weight);
         
         clReleaseMemObject(H->workers[i].rcs_ellipsoid);
-        clReleaseMemObject(H->workers[i].vel);
+        clReleaseMemObject(H->workers[i].vel[0]);
+        clReleaseMemObject(H->workers[i].vel[1]);
         
         for (int a = 0; a < H->adm_count; a++) {
             clReleaseMemObject(H->workers[i].adm_cd[a]);
@@ -2574,21 +2578,13 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
     
 #endif
     
-    size_t origin[3] = {0, 0, 0};
-    size_t region[3] = {table.x_, table.y_, table.z_};
-
     for (i = 0; i < H->num_workers; i++) {
-        if (H->workers[i].vel == NULL) {
+        if (H->workers[i].vel[0] == NULL) {
 
 #if defined (_USE_GCL_)
             
-            H->workers[i].vel = gcl_create_image(&format, desc.image_width, desc.image_height, desc.image_depth, H->workers[i].surf_vel);
-            if (H->workers[i].vel == NULL) {
-                rsprint("ERROR: workers[%d] unable to create wind table on CL device.\n", i);
-                exit(EXIT_FAILURE);
-            } else if (H->verb > 2) {
-                rsprint("workers[%d] created wind table @ %p\n", i, &H->workers[i].vel);
-            }
+            H->workers[i].vel[0] = gcl_create_image(&format, desc.image_width, desc.image_height, desc.image_depth, H->workers[i].surf_vel[0]);
+            H->workers[i].vel[1] = gcl_create_image(&format, desc.image_width, desc.image_height, desc.image_depth, H->workers[i].surf_vel[1]);
             
 #else
         
@@ -2597,52 +2593,61 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
             
 #if defined (CL_VERSION_1_2)
             
-            H->workers[i].vel = clCreateImage(H->workers[i].context, flags, &format, &desc, NULL, &ret);
+            H->workers[i].vel[0] = clCreateImage(H->workers[i].context, flags, &format, &desc, NULL, &ret);
+            H->workers[i].vel[1] = clCreateImage(H->workers[i].context, flags, &format, &desc, NULL, &ret);
             
 #else
             
-            H->workers[i].vel = clCreateImage3D(H->workers[i].context, flags, &format, table.x_, table.y_, table.z_,
-                                                table.x_ * sizeof(cl_float4), table.y_ * table.x_ * sizeof(cl_float4), table.data, &ret);
+            H->workers[i].vel[0] = clCreateImage3D(H->workers[i].context, flags, &format, table.x_, table.y_, table.z_,
+                                                   table.x_ * sizeof(cl_float4), table.y_ * table.x_ * sizeof(cl_float4), table.data, &ret);
+            H->workers[i].vel[1] = clCreateImage3D(H->workers[i].context, flags, &format, table.x_, table.y_, table.z_,
+                                                   table.x_ * sizeof(cl_float4), table.y_ * table.x_ * sizeof(cl_float4), table.data, &ret);
             
 #endif
             
-            if (H->workers[i].vel == NULL) {
+            if (H->workers[i].vel[0] == NULL || H->workers[i].vel[1] == NULL) {
                 rsprint("ERROR: workers[%d] unable to create wind table on CL device.\n", i);
                 exit(EXIT_FAILURE);
             } else if (H->verb > 2) {
-                rsprint("workers[%d] created wind table @ %p\n", i, &H->workers[i].vel);
+                rsprint("workers[%d] created wind table @ %p %p\n", i, &H->workers[i].vel[0], &H->workers[i].vel[1]);
             }
+#endif
+
         }
         
-#endif
         
 #if defined (_USE_GCL_)
 
         dispatch_async(H->workers[i].que, ^{
-            gcl_copy_ptr_to_image(H->workers[i].vel, table.data, origin, region);
-            dispatch_semaphore_signal(H->workers[i].sem);
+            size_t origin[3] = {0, 0, 0};
+            size_t region[3] = {table.x_, table.y_, table.z_};
+            gcl_copy_ptr_to_image(H->workers[i].vel[H->workers[i].vel_id], table.data, origin, region);
+            dispatch_semaphore_signal(H->workers[i].sem_upload);
         });
         
 #else
         
-        clEnqueueWriteImage(H->workers[i].que, H->workers[i].vel, CL_FALSE, origin, region,
-                            table.x_ * sizeof(cl_float4), table.y_ * table.x_ * sizeof(cl_float4), table.data, 0, NULL, &H->workers[i].upload_event);
-        
+        size_t origin[3] = {0, 0, 0};
+        size_t region[3] = {table.x_, table.y_, table.z_};
+        clEnqueueWriteImage(H->workers[i].que, H->workers[i].vel[H->workers[i].vel_id], CL_FALSE, origin, region,
+                            table.x_ * sizeof(cl_float4), table.y_ * table.x_ * sizeof(cl_float4), table.data, 0, NULL, &H->workers[i].event_upload);
+
 #endif
         
     }
 
     for (i = 0; i < H->num_workers; i++) {
         
-#if defined (_USE_GCL_)
-        
-        dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
-
-#else
-        
-        clWaitForEvents(1, &H->workers[i].upload_event);
-        
-#endif
+//#if defined (_USE_GCL_)
+//        
+//        dispatch_semaphore_wait(H->workers[i].sem_upload, DISPATCH_TIME_FOREVER);
+//
+//#else
+//        
+//        clWaitForEvents(1, &H->workers[i].event_upload);
+//        clReleaseEvent(H->workers[i].event_upload);
+//        
+//#endif
 
         // Copy over to CL worker
         float tmpf; memcpy(&tmpf, &table.spacing, sizeof(float));
@@ -2703,7 +2708,6 @@ void RS_set_vel_data_to_config(RSHandle *H, LESConfig c) {
 
 void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
     
-//    int i;
     float hmax, zmax;
     
     RSTable3D table = RS_table3d_init(leslie->nn);
@@ -4290,10 +4294,27 @@ void RS_advance_time(RSHandle *H) {
         if (H->vel_idx == 0) {
             rsprint("Wind table restarted.");
         }
-        RS_set_vel_data_to_LES_table(H, LES_get_frame(H->L, H->vel_idx));
-        H->vel_idx = H->vel_idx == H->vel_count - 1 ? 0 : H->vel_idx + 1;
+//        for (i = 0; i < H->num_workers; i++) {
+//            H->workers[i].vel_id = H->workers[i].vel_id == 1 ? 0 : 1;
+//        }
+//        RS_set_vel_data_to_LES_table(H, LES_get_frame(H->L, H->vel_idx));
+//        H->vel_idx = H->vel_idx == H->vel_count - 1 ? 0 : H->vel_idx + 1;
+
+        for (i = 0; i < H->num_workers; i++) {
+#if defined (_USE_GCL_)
+
+            dispatch_semaphore_wait(H->workers[i].sem_upload, DISPATCH_TIME_FOREVER);
+
+#else
+
+            clWaitForEvents(1, &H->workers[i].event_upload);
+            clReleaseEvent(H->workers[i].event_upload);
+        
+#endif
+        }
+        
         if (H->verb > 2) {
-            rsprint("Wind table advanced. vel_idx = %d   ( %.2f / %.4f )", H->vel_idx, H->vel_desc.tp, H->params.prt);
+            rsprint("Wind table advanced. vel_idx = %d   ( tp = %.2f / prt = %.4f )  vel_id = %d", H->vel_idx, H->vel_desc.tp, H->params.prt, H->workers[0].vel_id);
         }
     }
     
@@ -4331,7 +4352,7 @@ void RS_advance_time(RSHandle *H) {
                        (cl_float4 *)H->workers[i].scat_tum,
                        (cl_float4 *)H->workers[i].scat_sig,
                        (cl_uint4 *)H->workers[i].scat_rnd,
-                       (cl_image)H->workers[i].vel,
+                       (cl_image)H->workers[i].vel[H->workers[i].vel_id],
                        H->workers[i].vel_desc,
                        (cl_image)H->workers[i].adm_cd[a],
                        (cl_image)H->workers[i].adm_cm[a],
@@ -4355,7 +4376,7 @@ void RS_advance_time(RSHandle *H) {
                                (cl_float4 *)H->workers[i].scat_vel,
                                (cl_float4 *)H->workers[i].scat_rcs,
                                (cl_uint4 *)H->workers[i].scat_rnd,
-                               (cl_image)H->workers[i].vel,
+                               (cl_image)H->workers[i].vel[H->workers[i].vel_id],
                                H->workers[i].vel_desc,
                                (cl_float4 *)H->workers[i].rcs_ellipsoid,
                                H->workers[i].rcs_ellipsoid_desc,
@@ -4366,7 +4387,7 @@ void RS_advance_time(RSHandle *H) {
                                (cl_float4 *)H->workers[i].scat_vel,
                                (cl_float4 *)H->workers[i].scat_rcs,
                                (cl_uint4 *)H->workers[i].scat_rnd,
-                               (cl_image)H->workers[i].vel,
+                               (cl_image)H->workers[i].vel[H->workers[i].vel_id],
                                H->workers[i].vel_desc,
                                (cl_float4 *)H->workers[i].rcs_ellipsoid,
                                H->workers[i].rcs_ellipsoid_desc,
@@ -4387,7 +4408,7 @@ void RS_advance_time(RSHandle *H) {
                                    (cl_float4 *)H->workers[i].scat_tum,
                                    (cl_float4 *)H->workers[i].scat_rcs,
                                    (cl_uint4 *)H->workers[i].scat_rnd,
-                                   (cl_image)H->workers[i].vel,
+                                   (cl_image)H->workers[i].vel[H->workers[i].vel_id],
                                    H->workers[i].vel_desc,
                                    (cl_image)H->workers[i].adm_cd[a],
                                    (cl_image)H->workers[i].adm_cm[a],
@@ -4429,17 +4450,17 @@ void RS_advance_time(RSHandle *H) {
         
         // Need to refresh some parameters of the background at each time update
         if (H->sim_concept & RSSimulationConceptDraggedBackground) {
-            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,      sizeof(cl_mem),     &C->vel);
+            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,      sizeof(cl_mem),     &C->vel[C->vel_id]);
             clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription,   sizeof(cl_float16), &H->sim_desc);
             clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->origins[0], &C->counts[0], NULL, 0, NULL, &events[i][0]);
         } else {
-            clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel);
+            clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[C->vel_id]);
             clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
             clEnqueueNDRangeKernel(C->que, C->kern_bg_atts, 1, &C->origins[0], &C->counts[0], NULL, 0, NULL, &events[i][0]);
         }
         
         // Debris particles
-        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel);
+        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[C->vel_id]);
         clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
         for (k = 1; k < H->num_types; k++) {
             if (C->counts[k]) {
@@ -4471,10 +4492,61 @@ void RS_advance_time(RSHandle *H) {
     
 #endif
     
+//#if defined (_USE_GCL_)
+//    
+//#if defined (_DUMMY_)
+//    
+//    dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
+//    
+//#elif defined (_ALL_DEBRIS_)
+//    
+//    dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
+//    
+//#else
+//    
+//    for (i = 0; i < H->num_workers; i++) {
+//        dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
+//        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
+//            if (H->workers[i].counts[k]) {
+//                dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
+//            }
+//        }
+//    }
+//    
+//#endif
+//    
+//#else
+//    
+//    for (i = 0; i < H->num_workers; i++) {
+//        clFlush(H->workers[i].que);
+//    }
+//    
+//    for (i = 0; i < H->num_workers; i++) {
+//        for (k = 0; k < H->num_types; k++) {
+//            if (H->workers[i].counts[k]) {
+//                clWaitForEvents(1, &events[i][k]);
+//                clReleaseEvent(events[i][k]);
+//            }
+//        }
+//    }
+//    
+//#endif
+    
     H->sim_tic += H->params.prt;
     H->sim_desc.s[RSSimulationDescriptionSimTic] = H->sim_tic;
     H->status |= RSStatusScattererSignalNeedsUpdate;
+
+    // Schedule a table upload if the next frame is going to use the next table.
+    if (H->sim_tic >= H->sim_toc) {
+        for (i = 0; i < H->num_workers; i++) {
+            H->workers[i].vel_id = H->workers[i].vel_id == 1 ? 0 : 1;
+        }
+        RS_set_vel_data_to_LES_table(H, LES_get_frame(H->L, H->vel_idx));
+        H->vel_idx = H->vel_idx == H->vel_count - 1 ? 0 : H->vel_idx + 1;
+    }
+
 }
+
 
 
 void RS_make_pulse(RSHandle *H) {

@@ -292,8 +292,10 @@ typedef struct _rs_worker {
     cl_mem                 rcs_imag[RS_MAX_RCS_TABLES];  // RCS of debris
     cl_float16             rcs_desc[RS_MAX_RCS_TABLES];  // RCS-desc of debris
     
-    cl_mem                 vel;
+    cl_mem                 vel[2];                       // Double buffering
     cl_float16             vel_desc;
+    unsigned int           vel_id;
+    
     
     size_t                 mem_size;
     size_t                 mem_usage;
@@ -307,6 +309,7 @@ typedef struct _rs_worker {
     
     dispatch_queue_t       que;
     dispatch_semaphore_t   sem;
+    dispatch_semaphore_t   sem_upload;
     cl_ndrange             ndrange_scat_all;
     cl_ndrange             ndrange_scat[RS_MAX_DEBRIS_TYPES];
     cl_ndrange             ndrange_pulse_pass_1;
@@ -316,7 +319,7 @@ typedef struct _rs_worker {
     IOSurfaceRef           surf_adm_cm[RS_MAX_ADM_TABLES];
     IOSurfaceRef           surf_rcs_real[RS_MAX_RCS_TABLES];
     IOSurfaceRef           surf_rcs_imag[RS_MAX_RCS_TABLES];
-    IOSurfaceRef           surf_vel;
+    IOSurfaceRef           surf_vel[2];
     IOSurfaceRef           surf_rcs_ellipsoids;
     
 #else
@@ -340,7 +343,7 @@ typedef struct _rs_worker {
     cl_kernel              kern_make_pulse_pass_2_range;
     
     cl_command_queue       que;
-    cl_event               upload_event;
+    cl_event               event_upload;
     
 #endif
     

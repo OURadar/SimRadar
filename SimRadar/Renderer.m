@@ -1520,11 +1520,11 @@ unsigned int grayToBinary(unsigned int num)
     GLfloat scale = 0.5f * (GLfloat)height / 1080.0f;
     if (subtitleString) {
         [fwTextRenderer drawText:[subtitleString UTF8String] origin:origin scale:scale];
-        origin.y -= scale * 54.0f;
+        origin.y -= scale * 50.0f;
     }
     for (k = 0; k < 6; k++) {
         [fwTextRenderer drawText:statusMessage[k] origin:origin scale:scale];
-        origin.y -= scale * 54.0f;
+        origin.y -= scale * 50.0f;
     }
 
 #ifndef GEN_IMG
