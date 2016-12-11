@@ -2558,26 +2558,7 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
     
     cl_image_format format = {CL_RGBA, CL_FLOAT};
     
-#if defined (CL_VERSION_1_2)
-    
-    cl_image_desc desc;
-    desc.image_type = CL_MEM_OBJECT_IMAGE3D;
-    desc.image_width  = table.x_;
-    desc.image_height = table.y_;
-    desc.image_depth  = table.z_;
-    desc.image_array_size = 0;
-    desc.image_row_pitch = desc.image_width * sizeof(cl_float4);
-    desc.image_slice_pitch = desc.image_height * desc.image_row_pitch;
-    desc.num_mip_levels = 0;
-    desc.num_samples = 0;
-    desc.buffer = NULL;
-    
-#endif
-    
-    size_t origin[3] = {0, 0, 0};
-    size_t region[3] = {table.x_, table.y_, table.z_};
-
-    for (i = 0; i < H->num_workers; i++) {
+   for (i = 0; i < H->num_workers; i++) {
         if (H->workers[i].vel == NULL) {
 
 #if defined (_USE_GCL_)
@@ -2587,21 +2568,31 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 #else
         
             cl_int ret;
-            cl_mem_flags flags = CL_MEM_READ_WRITE;
+            cl_mem_flags flags = CL_MEM_READ_ONLY;
             
 #if defined (CL_VERSION_1_2)
             
+            cl_image_desc desc;
+            desc.image_type = CL_MEM_OBJECT_IMAGE3D;
+            desc.image_width  = table.x_;
+            desc.image_height = table.y_;
+            desc.image_depth  = table.z_;
+            desc.image_array_size = 0;
+            desc.image_row_pitch = 0;
+            desc.image_slice_pitch = 0;
+            desc.num_mip_levels = 0;
+            desc.num_samples = 0;
+            desc.buffer = NULL;
             H->workers[i].vel = clCreateImage(H->workers[i].context, flags, &format, &desc, NULL, &ret);
             
 #else
             
-            H->workers[i].vel = clCreateImage3D(H->workers[i].context, flags, &format, table.x_, table.y_, table.z_,
-                                                table.x_ * sizeof(cl_float4), table.y_ * table.x_ * sizeof(cl_float4), table.data, &ret);
+            H->workers[i].vel = clCreateImage3D(H->workers[i].context, flags, &format, table.x_, table.y_, table.z_, 0, 0, NULL, &ret);
             
 #endif
             
             if (H->workers[i].vel == NULL) {
-                rsprint("ERROR: workers[%d] unable to create wind table on CL device.  ret = %d\n", i, ret);
+                rsprint("ERROR: workers[%d] unable to create wind table on CL device. ret = %d / %d  flags = %d  table %d x %d x %d @ %p\n", i, ret, CL_INVALID_HOST_PTR, flags, table.x_, table.y_, table.z_, H->workers[i].vel);
                 exit(EXIT_FAILURE);
             } else if (H->verb > 2) {
                 rsprint("workers[%d] created wind table @ %p\n", i, &H->workers[i].vel);
@@ -2613,12 +2604,16 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 #if defined (_USE_GCL_)
 
         dispatch_async(H->workers[i].que, ^{
+            size_t origin[3] = {0, 0, 0};
+            size_t region[3] = {table.x_, table.y_, table.z_};
             gcl_copy_ptr_to_image(H->workers[i].vel, table.data, origin, region);
             dispatch_semaphore_signal(H->workers[i].sem);
         });
         
 #else
         
+        size_t origin[3] = {0, 0, 0};
+        size_t region[3] = {table.x_, table.y_, table.z_};
         clEnqueueWriteImage(H->workers[i].que, H->workers[i].vel, CL_FALSE, origin, region,
                             table.x_ * sizeof(cl_float4), table.y_ * table.x_ * sizeof(cl_float4), table.data, 0, NULL, &H->workers[i].upload_event);
         
