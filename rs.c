@@ -335,7 +335,9 @@ cl_uint read_kernel_source_from_files(char *src_ptr[], ...) {
     while (filename != NULL && strlen(filename) > 0) {
         
 #ifdef DEBUG_KERNEL_READ
+
         rsprint("src '%s' (%d)\n", filename, (int)strlen(filename));
+
 #endif
         
         // Read in the kernel source
@@ -369,10 +371,12 @@ cl_uint read_kernel_source_from_files(char *src_ptr[], ...) {
     }
     
 #ifdef DEBUG_KERNEL_READ
+
     printf("%d lines\n", count);
     for (int i = 0; i < count; i++) {
         printf("%d:%s", i, src_ptr[i]);
     }
+
 #endif
     
     return count;
@@ -757,25 +761,13 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
     //printf("numel = %zu  num_scats = %zu\n", numel, C->num_scats);
     
     if (H->has_vbo_from_gl) {
-        
-#if defined (CL_VERSION_1_2)
-        
         C->scat_pos = clCreateFromGLBuffer(C->context, CL_MEM_READ_WRITE, C->vbo_scat_pos, &ret);
         C->scat_clr = clCreateFromGLBuffer(C->context, CL_MEM_READ_WRITE, C->vbo_scat_clr, &ret);
         C->scat_ori = clCreateFromGLBuffer(C->context, CL_MEM_READ_WRITE, C->vbo_scat_ori, &ret);
         if (C->scat_pos == NULL || C->scat_clr == NULL || C->scat_ori == NULL || ret != CL_SUCCESS) {
             fprintf(stderr, "%s : RS : Error in clCreateFromGLBuffer().  ret = %d\n", now(), ret);
-            C->scat_pos = clCreateBuffer(C->context, CL_MEM_READ_WRITE, numel * sizeof(cl_float4), NULL, &ret);              CHECK_CL_CREATE_BUFFER
-            C->scat_clr = clCreateBuffer(C->context, CL_MEM_READ_WRITE, numel * sizeof(cl_float4), NULL, &ret);              CHECK_CL_CREATE_BUFFER
-            C->scat_ori = clCreateBuffer(C->context, CL_MEM_READ_WRITE, numel * sizeof(cl_float4), NULL, &ret);              CHECK_CL_CREATE_BUFFER
+            exit(EXIT_FAILURE);
         }
-        
-#else
-        
-        rsprint("ERROR: This should not happen. Open CL 1.2 is needed.");
-        
-#endif
-        
     } else {
         C->scat_pos = clCreateBuffer(C->context, CL_MEM_READ_WRITE, numel * sizeof(cl_float4), NULL, &ret);                  CHECK_CL_CREATE_BUFFER
         C->scat_clr = clCreateBuffer(C->context, CL_MEM_READ_WRITE, numel * sizeof(cl_float4), NULL, &ret);                  CHECK_CL_CREATE_BUFFER
@@ -3900,12 +3892,15 @@ void RS_populate(RSHandle *H) {
                 }
             }
             
-            // Replace a few for debugging purpose
 #if defined(DEBUG_DSD)
+
+            // Replace a few for debugging purpose
             H->scat_pos[0].w = 0.0025f;
             H->scat_pos[1].w = 0.001f;
             H->scat_pos[2].w = 0.0005f;
+
 #endif
+
         }
         
         sprintf(H->summary + strlen(H->summary),
@@ -3944,15 +3939,18 @@ void RS_populate(RSHandle *H) {
         rsprint("Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->counts[0]));
     }
     
-    // Replace a few points for debugging purpose.
 #if defined(DEBUG_RCS)
+
+    // Replace a few points for debugging purpose.
     H->scat_pos[0].x = domain.origin.x + 0.5f * domain.size.x;
     H->scat_pos[0].y = domain.origin.y + 0.5f * domain.size.y;
     H->scat_pos[0].z = H->scat_pos[0].y * tanf(5.0f / 180.0f * M_PI);
+
 #endif
     
-    // Replace the very first debris particle
 #if defined(DEBUG_DEBRIS)
+
+    // Replace the very first debris particle
     if (H->counts[1] > 0) {
         k = (int)H->counts[0];
         //printf("k = %d\n", k);
@@ -3962,6 +3960,7 @@ void RS_populate(RSHandle *H) {
         
         H->scat_aux[k].s0 = H->params.range_start + floorf(H->params.range_count * 0.5f) * H->params.range_delta;
     }
+
 #endif
     
     // Restore simulation time, default beam position at unit vector (0, 1, 0)
@@ -4462,47 +4461,7 @@ void RS_advance_time(RSHandle *H) {
     }
     
 #endif
-    
-//#if defined (_USE_GCL_)
-//    
-//#if defined (_DUMMY_)
-//    
-//    dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
-//    
-//#elif defined (_ALL_DEBRIS_)
-//    
-//    dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
-//    
-//#else
-//    
-//    for (i = 0; i < H->num_workers; i++) {
-//        dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
-//        for (k = 1; k < RS_MAX_DEBRIS_TYPES; k++) {
-//            if (H->workers[i].counts[k]) {
-//                dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
-//            }
-//        }
-//    }
-//    
-//#endif
-//    
-//#else
-//    
-//    for (i = 0; i < H->num_workers; i++) {
-//        clFlush(H->workers[i].que);
-//    }
-//    
-//    for (i = 0; i < H->num_workers; i++) {
-//        for (k = 0; k < H->num_types; k++) {
-//            if (H->workers[i].counts[k]) {
-//                clWaitForEvents(1, &events[i][k]);
-//                clReleaseEvent(events[i][k]);
-//            }
-//        }
-//    }
-//    
-//#endif
-    
+
     H->sim_tic += H->params.prt;
     H->sim_desc.s[RSSimulationDescriptionSimTic] = H->sim_tic;
     H->status |= RSStatusScattererSignalNeedsUpdate;
@@ -5001,8 +4960,10 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
             table[i].s3 = (cl_float)(sc * alxz.s3);
             
 #ifdef DEBUG_HEAVY
+
             rsprint("D = %.2fmm  rba %.4f  rab %.4f  lz %.4f  lx %.4f  numer = %.3e %.3e %.3e %.3e  denom = %.3f %.3f %.3f %.3f  alxz = %.3e %.3e %.3e %.3e  lx/lz = %.3e %.3e %.3e %.3e",
                     d, rba, rab, lz, lx, numer.s0, numer.s1, numer.s2, numer.s3, denom.s0, denom.s1, denom.s2, denom.s3, alxz.s0, alxz.s1, alxz.s2, alxz.s3, table[i].s0, table[i].s1, table[i].s2, table[i].s3);
+
 #endif
         }
         
@@ -5031,10 +4992,12 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
             }
             
 #ifdef DEBUG_HEAVY
+
             for (i = 0; i < n; i++) {
                 cl_double d = 0.5 + (cl_double)i * 0.1;
                 rsprint("D = %.2fmm  %.3e %.3e %.3e %.3e --> %.3e %.3e %.3e %.3e", d, table_copy[i].s0, table_copy[i].s1, table_copy[i].s2, table_copy[i].s3, table[i].s0, table[i].s1, table[i].s2, table[i].s3);
             }
+
 #endif
             
             free(table_copy);
