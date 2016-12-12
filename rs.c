@@ -2555,23 +2555,20 @@ void RS_set_angular_weight_to_standard(RSHandle *H, float beamwidth_rad) {
 void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
     
     int i;
-    
+    cl_int ret = -1;
+    cl_mem_flags flags = CL_MEM_READ_ONLY;
     cl_image_format format = {CL_RGBA, CL_FLOAT};
-    
+
    for (i = 0; i < H->num_workers; i++) {
         if (H->workers[i].vel == NULL) {
 
 #if defined (_USE_GCL_)
             
-            H->workers[i].vel = gcl_create_image(&format, desc.image_width, desc.image_height, desc.image_depth, H->workers[i].surf_vel);
+            H->workers[i].vel = gcl_create_image(&format, table.x_, table.y_, table.z_, H->workers[i].surf_vel);
 
-#else
+#elif defined (CL_VERSION_1_2)
         
-            cl_int ret;
-            cl_mem_flags flags = CL_MEM_READ_ONLY;
-            
-#if defined (CL_VERSION_1_2)
-            
+
             cl_image_desc desc;
             desc.image_type = CL_MEM_OBJECT_IMAGE3D;
             desc.image_width  = table.x_;
@@ -2598,9 +2595,7 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
                 rsprint("workers[%d] created wind table @ %p\n", i, &H->workers[i].vel);
             }
         }
-        
-#endif
-        
+
 #if defined (_USE_GCL_)
 
         dispatch_async(H->workers[i].que, ^{
