@@ -1047,7 +1047,7 @@ int main(int argc, char *argv[]) {
     // Overall fps
     gettimeofday(&t2, NULL);
     dt = DTIME(t0, t2);
-    fps = user.num_pulses / dt;
+    float acc_fps = user.num_pulses / dt;
 
     // Clear the last line and beep five times
     fprintf(stderr, "%120s\r", "");
@@ -1061,11 +1061,11 @@ int main(int argc, char *argv[]) {
 
 #if defined (_OPEN_MPI)
 
-    printf("%s : Finished on %s.  Total time elapsed = %.2f s  (%.1f FPS)\n", now(), processor_name, dt, fps);
+    printf("%s : Finished on %s.  Total time elapsed = %.2f s  (%.1f FPS / %.1f FPS)\n", now(), processor_name, dt, acc_fps, fps);
     
 #else
     
-    printf("%s : Finished.  Total time elapsed = %.2f s  (%.1f FPS)\n", now(), dt, fps);
+    printf("%s : Finished.  Total time elapsed = %.2f s  (%.1f FPS / %.1f FPS)\n", now(), dt, acc_fps, fps);
 
 #endif
     
