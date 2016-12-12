@@ -2560,20 +2560,20 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
     
     int i;
     cl_int ret = -1;
-
+    cl_mem_flags flags = CL_MEM_READ_ONLY;
     cl_image_format format = {CL_RGBA, CL_FLOAT};
-    
-    for (i = 0; i < H->num_workers; i++) {
+
+   for (i = 0; i < H->num_workers; i++) {
         if (H->workers[i].vel[0] == NULL) {
 
 #if defined (_USE_GCL_)
             
             H->workers[i].vel[0] = gcl_create_image(&format, table.x_, table.y_, table.z_, H->workers[i].surf_vel[0]);
             H->workers[i].vel[1] = gcl_create_image(&format, table.x_, table.y_, table.z_, H->workers[i].surf_vel[1]);
-            
+
 #elif defined (CL_VERSION_1_2)
         
-            cl_mem_flags flags = CL_MEM_READ_ONLY;
+
             cl_image_desc desc;
             desc.image_type = CL_MEM_OBJECT_IMAGE3D;
             desc.image_width  = table.x_;
@@ -2585,6 +2585,7 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
             desc.num_mip_levels = 0;
             desc.num_samples = 0;
             desc.buffer = NULL;
+
             H->workers[i].vel[0] = clCreateImage(H->workers[i].context, flags, &format, &desc, NULL, &ret);
             H->workers[i].vel[1] = clCreateImage(H->workers[i].context, flags, &format, &desc, NULL, NULL);
             
@@ -2596,14 +2597,13 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 #endif
             
             if (H->workers[i].vel[0] == NULL || H->workers[i].vel[1] == NULL) {
-                rsprint("ERROR: workers[%d] unable to create wind table on CL device.  ret = %d\n", i, ret);
+                rsprint("ERROR: workers[%d] unable to create wind table on CL device.  ret = %d   table of %d x %d x %d @ %p (%d)\n", i, ret, table.x_, table.y_, table.z_, table.data, flags);
                 exit(EXIT_FAILURE);
             } else if (H->verb > 2) {
                 rsprint("workers[%d] created wind table @ %p %p\n", i, &H->workers[i].vel[0], &H->workers[i].vel[1]);
             }
         }
-        
-        
+
 #if defined (_USE_GCL_)
 
         dispatch_async(H->workers[i].que, ^{
@@ -2612,20 +2612,30 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
             gcl_copy_ptr_to_image(H->workers[i].vel[H->workers[i].vel_id], table.data, origin, region);
             dispatch_semaphore_signal(H->workers[i].sem_upload);
         });
-        dispatch_semaphore_wait(H->workers[i].sem_upload, DISPATCH_TIME_FOREVER);
 
 #else
         
         size_t origin[3] = {0, 0, 0};
         size_t region[3] = {table.x_, table.y_, table.z_};
-        clEnqueueWriteImage(H->workers[i].que, H->workers[i].vel[H->workers[i].vel_id], CL_TRUE, origin, region,
-                            table.x_ * sizeof(cl_float4), table.y_ * table.x_ * sizeof(cl_float4), table.data, 0, NULL, NULL);
+        clEnqueueWriteImage(H->workers[i].que, H->workers[i].vel[H->workers[i].vel_id], CL_FALSE, origin, region,
+                            table.x_ * sizeof(cl_float4), table.y_ * table.x_ * sizeof(cl_float4), table.data, 0, NULL, &H->workers[i].event_upload);
 
 #endif
         
     }
 
     for (i = 0; i < H->num_workers; i++) {
+
+#if defined (_USE_GCL_)
+
+        dispatch_semaphore_wait(H->workers[i].sem_upload, DISPATCH_TIME_FOREVER);
+
+#else
+
+        clWaitForEvents(1, &H->workers[i].event_upload);
+
+#endif
+
         // Copy over to CL worker
         float tmpf; memcpy(&tmpf, &table.spacing, sizeof(float));
         H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionFormat] = tmpf;                   // Make a copy in float so we are maintaining all 32-bits
