@@ -2722,11 +2722,12 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
             rsprint("LES stretched z-grid using %.6f * log1p( %.6f * z )    Max = %.2f m\n",
                     table.zs, table.zo, zmax);
         }
-        rsprint("GPU LES[%2d/%2d] @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]\n",
+        rsprint("GPU LES[%2d/%2d] @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]   (%s B)\n",
                 H->vel_idx, H->vel_count,
                 -hmax, hmax,
                 -hmax, hmax,
-                0.0, zmax);
+                0.0, zmax,
+                commaint(leslie->nn * sizeof(cl_float4)));
     }
     
     // Some other parameters
@@ -2737,16 +2738,16 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
     void *tmp = table.data;
     table.data = (cl_float4 *)leslie->uvwt;
 
-    // Cache a copy of the parameters but not the data, the data could be deallocated immediately after this function call.
-    H->vel_desc = *leslie;
-    memset(&H->vel_desc.data, 0, sizeof(LESValue));
-    
     // Now we call the function to upload to GPU memory
     RS_set_vel_data(H, table);
     
     // Restore the pointer so that it can be freed as expected.
     table.data = tmp;
     
+    // Cache a copy of the parameters but not the data, the data could be deallocated immediately after this function call.
+    H->vel_desc = *leslie;
+    memset(&H->vel_desc.data, 0, sizeof(LESValue));
+
     RS_table3d_free(table);
 }
 
@@ -3982,17 +3983,15 @@ void RS_populate(RSHandle *H) {
     }
     
     // First frame is loaded during RS_init(), now we fill in the buffer
-    //while (H->vel_count < RS_MAX_VEL_TABLES) {
-    rsprint("Reading LES table (%u out of %u)...", H->vel_idx, H->vel_count);
-    LESTable *table = LES_get_frame(H->L, H->vel_idx);
-    if (table == NULL) {
-        rsprint("ERROR: There is no more frame(s)?");
-        exit(EXIT_FAILURE);
-    }
-    RS_set_vel_data_to_LES_table(H, table);
-    H->vel_idx = H->vel_idx == H->vel_count - 1 ? 0 : H->vel_idx + 1;
-    //}
-    
+//    rsprint("RS_populate() reading LES table (%u out of %u)...", H->vel_idx, H->vel_count);
+//    LESTable *table = LES_get_frame(H->L, H->vel_idx);
+//    if (table == NULL) {
+//        rsprint("ERROR: There is no more frame(s)?");
+//        exit(EXIT_FAILURE);
+//    }
+//    RS_set_vel_data_to_LES_table(H, table);
+//    H->vel_idx = H->vel_idx == H->vel_count - 1 ? 0 : H->vel_idx + 1;
+
     // All tables must be ready at this point
     // - range weight table
     // - antenna weight table
