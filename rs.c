@@ -1143,11 +1143,11 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
     
     //RS_set_angular_weight_to_double_cone(H, 2.0f / 180.0f * M_PI);
     
-    H->verb = verb;
-    
     // Initialize the LES ingest
     //RS_set_vel_data_to_config(H, LESConfigSuctionVorticesLarge);
     RS_set_vel_data_to_config(H, LESConfigSuctionVortices);
+
+    H->verb = verb;
     
     return H;
 }
@@ -2594,7 +2594,7 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
             } else if (H->verb > 2) {
                 rsprint("workers[%d] created wind table @ %p %p\n", i, &H->workers[i].vel[0], &H->workers[i].vel[1]);
             }
-        }
+        } // if (H->workers[i].vel[0] == NULL) ...
 
 #if defined (_USE_GCL_)
 
@@ -2665,8 +2665,12 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 
 
 void RS_set_vel_data_to_config(RSHandle *H, LESConfig c) {
+    int i;
     if (H->L != NULL) {
         LES_free(H->L);
+    }
+    if (H->verb) {
+        rsprint("Using LES configuration '" UNDERLINE("%s") "' ...", (char *)c);
     }
     H->L = LES_init_with_config_path(c, NULL);
 
@@ -2675,11 +2679,35 @@ void RS_set_vel_data_to_config(RSHandle *H, LESConfig c) {
     LES_set_delayed_read(H->L);
     
 #endif
-    
-    // Reset the velocity count to 0, as if no table has been uploaded.
+
+    // Release the pre-existing memory. Alaways assume the new LESConfig is not the same size.
+    for (i = 0; i < H->num_workers; i++) {
+        if (H->workers[i].vel[i] != NULL) {
+
+#if defined (_USE_GCL_)
+
+            gcl_release_image(H->workers[i].vel[0]);
+            gcl_release_image(H->workers[i].vel[1]);
+
+#else
+
+            clReleaseMemObject(H->workers[i].vel[0]);
+            clReleaseMemObject(H->workers[i].vel[1]);
+
+#endif
+
+            H->workers[i].vel[0] = NULL;
+            H->workers[i].vel[1] = NULL;
+        }
+    }
+
+    // Reset the velocity index to 0.
     // The GPU handles are still kept intact, will be released upon framework completion / table replacement
+    H->vel_idx = 0;
     H->vel_count = (uint32_t)LES_get_table_count(H->L);
-    rsprint("Reading LES table (%u out of %u)...", H->vel_idx, H->vel_count);
+    if (H->verb) {
+        rsprint("Reading LES table (%u out of %u)...", H->vel_idx, H->vel_count);
+    }
     RS_set_vel_data_to_LES_table(H, LES_get_frame(H->L, 0));
     H->vel_idx = 1;
 }
@@ -2722,12 +2750,12 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
             rsprint("LES stretched z-grid using %.6f * log1p( %.6f * z )    Max = %.2f m\n",
                     table.zs, table.zo, zmax);
         }
-        rsprint("GPU LES[%2d/%2d] @ X:[ %.2f - %.2f ]   Y:[ %.2f - %.2f ]   Z:[ %.2f - %.2f ]   (%s B)\n",
+        rsprint("GPU LES[%2d/%2d] @ X:[ %.2f - %.2f ] m   Y:[ %.2f - %.2f ] m   Z:[ %.2f - %.2f ] m   (%s MB)\n",
                 H->vel_idx, H->vel_count,
                 -hmax, hmax,
                 -hmax, hmax,
                 0.0, zmax,
-                commaint(leslie->nn * sizeof(cl_float4)));
+                commaint(leslie->nn * sizeof(cl_float4) / 1024 / 1024));
     }
     
     // Some other parameters
@@ -3982,7 +4010,7 @@ void RS_populate(RSHandle *H) {
         H->workers[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionUserConstant] = H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale];
     }
     
-    // First frame is loaded during RS_init(), now we fill in the buffer
+    // Double buffering: first frame is loaded during RS_init() or changed during RS_set_vel_data_to_config(), now we fill in the alternate buffer
 //    rsprint("RS_populate() reading LES table (%u out of %u)...", H->vel_idx, H->vel_count);
 //    LESTable *table = LES_get_frame(H->L, H->vel_idx);
 //    if (table == NULL) {
@@ -4002,7 +4030,7 @@ void RS_populate(RSHandle *H) {
     RS_compute_rcs_ellipsoids(H);
     
     //
-    // GPU memory allocation
+    // GPU memory allocation (probably should rename this to RS_worker_kernel_setup()
     //
     for (i = 0; i < H->num_workers; i++) {
         RS_worker_malloc(H, i);
@@ -4271,6 +4299,7 @@ void RS_advance_time(RSHandle *H) {
     }
     
     // Advance to next wind table when the time comes
+    // NOTE: Double buffering would require this part to change to schedule only, but wait for completion the next round.
     if (H->sim_tic >= H->sim_toc) {
         H->sim_toc += H->vel_desc.tp;
         if (H->vel_idx == 0) {

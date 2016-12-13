@@ -14,7 +14,6 @@
 
 #include <dirent.h>
 
-#define UNDERLINE(x)  "\033[4m" x "\033[24m"
 #define MAX_FILELIST  16384
 
 int cstring_cmp(const void *a, const void *b)

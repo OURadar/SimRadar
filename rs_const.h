@@ -31,6 +31,7 @@
 #endif
 
 #define DTIME(T_begin, T_end)  ((double)(T_end.tv_sec - T_begin.tv_sec) + 1.0e-6 * (double)(T_end.tv_usec - T_begin.tv_usec))
+#define UNDERLINE(x)           "\033[4m" x "\033[24m"
 
 enum RSStatus {
     RSStatusNull                         = 0,

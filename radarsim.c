@@ -136,8 +136,6 @@ static char *scan_mode_str(char scan_mode) {
 //
 //   s h o w _ h e l p
 //
-#define CLEAR         "\033[0m"
-#define UNDERLINE(x)  "\033[4m" x "\033[24m"
 #define PROGNAME      "radarsim"
 
 void show_help() {
@@ -859,6 +857,8 @@ int main(int argc, char *argv[]) {
     } else {
         RS_set_dsd_to_mp(S);
     }
+
+    RS_set_vel_data_to_config(S, LESConfigSuctionVortices);
 
     // ---------------------------------------------------------------------------------------------------------------
     
