@@ -2750,11 +2750,12 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
             rsprint("LES stretched z-grid using %.6f * log1p( %.6f * z )    Max = %.2f m\n",
                     table.zs, table.zo, zmax);
         }
-        rsprint("GPU LES[%2d/%2d] @ X:[ %.2f - %.2f ] m   Y:[ %.2f - %.2f ] m   Z:[ %.2f - %.2f ] m   (%s MB)\n",
+        rsprint("GPU LES[%2d/%2d] @ X:[ %.2f - %.2f ] m   Y:[ %.2f - %.2f ] m   Z:[ %.2f - %.2f ] m   (%d, %s MB)\n",
                 H->vel_idx, H->vel_count,
                 -hmax, hmax,
                 -hmax, hmax,
                 0.0, zmax,
+                H->workers[0].vel_id,
                 commaint(leslie->nn * sizeof(cl_float4) / 1024 / 1024));
     }
     
@@ -4299,7 +4300,6 @@ void RS_advance_time(RSHandle *H) {
     }
     
     // Advance to next wind table when the time comes
-    // NOTE: Double buffering would require this part to change to schedule only, but wait for completion the next round.
     if (H->sim_tic >= H->sim_toc) {
         H->sim_toc += H->vel_desc.tp;
         if (H->vel_idx == 0) {
