@@ -25,6 +25,7 @@ enum hudConfig {
     hudConfigShowGrid             = 1 << 1,
     hudConfigShowRadarView        = 1 << 2,
     hudConfigShowOverlay          = 1 << 3,
+    hudConfigShowAll              = 0x0F,
     hudConfigLast                 = 15        // (1 << 4) - 1
 };
 
@@ -242,6 +243,7 @@ enum RendererLineSegment {
 
 - (void)cycleForwardHUDConfig;
 - (void)cycleReverseHUDConfig;
+- (void)showAllHUD;
 
 - (void)cycleVFX;
 

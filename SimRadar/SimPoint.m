@@ -63,6 +63,10 @@
                 RS_set_density(S, 1.2f);
             } else if (S->num_cus[0] <= 24) {
                 RS_set_density(S, 1.6f);
+            } else if (S->num_cus[0] <= 48) {
+                RS_set_density(S, 5.0f);
+            } else {
+                RS_set_density(S, 50.0f);
             }
         } else {
             RS_set_density(S, 50.0f);

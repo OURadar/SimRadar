@@ -1119,9 +1119,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
     
     H->O = OBJ_init();
     if (H->O == NULL) {
-        if (H->verb) {
-            rsprint("ERROR: OBJ_init() failed.");
-        }
+        rsprint("ERROR: OBJ_init() failed.");
         return NULL;
     }
     

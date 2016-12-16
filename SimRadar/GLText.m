@@ -489,7 +489,12 @@
     // Build the text origins
     int i, k;
     NSPoint point = origin;
-    int count = MIN(GLTextMaxString, (int)strlen(string));
+    
+    if (string == NULL) {
+        return;
+    }
+
+    const int count = MIN(GLTextMaxString, (int)strlen(string));
     
     if (align != GLTextAlignmentLeft) {
         CGFloat totalWidth = 0.0f;

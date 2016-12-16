@@ -20,7 +20,13 @@ OBJHandle OBJ_init_with_path(const char *path) {
     OBJMem *h = (OBJMem *)malloc(sizeof(OBJMem));
     
     h->adm_h = ADM_init();
+    if (h->adm_h == NULL) {
+        return NULL;
+    }
     h->rcs_h = RCS_init();
+    if (h->rcs_h == NULL) {
+        return NULL;
+    }
     h->count = 0;
     
     return (OBJHandle *)h;
@@ -46,7 +52,7 @@ OBJTable *OBJ_get_table(const OBJHandle in, OBJConfig type) {
         case OBJConfigWoodboard2x4:
             obj_table->adm_table = ADM_get_table(O->adm_h, ADMConfigSquarePlate);
             obj_table->rcs_table = RCS_get_table(O->rcs_h, RCSConfigWoodBoard);
-            // Modify dimensions to 2 x 4 x 12 in (h * w * l) and 500 kg / m^3
+            // Modify dimensions to 2 x 12 x 4 inches (depth x height x width) and density = 500 kg/m^3
             ADM_dimension_set(obj_table->adm_table, 0.0508f, 0.3048f, 0.1016f, 500.0f);
             break;
         case OBJConfigLeaf:
@@ -57,19 +63,19 @@ OBJTable *OBJ_get_table(const OBJHandle in, OBJConfig type) {
         case OBJConfigLeafBig:
             obj_table->adm_table = ADM_get_table(O->adm_h, ADMConfigModelPlate);
             obj_table->rcs_table = RCS_get_table(O->rcs_h, RCSConfigLeaf);
-            // Modify dimensions to 6 x 8 x 0.1 cm (w * l * t) and 350 kg / m^3
+            // Modify dimensions to 0.1 x 8 x 6 cm (depth x height x width) and density = 350 kg / m^3
             ADM_dimension_set(obj_table->adm_table, 0.001f, 0.08f, 0.06f, 350.0f);
             break;
         case OBJConfigMetalSheet:
             obj_table->adm_table = ADM_get_table(O->adm_h, ADMConfigSquarePlate);
             obj_table->rcs_table = RCS_get_table(O->rcs_h, RCSConfigPlate);
-            // Modify dimensions to 6 x 8 x 0.1 cm (w * l * t) and 350 kg / m^3
+            // Modify dimensions to 0.1 x 100 x 100 cm and density to 350 kg / m^3
             ADM_dimension_set(obj_table->adm_table, 0.001f, 1.0f, 1.0f, 7850.0f);
             break;
         case OBJConfigBrick:
             obj_table->adm_table = ADM_get_table(O->adm_h, ADMConfigSquarePlate);
             obj_table->rcs_table = RCS_get_table(O->rcs_h, RCSConfigBrick);
-            // Modify dimensions to 6 x 8 x 0.1 cm (w * l * t) and 350 kg / m^3
+            // Modify dimensions to 6.5 x 21.5 x 11.25 cm (depth x height x width) and density = 2200 kg/m^3
             ADM_dimension_set(obj_table->adm_table, 0.065f, 0.215f, 0.1125f, 2200.0f);
             break;
         default:

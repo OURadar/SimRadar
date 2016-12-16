@@ -756,6 +756,8 @@ unsigned int grayToBinary(unsigned int num)
         NSLog(@"Renderer initialized with pixel ratio = %.1f", devicePixelRatio);
         
         self.titleString = @"Renderer";
+        colorbarTitle = statusMessage[9];
+        sprintf(statusMessage[9], "Nothing");
         
         // View parameters
         [self resetViewParameters];
@@ -1741,6 +1743,13 @@ unsigned int grayToBinary(unsigned int num)
     hudConfigDecimal = hudConfigDecimal == 0 ? hudConfigLast : hudConfigDecimal - 1;
     hudConfigGray = binaryToGray(hudConfigDecimal);
     statusMessageNeedsUpdate = true;
+}
+
+
+- (void)showAllHUD
+{
+    hudConfigGray = hudConfigShowAll;
+    hudConfigDecimal = grayToBinary(hudConfigGray);
 }
 
 
