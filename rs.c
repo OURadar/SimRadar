@@ -493,7 +493,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
 #if defined (_USE_GCL_)
     
     // A queue & semaphore for the CL work
-    C->que = gcl_create_dispatch_queue(CL_DEVICE_TYPE_GPU, C->dev);
+    C->que = gcl_create_dispatch_queue(CL_DEVICE_TYPE_USE_ID, C->dev);
     C->sem = dispatch_semaphore_create(0);
     C->sem_upload = dispatch_semaphore_create(0);
     
@@ -556,7 +556,6 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
         rsprint("OpenCL context[%d] created (context @ %p, device_id @ %p).\n", (int)C->name, C->context, dev);
     }
     
-    
     // Program
     C->prog = clCreateProgramWithSource(C->context, src_size, (const char **)src_ptr, NULL, &ret);
     if (ret != CL_SUCCESS) {
@@ -564,6 +563,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
         clReleaseContext(C->context);
         exit(EXIT_FAILURE);
     }
+    rsprint("clBuildProgram() ...");
     if (verb) {
         ret = clBuildProgram(C->prog, 1, &C->dev, "", &pfn_prog_notify, NULL);
     } else {
@@ -1053,8 +1053,10 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
     }
     
 #if defined (GUI)
+    
     // Force to one GPU at the moment. Seems like OpenGL context can be shared with only one OpenCL context
     H->num_workers = 1;
+
 #endif
     
 #if defined (_USE_GCL_)
@@ -1077,6 +1079,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
     if (!strcmp(bundle_path, ".")) {
         count = read_kernel_source_from_files(src_ptr, "rs.cl", NULL);
     } else {
+        
 #ifdef INCLUDE_TYPES_IN_KERNEL
         
         // This version combines special types along with the kernel functions
@@ -1094,6 +1097,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
         count = read_kernel_source_from_files(src_ptr, kern_src_path, NULL);
         
 #endif
+        
     }
     
     if (count == 0) {
@@ -1111,10 +1115,15 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 #endif
     
     // Temporary supress the verbose output for setting default values; or very verbosy for heavy debug version
+
 #if defined(DEBUG_HEAVY)
+    
     H->verb = 3;
+
 #else
+
     H->verb = 0;
+
 #endif
     
     H->O = OBJ_init();
@@ -4037,14 +4046,16 @@ void RS_populate(RSHandle *H) {
     
 #if defined (_USE_GCL_)
     
-    CGLContextObj cobj = CGLGetCurrentContext();
-    if (cobj == NULL) {
+    CGLContextObj cgl_context = CGLGetCurrentContext();
+    if (cgl_context == NULL) {
         rsprint("ERROR: No GL context yet.");
         return;
     }
     
-    gcl_gl_set_sharegroup(CGLGetShareGroup(cobj));
-    
+    rsprint("gcl_gl_set_sharegroup() ... %p", cgl_context);
+    gcl_gl_set_sharegroup(CGLGetShareGroup(cgl_context));
+    rsprint("gcl_gl_set_sharegroup() ... done");
+
     RS_derive_ndranges(H);
     
 #endif

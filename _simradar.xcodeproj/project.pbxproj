@@ -125,6 +125,15 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
+		B557D6961E0D802900491F44 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.opencl;
+			fileType = sourcecode.opencl;
+			isEditable = 1;
+			outputFiles = (
+			);
+			script = "# <com.apple.compilers.opencl>\n";
+		};
 		B57241E51C0CA91400B76BCB /* PBXBuildRule */ = {
 			isa = PBXBuildRule;
 			compilerSpec = com.apple.compilers.proxy.script;
@@ -178,12 +187,12 @@
 		};
 		B56077ED17E356910068C6BE /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = /usr/share/man/man1/;
-			dstSubfolderSpec = 0;
+			buildActionMask = 12;
+			dstPath = OpenCL;
+			dstSubfolderSpec = 7;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 1;
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 		B567F8B91A6D66E700F40660 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -826,6 +835,7 @@
 				B54DEB3D18A5737000EBEC07 /* ShellScript */,
 			);
 			buildRules = (
+				B557D6961E0D802900491F44 /* PBXBuildRule */,
 			);
 			dependencies = (
 			);
