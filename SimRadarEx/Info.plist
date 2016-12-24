@@ -5,7 +5,7 @@
 	<key>ATSApplicationFontsPath</key>
 	<string>Fonts</string>
 	<key>CFBuildDate</key>
-	<string>Fri Dec 23 15:02:02 CST 2016</string>
+	<string>Fri Dec 23 18:28:34 CST 2016</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleExecutable</key>
@@ -25,7 +25,7 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>7948</string>
+	<string>7952</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.education</string>
 	<key>LSMinimumSystemVersion</key>

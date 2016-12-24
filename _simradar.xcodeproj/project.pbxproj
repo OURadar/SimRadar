@@ -890,18 +890,18 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				B56077EE17E356910068C6BE /* cldemo */,
-				B527892B18A13C0100650679 /* radarsim */,
-				B54601BF1CAA19A8005A8BF6 /* lsiq */,
 				B518D4211C84A0BD00BAF67D /* simple_ppi */,
-				B5760E9D18A938D3008DAF83 /* test_clreduce */,
-				B5D1420E18AA72F80041566E /* test_make_pulse */,
+				B527892B18A13C0100650679 /* radarsim */,
+				B572419D1C0CA05F00B76BCB /* SimRadar */,
+				B5EF316F18204B5C002DDEFC /* SimRadarX */,
+				B56077EE17E356910068C6BE /* cldemo */,
+				B54601BF1CAA19A8005A8BF6 /* lsiq */,
 				B5BAD55718B67E8B007AC15D /* test_rs */,
-				B5F3C32318F2FD8F00092A72 /* test_les */,
 				B567F8BA1A6D66E700F40660 /* test_adm */,
 				B5C2D1F21ADC155700DD91B1 /* test_rcs */,
-				B5EF316F18204B5C002DDEFC /* SimRadarX */,
-				B572419D1C0CA05F00B76BCB /* SimRadar */,
+				B5F3C32318F2FD8F00092A72 /* test_les */,
+				B5760E9D18A938D3008DAF83 /* test_clreduce */,
+				B5D1420E18AA72F80041566E /* test_make_pulse */,
 			);
 		};
 /* End PBXProject section */

@@ -22,7 +22,7 @@ ifeq ($(UNAME), Darwin)
     CFLAGS += -D_DARWIN_C_SOURCE
     LDFLAGS += -framework OpenCL
 else
-    # Linux systems, schooner of OSCER included
+    # Linux systems, mainly schooner of OSCER
     CC = gcc
     CFLAGS += -D_GNU_SOURCE
     CFLAGS += -I /opt/oscer/software/CUDA/8.0.44-GCC-4.9.3-2.25/include
