@@ -125,15 +125,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
-		B557D6961E0D802900491F44 /* PBXBuildRule */ = {
-			isa = PBXBuildRule;
-			compilerSpec = com.apple.compilers.opencl;
-			fileType = sourcecode.opencl;
-			isEditable = 1;
-			outputFiles = (
-			);
-			script = "# <com.apple.compilers.opencl>\n";
-		};
 		B57241E51C0CA91400B76BCB /* PBXBuildRule */ = {
 			isa = PBXBuildRule;
 			compilerSpec = com.apple.compilers.proxy.script;
@@ -736,9 +727,9 @@
 			productReference = B567F8BB1A6D66E700F40660 /* test_adm */;
 			productType = "com.apple.product-type.tool";
 		};
-		B572419D1C0CA05F00B76BCB /* SimRadarEx */ = {
+		B572419D1C0CA05F00B76BCB /* SimRadar */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = B57241B01C0CA06000B76BCB /* Build configuration list for PBXNativeTarget "SimRadarEx" */;
+			buildConfigurationList = B57241B01C0CA06000B76BCB /* Build configuration list for PBXNativeTarget "SimRadar" */;
 			buildPhases = (
 				B572419A1C0CA05F00B76BCB /* Sources */,
 				B572419B1C0CA05F00B76BCB /* Frameworks */,
@@ -751,7 +742,7 @@
 			);
 			dependencies = (
 			);
-			name = SimRadarEx;
+			name = SimRadar;
 			productName = SimRadarEx;
 			productReference = B572419E1C0CA05F00B76BCB /* SimRadarEx.app */;
 			productType = "com.apple.product-type.application";
@@ -824,9 +815,9 @@
 			productReference = B5D1420F18AA72F80041566E /* test_make_pulse */;
 			productType = "com.apple.product-type.tool";
 		};
-		B5EF316F18204B5C002DDEFC /* SimRadar */ = {
+		B5EF316F18204B5C002DDEFC /* SimRadarX */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = B5EF319D18204B5C002DDEFC /* Build configuration list for PBXNativeTarget "SimRadar" */;
+			buildConfigurationList = B5EF319D18204B5C002DDEFC /* Build configuration list for PBXNativeTarget "SimRadarX" */;
 			buildPhases = (
 				B5EF316C18204B5C002DDEFC /* Sources */,
 				B5EF316D18204B5C002DDEFC /* Frameworks */,
@@ -835,11 +826,10 @@
 				B54DEB3D18A5737000EBEC07 /* ShellScript */,
 			);
 			buildRules = (
-				B557D6961E0D802900491F44 /* PBXBuildRule */,
 			);
 			dependencies = (
 			);
-			name = SimRadar;
+			name = SimRadarX;
 			productName = RadarSimView;
 			productReference = B5EF317018204B5C002DDEFC /* SimRadar.app */;
 			productType = "com.apple.product-type.application";
@@ -910,8 +900,8 @@
 				B5F3C32318F2FD8F00092A72 /* test_les */,
 				B567F8BA1A6D66E700F40660 /* test_adm */,
 				B5C2D1F21ADC155700DD91B1 /* test_rcs */,
-				B5EF316F18204B5C002DDEFC /* SimRadar */,
-				B572419D1C0CA05F00B76BCB /* SimRadarEx */,
+				B5EF316F18204B5C002DDEFC /* SimRadarX */,
+				B572419D1C0CA05F00B76BCB /* SimRadar */,
 			);
 		};
 /* End PBXProject section */
@@ -1593,7 +1583,7 @@
 					/usr/local/lib,
 					"-Wl,-rpath,@loader_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "edu.ou.arrc.${PRODUCT_NAME:rfc1034identifier}";
+				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadarGCL;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
@@ -2215,7 +2205,7 @@
 					/usr/local/lib,
 					"-Wl,-rpath,@loader_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadarEx;
+				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -2268,7 +2258,7 @@
 					/usr/local/lib,
 					"-Wl,-rpath,@loader_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadarEx;
+				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = GEN_IMG;
@@ -2326,7 +2316,7 @@
 					/usr/local/lib,
 					"-Wl,-rpath,@loader_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadarEx;
+				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = "Debug GL";
@@ -2384,7 +2374,7 @@
 					/usr/local/lib,
 					"-Wl,-rpath,@loader_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadarEx;
+				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRIP_INSTALLED_PRODUCT = NO;
 			};
@@ -2610,7 +2600,7 @@
 					/usr/local/lib,
 					"-Wl,-rpath,@loader_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "edu.ou.arrc.${PRODUCT_NAME:rfc1034identifier}";
+				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadarGCL;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
@@ -3074,7 +3064,7 @@
 					/usr/local/lib,
 					"-Wl,-rpath,@loader_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "edu.ou.arrc.${PRODUCT_NAME:rfc1034identifier}";
+				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadarGCL;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
@@ -3138,7 +3128,7 @@
 					/usr/local/lib,
 					"-Wl,-rpath,@loader_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "edu.ou.arrc.${PRODUCT_NAME:rfc1034identifier}";
+				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadarGCL;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
@@ -3489,7 +3479,7 @@
 					/usr/local/lib,
 					"-Wl,-rpath,@loader_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "edu.ou.arrc.${PRODUCT_NAME:rfc1034identifier}";
+				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadarGCL;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
@@ -3544,7 +3534,7 @@
 					/usr/local/lib,
 					"-Wl,-rpath,@loader_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadarEx;
+				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = DUMMY;
@@ -3693,7 +3683,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		B57241B01C0CA06000B76BCB /* Build configuration list for PBXNativeTarget "SimRadarEx" */ = {
+		B57241B01C0CA06000B76BCB /* Build configuration list for PBXNativeTarget "SimRadar" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B57241AC1C0CA06000B76BCB /* Release */,
@@ -3753,7 +3743,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		B5EF319D18204B5C002DDEFC /* Build configuration list for PBXNativeTarget "SimRadar" */ = {
+		B5EF319D18204B5C002DDEFC /* Build configuration list for PBXNativeTarget "SimRadarX" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B5EF319E18204B5C002DDEFC /* Release */,

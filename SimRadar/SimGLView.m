@@ -57,12 +57,14 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	CGLEnable([context CGLContextObj], kCGLCECrashOnRemovedFunctions);
 	
 	CGLContextObj cglContext = [context CGLContextObj];
-	gcl_gl_set_sharegroup(CGLGetShareGroup(cglContext));
-
-	[self setOpenGLContext:context];
-
     CGLSetCurrentContext(cglContext);
-    NSLog(@"OpenGL context prepared; cglContext = %p  cglShareGroup = %p", CGLGetCurrentContext(), CGLGetShareGroup(CGLGetCurrentContext()));
+    CGLShareGroupObj cglSharegroup = CGLGetShareGroup(cglContext);
+                                                   
+    gcl_gl_set_sharegroup(cglSharegroup);
+    
+    [self setOpenGLContext:context];
+
+    NSLog(@"OpenGL context prepared.  cglContext %p   cglShareGroup %p", cglContext, cglSharegroup);
     
 	[context release];
 	[pf release];
@@ -87,6 +89,7 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	CVDisplayLinkRelease(displayLink);
 	
 	[renderer release];
+    [recorder release];
     
     free(scratchBuffer);
 	

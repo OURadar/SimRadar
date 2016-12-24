@@ -32,14 +32,10 @@
 	
 	RSHandle *S;
 
-	int table_id;
-
     size_t returnCounts[RS_MAX_GPU_DEVICE];
     
     size_t nearest_thousand;
     size_t nearest_hundred;
-
-    FILE *ori_fid;
 
     float tick_pos[10];
     NSArray *tick_lab;

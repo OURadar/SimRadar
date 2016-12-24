@@ -390,7 +390,7 @@ unsigned int grayToBinary(unsigned int num)
         2, 9, 3, 9, 7, 9, 6, 9
     };
     prim->instanceSize = sizeof(ind3) / sizeof(GLuint);
-    memcpy(prim->indices, ind2, prim->instanceSize * sizeof(GLuint));
+    memcpy(prim->indices, ind3, prim->instanceSize * sizeof(GLuint));
     prim->drawMode = GL_LINES;
 }
 

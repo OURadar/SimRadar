@@ -234,7 +234,7 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
     do {
         usleep(10000);
     } while (h->ibuf == 0);
-#ifdef DEBUG
+#ifdef DEBUG_HEAVY
     int policy = -1;
     if (pthread_attr_getschedparam(&attr, &param) == 0 &&
         pthread_attr_getschedpolicy(&attr, &policy) == 0) {

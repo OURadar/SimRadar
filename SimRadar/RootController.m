@@ -121,7 +121,7 @@
 
     state = 2;
 
-    NSLog(@"%@ %@", startRecordMenuItem, stopRecordMenuItem);
+//    NSLog(@"%@ %@", startRecordMenuItem, stopRecordMenuItem);
     
 //    [startRecordMenuItem setEnabled:true];
 //    [stopRecordMenuItem setEnabled:false];
@@ -135,6 +135,9 @@
 	
 	[dc release];
 	[sim release];
+    
+    [startRecordMenuItem release];
+    [stopRecordMenuItem release];
 	
 	[super dealloc];
 }
@@ -165,7 +168,6 @@
 
 - (void)createSimulation:(NSNumber *)number {
     @autoreleasepool {
-        NSLog(@"Setting up sharedgroup ...");
         CGLShareGroupObj sharegroup = (CGLShareGroupObj)[number longValue];
         sim = [[SimPoint alloc] initWithDelegate:self cglShareGroup:sharegroup];
         if (sim) {
@@ -201,7 +203,6 @@
 	} else {
         CGLContextObj context = CGLGetCurrentContext();
         CGLShareGroupObj sharegroup = CGLGetShareGroup(context);
-        NSLog(@"context = %p  sharegroup = %p", context, sharegroup);
         NSNumber *number = [NSNumber numberWithLong:(long)sharegroup];
         [self performSelectorInBackground:@selector(createSimulation:) withObject:number];
 	}

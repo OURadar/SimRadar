@@ -491,14 +491,20 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     CL_CHECK(clGetDeviceInfo(C->dev, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(C->mem_size), &C->mem_size, NULL));
     
 #if defined (_USE_GCL_)
-    
+
     // A queue & semaphore for the CL work
+    rsprint("RS_worker_init - gcl_create_dispatch_queue() ...");
     C->que = gcl_create_dispatch_queue(CL_DEVICE_TYPE_USE_ID, C->dev);
+    
+//    C->que = gcl_create_dispatch_queue(CL_DEVICE_TYPE_GPU, NULL);
+//    cl_device_id gpu_device = gcl_get_device_id_with_dispatch_queue(C->que);
+//    rsprint("Asking for CL_DEVICE_TYPE_GPU gives us: %p vs %p", gpu_device, dev);
+    
     C->sem = dispatch_semaphore_create(0);
     C->sem_upload = dispatch_semaphore_create(0);
     
     if (C->sem == NULL || C->sem_upload == NULL) {
-        fprintf(stderr, "%s : RS : Error creating semaphore for the CL worker.\n", now());
+        rsprint("Error. Unable to create semaphore for CL workers.\n");
         return;
     }
     
@@ -521,8 +527,6 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     cl_int ret;
     
     if (sharegroup) {
-        
-        rsprint("shareGroup = %p   verb = %d\n", sharegroup, verb);
         
 #if defined (__APPLE__)
         
@@ -1067,7 +1071,8 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
         if (verb > 2) {
             rsprint("Initializing worker %d using %p\n", i, H->devs[i]);
         }
-        RS_worker_init(&H->workers[i], H->devs[i], 0, NULL, 0, verb);
+        //RS_worker_init(&H->workers[i], H->devs[i], 0, NULL, 0, verb);
+        RS_worker_init(&H->workers[i], H->devs[i], 0, NULL, sharegroup, verb);
     }
     
 #else
@@ -4051,9 +4056,14 @@ void RS_populate(RSHandle *H) {
         rsprint("ERROR: No GL context yet.");
         return;
     }
-    
-    rsprint("gcl_gl_set_sharegroup() ... %p", cgl_context);
-    gcl_gl_set_sharegroup(CGLGetShareGroup(cgl_context));
+
+    CGLShareGroupObj sharegroup = CGLGetShareGroup(cgl_context);
+    if (sharegroup == NULL) {
+        rsprint("ERROR: Sharegroup should have been set before.");
+        return;
+    }
+    rsprint("context %p   sharegroup %p", cgl_context, sharegroup);
+    gcl_gl_set_sharegroup(sharegroup);
     rsprint("gcl_gl_set_sharegroup() ... done");
 
     RS_derive_ndranges(H);

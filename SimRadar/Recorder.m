@@ -78,6 +78,8 @@
 - (void)dealloc {
     NSLog(@"stop recording and release object");
     [self stopRecording];
+    [outputFilename release];
+    [overlayLogo release];
     [super dealloc];
 }
 

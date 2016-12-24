@@ -210,6 +210,7 @@ RCSTable *RCS_get_table(const RCSHandle in, const RCSConfig config) {
         fclose(fid);
         return NULL;
     }
+    table->lambda = 0.1f;
 
     // Allocate the space needed
     table->data.a = (float *)malloc(table->na * sizeof(float));

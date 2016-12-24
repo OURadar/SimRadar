@@ -21,10 +21,12 @@ OBJHandle OBJ_init_with_path(const char *path) {
     
     h->adm_h = ADM_init();
     if (h->adm_h == NULL) {
+        free(h);
         return NULL;
     }
     h->rcs_h = RCS_init();
     if (h->rcs_h == NULL) {
+        free(h);
         return NULL;
     }
     h->count = 0;

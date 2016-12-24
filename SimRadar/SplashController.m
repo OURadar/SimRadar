@@ -28,6 +28,12 @@
     [copyright setStringValue:[bundle.infoDictionary objectForKey:@"NSHumanReadableCopyright"]];
 }
 
+- (void)dealloc {
+    [imageCell release];
+    
+    [super dealloc];
+}
+
 - (void)windowDidLoad {
     [self.window setLevel:kCGScreenSaverWindowLevel];
     [progress setMinValue:0.0];
