@@ -75,7 +75,7 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
         renderer = [Renderer new];
     }
 
-    posix_memalign(&scratchBuffer, 64, 3840 * 2160 * 4);
+    posix_memalign(&scratchBuffer, 64, 5120 * 2880 * 4);
 }
 
 
@@ -112,13 +112,9 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	// Synchronize buffer swaps with vertical refresh rate
 	GLint ival = 1;
 	[[self openGLContext] setValues:&ival forParameter:NSOpenGLCPSwapInterval];
-	
-	// Init our renderer.  Use 0 for the defaultFBO which is appropriate for
-	// OSX (but not iOS since iOS apps must create their own FBO)
-	CGSize size = CGSizeMake(self.bounds.size.width, self.bounds.size.height);
 
     // Set the render size to bound size
-    [renderer setSize:size];
+    [renderer setSize:self.bounds.size];
 
     // Allocate VAO based on the number of CL devices
     //[renderer allocateVAO:RS_gpu_count()];
@@ -232,8 +228,8 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
     int bytesPerRow;
     unsigned char *bitmapData;
     
-    int width = renderer.width * [self.window backingScaleFactor];
-    int height = renderer.height * [self.window backingScaleFactor];
+    int width = self.bounds.size.width * self.window.backingScaleFactor;
+    int height = self.bounds.size.height * self.window.backingScaleFactor;
     
     NSBitmapImageRep *imageRep = [[[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
                                                                           pixelsWide:width

@@ -20,6 +20,18 @@
 		B5201C701C22396A00EACF53 /* SplashController.m in Sources */ = {isa = PBXBuildFile; fileRef = B5201C6E1C22396A00EACF53 /* SplashController.m */; };
 		B5201C721C2239D100EACF53 /* Splash.xib in Resources */ = {isa = PBXBuildFile; fileRef = B5201C711C2239D100EACF53 /* Splash.xib */; };
 		B5201C731C2239D100EACF53 /* Splash.xib in Resources */ = {isa = PBXBuildFile; fileRef = B5201C711C2239D100EACF53 /* Splash.xib */; };
+		B524C9541E0EDE1400D1CE71 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = B524C9531E0EDE1400D1CE71 /* AppDelegate.m */; };
+		B524C9571E0EDE1400D1CE71 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = B524C9561E0EDE1400D1CE71 /* main.m */; };
+		B524C9591E0EDE1400D1CE71 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B524C9581E0EDE1400D1CE71 /* Assets.xcassets */; };
+		B524C95C1E0EDE1400D1CE71 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = B524C95A1E0EDE1400D1CE71 /* MainMenu.xib */; };
+		B524C9681E0EDF0100D1CE71 /* DrawGLView.m in Sources */ = {isa = PBXBuildFile; fileRef = B524C9671E0EDF0100D1CE71 /* DrawGLView.m */; };
+		B524C9691E0EE2C200D1CE71 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5EF31BD18205EC8002DDEFC /* OpenGL.framework */; };
+		B524C96A1E0EE2C900D1CE71 /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
+		B524C96D1E0EEB0E00D1CE71 /* Renderer.m in Sources */ = {isa = PBXBuildFile; fileRef = B524C96C1E0EEB0D00D1CE71 /* Renderer.m */; };
+		B524C96E1E0EF1CC00D1CE71 /* GLText.m in Sources */ = {isa = PBXBuildFile; fileRef = B5FDCAE419D453B10016C2F7 /* GLText.m */; };
+		B524C96F1E0EF1F000D1CE71 /* Images in Resources */ = {isa = PBXBuildFile; fileRef = B5D22A171C10D62C00CE15EB /* Images */; };
+		B524C9701E0EF1F000D1CE71 /* Shaders in Resources */ = {isa = PBXBuildFile; fileRef = B56A7CE71C0F5AF700133ACF /* Shaders */; };
+		B524C9711E0EF20600D1CE71 /* Fonts in Resources */ = {isa = PBXBuildFile; fileRef = B56D60441C9DF47E0016AFEC /* Fonts */; };
 		B527893118A13C4400650679 /* radarsim.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281717D7C2F400E4DE66 /* radarsim.c */; };
 		B527893318A13C5F00650679 /* rs.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281917D7C4D500E4DE66 /* rs.c */; };
 		B527893418A13C6D00650679 /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
@@ -269,6 +281,17 @@
 		B5201C6D1C22396A00EACF53 /* SplashController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SplashController.h; sourceTree = "<group>"; };
 		B5201C6E1C22396A00EACF53 /* SplashController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SplashController.m; sourceTree = "<group>"; };
 		B5201C711C2239D100EACF53 /* Splash.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = Splash.xib; sourceTree = "<group>"; };
+		B524C9501E0EDE1300D1CE71 /* DrawGCL.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DrawGCL.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B524C9521E0EDE1400D1CE71 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+		B524C9531E0EDE1400D1CE71 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
+		B524C9561E0EDE1400D1CE71 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		B524C9581E0EDE1400D1CE71 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B524C95B1E0EDE1400D1CE71 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
+		B524C95D1E0EDE1400D1CE71 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B524C9661E0EDF0100D1CE71 /* DrawGLView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DrawGLView.h; sourceTree = "<group>"; };
+		B524C9671E0EDF0100D1CE71 /* DrawGLView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DrawGLView.m; sourceTree = "<group>"; };
+		B524C96B1E0EEB0D00D1CE71 /* Renderer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Renderer.h; sourceTree = "<group>"; };
+		B524C96C1E0EEB0D00D1CE71 /* Renderer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Renderer.m; sourceTree = "<group>"; };
 		B524E9221DE89AE0004C3D7B /* test_wx_db_compare.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = test_wx_db_compare.sh; sourceTree = "<group>"; };
 		B52609D019D665E800709AFD /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		B527892C18A13C0100650679 /* radarsim */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = radarsim; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -295,7 +318,7 @@
 		B56C7FA41ADC22E300552B1E /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Sparkle.framework; path = SimRadar/Sparkle.framework; sourceTree = "<group>"; };
 		B56D60441C9DF47E0016AFEC /* Fonts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Fonts; path = SimRadar/Fonts; sourceTree = "<group>"; };
 		B570B0AF18BC5B5500391717 /* rs.cl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.opencl; path = rs.cl; sourceTree = "<group>"; };
-		B572419E1C0CA05F00B76BCB /* SimRadarEx.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimRadarEx.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B572419E1C0CA05F00B76BCB /* SimRadarEx.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = SimRadarEx.app; path = SimRadar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B57241A61C0CA06000B76BCB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = SimRadarEx/Assets.xcassets; sourceTree = "<group>"; };
 		B57241AB1C0CA06000B76BCB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B5760E9E18A938D3008DAF83 /* test_clreduce */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_clreduce; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -320,7 +343,7 @@
 		B5D1420A18AA72E90041566E /* test_make_pulse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_make_pulse.c; sourceTree = "<group>"; };
 		B5D1420F18AA72F80041566E /* test_make_pulse */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_make_pulse; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5D22A171C10D62C00CE15EB /* Images */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Images; path = SimRadar/Images; sourceTree = "<group>"; };
-		B5EF317018204B5C002DDEFC /* SimRadar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimRadar.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B5EF317018204B5C002DDEFC /* SimRadar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = SimRadar.app; path = SimRadarX.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5EF317118204B5C002DDEFC /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		B5EF317418204B5C002DDEFC /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		B5EF317518204B5C002DDEFC /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
@@ -357,6 +380,15 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B524C94D1E0EDE1300D1CE71 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B524C96A1E0EE2C900D1CE71 /* OpenCL.framework in Frameworks */,
+				B524C9691E0EE2C200D1CE71 /* OpenGL.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -480,10 +512,11 @@
 				B50A281517D7BF0900E4DE66 /* Sources */,
 				B519295217D9153C00AB3687 /* Programs */,
 				B5EF317718204B5C002DDEFC /* SimRadar */,
+				B572419F1C0CA05F00B76BCB /* SimRadarEx */,
+				B524C9511E0EDE1400D1CE71 /* DrawGCL */,
+				B50A281317D7B27500E4DE66 /* Frameworks */,
 				B54DEB3618A5453800EBEC07 /* Minion-Icons */,
 				B56D60441C9DF47E0016AFEC /* Fonts */,
-				B572419F1C0CA05F00B76BCB /* SimRadarEx */,
-				B50A281317D7B27500E4DE66 /* Frameworks */,
 				B50A280C17D7B22B00E4DE66 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -503,6 +536,7 @@
 				B572419E1C0CA05F00B76BCB /* SimRadarEx.app */,
 				B518D4221C84A0BD00BAF67D /* simple_ppi */,
 				B54601C01CAA19A8005A8BF6 /* lsiq */,
+				B524C9501E0EDE1300D1CE71 /* DrawGCL.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -562,6 +596,31 @@
 				B524E9221DE89AE0004C3D7B /* test_wx_db_compare.sh */,
 			);
 			name = Programs;
+			sourceTree = "<group>";
+		};
+		B524C9511E0EDE1400D1CE71 /* DrawGCL */ = {
+			isa = PBXGroup;
+			children = (
+				B524C95A1E0EDE1400D1CE71 /* MainMenu.xib */,
+				B524C95D1E0EDE1400D1CE71 /* Info.plist */,
+				B524C9551E0EDE1400D1CE71 /* Supporting Files */,
+				B524C9581E0EDE1400D1CE71 /* Assets.xcassets */,
+				B524C9521E0EDE1400D1CE71 /* AppDelegate.h */,
+				B524C9531E0EDE1400D1CE71 /* AppDelegate.m */,
+				B524C9661E0EDF0100D1CE71 /* DrawGLView.h */,
+				B524C9671E0EDF0100D1CE71 /* DrawGLView.m */,
+				B524C96B1E0EEB0D00D1CE71 /* Renderer.h */,
+				B524C96C1E0EEB0D00D1CE71 /* Renderer.m */,
+			);
+			path = DrawGCL;
+			sourceTree = "<group>";
+		};
+		B524C9551E0EDE1400D1CE71 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				B524C9561E0EDE1400D1CE71 /* main.m */,
+			);
+			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
 		B572419F1C0CA05F00B76BCB /* SimRadarEx */ = {
@@ -658,6 +717,23 @@
 			productName = simple_ppi;
 			productReference = B518D4221C84A0BD00BAF67D /* simple_ppi */;
 			productType = "com.apple.product-type.tool";
+		};
+		B524C94F1E0EDE1300D1CE71 /* DrawGCL */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B524C9631E0EDE1400D1CE71 /* Build configuration list for PBXNativeTarget "DrawGCL" */;
+			buildPhases = (
+				B524C94C1E0EDE1300D1CE71 /* Sources */,
+				B524C94D1E0EDE1300D1CE71 /* Frameworks */,
+				B524C94E1E0EDE1300D1CE71 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DrawGCL;
+			productName = DrawGCL;
+			productReference = B524C9501E0EDE1300D1CE71 /* DrawGCL.app */;
+			productType = "com.apple.product-type.application";
 		};
 		B527892B18A13C0100650679 /* radarsim */ = {
 			isa = PBXNativeTarget;
@@ -863,6 +939,10 @@
 					B518D4211C84A0BD00BAF67D = {
 						CreatedOnToolsVersion = 7.2.1;
 					};
+					B524C94F1E0EDE1300D1CE71 = {
+						CreatedOnToolsVersion = 8.2.1;
+						ProvisioningStyle = Automatic;
+					};
 					B54601BF1CAA19A8005A8BF6 = {
 						CreatedOnToolsVersion = 7.2.1;
 					};
@@ -902,11 +982,24 @@
 				B5F3C32318F2FD8F00092A72 /* test_les */,
 				B5760E9D18A938D3008DAF83 /* test_clreduce */,
 				B5D1420E18AA72F80041566E /* test_make_pulse */,
+				B524C94F1E0EDE1300D1CE71 /* DrawGCL */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		B524C94E1E0EDE1300D1CE71 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B524C9591E0EDE1400D1CE71 /* Assets.xcassets in Resources */,
+				B524C95C1E0EDE1400D1CE71 /* MainMenu.xib in Resources */,
+				B524C9701E0EF1F000D1CE71 /* Shaders in Resources */,
+				B524C96F1E0EF1F000D1CE71 /* Images in Resources */,
+				B524C9711E0EF20600D1CE71 /* Fonts in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B572419C1C0CA05F00B76BCB /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -985,6 +1078,18 @@
 				B518D42E1C84A0DF00BAF67D /* les.c in Sources */,
 				B518D42F1C84A0E200BAF67D /* adm.c in Sources */,
 				B518D4301C84A0E500BAF67D /* rcs.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B524C94C1E0EDE1300D1CE71 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B524C9571E0EDE1400D1CE71 /* main.m in Sources */,
+				B524C9541E0EDE1400D1CE71 /* AppDelegate.m in Sources */,
+				B524C9681E0EDF0100D1CE71 /* DrawGLView.m in Sources */,
+				B524C96D1E0EEB0E00D1CE71 /* Renderer.m in Sources */,
+				B524C96E1E0EF1CC00D1CE71 /* GLText.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1123,6 +1228,14 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
+		B524C95A1E0EDE1400D1CE71 /* MainMenu.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				B524C95B1E0EDE1400D1CE71 /* Base */,
+			);
+			name = MainMenu.xib;
+			sourceTree = "<group>";
+		};
 		B5EF317A18204B5C002DDEFC /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -1359,6 +1472,166 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				MTL_ENABLE_DEBUG_INFO = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		B524C95E1E0EDE1400D1CE71 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				INFOPLIST_FILE = DrawGCL/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.DrawGCL;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		B524C95F1E0EDE1400D1CE71 /* DUMMY */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				INFOPLIST_FILE = DrawGCL/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.DrawGCL;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = DUMMY;
+		};
+		B524C9601E0EDE1400D1CE71 /* GEN_IMG */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				INFOPLIST_FILE = DrawGCL/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.DrawGCL;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = GEN_IMG;
+		};
+		B524C9611E0EDE1400D1CE71 /* Debug GL */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				INFOPLIST_FILE = DrawGCL/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.DrawGCL;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = "Debug GL";
+		};
+		B524C9621E0EDE1400D1CE71 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				INFOPLIST_FILE = DrawGCL/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.DrawGCL;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -3634,6 +3907,17 @@
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
+		};
+		B524C9631E0EDE1400D1CE71 /* Build configuration list for PBXNativeTarget "DrawGCL" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B524C95E1E0EDE1400D1CE71 /* Release */,
+				B524C95F1E0EDE1400D1CE71 /* DUMMY */,
+				B524C9601E0EDE1400D1CE71 /* GEN_IMG */,
+				B524C9611E0EDE1400D1CE71 /* Debug GL */,
+				B524C9621E0EDE1400D1CE71 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
 		};
 		B527893018A13C0100650679 /* Build configuration list for PBXNativeTarget "radarsim" */ = {
 			isa = XCConfigurationList;

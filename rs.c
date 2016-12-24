@@ -4062,9 +4062,9 @@ void RS_populate(RSHandle *H) {
         rsprint("ERROR: Sharegroup should have been set before.");
         return;
     }
-    rsprint("context %p   sharegroup %p", cgl_context, sharegroup);
+    rsprint("RS_populate() - context %p   sharegroup %p", cgl_context, sharegroup);
     gcl_gl_set_sharegroup(sharegroup);
-    rsprint("gcl_gl_set_sharegroup() ... done");
+    rsprint("RS_populate() - gcl_gl_set_sharegroup() ... done");
 
     RS_derive_ndranges(H);
     

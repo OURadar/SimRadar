@@ -42,6 +42,9 @@ unsigned int grayToBinary(unsigned int num)
 
 @implementation Renderer
 
+#pragma mark -
+#pragma mark Properties
+
 @synthesize titleString, subtitleString;
 @synthesize delegate;
 @synthesize resetRange;
@@ -49,9 +52,6 @@ unsigned int grayToBinary(unsigned int num)
 @synthesize width, height;
 @synthesize beamAzimuth, beamElevation;
 @synthesize showDebrisAttributes, fadeSmallScatterers, viewParametersNeedUpdate;
-
-#pragma mark -
-#pragma mark Properties
 
 - (void)setRange:(float)newRange
 {
@@ -77,7 +77,7 @@ unsigned int grayToBinary(unsigned int num)
 
 - (void)setGridAtOrigin:(GLfloat *)origin size:(GLfloat *)size
 {
-	//NSLog(@"grid @ (%.1f, %.1f, %.1f)  (%.1f, %.1f, %.1f)", origin[0], origin[1], origin[2], size[0], size[1], size[2]);
+	NSLog(@"grid @ (%.1f, %.1f, %.1f)  (%.1f, %.1f, %.1f)", origin[0], origin[1], origin[2], size[0], size[1], size[2]);
     
     GLfloat *pos = lineRenderer.positions + lineRenderer.segmentOrigins[RendererLineSegmentSimulationGrid] * 4;
 
@@ -697,7 +697,7 @@ unsigned int grayToBinary(unsigned int num)
     }
     // To add: check if number can fit in the allocated buffer
     if (lineRenderer.segmentMax < lineRenderer.segmentNextOrigin + number) {
-        size_t next_vertex_count = (lineRenderer.segmentMax + number + 1023) / 1024;
+        size_t next_vertex_count = ((lineRenderer.segmentMax + number) / 1024) * 1024;
         NSLog(@"Expanding lineRenderer buffers to %zu vertices ...", next_vertex_count);
         lineRenderer.positions = (GLfloat *)realloc(lineRenderer.positions, 4 * next_vertex_count * sizeof(GLfloat));
         lineRenderer.segmentOrigins = (GLuint *)realloc(lineRenderer.segmentOrigins, next_vertex_count);
