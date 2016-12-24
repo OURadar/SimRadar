@@ -18,16 +18,15 @@
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     // Insert code here to initialize your application
-    NSSize newSize = NSMakeSize(1280.0f, 720.0f);
-    CGFloat xPos = (self.window.screen.frame.size.width - newSize.width) * 0.5f;
-    CGFloat yPos = (self.window.screen.frame.size.height - newSize.height) * 0.5f;
-    [self.window setFrame:NSMakeRect(xPos, yPos, newSize.width, newSize.height) display:YES];
-
-    [glView setBoundsSize:newSize];
-    [glView.renderer setSize:newSize];
+//    NSSize newSize = NSMakeSize(1280.0f, 720.0f);
+//    CGFloat xPos = (self.window.screen.frame.size.width - newSize.width) * 0.5f;
+//    CGFloat yPos = (self.window.screen.frame.size.height - newSize.height) * 0.5f;
+//    [self.window setFrame:NSMakeRect(xPos, yPos, newSize.width, newSize.height) display:YES];
+//
+//    [glView setBoundsSize:newSize];
+//    [glView.renderer setSize:newSize];
     
     [glView startAnimation];
-    
 }
 
 

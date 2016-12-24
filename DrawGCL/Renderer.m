@@ -206,8 +206,6 @@
         
         colorbarTitle = statusMessage[9];
         sprintf(statusMessage[9], "Nothing");
-        
-        [self validateLineRenderer:0];
 
         // View parameters
         [self resetViewParameters];
@@ -704,6 +702,17 @@
 - (void)allocateVBO {
     int i;
 
+    // Grid lines
+    glBindVertexArray(lineRenderer.vao);
+    
+    glDeleteBuffers(1, lineRenderer.vbo);
+    glGenBuffers(1, lineRenderer.vbo);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, lineRenderer.vbo[0]);
+    glBufferData(GL_ARRAY_BUFFER, lineRenderer.segmentNextOrigin * 4 * sizeof(GLfloat), lineRenderer.positions, GL_STATIC_DRAW);
+    glVertexAttribPointer(lineRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(lineRenderer.positionAI);
+
     // Mesh: colorbar
     glBindVertexArray(meshRenderer.vao);
     
@@ -725,7 +734,7 @@
     
     // position
     glBindBuffer(GL_ARRAY_BUFFER, meshRenderer.vbo[0]);
-    //NSLog(@"basic rect is length %u", lineRenderer.segmentLengths[RendererLineSegmentBasicRectangle]);
+    NSLog(@"basic rect is length %u", lineRenderer.segmentLengths[RendererLineSegmentBasicRectangle]);
     glBufferData(GL_ARRAY_BUFFER,
                  lineRenderer.segmentLengths[RendererLineSegmentBasicRectangle] * 4 * sizeof(GLfloat),
                  &lineRenderer.positions[lineRenderer.segmentOrigins[RendererLineSegmentBasicRectangle]],
@@ -1010,69 +1019,27 @@
     
     glViewport(0, 0, width * devicePixelRatio, height * devicePixelRatio);
     
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[0]);
+    //glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[0]);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_DEPTH_TEST);
     
-    // The background scatter bodies
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    
-    glBindVertexArray(pointRenderer.vao);
-    glUseProgram(pointRenderer.program);
-    glUniform4f(pointRenderer.sizeUI, pixelsPerUnit * devicePixelRatio, 1.0f, 1.0f, 1.0f);
-    glUniform4f(pointRenderer.colorUI, pointRenderer.colormapIndexNormalized, 1.0f, 1.0f, backgroundOpacity);
-    glUniformMatrix4fv(pointRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
-    glUniform1i(pointRenderer.pingPongUI, fadeSmallScatterers);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, pointRenderer.textureID);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, pointRenderer.colormapID);
-    glDrawArrays(GL_POINTS, 0, pointRenderer.count);
-    //glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
-    
-    
-    // Simulation Grid
+
+    // The Grid
     glBindVertexArray(lineRenderer.vao);
     glUseProgram(lineRenderer.program);
     glUniformMatrix4fv(lineRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
     glUniform4f(lineRenderer.colorUI, 0.4f, 1.0f, 1.0f, phase);
     glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[RendererLineSegmentSimulationGrid], lineRenderer.segmentLengths[RendererLineSegmentSimulationGrid]);
-    glUniform4f(lineRenderer.colorUI, 1.0f, 1.0f, 0.0f, 1.0f);
-    glDrawArrays(GL_LINES, lineRenderer.segmentOrigins[RendererLineSegmentAnchorLines], lineRenderer.segmentLengths[RendererLineSegmentAnchorLines]);
-    
-    // Restore to full view port
-    glViewport(0, 0, width * devicePixelRatio, height * devicePixelRatio);
-    
-    // Restore to texture 0
-    glActiveTexture(GL_TEXTURE0);
-    
-    glDisable(GL_DEPTH_TEST);
-    
-    glBlendFunc(GL_ONE, GL_ZERO);
-    
-    glBindVertexArray(frameRenderer.vao);
-    
-    // The framebuffer for final presentation
-    glUseProgram(frameRenderer.program);
-    glUniformMatrix4fv(frameRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
-    glUniform4f(frameRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
-    
-    // Show the framebuffer on the window
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glUseProgram(frameRenderer.program);
-    glBindTexture(GL_TEXTURE_2D, frameBufferTextures[ifbo]);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    
-    glClear(GL_DEPTH_BUFFER_BIT);
-    
-    //#ifdef DEBUG_GL
+
+    #ifdef DEBUG_GL
     [tTextRenderer showTextureMap];
-    //#endif
+    #endif
+    
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
     NSPoint origin = NSMakePoint(25.0f, height - tTextRenderer.pointSize * 0.5f - 35.0f);
     
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    [fwTextRenderer drawText:fpsString origin:NSMakePoint(width - 30.0f, 20.0f) scale:0.5f red:1.0f green:0.9f blue:0.2f alpha:1.0f align:GLTextAlignmentRight];
     
     // Colorbar
     glBindVertexArray(lineRenderer.vao);
