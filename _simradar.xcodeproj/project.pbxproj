@@ -20,14 +20,8 @@
 		B5201C701C22396A00EACF53 /* SplashController.m in Sources */ = {isa = PBXBuildFile; fileRef = B5201C6E1C22396A00EACF53 /* SplashController.m */; };
 		B5201C721C2239D100EACF53 /* Splash.xib in Resources */ = {isa = PBXBuildFile; fileRef = B5201C711C2239D100EACF53 /* Splash.xib */; };
 		B5201C731C2239D100EACF53 /* Splash.xib in Resources */ = {isa = PBXBuildFile; fileRef = B5201C711C2239D100EACF53 /* Splash.xib */; };
-		B524C9541E0EDE1400D1CE71 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = B524C9531E0EDE1400D1CE71 /* AppDelegate.m */; };
-		B524C9571E0EDE1400D1CE71 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = B524C9561E0EDE1400D1CE71 /* main.m */; };
-		B524C9591E0EDE1400D1CE71 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B524C9581E0EDE1400D1CE71 /* Assets.xcassets */; };
-		B524C95C1E0EDE1400D1CE71 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = B524C95A1E0EDE1400D1CE71 /* MainMenu.xib */; };
-		B524C9681E0EDF0100D1CE71 /* DrawGLView.m in Sources */ = {isa = PBXBuildFile; fileRef = B524C9671E0EDF0100D1CE71 /* DrawGLView.m */; };
 		B524C9691E0EE2C200D1CE71 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5EF31BD18205EC8002DDEFC /* OpenGL.framework */; };
 		B524C96A1E0EE2C900D1CE71 /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
-		B524C96D1E0EEB0E00D1CE71 /* Renderer.m in Sources */ = {isa = PBXBuildFile; fileRef = B524C96C1E0EEB0D00D1CE71 /* Renderer.m */; };
 		B524C96E1E0EF1CC00D1CE71 /* GLText.m in Sources */ = {isa = PBXBuildFile; fileRef = B5FDCAE419D453B10016C2F7 /* GLText.m */; };
 		B524C96F1E0EF1F000D1CE71 /* Images in Resources */ = {isa = PBXBuildFile; fileRef = B5D22A171C10D62C00CE15EB /* Images */; };
 		B524C9701E0EF1F000D1CE71 /* Shaders in Resources */ = {isa = PBXBuildFile; fileRef = B56A7CE71C0F5AF700133ACF /* Shaders */; };
@@ -282,16 +276,6 @@
 		B5201C6E1C22396A00EACF53 /* SplashController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SplashController.m; sourceTree = "<group>"; };
 		B5201C711C2239D100EACF53 /* Splash.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = Splash.xib; sourceTree = "<group>"; };
 		B524C9501E0EDE1300D1CE71 /* DrawGCL.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DrawGCL.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		B524C9521E0EDE1400D1CE71 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
-		B524C9531E0EDE1400D1CE71 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
-		B524C9561E0EDE1400D1CE71 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
-		B524C9581E0EDE1400D1CE71 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		B524C95B1E0EDE1400D1CE71 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
-		B524C95D1E0EDE1400D1CE71 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		B524C9661E0EDF0100D1CE71 /* DrawGLView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DrawGLView.h; sourceTree = "<group>"; };
-		B524C9671E0EDF0100D1CE71 /* DrawGLView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DrawGLView.m; sourceTree = "<group>"; };
-		B524C96B1E0EEB0D00D1CE71 /* Renderer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Renderer.h; sourceTree = "<group>"; };
-		B524C96C1E0EEB0D00D1CE71 /* Renderer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Renderer.m; sourceTree = "<group>"; };
 		B524E9221DE89AE0004C3D7B /* test_wx_db_compare.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = test_wx_db_compare.sh; sourceTree = "<group>"; };
 		B52609D019D665E800709AFD /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		B527892C18A13C0100650679 /* radarsim */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = radarsim; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -513,7 +497,6 @@
 				B519295217D9153C00AB3687 /* Programs */,
 				B5EF317718204B5C002DDEFC /* SimRadar */,
 				B572419F1C0CA05F00B76BCB /* SimRadarEx */,
-				B524C9511E0EDE1400D1CE71 /* DrawGCL */,
 				B50A281317D7B27500E4DE66 /* Frameworks */,
 				B54DEB3618A5453800EBEC07 /* Minion-Icons */,
 				B56D60441C9DF47E0016AFEC /* Fonts */,
@@ -596,31 +579,6 @@
 				B524E9221DE89AE0004C3D7B /* test_wx_db_compare.sh */,
 			);
 			name = Programs;
-			sourceTree = "<group>";
-		};
-		B524C9511E0EDE1400D1CE71 /* DrawGCL */ = {
-			isa = PBXGroup;
-			children = (
-				B524C95A1E0EDE1400D1CE71 /* MainMenu.xib */,
-				B524C95D1E0EDE1400D1CE71 /* Info.plist */,
-				B524C9551E0EDE1400D1CE71 /* Supporting Files */,
-				B524C9581E0EDE1400D1CE71 /* Assets.xcassets */,
-				B524C9521E0EDE1400D1CE71 /* AppDelegate.h */,
-				B524C9531E0EDE1400D1CE71 /* AppDelegate.m */,
-				B524C9661E0EDF0100D1CE71 /* DrawGLView.h */,
-				B524C9671E0EDF0100D1CE71 /* DrawGLView.m */,
-				B524C96B1E0EEB0D00D1CE71 /* Renderer.h */,
-				B524C96C1E0EEB0D00D1CE71 /* Renderer.m */,
-			);
-			path = DrawGCL;
-			sourceTree = "<group>";
-		};
-		B524C9551E0EDE1400D1CE71 /* Supporting Files */ = {
-			isa = PBXGroup;
-			children = (
-				B524C9561E0EDE1400D1CE71 /* main.m */,
-			);
-			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
 		B572419F1C0CA05F00B76BCB /* SimRadarEx */ = {
@@ -992,8 +950,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B524C9591E0EDE1400D1CE71 /* Assets.xcassets in Resources */,
-				B524C95C1E0EDE1400D1CE71 /* MainMenu.xib in Resources */,
 				B524C9701E0EF1F000D1CE71 /* Shaders in Resources */,
 				B524C96F1E0EF1F000D1CE71 /* Images in Resources */,
 				B524C9711E0EF20600D1CE71 /* Fonts in Resources */,
@@ -1085,10 +1041,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B524C9571E0EDE1400D1CE71 /* main.m in Sources */,
-				B524C9541E0EDE1400D1CE71 /* AppDelegate.m in Sources */,
-				B524C9681E0EDF0100D1CE71 /* DrawGLView.m in Sources */,
-				B524C96D1E0EEB0E00D1CE71 /* Renderer.m in Sources */,
 				B524C96E1E0EF1CC00D1CE71 /* GLText.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1228,14 +1180,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
-		B524C95A1E0EDE1400D1CE71 /* MainMenu.xib */ = {
-			isa = PBXVariantGroup;
-			children = (
-				B524C95B1E0EDE1400D1CE71 /* Base */,
-			);
-			name = MainMenu.xib;
-			sourceTree = "<group>";
-		};
 		B5EF317A18204B5C002DDEFC /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -3918,6 +3862,7 @@
 				B524C9621E0EDE1400D1CE71 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		B527893018A13C0100650679 /* Build configuration list for PBXNativeTarget "radarsim" */ = {
 			isa = XCConfigurationList;
