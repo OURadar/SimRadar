@@ -522,6 +522,7 @@ unsigned int grayToBinary(unsigned int num)
         resource->colormapID = [resource->colormap name];
         resource->colormapCount = resource->colormap.height;
         resource->colormapIndex = RENDERER_DEFAULT_BODY_COLOR_INDEX;
+        resource->colormapIndexNormalized = ((GLfloat)resource->colormapIndex + 0.5f) / resource->colormapCount;
         glUniform1i(resource->colormapUI, 1);  // TEXTURE1 for colormap
         if (verb) {
             NSLog(@"Colormap has %d maps, each with %d colors", resource->colormap.height, resource->colormap.width);
@@ -826,13 +827,6 @@ unsigned int grayToBinary(unsigned int num)
 
     // Only one renderer program needs to be created and the others can share the same program
     bodyRenderer[i] = [self createRenderResourceFromVertexShader:@"spheroid.vsh" fragmentShader:@"spheroid.fsh"];
-
-    // Make body renderer's color a bit translucent
-    glUniform4f(bodyRenderer[i].colorUI, 1.0f, 1.0f, 1.0f, 0.75f);
-    
-    // Set default colormap index
-    bodyRenderer[i].colormapIndex = RENDERER_DEFAULT_BODY_COLOR_INDEX;
-    bodyRenderer[i].colormapIndexNormalized = ((GLfloat)bodyRenderer[i].colormapIndex + 0.5f) / bodyRenderer[i].colormapCount;
 
     // Make copies of render resource but use the same program
     for (i = 1; i < clDeviceCount; i++) {
