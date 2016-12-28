@@ -11,10 +11,10 @@ enum RSTable1DDescrip {
 
 enum RSTableSpacing {
     RSTableSpacingUniform          = 0,
-    RSTableSpacingStretchedX       = 1,
-    RSTableSpacingStretchedY       = 1 << 1,
-    RSTableSpacingStretchedZ       = 1 << 2,
-    RSTableSpacingStretchedXYZ     = RSTableSpacingStretchedX | RSTableSpacingStretchedY | RSTableSpacingStretchedZ
+    RSTableSpacingStretchedX       = 0x01,   // 1
+    RSTableSpacingStretchedY       = 0x02,   // 1 << 1
+    RSTableSpacingStretchedZ       = 0x04,   // 1 << 2
+    RSTableSpacingStretchedXYZ     = 0x07
 };
 
 enum RSSimulationConcept {
@@ -105,7 +105,7 @@ float4 compute_debris_rcs(const float4 pos, const float4 ori, __read_only image2
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //
-// Rudimentary function(s)
+//  Basic Functions
 //
 
 #pragma mark -
@@ -127,7 +127,7 @@ float4 rand(uint4 *seed)
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //
-// Quaternion arithmetics
+//  Quaternion Fun
 //
 
 float4 quat_mult(float4 left, float4 right)
@@ -168,7 +168,7 @@ float4 quat_rotate(float4 vector, float4 quat)
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //
-// Complex arithmetics
+//  Complex Arithmetics
 //
 //   - s0123 = (IH, QH, IV, QV)
 //
@@ -179,10 +179,6 @@ float4 quat_rotate(float4 vector, float4 quat)
 
 float4 cl_complex_multiply(const float4 a, const float4 b)
 {
-//    return (float4)(a.s0 * b.s0 - a.s1 * b.s1,
-//                    a.s1 * b.s0 + a.s0 * b.s1,
-//                    a.s2 * b.s2 - a.s3 * b.s3,
-//                    a.s3 * b.s2 + a.s2 * b.s3);
     float4 iiqq = (float4)(a.s02 * b.s02 - a.s13 * b.s13,
                            a.s13 * b.s02 + a.s02 * b.s13);
     return shuffle(iiqq, (uint4)(0, 2, 1, 3));
@@ -200,19 +196,27 @@ float4 cl_complex_divide(const float4 a, const float4 b)
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //
-// Wind table index
+//  Wind Table Index
 //
 
 float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16 sim_desc)
 {
     const float s7 = wind_desc.s7;
     const uint grid_spacing = *(uint *)&s7;
+//    const uint4 mask = (uint4)((grid_spacing & RSTableSpacingStretchedX) << 15,
+//                               (grid_spacing & RSTableSpacingStretchedY) << 15,
+//                               (grid_spacing & RSTableSpacingStretchedZ) << 15,
+//                               0);
+//    float4 pos_lin = fma(pos, wind_desc.s0123, wind_desc.s4567);
+//    float4 pos_rel = pos - (float4)(sim_desc.hi.s01 + 0.5f * sim_desc.hi.s45, 0.0f, 0.0f);
+//    float4 pos_exp = copysign(wind_desc.s0123, pos_rel) * log1p(wind_desc.s4567 * fabs(pos_rel)) + wind_desc.s89ab;
+//    return select(pos_lin, pos_exp, mask);
 
     if (grid_spacing == RSTableSpacingStretchedXYZ) {
         // Relative position from the center of the domain
         float4 pos_rel = pos - (float4)(sim_desc.hi.s01 + 0.5f * sim_desc.hi.s45, 0.0f, 0.0f);
         //
-        // Background wind table is staggered for all dimensions
+        //  Background wind table is staggered for all dimensions
         //
         //    RSTable3DStaggeredDescriptionBaseChangeX     =  0,
         //    RSTable3DStaggeredDescriptionBaseChangeY     =  1,
@@ -234,7 +238,7 @@ float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16
         return copysign(wind_desc.s0123, pos_rel) * log1p(wind_desc.s4567 * fabs(pos_rel)) + wind_desc.s89ab;
     } else if (grid_spacing == RSTableSpacingUniform) {
         //
-        // Background wind table is uniform for all dimensions
+        //  Background wind table is uniform for all dimensions
         //
         //    RSTable3DDescriptionScaleX      =  0,
         //    RSTable3DDescriptionScaleY      =  1,
@@ -345,7 +349,7 @@ float4 compute_dudt_dwdt(float4 *dwdt,
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //
-// Particle RCS
+//  Particle RCS
 //
 
 float4 compute_ellipsoid_rcs(const float4 pos, __constant float4 *table, const float4 table_desc) {
@@ -785,36 +789,12 @@ __kernel void db_atts(__global float4 *p,
     ori = normalize(ori_next);
     pos += vel * dt;
     
-    //float4 rand_no_a, rand_no_b, rand_no_c;
-    //float sin_th_2, cos_th_2,
-    //float sqxy, sqxyz, ca, sa;
-    
     int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
     
     if (is_outside) {
         uint4 seed = y[i];
         float4 r = rand(&seed);
         pos.xyz = (float3)(fma(r.xy, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT);  // This is kind of cool!
-//        ori = normalize(rand(&seed));
-
-//        rand_no_a = rand(&seed);
-//        rand_no_b = rand(&seed);
-//        rand_no_c.s0 = sqrt(-2.0f * log(rand_no_a.s0)) * cos(2.0f * M_PI_F * rand_no_a.s1); // X (normal)
-//        rand_no_c.s1 = sqrt(-2.0f * log(rand_no_a.s2)) * cos(2.0f * M_PI_F * rand_no_a.s3); // Y (normal)
-//        rand_no_c.s2 = sqrt(-2.0f * log(rand_no_b.s0)) * cos(2.0f * M_PI_F * rand_no_b.s1); // Z (normal)
-//
-//        2 * pi * rand_noc.s3 == THETA (uniform)
-//        rand_no_c.s3 = rand_no_b.s2;
-//
-//        float cos_th_2, sin_th_2 = sincos(M_PI_F * rand_no_c.s3, &cos_th_2);
-//        sqxy = sqrt(rand_no_c.s0 * rand_no_c.s0 + rand_no_c.s2 * rand_no_c.s2);
-//        sqxyz = sqrt(rand_no_c.s0 * rand_no_c.s0 + rand_no_c.s1 * rand_no_c.s1 + rand_no_c.s2 * rand_no_c.s2);
-//        sa = sincos(0.5f * acos(rand_no_c.s1 / sqxyz), &ca);
-//
-//        ori.x = rand_no_c.s0*ca*sin_th_2/sqxyz - rand_no_c.s0*rand_no_c.s1*sin_th_2/sqxyz*sa/sqxy + rand_no_c.s2*cos_th_2*sa/sqxy;
-//        ori.y = sin_th_2/sqxyz*(sqxy*sa + rand_no_c.s1*ca);
-//        ori.z = rand_no_c.s2 * ca*sin_th_2 / sqxyz - rand_no_c.s0 * cos_th_2 * sa / sqxy - rand_no_c.s1 * rand_no_c.s2 * sin_th_2 * sa / sqxy / sqxyz;
-//        ori.w = cos_th_2*ca;
 
         r = rand(&seed);
         float4 c = (float4)(sqrt(-2.0f * log(r.s012)), r.s3);
@@ -972,8 +952,7 @@ __kernel void scat_clr(__global float4 *c,
         // Angular weight (antenna pattern)
         m = aux.s3;
     } else if (draw_mode == 'B') {
-        // Angular weight in log scale
-        // clamp(20 * log10(b), -80, 0) / 80 + 1
+        // Angular weight in log scale: clamp(20 * log10(b), -80, 0) / 80 + 1
         m = clamp(fma(native_log10(aux.s3), 0.25f, 1.0f), 0.0f, 1.0f);
     } else if (draw_mode == 'R') {
         // Range weight
@@ -994,8 +973,7 @@ __kernel void scat_clr(__global float4 *c,
         // Actual range weight
         m = mix(range_weight[iidx_int.s0], range_weight[iidx_int.s1], fidx_dec.s0);
     } else if (draw_mode == 'H') {
-        // Magnitude of HH
-        // clamp(20 * log10(H), -80, 0) / 80 + 1 --> [-80, 0] dB on [0, 1] colorspace
+        // Magnitude of HH: clamp(20 * log10(H), -80, 0) / 80 + 1 --> [-80, 0] dB on [0, 1] colorspace
         m = clamp(fma(native_log10(length(rcs.s01)), 0.25f, 1.0f), 0.0f, 1.0f);
     } else if (draw_mode == 'V') {
         // Magnitude of VV

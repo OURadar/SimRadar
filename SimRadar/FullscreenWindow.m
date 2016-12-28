@@ -10,7 +10,7 @@
 
 @implementation FullscreenWindow
 
--(id) init
+- (id)init
 {
 	// Create a screen-sized window on the display
 	NSRect screenRect = [[NSScreen mainScreen] frame];
@@ -33,13 +33,13 @@
 	return self;
 }
 
--(BOOL) canBecomeKeyWindow
+- (BOOL)canBecomeKeyWindow
 {
 	// Return yes so that this borderless window can receive input
 	return YES;
 }
 
-- (void) keyDown:(NSEvent *)event
+- (void)keyDown:(NSEvent *)event
 {
 	// Implement keyDown since controller will not get [ESC] key event which
 	// the controller uses to kill fullscreen
