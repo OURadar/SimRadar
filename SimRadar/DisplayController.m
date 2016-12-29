@@ -212,10 +212,13 @@ NSWindow *standardWindow;
 //{
 //}
 
-//- (void)mouseDragged:(NSEvent *)event
-//{
-//    [glView.renderer panX:event.locationInWindow.x Y:event.locationInWindow.y dx:event.deltaX dy:event.deltaY];
-//}
+- (void)mouseDragged:(NSEvent *)event
+{
+    if (fullscreenWindow == nil && event.locationInWindow.y > glView.bounds.size.height) {
+    return;
+    }
+    [glView.renderer panX:event.locationInWindow.x Y:event.locationInWindow.y dx:event.deltaX dy:event.deltaY];
+}
 
 - (void)mouseUp:(NSEvent *)event
 {
