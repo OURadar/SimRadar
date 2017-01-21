@@ -295,7 +295,7 @@
 		B56C7FA41ADC22E300552B1E /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Sparkle.framework; path = SimRadar/Sparkle.framework; sourceTree = "<group>"; };
 		B56D60441C9DF47E0016AFEC /* Fonts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Fonts; path = SimRadar/Fonts; sourceTree = "<group>"; };
 		B570B0AF18BC5B5500391717 /* rs.cl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.opencl; path = rs.cl; sourceTree = "<group>"; };
-		B572419E1C0CA05F00B76BCB /* SimRadarEx.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimRadarEx.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B572419E1C0CA05F00B76BCB /* SimRadarEx.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = SimRadarEx.app; path = SimRadar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B57241A61C0CA06000B76BCB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = SimRadarEx/Assets.xcassets; sourceTree = "<group>"; };
 		B57241AB1C0CA06000B76BCB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B5760E9E18A938D3008DAF83 /* test_clreduce */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_clreduce; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -320,7 +320,7 @@
 		B5D1420A18AA72E90041566E /* test_make_pulse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_make_pulse.c; sourceTree = "<group>"; };
 		B5D1420F18AA72F80041566E /* test_make_pulse */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_make_pulse; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5D22A171C10D62C00CE15EB /* Images */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Images; path = SimRadar/Images; sourceTree = "<group>"; };
-		B5EF317018204B5C002DDEFC /* SimRadar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimRadar.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B5EF317018204B5C002DDEFC /* SimRadar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = SimRadar.app; path = SimRadarX.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5EF317118204B5C002DDEFC /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		B5EF317418204B5C002DDEFC /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		B5EF317518204B5C002DDEFC /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
@@ -877,7 +877,7 @@
 					};
 				};
 			};
-			buildConfigurationList = B50A280317D7B1DC00E4DE66 /* Build configuration list for PBXProject "_simradar" */;
+			buildConfigurationList = B50A280317D7B1DC00E4DE66 /* Build configuration list for PBXProject "SimRadar" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -1459,7 +1459,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				OPENCL_AUTO_VECTORIZE_ENABLE = YES;
 				OPENCL_OPTIMIZATION_LEVEL = 3;
-				OTHER_CFLAGS = "";
+				OTHER_CFLAGS = "-DDEBUG_GL";
 				OTHER_LDFLAGS = "";
 				SDKROOT = macosx;
 			};
@@ -1934,6 +1934,7 @@
 				OPENCL_AUTO_VECTORIZE_ENABLE = YES;
 				OPENCL_OPTIMIZATION_LEVEL = 3;
 				OTHER_CFLAGS = "";
+				"OTHER_CFLAGS[arch=*]" = "-DDEBUG";
 				OTHER_LDFLAGS = "";
 				SDKROOT = macosx;
 			};
@@ -2252,7 +2253,10 @@
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				MTL_ENABLE_DEBUG_INFO = NO;
-				OTHER_CFLAGS = "-DGUI";
+				OTHER_CFLAGS = (
+					"-DGUI",
+					"-DGEN_IMG",
+				);
 				OTHER_LDFLAGS = (
 					"-L",
 					/usr/local/lib,
@@ -2476,7 +2480,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				OPENCL_AUTO_VECTORIZE_ENABLE = YES;
 				OPENCL_OPTIMIZATION_LEVEL = 3;
-				OTHER_CFLAGS = "";
+				OTHER_CFLAGS = "-DGEN_IMG";
 				OTHER_LDFLAGS = "";
 				SDKROOT = macosx;
 			};
@@ -3611,7 +3615,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		B50A280317D7B1DC00E4DE66 /* Build configuration list for PBXProject "_simradar" */ = {
+		B50A280317D7B1DC00E4DE66 /* Build configuration list for PBXProject "SimRadar" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B50A280517D7B1DC00E4DE66 /* Release */,

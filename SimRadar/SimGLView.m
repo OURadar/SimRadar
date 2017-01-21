@@ -187,6 +187,7 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
     }
     
 #ifdef GEN_IMG
+    NSLog(@"tic = %d", tic);
     if (tic > 3000 && tic <= 6000) {
 		NSString *filename = [NSString stringWithFormat:@"~/Desktop/figs/img%04d.png", tic];
 		NSLog(@"tic=%d  filename=%@\n", tic, filename.stringByExpandingTildeInPath);
