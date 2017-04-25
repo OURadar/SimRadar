@@ -30,7 +30,13 @@
 
 - (void)dealloc {
     [imageCell release];
-    
+    [label release];
+    [version release];
+    [copyright release];
+    [progress release];
+
+    [delegate release];
+
     [super dealloc];
 }
 

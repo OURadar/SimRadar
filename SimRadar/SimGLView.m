@@ -182,13 +182,13 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	
     CGLFlushDrawable([self.openGLContext CGLContextObj]);
     
-    if (recorder) {
-//        [recorder addFrame:<#(NSView *)#>];
-    }
+//  if (recorder) {
+//     Add frame ...
+//    }
     
 #ifdef GEN_IMG
     NSLog(@"tic = %d", tic);
-    if (tic > 3000 && tic <= 6000) {
+    if (tic > 3000 && tic <= 4800) {
 		NSString *filename = [NSString stringWithFormat:@"~/Desktop/figs/img%04d.png", tic];
 		NSLog(@"tic=%d  filename=%@\n", tic, filename.stringByExpandingTildeInPath);
         [self viewToFile:filename.stringByExpandingTildeInPath];
