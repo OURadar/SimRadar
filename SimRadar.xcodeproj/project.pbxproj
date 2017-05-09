@@ -915,7 +915,7 @@
 					};
 				};
 			};
-			buildConfigurationList = B50A280317D7B1DC00E4DE66 /* Build configuration list for PBXProject "_simradar" */;
+			buildConfigurationList = B50A280317D7B1DC00E4DE66 /* Build configuration list for PBXProject "SimRadar" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -1676,7 +1676,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				OPENCL_AUTO_VECTORIZE_ENABLE = YES;
 				OPENCL_OPTIMIZATION_LEVEL = 3;
-				OTHER_CFLAGS = "";
+				OTHER_CFLAGS = "-DDEBUG_GL";
 				OTHER_LDFLAGS = "";
 				SDKROOT = macosx;
 			};
@@ -2151,6 +2151,7 @@
 				OPENCL_AUTO_VECTORIZE_ENABLE = YES;
 				OPENCL_OPTIMIZATION_LEVEL = 3;
 				OTHER_CFLAGS = "";
+				"OTHER_CFLAGS[arch=*]" = "-DDEBUG";
 				OTHER_LDFLAGS = "";
 				SDKROOT = macosx;
 			};
@@ -2469,7 +2470,10 @@
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				MTL_ENABLE_DEBUG_INFO = NO;
-				OTHER_CFLAGS = "-DGUI";
+				OTHER_CFLAGS = (
+					"-DGUI",
+					"-DGEN_IMG",
+				);
 				OTHER_LDFLAGS = (
 					"-L",
 					/usr/local/lib,
@@ -2693,7 +2697,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				OPENCL_AUTO_VECTORIZE_ENABLE = YES;
 				OPENCL_OPTIMIZATION_LEVEL = 3;
-				OTHER_CFLAGS = "";
+				OTHER_CFLAGS = "-DGEN_IMG";
 				OTHER_LDFLAGS = "";
 				SDKROOT = macosx;
 			};
@@ -3828,7 +3832,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		B50A280317D7B1DC00E4DE66 /* Build configuration list for PBXProject "_simradar" */ = {
+		B50A280317D7B1DC00E4DE66 /* Build configuration list for PBXProject "SimRadar" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B50A280517D7B1DC00E4DE66 /* Release */,

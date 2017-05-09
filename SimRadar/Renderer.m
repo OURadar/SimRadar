@@ -1190,6 +1190,11 @@ unsigned int grayToBinary(unsigned int num)
 	// Tell the delgate I'm about to draw
 	[delegate willDrawScatterBody];
 
+#ifdef GEN_IMG
+    // Advance twice for things to go twice as fast
+    [delegate willDrawScatterBody];
+#endif
+
     glViewport(0, 0, width * devicePixelRatio, height * devicePixelRatio);
     
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[0]);
