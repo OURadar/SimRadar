@@ -3360,6 +3360,27 @@ void RS_set_random_seed(RSHandle *H, const unsigned int seed) {
 }
 
 
+void RS_add_debris(RSHandle *H, OBJConfig type, const size_t count) {
+    int k = 1;
+    while (H->counts[k] > 0 && k < RS_MAX_DEBRIS_TYPES) {
+        k++;
+    }
+    if (k == RS_MAX_DEBRIS_TYPES || H->adm_count == RS_MAX_ADM_TABLES || H->rcs_count == RS_MAX_RCS_TABLES) {
+        rsprint("Unable to add more debris type.");
+        return;
+    }
+    H->counts[k] = count;
+    if (k != H->adm_count + 1 || k != H->rcs_count + 1) {
+        rsprint("Inconsistent k = %d vs H->adm_count = %d vs H->rcs_count = %d.", k, H->adm_count, H->rcs_count);
+        return;
+    }
+
+    OBJTable *obj_table = OBJ_get_table(H->O, type);
+    
+    RS_set_adm_data_to_ADM_table(H, obj_table->adm_table);
+    RS_set_rcs_data_to_RCS_table(H, obj_table->rcs_table);
+}
+
 #pragma mark -
 #pragma mark GUI Specific Functions
 

@@ -873,19 +873,24 @@ int main(int argc, char *argv[]) {
     
 #endif
 
-    RS_set_obj_data_to_config(S, OBJConfigLeaf);
-    RS_set_obj_data_to_config(S, OBJConfigWoodboard2x4);
-    RS_set_obj_data_to_config(S, OBJConfigMetalSheet);
-    RS_set_obj_data_to_config(S, OBJConfigBrick);
+//    RS_set_obj_data_to_config(S, OBJConfigLeaf);
+//    RS_set_obj_data_to_config(S, OBJConfigWoodboard2x4);
+//    RS_set_obj_data_to_config(S, OBJConfigMetalSheet);
+//    RS_set_obj_data_to_config(S, OBJConfigBrick);
     
     RSBox box = RS_suggest_scan_domain(S, 16);
     
     // Set debris population
-    for (k = 0; k < debris_types; k++) {
-        if (debris_count[k]) {
-            RS_set_debris_count(S, k + 1, debris_count[k]);
-        }
+//    for (k = 0; k < debris_types; k++) {
+//        if (debris_count[k]) {
+//            RS_set_debris_count(S, k + 1, debris_count[k]);
+//        }
+//    }
+    if (debris_count[0]) {
+        printf("Adding %s leaves.\n", commaint(debris_count[0]));
+        RS_add_debris(S, OBJConfigLeaf, debris_count[0]);
     }
+
     RS_revise_debris_counts_to_gpu_preference(S);
     
     if (user.tight_box) {
