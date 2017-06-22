@@ -3369,16 +3369,20 @@ void RS_add_debris(RSHandle *H, OBJConfig type, const size_t count) {
         rsprint("Unable to add more debris type.");
         return;
     }
+    OBJTable *obj_table = OBJ_get_table(H->O, type);
+
+    RS_set_adm_data_to_ADM_table(H, obj_table->adm_table);
+    RS_set_rcs_data_to_RCS_table(H, obj_table->rcs_table);
+
     H->counts[k] = count;
+    H->num_types++;
     if (k != H->adm_count + 1 || k != H->rcs_count + 1) {
         rsprint("Inconsistent k = %d vs H->adm_count = %d vs H->rcs_count = %d.", k, H->adm_count, H->rcs_count);
         return;
     }
-
-    OBJTable *obj_table = OBJ_get_table(H->O, type);
-    
-    RS_set_adm_data_to_ADM_table(H, obj_table->adm_table);
-    RS_set_rcs_data_to_RCS_table(H, obj_table->rcs_table);
+    if (H->verb) {
+        rsprint("Total number of body types = %d", (int)H->num_types);
+    }
 }
 
 #pragma mark -

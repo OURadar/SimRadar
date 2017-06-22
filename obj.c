@@ -49,7 +49,6 @@ void OBJ_free(OBJHandle in) {
 OBJTable *OBJ_get_table(const OBJHandle in, OBJConfig type) {
     OBJMem *O = (OBJMem *)in;
     OBJTable *obj_table = &O->obj_table[O->count];
-    //printf("OBJ count : %d \n", O->count);
     switch (type) {
         case OBJConfigWoodboard2x4:
             obj_table->adm_table = ADM_get_table(O->adm_h, ADMConfigSquarePlate);
@@ -85,5 +84,6 @@ OBJTable *OBJ_get_table(const OBJHandle in, OBJConfig type) {
     }
     
     O->count++;
+    //printf("OBJ count : %d \n", O->count);
     return obj_table;
 }
