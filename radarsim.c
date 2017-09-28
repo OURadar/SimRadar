@@ -368,7 +368,7 @@ void write_iq_file(const UserParams user, const ScanParams scan, const IQFileHea
         fwrite(&pulse_cache[k * stride], sizeof(cl_float4), stride, fid);
     }
     printf("%s : Data file with %s B (seed = %s).\n", now(), commaint(ftell(fid)), commaint(file_header->simulation_seed));
-    printf("%.4e%+.4ei  %.4e%+.4ei ...\n", pulse_cache[0].s0, pulse_cache[0].s1, pulse_cache[1].s0, pulse_cache[1].s1);
+    printf("%s : Samples = %.4e%+.4ei  %.4e%+.4ei ...\n", now(), pulse_cache[0].s0, pulse_cache[0].s1, pulse_cache[1].s0, pulse_cache[1].s1);
     fclose(fid);
 }
 
@@ -877,7 +877,7 @@ int main(int argc, char *argv[]) {
 //    RS_set_obj_data_to_config(S, OBJConfigWoodboard2x4);
 //    RS_set_obj_data_to_config(S, OBJConfigMetalSheet);
 //    RS_set_obj_data_to_config(S, OBJConfigBrick);
-    
+
     RSBox box = RS_suggest_scan_domain(S, 16);
     
     // Set debris population
@@ -886,6 +886,7 @@ int main(int argc, char *argv[]) {
 //            RS_set_debris_count(S, k + 1, debris_count[k]);
 //        }
 //    }
+
     if (debris_count[0]) {
         printf("Adding %s leaves.\n", commaint(debris_count[0]));
         RS_add_debris(S, OBJConfigLeaf, debris_count[0]);
