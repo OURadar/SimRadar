@@ -200,9 +200,9 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
 
     h->ncubes = h->nfiles * h->nvol;
 
-#ifdef DEBUG
-    printf("LES DEBUG: file count = %zu    nvol = %zu    ncubes = %zu\n", h->nfiles, h->nvol, h->ncubes);
-#endif
+    #ifdef DEBUG
+    printf("DEBUG LES : file count = %zu    nvol = %zu    ncubes = %zu\n", h->nfiles, h->nvol, h->ncubes);
+    #endif
 
     // Allocate data boxes
     for (int i = 0; i < LES_num; i++) {
@@ -291,7 +291,7 @@ void *LES_background_read(LESHandle i) {
         int file_id = frame / LES_file_nblock;
 
         #ifdef DEBUG
-        printf("LES DEBUG : Background ingest from file %s for frame %d to slot %d ...\n", h->files[file_id], h->req, h->ibuf);
+        printf("DEBUG LES : Background ingest from file %s for frame %d to slot %d ...\n", h->files[file_id], h->req, h->ibuf);
         #endif
 
         // The table in collection of data boxes
@@ -708,7 +708,7 @@ LESTable *LES_get_frame(const LESHandle i, const int n) {
     } while (n != h->data_id[k] && k > 0);
     if (n == h->data_id[k]) {
         #ifdef DEBUG
-        printf("LES DEBUG : Found n = %d = %d @ k = %d / %d\n", n, h->data_id[k], k, LES_num);
+        printf("DEBUG LES : Found n = %d = %d @ k = %d / %d\n", n, h->data_id[k], k, LES_num);
         #endif
         table = h->data_boxes[k];
         // What to read in next
