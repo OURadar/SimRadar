@@ -293,7 +293,7 @@
     initProgress = completionPercentage;
     [self performSelectorOnMainThread:@selector(updateProgressIndicator:) withObject:nil waitUntilDone:NO];
 
-    [sc.label setStringValue:message];
+    [sc.label performSelectorOnMainThread:@selector(setStringValue:) withObject:message waitUntilDone:NO];
     
     if (completionPercentage >= 99.0) {
         [sc close];

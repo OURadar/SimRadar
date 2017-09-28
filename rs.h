@@ -455,8 +455,8 @@ struct _rs_handle {
 
 char *commaint(long long num);
 char *commafloat(float num);
-char *now();
-char *nowlong();
+char *now(void);
+char *nowlong(void);
 char *nowlongoffset(const int offset);
 
 cl_uint RS_gpu_count(void);
@@ -469,7 +469,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 //RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char verb);
 RSHandle *RS_init_for_cpu_verbose(const char verb);
 RSHandle *RS_init_verbose(const char verb);
-RSHandle *RS_init();
+RSHandle *RS_init(void);
 void RS_free(RSHandle *H);
 
 RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint group_size_multiple, const cl_uint user_group_counts, const cl_uint max_local_mem_size,
