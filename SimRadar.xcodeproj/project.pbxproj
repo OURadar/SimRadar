@@ -849,9 +849,9 @@
 			productReference = B5D1420F18AA72F80041566E /* test_make_pulse */;
 			productType = "com.apple.product-type.tool";
 		};
-		B5EF316F18204B5C002DDEFC /* SimRadarX */ = {
+		B5EF316F18204B5C002DDEFC /* SimRadarGCL */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = B5EF319D18204B5C002DDEFC /* Build configuration list for PBXNativeTarget "SimRadarX" */;
+			buildConfigurationList = B5EF319D18204B5C002DDEFC /* Build configuration list for PBXNativeTarget "SimRadarGCL" */;
 			buildPhases = (
 				B5EF316C18204B5C002DDEFC /* Sources */,
 				B5EF316D18204B5C002DDEFC /* Frameworks */,
@@ -863,7 +863,7 @@
 			);
 			dependencies = (
 			);
-			name = SimRadarX;
+			name = SimRadarGCL;
 			productName = RadarSimView;
 			productReference = B5EF317018204B5C002DDEFC /* SimRadar.app */;
 			productType = "com.apple.product-type.application";
@@ -931,7 +931,7 @@
 				B518D4211C84A0BD00BAF67D /* simple_ppi */,
 				B527892B18A13C0100650679 /* radarsim */,
 				B572419D1C0CA05F00B76BCB /* SimRadar */,
-				B5EF316F18204B5C002DDEFC /* SimRadarX */,
+				B5EF316F18204B5C002DDEFC /* SimRadarGCL */,
 				B56077EE17E356910068C6BE /* cldemo */,
 				B54601BF1CAA19A8005A8BF6 /* lsiq */,
 				B5BAD55718B67E8B007AC15D /* test_rs */,
@@ -4006,7 +4006,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		B5EF319D18204B5C002DDEFC /* Build configuration list for PBXNativeTarget "SimRadarX" */ = {
+		B5EF319D18204B5C002DDEFC /* Build configuration list for PBXNativeTarget "SimRadarGCL" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B5EF319E18204B5C002DDEFC /* Release */,

@@ -493,6 +493,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
 #if defined (_USE_GCL_)
 
     // A queue & semaphore for the CL work
+	rsprint("== GCL ===");
     rsprint("RS_worker_init - gcl_create_dispatch_queue() ...");
     C->que = gcl_create_dispatch_queue(CL_DEVICE_TYPE_USE_ID, C->dev);
     
@@ -523,7 +524,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     C->surf_vel[1] = NULL;
     
 #else
-    
+
     cl_int ret;
     
     if (sharegroup) {
