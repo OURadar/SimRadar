@@ -56,6 +56,12 @@ OBJTable *OBJ_get_table(const OBJHandle in, OBJConfig type) {
             // Modify dimensions to 2 x 12 x 4 inches (depth x height x width) and density = 500 kg/m^3
             ADM_dimension_set(obj_table->adm_table, 0.0508f, 0.3048f, 0.1016f, 500.0f);
             break;
+		case OBJConfigWoodboard4x8:
+			obj_table->adm_table = ADM_get_table(O->adm_h, ADMConfigSquarePlate);
+			obj_table->rcs_table = RCS_get_table(O->rcs_h, RCSConfigWoodBoard);
+			// Modify dimensions to 4 x 12 x 8 inches (depth x height x width) and density = 500 kg/m^3
+			ADM_dimension_set(obj_table->adm_table, 0.1016f, 0.3048f, 0.2032f, 500.0f);
+			break;
         case OBJConfigLeaf:
             obj_table->adm_table = ADM_get_table(O->adm_h, ADMConfigModelPlate);
             obj_table->rcs_table = RCS_get_table(O->rcs_h, RCSConfigLeaf);
