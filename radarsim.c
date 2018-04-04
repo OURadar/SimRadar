@@ -586,17 +586,7 @@ int main(int argc, char *argv[]) {
                 accel_type = ACCEL_TYPE_CPU;
                 break;
             case 'd':
-                //debris_count[debris_types++] = atoi(optarg);
-				//user.debris_count[debris_group_count] =
-				k = sscanf(optarg, "%d,%d", &u1, &u2);
-				if (k == 2) {
-					user.debris_type[user.debris_group_count] = u1;
-					user.debris_count[user.debris_group_count] = u2;
-					user.debris_group_count++;
-				} else {
-					fprintf(stderr, "Each debris group should be specified as -d TYPE,COUNT without space before or after comma.");
-					break;
-				}
+                debris_count[debris_types++] = atoi(optarg);
                 break;
             case 'D':
                 user.density = atof(optarg);
