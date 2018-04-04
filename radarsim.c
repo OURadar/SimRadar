@@ -143,7 +143,10 @@ static char *scan_mode_str(char scan_mode) {
 #define PROGNAME      "radarsim"
 
 void show_help() {
-    printf("Radar simulation\n\n"
+    int k;
+    int size = 10 * 1024;
+    char *buff = (char *)malloc(size);
+    k = sprintf(buff, "Radar simulation\n\n"
            PROGNAME " [options]\n\n"
            "OPTIONS\n"
            "     Unless specifically stated, all options are interpreted in sequence. Some\n"
@@ -173,14 +176,16 @@ void show_help() {
            "                sets simulation to use the concept of bounded particle velocity\n"
            "                but left the others as default.\n"
            "\n"
-           "  -d (--debris) " UNDERLINE("type,count") "\n"
+           "  -d (--debris) " UNDERLINE("type") "," UNDERLINE("count") "\n"
            "         Adds debris of " UNDERLINE("type") " with population of " UNDERLINE("count") ".\n"
            "         When is option is specified multiple times, multiple debris types will\n"
            "         be used in the simulator.\n"
            "         Debris type is as follows:\n"
-           "            o  1 - Leaf\n"
-		   "            o  2 - Big Leaf\n"
-           "\n"
+           );
+    for (int i = 1; i < OBJConfigCount; i++) {
+        k += sprintf(buff + k, "            o  %d - %s\n", i, OBJConfigString(i));
+    }
+    k += sprintf(buff + k, "\n"
            "  -D (--density) " UNDERLINE("D") "\n"
            "         Set the density of particles to " UNDERLINE("D") " scatterers per resolution volume\n"
            "\n"
@@ -283,6 +288,8 @@ void show_help() {
            "     debris objects\n"
            "           " PROGNAME " -o --concept DBU -T --sweep P:-12:12:0.005 -t 0.0005 -p 4800 -d 1,10000\n"
            );
+    printf("%s\n(%.1f)\n", buff, (float)k / size * 100.0f);
+    free(buff);
 }
 
 enum ValueType {
