@@ -554,7 +554,6 @@ int main(int argc, char *argv[]) {
     }
     //printf("str = '%s'\n", str);
 
-	uint32_t u1, u2;
     char c1, *pc1, *pc2;
     float f1, f2, f3;
     // Process the input arguments and set the simulator parameters
