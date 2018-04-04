@@ -27,8 +27,8 @@ enum OBJConfig {
 #define OBJConfigString(x) \
 (x == OBJConfigLeaf ? "Leaf" : \
 (x == OBJConfigLeafBig ? "Big Leaf" : \
-(x == OBJConfigWoodboard2x4 ? "Woodboard 2x4" : \
-(x == OBJConfigWoodboard4x8 ? "Woodboard 4x8" : \
+(x == OBJConfigWoodboard2x4 ? "2x4 Woodboard" : \
+(x == OBJConfigWoodboard4x8 ? "4x8 Woodboard" : \
 (x == OBJConfigMetalSheet ? "Metal Sheet" : \
 (x == OBJConfigBrick ? "Brick" : "Unknown" ))))))
 
