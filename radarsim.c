@@ -60,6 +60,10 @@ typedef struct user_params {
     int   warm_up_pulses;
     int   seed;
     int   dsd_count;
+
+	int   debris_type[RS_MAX_DEBRIS_TYPES];
+	int   debris_count[RS_MAX_DEBRIS_TYPES];
+	int   debris_group_count;
     
     bool output_iq_file;
     bool output_state_file;
@@ -550,6 +554,7 @@ int main(int argc, char *argv[]) {
     }
     //printf("str = '%s'\n", str);
 
+	uint32_t u1, u2;
     char c1, *pc1, *pc2;
     float f1, f2, f3;
     // Process the input arguments and set the simulator parameters
@@ -581,7 +586,17 @@ int main(int argc, char *argv[]) {
                 accel_type = ACCEL_TYPE_CPU;
                 break;
             case 'd':
-                debris_count[debris_types++] = atoi(optarg);
+                //debris_count[debris_types++] = atoi(optarg);
+				//user.debris_count[debris_group_count] =
+				k = sscanf(optarg, "%d,%d", &u1, &u2);
+				if (k == 2) {
+					user.debris_type[user.debris_group_count] = u1;
+					user.debris_count[user.debris_group_count] = u2;
+					user.debris_group_count++;
+				} else {
+					fprintf(stderr, "Each debris group should be specified as -d TYPE,COUNT without space before or after comma.");
+					break;
+				}
                 break;
             case 'D':
                 user.density = atof(optarg);
@@ -891,7 +906,7 @@ int main(int argc, char *argv[]) {
         printf("Adding %s leaves.\n", commaint(debris_count[0]));
         RS_add_debris(S, OBJConfigLeaf, debris_count[0]);
     }
-
+	
     RS_revise_debris_counts_to_gpu_preference(S);
     
     if (user.tight_box) {
