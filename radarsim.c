@@ -61,7 +61,11 @@ typedef struct user_params {
     int   seed;
     int   dsd_count;
     
-    bool output_iq_file;
+	int   debris_type[RS_MAX_DEBRIS_TYPES];
+	int   debris_count[RS_MAX_DEBRIS_TYPES];
+	int   debris_group_count;
+
+	bool output_iq_file;
     bool output_state_file;
     bool preview_only;
     bool quiet_mode;
@@ -462,6 +466,8 @@ int main(int argc, char *argv[]) {
 
     // A structure unit that encapsulates command line user parameters
     UserParams user;
+	memset(&user, 0, sizeof(UserParams));
+
     user.beamwidth         = PARAMS_FLOAT_NOT_SUPPLIED;
     user.density           = PARAMS_FLOAT_NOT_SUPPLIED;
     user.lambda            = PARAMS_FLOAT_NOT_SUPPLIED;
@@ -497,13 +503,9 @@ int main(int argc, char *argv[]) {
     
     gettimeofday(&t0, NULL);
     
-    int debris_types = 0;
-    int debris_count[RS_MAX_DEBRIS_TYPES];
     RSSimulationConcept concept = RSSimulationConceptDraggedBackground
                                 | RSSimulationConceptBoundedParticleVelocity
                                 | RSSimulationConceptUniformDSDScaledRCS;
-    
-    memset(debris_count, 0, RS_MAX_DEBRIS_TYPES * sizeof(int));
 
     IQFileHeader file_header;
     memset(&file_header, 0, sizeof(IQFileHeader));
@@ -550,6 +552,7 @@ int main(int argc, char *argv[]) {
     }
     //printf("str = '%s'\n", str);
 
+	uint32_t u1, u2;
     char c1, *pc1, *pc2;
     float f1, f2, f3;
     // Process the input arguments and set the simulator parameters
@@ -581,7 +584,21 @@ int main(int argc, char *argv[]) {
                 accel_type = ACCEL_TYPE_CPU;
                 break;
             case 'd':
-                debris_count[debris_types++] = atoi(optarg);
+				k = sscanf(optarg, "%d,%d", &u1, &u2);
+				if (k == 2) {
+					if (u1 >= OBJConfigCount) {
+						fprintf(stderr, "Debris type %d is invalid.\n", u1);
+						exit(EXIT_FAILURE);
+					}
+					user.debris_type[user.debris_group_count] = u1;
+					user.debris_count[user.debris_group_count] = u2;
+					user.debris_group_count++;
+				} else {
+					fprintf(stderr, "Each debris group should be specified as -d TYPE,COUNT without space before or after comma.\n");
+					exit(EXIT_FAILURE);
+					break;
+				}
+                //debris_count[debris_types++] = atoi(optarg);
                 break;
             case 'D':
                 user.density = atof(optarg);
@@ -737,6 +754,13 @@ int main(int argc, char *argv[]) {
         show_user_param("Output directory", user.output_dir, "", ValueTypeChar, 0);
         show_user_param("User random seed", &user.seed, "", ValueTypeInt, 0);
         show_user_param("User DSD profile", user.dsd_sizes, "mm", ValueTypeFloatArray, user.dsd_count);
+		char name[64];
+		char type[64];
+		for (k = 0; k < user.debris_group_count; k++) {
+			sprintf(name, "Debris [%d]", k);
+			sprintf(type, "%s @", OBJConfigString(user.debris_type[k]));
+			show_user_param(name, type, commaint(user.debris_count[k]), ValueTypeChar, 0);
+		}
         printf("----------------------------------------------\n");
     }
 
@@ -881,16 +905,16 @@ int main(int argc, char *argv[]) {
     RSBox box = RS_suggest_scan_domain(S, 16);
     
     // Set debris population
-//    for (k = 0; k < debris_types; k++) {
-//        if (debris_count[k]) {
-//            RS_set_debris_count(S, k + 1, debris_count[k]);
-//        }
-//    }
-
-    if (debris_count[0]) {
-        printf("Adding %s leaves.\n", commaint(debris_count[0]));
-        RS_add_debris(S, OBJConfigLeaf, debris_count[0]);
+    for (k = 0; k < user.debris_group_count; k++) {
+        if (user.debris_count[k]) {
+			RS_add_debris(S, user.debris_type[k], user.debris_count[k]);
+        }
     }
+
+//    if (debris_count[0]) {
+//        printf("Adding %s leaves.\n", commaint(debris_count[0]));
+//        RS_add_debris(S, OBJConfigLeaf, debris_count[0]);
+//    }
 
     RS_revise_debris_counts_to_gpu_preference(S);
     
