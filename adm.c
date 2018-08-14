@@ -56,25 +56,25 @@ void ADM_show_slice(const float *values, const int nb, const int na) {
 ADMHandle ADM_init_with_path(const char *path) {
     
     char search_paths[10][1024] = {"./les"};
-    
+
+    int k = 0;
     if (path == NULL) {
         char cwd[1024];
         if (getcwd(cwd, sizeof(cwd)) == NULL) {
             fprintf(stderr, "Error in getcwd()\n");
             return NULL;
         }
-        snprintf(search_paths[1], 1024, "%s/%s", cwd, "Contents/Resources/les");
+        snprintf(search_paths[k++], 1024, "%s/%s", cwd, "Contents/Resources/les");
     } else {
-        snprintf(search_paths[1], 1024, "%s", path);
+        snprintf(search_paths[k++], 1024, "%s", path);
     }
     
     char *ctmp = getenv("HOME");
     if (ctmp != NULL) {
         //printf("[ADM] HOME = %s\n", ctmp);
-        snprintf(search_paths[2], 1024, "%s/Desktop/tables", ctmp);
-        snprintf(search_paths[3], 1024, "%s/Documents/tables", ctmp);
-        snprintf(search_paths[4], 1024, "%s/Downloads/tables", ctmp);
-        snprintf(search_paths[5], 1024, "%s/tables", ctmp);
+        snprintf(search_paths[k++], 1024, "%s/Documents/tables", ctmp);
+        snprintf(search_paths[k++], 1024, "%s/Downloads/tables", ctmp);
+        snprintf(search_paths[k++], 1024, "%s/tables", ctmp);
     }
     
     struct stat path_stat;

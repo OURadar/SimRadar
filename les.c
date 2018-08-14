@@ -74,21 +74,21 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
     // 10 search paths with the first one being the relative subfolder 'les'
     char search_paths[10][1024] = {"./les"};
 
+    int k = 0;
     if (path == NULL) {
-        snprintf(search_paths[1], 1024, "%s/%s", cwd, "Contents/Resources/les");
+        snprintf(search_paths[k++], 1024, "%s/%s", cwd, "Contents/Resources/les");
     } else {
-        snprintf(search_paths[1], 1024, "%s/%s", path, "tables");
+        snprintf(search_paths[k++], 1024, "%s/%s", path, "tables");
     }
 
     char *ctmp = getenv("HOME");
     if (ctmp != NULL) {
         //printf("HOME = %s\n", ctmp);
-        snprintf(search_paths[2], 1024, "%s/Desktop/tables", ctmp);
-        snprintf(search_paths[3], 1024, "%s/Documents/tables", ctmp);
-        snprintf(search_paths[4], 1024, "%s/Downloads/tables", ctmp);
-        snprintf(search_paths[5], 1024, "%s/Desktop/les", ctmp);
-        snprintf(search_paths[6], 1024, "%s/Documents/les", ctmp);
-        snprintf(search_paths[7], 1024, "%s/Downloads/les", ctmp);
+        snprintf(search_paths[k++], 1024, "%s/Documents/tables", ctmp);
+        snprintf(search_paths[k++], 1024, "%s/Downloads/tables", ctmp);
+        snprintf(search_paths[k++], 1024, "%s/Desktop/les", ctmp);
+        snprintf(search_paths[k++], 1024, "%s/Documents/les", ctmp);
+        snprintf(search_paths[k++], 1024, "%s/Downloads/les", ctmp);
     }
 
     struct stat path_stat;
@@ -171,7 +171,7 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
     h->data_grid = LES_data_grid_create_from_enclosing_grid(h->enclosing_grid, 0, 0);
 
     // Go through and check available tables
-    int k = 0;
+    k = 0;
     while (true) {
         snprintf(h->files[k], sizeof(h->files[k]), "%s/LES_mean_1_6_fnum%d.dat", h->data_path, k + 1);
         if (access(h->files[k], F_OK) != -1) {
