@@ -65,10 +65,6 @@ typedef struct user_params {
 	int   debris_count[RS_MAX_DEBRIS_TYPES];
 	int   debris_group_count;
     
-	int   debris_type[RS_MAX_DEBRIS_TYPES];
-	int   debris_count[RS_MAX_DEBRIS_TYPES];
-	int   debris_group_count;
-
 	bool output_iq_file;
     bool output_state_file;
     bool preview_only;
