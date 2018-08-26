@@ -13,7 +13,7 @@ Follow these steps to get the project
 
 2. Clone a git project[^1] using the following command in Terminal:
 
-        git clone http://git.arrc.ou.edu/cheo4524/simradar.git
+        git clone https://git.arrc.ou.edu/cheo4524/simradar.git
 
 3. Download [Sparkle Framework], extract and move the folder **Sparkle.framework**[^2] into the sub-folder **SimRadar**
 
