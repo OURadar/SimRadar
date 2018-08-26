@@ -146,7 +146,7 @@ void show_help() {
     int k;
     int size = 10 * 1024;
     char *buff = (char *)malloc(size);
-    k = sprintf(buff, "Radar simulation\n\n"
+    k = sprintf(buff, "Radar Simulation\n\n"
            PROGNAME " [options]\n\n"
            "OPTIONS\n"
            "     Unless specifically stated, all options are interpreted in sequence. Some\n"
