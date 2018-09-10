@@ -593,7 +593,7 @@ int main(int argc, char *argv[]) {
             case 'd':
 				k = sscanf(optarg, "%d,%d", &u1, &u2);
 				if (k == 2) {
-					if (u1 >= OBJConfigCount) {
+					if (u1 < 1 || u1 >= OBJConfigCount) {
 						fprintf(stderr, "Debris type %d is invalid.\n", u1);
 						exit(EXIT_FAILURE);
 					}
@@ -601,7 +601,7 @@ int main(int argc, char *argv[]) {
 					user.debris_count[user.debris_group_count] = u2;
 					user.debris_group_count++;
 				} else {
-					fprintf(stderr, "Each debris group should be specified as -d TYPE,COUNT without space before or after comma.\n");
+					fprintf(stderr, "Each debris group should be specified as -dTYPE,COUNT without space before or after comma.\n");
 					exit(EXIT_FAILURE);
 					break;
 				}
