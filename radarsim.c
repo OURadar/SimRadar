@@ -36,7 +36,8 @@ enum ACCEL_TYPE {
 enum SCAN_MODE {
     SCAN_MODE_STARE,
     SCAN_MODE_PPI,
-    SCAN_MODE_RHI
+    SCAN_MODE_RHI,
+    SCAN_MODE_DBS
 };
 
 typedef struct scan_params {
@@ -47,6 +48,18 @@ typedef struct scan_params {
     float az;
     float el;
 } ScanParams;
+
+// New array type for DBS
+typedef struct scan_position {
+    float az;
+    float el;
+    uint32_t count;
+} ScanPosition;
+
+typedef struct scan_pattern {
+    ScanPosition *positions;
+    uint32_t count;
+} ScanPattern;
 
 typedef struct user_params {
     float beamwidth;
@@ -675,7 +688,7 @@ int main(int argc, char *argv[]) {
                     fprintf(stderr, "Error in scanmode argument.\n");
                     exit(EXIT_FAILURE);
                 }
-                scan.mode = c1 == 'P' ? SCAN_MODE_PPI : ( c1 == 'R' ? SCAN_MODE_RHI : SCAN_MODE_STARE);
+                scan.mode = c1 == 'P' ? SCAN_MODE_PPI : ( c1 == 'R' ? SCAN_MODE_RHI : ( c1 == 'D' ? SCAN_MODE_DBS : SCAN_MODE_STARE));
                 scan.start = f1;
                 scan.end = f2;
                 scan.delta = f3;
