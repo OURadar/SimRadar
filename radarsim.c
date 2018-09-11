@@ -478,7 +478,7 @@ int get_last_seed(const char *output_dir) {
 //
 int main(int argc, char *argv[]) {
     
-    int k = 0;
+    int j, k = 0;
     char verb = 0;
     char accel_type = 0;
     char charbuff[4096];
@@ -575,6 +575,8 @@ int main(int argc, char *argv[]) {
 	uint32_t u1, u2;
     char c1, *pc1, *pc2;
     float f1, f2, f3;
+    char scan_pattern[1024], *token;
+    const char delim[] = "/";
     // Process the input arguments and set the simulator parameters
     int opt, long_index = 0;
     while ((opt = getopt_long(argc, argv, str, long_options, &long_index)) != -1) {
@@ -684,18 +686,32 @@ int main(int argc, char *argv[]) {
                 break;
             case 'S':
                 k = sscanf(optarg, "%c:%f:%f:%f", &c1, &f1, &f2, &f3);
-                if (k < 4) {
-                    fprintf(stderr, "Error in scanmode argument.\n");
+                if (k < 4 && c1 != 'D') {
+                    fprintf(stderr, "Error in scanmode argument.   k = %d\n", k);
                     exit(EXIT_FAILURE);
                 }
                 scan.mode = c1 == 'P' ? SCAN_MODE_PPI : ( c1 == 'R' ? SCAN_MODE_RHI : ( c1 == 'D' ? SCAN_MODE_DBS : SCAN_MODE_STARE));
-                scan.start = f1;
-                scan.end = f2;
-                scan.delta = f3;
-                if (scan.mode == SCAN_MODE_PPI) {
-                    scan.az = f1;
-                } else if (scan.mode == SCAN_MODE_RHI) {
-                    scan.el = f1;
+                if (scan.mode == SCAN_MODE_PPI || scan.mode == SCAN_MODE_RHI) {
+                    scan.start = f1;
+                    scan.end = f2;
+                    scan.delta = f3;
+                    if (scan.mode == SCAN_MODE_PPI) {
+                        scan.az = f1;
+                    } else if (scan.mode == SCAN_MODE_RHI) {
+                        scan.el = f1;
+                    }
+                } else if (scan.mode == SCAN_MODE_DBS) {
+                    printf("Parsing DBS scanning pattern...\n");
+                    strcpy(scan_pattern, strstr(optarg, ":") + 1);
+                    printf("Pattern %s\n", scan_pattern);
+                    token = strtok(scan_pattern, delim);
+                    j = 0;
+                    while (token && j++ < 10) {
+                        k = sscanf(token, "%f,%f,%f", &f1, &f2, &f3);
+                        printf("k = %d   f1 = %.3f   f2 = %.3f   f3 = %.3f\n", k, f1, f2, f3);
+                        token = strtok(NULL, delim);
+                    }
+                    exit(EXIT_SUCCESS);
                 }
                 break;
             case 't':
