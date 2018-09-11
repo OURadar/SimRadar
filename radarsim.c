@@ -22,7 +22,8 @@
 #include <dirent.h>
 #include <errno.h>
 
-#define MAX_FILELIST  65536
+#define MAX_FILELIST                65536
+#define MAX_SCAN_PATTERN_COUNT      100
 
 #if defined (_OPEN_MPI)
 #include <mpi.h>
@@ -57,8 +58,10 @@ typedef struct scan_position {
 } ScanPosition;
 
 typedef struct scan_pattern {
-    ScanPosition *positions;
+    ScanPosition positions[MAX_SCAN_PATTERN_COUNT];
     uint32_t count;
+    uint32_t index;                 // The index of position
+    uint32_t scan_index;            // The index of scan
 } ScanPattern;
 
 typedef struct user_params {
@@ -129,23 +132,32 @@ int get_next_scan_angles(ScanParams *params) {
     return 0;
 }
 
+int get_next_dbs_scan_angles(ScanPattern *dbs_scan) {
+    return 0;
+}
+
 static char *scan_mode_str(char scan_mode) {
     static char str[16];
     switch (scan_mode) {
         case SCAN_MODE_PPI:
-        snprintf(str, sizeof(str), "PPI");
-        break;
-        
+            snprintf(str, sizeof(str), "PPI");
+            break;
+            
         case SCAN_MODE_RHI:
-        snprintf(str, sizeof(str), "RHI");
-        break;
-
+            snprintf(str, sizeof(str), "RHI");
+            break;
+            
         case SCAN_MODE_STARE:
-        snprintf(str, sizeof(str), "STARE");
-        break;
+            snprintf(str, sizeof(str), "STARE");
+            break;
+            
+        case SCAN_MODE_DBS:
+            snprintf(str, sizeof(str), "DBS");
+            break;
 
         default:
-        break;
+            snprintf(str, sizeof(str), "UNK");
+            break;
     }
     return str;
 }
@@ -510,7 +522,7 @@ int main(int argc, char *argv[]) {
     
     user.output_dir[0]     = '\0';
 
-    // A structure unit that encapsulates the scan strategy
+    // A structure unit that encapsulates a sweep based scanning strategy (PPI / RHI)
     ScanParams scan;
     scan.mode     = SCAN_MODE_PPI;
     scan.start    = - 12.0f;
@@ -518,6 +530,9 @@ int main(int argc, char *argv[]) {
     scan.delta    = 0.01f;
     scan.az       = scan.start;
     scan.el       = 3.0f;
+    
+    // A structure unit that encapsulates a steer based scanning strategy (DBS)
+    ScanPattern *dbs_scan = (ScanPattern *)malloc(sizeof(ScanPattern));
     
     struct timeval t0, t1, t2;
     
@@ -706,11 +721,18 @@ int main(int argc, char *argv[]) {
                     printf("Pattern %s\n", scan_pattern);
                     token = strtok(scan_pattern, delim);
                     j = 0;
-                    while (token && j++ < 10) {
+                    while (token && j < MAX_SCAN_PATTERN_COUNT) {
                         k = sscanf(token, "%f,%f,%f", &f1, &f2, &f3);
-                        printf("k = %d   f1 = %.3f   f2 = %.3f   f3 = %.3f\n", k, f1, f2, f3);
+                        //printf("k = %d   f1 = %.3f   f2 = %.3f   f3 = %.3f\n", k, f1, f2, f3);
+                        dbs_scan->positions[j].az = f1;
+                        dbs_scan->positions[j].el = f2;
+                        dbs_scan->positions[j].count = (uint32_t)f3;
+                        printf("j = %d   el = %5.2f   az = %6.2f   count = %u \n",
+                               j, dbs_scan->positions[j].el, dbs_scan->positions[j].az, dbs_scan->positions[j].count);
                         token = strtok(NULL, delim);
+                        j++;
                     }
+                    dbs_scan->count = j;
                     exit(EXIT_SUCCESS);
                 }
                 break;
@@ -1254,6 +1276,8 @@ int main(int argc, char *argv[]) {
     MPI_Finalize();
     
 #endif
+    
+    free(dbs_scan);
     
     return EXIT_SUCCESS;
 }
