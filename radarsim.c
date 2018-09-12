@@ -55,6 +55,7 @@ typedef struct scan_position {
     float az;
     float el;
     uint32_t count;
+    uint32_t index;
 } ScanPosition;
 
 typedef struct scan_pattern {
@@ -62,6 +63,8 @@ typedef struct scan_pattern {
     uint32_t count;
     uint32_t index;                 // The index of position
     uint32_t scan_index;            // The index of scan
+    float az;                       // Current azimuth to use
+    float el;                       // Current elevation to use
 } ScanPattern;
 
 typedef struct user_params {
@@ -133,6 +136,19 @@ int get_next_scan_angles(ScanParams *params) {
 }
 
 int get_next_dbs_scan_angles(ScanPattern *dbs_scan) {
+    int k = dbs_scan->index;
+    dbs_scan->az = dbs_scan->positions[k].az;
+    dbs_scan->el = dbs_scan->positions[k].el;
+    // Update internal indices for next iteration
+    dbs_scan->positions[k].index++;
+    if (dbs_scan->positions[k].index == dbs_scan->positions[k].count) {
+        dbs_scan->positions[k].index = 0;
+        dbs_scan->index++;
+        if (dbs_scan->index == dbs_scan->count) {
+            dbs_scan->index = 0;
+        }
+    }
+    dbs_scan->scan_index++;
     return 0;
 }
 
