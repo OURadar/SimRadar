@@ -135,10 +135,11 @@ int get_next_scan_angles(ScanParams *params) {
     return 0;
 }
 
+// Test with this:
+// radarsim -p50 -SD:0,75,10/90,75,10/0,90,10 -N
+//
 int get_next_dbs_scan_angles(ScanPattern *dbs_scan) {
     int k = dbs_scan->index;
-    dbs_scan->az = dbs_scan->positions[k].az;
-    dbs_scan->el = dbs_scan->positions[k].el;
     // Update internal indices for next iteration
     dbs_scan->positions[k].index++;
     if (dbs_scan->positions[k].index == dbs_scan->positions[k].count) {
@@ -148,6 +149,8 @@ int get_next_dbs_scan_angles(ScanPattern *dbs_scan) {
             dbs_scan->index = 0;
         }
     }
+    dbs_scan->az = dbs_scan->positions[k].az;
+    dbs_scan->el = dbs_scan->positions[k].el;
     dbs_scan->scan_index++;
     return 0;
 }
@@ -749,7 +752,8 @@ int main(int argc, char *argv[]) {
                         j++;
                     }
                     dbs_scan->count = j;
-                    exit(EXIT_SUCCESS);
+                    dbs_scan->az = dbs_scan->positions[0].az;
+                    dbs_scan->el = dbs_scan->positions[0].el;
                 }
                 break;
             case 't':
@@ -861,22 +865,32 @@ int main(int argc, char *argv[]) {
     // Preview only
     if (user.preview_only) {
         #define FLT_FMT  "\033[1;33m%+6.2f\033[0m"
-        printf("Scan mode: \033[1;32m%s\033[0m", scan_mode_str(scan.mode));
+        printf("Scan mode: \033[1;92m%s\033[0m", scan_mode_str(scan.mode));
         if (scan.mode == SCAN_MODE_RHI) {
-            printf("   AZ: " FLT_FMT " deg", scan.az);
-        } else {
-            printf("   EL: " FLT_FMT " deg", scan.el);
-        }
-        if (scan.mode == SCAN_MODE_RHI) {
-            printf("   EL: " FLT_FMT " -- " FLT_FMT " deg    delta: " FLT_FMT " deg\n", scan.start, scan.end, scan.delta);
+            printf("   RHI   AZ: " FLT_FMT " deg   EL: " FLT_FMT " -- " FLT_FMT " deg    delta: " FLT_FMT " deg\n",
+                   scan.az, scan.start, scan.end, scan.delta);
         } else if (scan.mode == SCAN_MODE_PPI) {
-            printf("   AZ: " FLT_FMT " -- " FLT_FMT " deg    delta: " FLT_FMT " deg\n", scan.start, scan.end, scan.delta);
+            printf("   PPI   EL: " FLT_FMT " deg   AZ: " FLT_FMT " -- " FLT_FMT " deg    delta: " FLT_FMT " deg\n",
+                   scan.el, scan.start, scan.end, scan.delta);
+        } else if (scan.mode == SCAN_MODE_STARE) {
+            printf("   STARE   EL: " FLT_FMT " deg   AZ: " FLT_FMT " deg", scan.el, scan.az);
+        } else if (scan.mode == SCAN_MODE_DBS) {
+            printf("   DBS Scan");
         } else {
-            printf("   EL: " FLT_FMT " deg\n", scan.el);
+            printf("   I need upgrade here.\n");
         }
-        for (k = 0; k < user.num_pulses; k++) {
-            printf("k = %4d   el = %6.2f deg   az = %5.2f deg\n", k, scan.el, scan.az);
-            get_next_scan_angles(&scan);
+        if (scan.mode == SCAN_MODE_PPI || scan.mode == SCAN_MODE_RHI || scan.mode == SCAN_MODE_STARE) {
+            for (k = 0; k < user.num_pulses; k++) {
+                printf("k = %4d   el = %6.2f deg   az = %5.2f deg\n", k, scan.el, scan.az);
+                get_next_scan_angles(&scan);
+            }
+        } else if (scan.mode == SCAN_MODE_DBS) {
+            for (k = 0; k < user.num_pulses; k++) {
+                printf("k = %4d   el = %6.2f deg   az = %5.2f deg\n", k, dbs_scan->el, dbs_scan->az);
+                get_next_dbs_scan_angles(dbs_scan);
+            }
+        } else {
+            printf("   I need upgrade here.\n");
         }
         return EXIT_SUCCESS;
     }

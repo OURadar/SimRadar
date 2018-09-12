@@ -127,6 +127,10 @@
 		B5F3C31E18F2F86700092A72 /* les.c in Sources */ = {isa = PBXBuildFile; fileRef = B5F3C31C18F2F86700092A72 /* les.c */; };
 		B5F3C32D18F2FDE700092A72 /* test_les.c in Sources */ = {isa = PBXBuildFile; fileRef = B5F3C31F18F2FD3800092A72 /* test_les.c */; };
 		B5F3C32E18F2FDF700092A72 /* les.c in Sources */ = {isa = PBXBuildFile; fileRef = B5F3C31C18F2F86700092A72 /* les.c */; };
+		B5F7A0CE21495F87001E8515 /* pos.c in Sources */ = {isa = PBXBuildFile; fileRef = B5F7A0CD21495F87001E8515 /* pos.c */; };
+		B5F7A0CF21495F87001E8515 /* pos.c in Sources */ = {isa = PBXBuildFile; fileRef = B5F7A0CD21495F87001E8515 /* pos.c */; };
+		B5F7A0D021495FB3001E8515 /* pos.c in Sources */ = {isa = PBXBuildFile; fileRef = B5F7A0CD21495F87001E8515 /* pos.c */; };
+		B5F7A0D121495FBF001E8515 /* pos.c in Sources */ = {isa = PBXBuildFile; fileRef = B5F7A0CD21495F87001E8515 /* pos.c */; };
 		B5FDCAE519D453B10016C2F7 /* GLText.m in Sources */ = {isa = PBXBuildFile; fileRef = B5FDCAE419D453B10016C2F7 /* GLText.m */; };
 /* End PBXBuildFile section */
 
@@ -355,6 +359,8 @@
 		B5F3C31C18F2F86700092A72 /* les.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = les.c; sourceTree = "<group>"; };
 		B5F3C31F18F2FD3800092A72 /* test_les.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_les.c; sourceTree = "<group>"; };
 		B5F3C32418F2FD8F00092A72 /* test_les */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_les; sourceTree = BUILT_PRODUCTS_DIR; };
+		B5F7A0CC21495F87001E8515 /* pos.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pos.h; sourceTree = "<group>"; };
+		B5F7A0CD21495F87001E8515 /* pos.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pos.c; sourceTree = "<group>"; };
 		B5FDCAE319D453B10016C2F7 /* GLText.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GLText.h; sourceTree = "<group>"; };
 		B5FDCAE419D453B10016C2F7 /* GLText.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GLText.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -548,6 +554,7 @@
 				B57ADA6017E21A8900B03074 /* rs_types.h */,
 				B5B9F5871C6BF2B7007FC9A4 /* rs_const.h */,
 				B5CFAD1F1ADF4A1800360E9A /* rs_priv.h */,
+				B5B574791B690A45002AD2E7 /* iq.h */,
 				B50A281917D7C4D500E4DE66 /* rs.c */,
 				B50A281617D7C21F00E4DE66 /* rs.h */,
 				B5F3C31C18F2F86700092A72 /* les.c */,
@@ -558,7 +565,8 @@
 				B55716841AB75186001984E0 /* rcs.h */,
 				B57D8E951DDE131100B69805 /* obj.c */,
 				B57D8E961DDE131100B69805 /* obj.h */,
-				B5B574791B690A45002AD2E7 /* iq.h */,
+				B5F7A0CD21495F87001E8515 /* pos.c */,
+				B5F7A0CC21495F87001E8515 /* pos.h */,
 			);
 			name = Sources;
 			sourceTree = "<group>";
@@ -1029,6 +1037,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B5F7A0CE21495F87001E8515 /* pos.c in Sources */,
 				B518D42C1C84A0CD00BAF67D /* simple_ppi.c in Sources */,
 				B518D42D1C84A0DC00BAF67D /* rs.c in Sources */,
 				B518D42E1C84A0DF00BAF67D /* les.c in Sources */,
@@ -1053,6 +1062,7 @@
 				B5F3C31D18F2F86700092A72 /* les.c in Sources */,
 				B5CFAD201ADFF4D800360E9A /* rcs.c in Sources */,
 				B57D8E981DDE131100B69805 /* obj.c in Sources */,
+				B5F7A0CF21495F87001E8515 /* pos.c in Sources */,
 				B527893318A13C5F00650679 /* rs.c in Sources */,
 				B527893118A13C4400650679 /* radarsim.c in Sources */,
 			);
@@ -1094,6 +1104,7 @@
 				B57241B31C0CA11700B76BCB /* adm.c in Sources */,
 				B57241B51C0CA11D00B76BCB /* rcs.c in Sources */,
 				B57D8E9A1DF5FB5800B69805 /* obj.c in Sources */,
+				B5F7A0D021495FB3001E8515 /* pos.c in Sources */,
 				B57241BB1C0CA20C00B76BCB /* RootController.m in Sources */,
 				B57241BC1C0CA21000B76BCB /* DisplayController.m in Sources */,
 				B57241BD1C0CA21300B76BCB /* Renderer.m in Sources */,
@@ -1153,6 +1164,7 @@
 				B567F8B31A6D522F00F40660 /* adm.c in Sources */,
 				B56C7FA31ADC221500552B1E /* rcs.c in Sources */,
 				B57D8E991DF4BECE00B69805 /* obj.c in Sources */,
+				B5F7A0D121495FBF001E8515 /* pos.c in Sources */,
 				B5EF317E18204B5C002DDEFC /* main.m in Sources */,
 				B5EF318518204B5C002DDEFC /* AppDelegate.m in Sources */,
 				B5EF31C51820619E002DDEFC /* RootController.m in Sources */,
