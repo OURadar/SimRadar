@@ -53,6 +53,7 @@
 		B56C7FAA1ADC250500552B1E /* Sparkle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B56C7FA41ADC22E300552B1E /* Sparkle.framework */; };
 		B56D60451C9DF47E0016AFEC /* Fonts in Resources */ = {isa = PBXBuildFile; fileRef = B56D60441C9DF47E0016AFEC /* Fonts */; };
 		B56D60461C9DF47E0016AFEC /* Fonts in Resources */ = {isa = PBXBuildFile; fileRef = B56D60441C9DF47E0016AFEC /* Fonts */; };
+		B56D79682152AE7D00ECC29A /* obj.c in Sources */ = {isa = PBXBuildFile; fileRef = B57D8E951DDE131100B69805 /* obj.c */; };
 		B570B0B418BC5B7900391717 /* rs.cl in CopyFiles */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
 		B570B0B518BC5B8400391717 /* rs.cl in CopyFiles */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
 		B57241A71C0CA06000B76BCB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B57241A61C0CA06000B76BCB /* Assets.xcassets */; };
@@ -1037,12 +1038,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B5F7A0CE21495F87001E8515 /* pos.c in Sources */,
 				B518D42C1C84A0CD00BAF67D /* simple_ppi.c in Sources */,
+				B5F7A0CE21495F87001E8515 /* pos.c in Sources */,
 				B518D42D1C84A0DC00BAF67D /* rs.c in Sources */,
 				B518D42E1C84A0DF00BAF67D /* les.c in Sources */,
 				B518D42F1C84A0E200BAF67D /* adm.c in Sources */,
 				B518D4301C84A0E500BAF67D /* rcs.c in Sources */,
+				B56D79682152AE7D00ECC29A /* obj.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

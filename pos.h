@@ -8,6 +8,9 @@
 #ifndef _radarsim_pos_h
 #define _radarsim_pos_h
 
+#include <stdlib.h>
+#include <stdint.h>
+
 #define POS_MAX_PATTERN_COUNT 100
 
 typedef struct pos {
@@ -25,5 +28,7 @@ typedef struct pos_pattern {
     float az;                       // Current azimuth to use
     float el;                       // Current elevation to use
 } POSPattern;
+
+int POS_get_next_angles(POSPattern *dbs_scan);
 
 #endif
