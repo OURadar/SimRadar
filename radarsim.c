@@ -552,7 +552,12 @@ int main(int argc, char *argv[]) {
     
     // A structure unit that encapsulates a steer based scanning strategy (DBS)
     ScanPattern *dbs_scan = (ScanPattern *)malloc(sizeof(ScanPattern));
-    
+    POSPattern *scan = (POSPattern *)malloc(sizeof(POSPattern));
+    if (scan == NULL) {
+        fprintf(stderr, "Error allocating space for scan pattern.\n");
+        exit(EXIT_FAILURE);
+    }
+
     struct timeval t0, t1, t2;
     
     gettimeofday(&t0, NULL);

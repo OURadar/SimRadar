@@ -29,6 +29,7 @@
 #include "les.h"
 #include "obj.h"
 //#include "arps.h"
+#include "pos.h"
 
 #if defined (__APPLE__)
 #include <OpenCL/opencl.h>
