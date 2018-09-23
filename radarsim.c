@@ -84,14 +84,14 @@ typedef struct user_params {
 	int   debris_count[RS_MAX_DEBRIS_TYPES];
 	int   debris_group_count;
     
-	bool output_iq_file;
-    bool output_state_file;
-    bool preview_only;
-    bool quiet_mode;
-    bool skip_questions;
-    bool tight_box;
-    bool show_progress;
-    bool resume_seed;
+	bool  output_iq_file;
+    bool  output_state_file;
+    bool  preview_only;
+    bool  quiet_mode;
+    bool  skip_questions;
+    bool  tight_box;
+    bool  show_progress;
+    bool  resume_seed;
     
     char output_dir[1024];
 } UserParams;
@@ -138,22 +138,22 @@ int get_next_scan_angles(ScanParams *params) {
 // Test with this:
 // radarsim -p50 -SD:0,75,10/90,75,10/0,90,10 -N
 //
-int get_next_dbs_scan_angles(ScanPattern *dbs_scan) {
-    int k = dbs_scan->index;
-    // Update internal indices for next iteration
-    dbs_scan->positions[k].index++;
-    if (dbs_scan->positions[k].index == dbs_scan->positions[k].count) {
-        dbs_scan->positions[k].index = 0;
-        dbs_scan->index++;
-        if (dbs_scan->index == dbs_scan->count) {
-            dbs_scan->index = 0;
-        }
-    }
-    dbs_scan->az = dbs_scan->positions[k].az;
-    dbs_scan->el = dbs_scan->positions[k].el;
-    dbs_scan->scan_index++;
-    return 0;
-}
+//int get_next_dbs_scan_angles(ScanPattern *dbs_scan) {
+//    int k = dbs_scan->index;
+//    // Update internal indices for next iteration
+//    dbs_scan->positions[k].index++;
+//    if (dbs_scan->positions[k].index == dbs_scan->positions[k].count) {
+//        dbs_scan->positions[k].index = 0;
+//        dbs_scan->index++;
+//        if (dbs_scan->index == dbs_scan->count) {
+//            dbs_scan->index = 0;
+//        }
+//    }
+//    dbs_scan->az = dbs_scan->positions[k].az;
+//    dbs_scan->el = dbs_scan->positions[k].el;
+//    dbs_scan->scan_index++;
+//    return 0;
+//}
 
 static char *scan_mode_str(char scan_mode) {
     static char str[16];
@@ -550,16 +550,15 @@ int main(int argc, char *argv[]) {
     // A structure unit that encapsulates a sweep based scanning strategy (PPI / RHI)
     ScanParams scan;
     scan.mode     = SCAN_MODE_PPI;
-    scan.start    = - 12.0f;
+    scan.start    = -12.0f;
     scan.end      = +12.0f;
     scan.delta    = 0.01f;
     scan.az       = scan.start;
     scan.el       = 3.0f;
     
     // A structure unit that encapsulates a steer based scanning strategy (DBS)
-    ScanPattern *dbs_scan = (ScanPattern *)malloc(sizeof(ScanPattern));
-    POSPattern *scan = (POSPattern *)malloc(sizeof(POSPattern));
-    if (scan == NULL) {
+    POSPattern *dbs_scan = (POSPattern *)malloc(sizeof(POSPattern));
+    if (dbs_scan == NULL) {
         fprintf(stderr, "Error allocating space for scan pattern.\n");
         exit(EXIT_FAILURE);
     }
@@ -898,7 +897,8 @@ int main(int argc, char *argv[]) {
         } else if (scan.mode == SCAN_MODE_DBS) {
             for (k = 0; k < user.num_pulses; k++) {
                 printf("k = %4d   el = %6.2f deg   az = %5.2f deg\n", k, dbs_scan->el, dbs_scan->az);
-                get_next_dbs_scan_angles(dbs_scan);
+                //get_next_dbs_scan_angles(dbs_scan);
+                POS_get_next_angles(dbs_scan);
             }
         } else {
             printf("   I need upgrade here.\n");
