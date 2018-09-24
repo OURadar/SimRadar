@@ -135,26 +135,6 @@ int get_next_scan_angles(ScanParams *params) {
     return 0;
 }
 
-// Test with this:
-// radarsim -p50 -SD:0,75,10/90,75,10/0,90,10 -N
-//
-//int get_next_dbs_scan_angles(ScanPattern *dbs_scan) {
-//    int k = dbs_scan->index;
-//    // Update internal indices for next iteration
-//    dbs_scan->positions[k].index++;
-//    if (dbs_scan->positions[k].index == dbs_scan->positions[k].count) {
-//        dbs_scan->positions[k].index = 0;
-//        dbs_scan->index++;
-//        if (dbs_scan->index == dbs_scan->count) {
-//            dbs_scan->index = 0;
-//        }
-//    }
-//    dbs_scan->az = dbs_scan->positions[k].az;
-//    dbs_scan->el = dbs_scan->positions[k].el;
-//    dbs_scan->scan_index++;
-//    return 0;
-//}
-
 static char *scan_mode_str(char scan_mode) {
     static char str[16];
     switch (scan_mode) {

@@ -13,6 +13,10 @@
 
 #define POS_MAX_PATTERN_COUNT 100
 
+// Test with this:
+// radarsim -p50 -SD:0,75,10/90,75,10/0,90,10 -N
+//
+
 typedef struct pos {
     float az;
     float el;
