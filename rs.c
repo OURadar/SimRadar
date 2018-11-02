@@ -628,7 +628,9 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     // A queue for the CL work of each device
     C->que = clCreateCommandQueue(C->context, C->dev, 0, &ret);
     if (ret != CL_SUCCESS) {
-        rsprint("Creating command queue[%d] failed  (ret = %d).\n", C->name, ret);
+        rsprint("Creating command queue[%d] failed  (ret = %d).\n", (int)C->name, ret);
+    } else if (verb > 1) {
+        rsprint("Command queue for context[%d] created.\n", (int)C->name);
     }
     
 #endif

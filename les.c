@@ -109,9 +109,9 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
         }
         if (dir_ret == 0 && S_ISDIR(path_stat.st_mode) && S_ISREG(file_stat.st_mode)) {
 
-#ifdef DEBUG
-            printf("Found LES folder @ %s\n", les_path);
-#endif
+            #ifdef DEBUG
+            printf("DEBUG LES : Found LES folder @ %s\n", les_path);
+            #endif
 
             found_dir = 1;
             break;
@@ -157,7 +157,7 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
     //    snprintf(grid_file, 1024, "%s/fort.10_2", h->data_path);
 
 #ifdef DEBUG
-    printf("index @ %s\n", les_file_path);
+    printf("DEBUG LES : index @ %s\n", les_file_path);
 #endif
 
     h->enclosing_grid = LES_enclosing_grid_create_from_file(les_file_path);
