@@ -132,7 +132,7 @@ RCSHandle RCS_init_with_path(const char *path) {
         if (dir_ret == 0 && S_ISDIR(path_stat.st_mode) && S_ISREG(file_stat.st_mode)) {
             
             #ifdef DEBUG
-            printf("DEBUG RCS : Found RCS folder @ %s\n", dat_path);
+            rsprint("Found RCS folder @ %s\n", dat_path);
             #endif
             
             found_dir = 1;
