@@ -8,7 +8,7 @@ CFLAGS = -std=gnu99 -Wall -Wno-unknown-pragmas -Os -msse2 -mavx -I /usr/local/in
 
 LDFLAGS = -L lib -L /usr/local/lib -lrs
 
-OBJS = rs.o les.o adm.o rcs.o obj.o
+OBJS = log.o les.o adm.o rcs.o obj.o rs.o
 
 MYLIB = lib/librs.a
 

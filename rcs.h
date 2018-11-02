@@ -17,6 +17,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "log.h"
+
 #define RCSConfigLeaf              "leaf"
 #define RCSConfigPlate             "plate"
 #define RCSConfigBrick             "brick"
