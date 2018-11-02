@@ -802,16 +802,11 @@ unsigned int grayToBinary(unsigned int num)
 - (void)allocateVAO:(GLuint)gpuCount
 {
     clDeviceCount = gpuCount;
+    if (clDeviceCount != 1) {
+        // I only managed to make 1 work for now...
+        clDeviceCount = 1;
+    }
     
-    // Local rotating color table
-    const GLfloat colors[][4] = {
-        {1.00f, 1.00f, 1.00f, 1.00f},
-        {0.00f, 1.00f, 0.00f, 1.00f},
-        {1.00f, 0.20f, 1.00f, 1.00f},
-        {1.00f, 0.65f, 0.00f, 1.00f}
-    };
-    
-
     // Get the GL version
 	sscanf((char *)glGetString(GL_SHADING_LANGUAGE_VERSION), "%f", &GLSLVersion);
 	
@@ -822,14 +817,15 @@ unsigned int grayToBinary(unsigned int num)
 	glGetIntegerv(GL_SMOOTH_LINE_WIDTH_RANGE, &v[2]);
 	NSLog(@"Aliased / smoothed line width: %d ... %d / %d ... %d", v[0], v[1], v[2], v[3]);
     
-	// Set up VAO and shaders
-    int i = 0;
-
-    // Only one renderer program needs to be created and the others can share the same program
-    bodyRenderer[i] = [self createRenderResourceFromVertexShader:@"spheroid.vsh" fragmentShader:@"spheroid.fsh"];
-
-    // Make copies of render resource but use the same program
-    for (i = 1; i < clDeviceCount; i++) {
+    anchorRenderer = [self createRenderResourceFromVertexShader:@"anchor.vsh" fragmentShader:@"anchor.fsh"];
+    lineRenderer   = [self createRenderResourceFromVertexShader:@"line_sc.vsh" fragmentShader:@"line_sc.fsh"];
+    meshRenderer   = [self createRenderResourceFromVertexShader:@"mesh.vsh" fragmentShader:@"mesh.fsh"];
+    frameRenderer  = [self createRenderResourceFromProgram:meshRenderer.program];
+    blurRenderer   = [self createRenderResourceFromVertexShader:@"mesh.vsh" fragmentShader:@"blur.fsh"];
+    
+    // Only one renderer program needs to be created and the others can share the same program, so just make copies
+    bodyRenderer[0] = [self createRenderResourceFromVertexShader:@"spheroid.vsh" fragmentShader:@"spheroid.fsh"];
+    for (int i = 1; i < clDeviceCount; i++) {
         bodyRenderer[i] = [self createRenderResourceFromProgram:bodyRenderer[0].program];
     }
 
@@ -838,6 +834,13 @@ unsigned int grayToBinary(unsigned int num)
     instancedGeometryRenderer = [self createRenderResourceFromVertexShader:@"inst-geom-t.vsh" fragmentShader:@"inst-geom.fsh"];
     glUniform4f(instancedGeometryRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
 
+    // Local rotating color table
+    const GLfloat colors[][4] = {
+        {1.00f, 1.00f, 1.00f, 1.00f},
+        {0.00f, 1.00f, 0.00f, 1.00f},
+        {1.00f, 0.20f, 1.00f, 1.00f},
+        {1.00f, 0.65f, 0.00f, 1.00f}
+    };
     for (int k = 0; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
         debrisRenderer[k] = [self createRenderResourceFromProgram:instancedGeometryRenderer.program];
         debrisRenderer[k].colors = malloc(4 * sizeof(GLfloat));
@@ -847,21 +850,17 @@ unsigned int grayToBinary(unsigned int num)
         debrisRenderer[k].colors[3] = colors[(k % 4)][3];
     }
     
-    lineRenderer   = [self createRenderResourceFromVertexShader:@"line_sc.vsh" fragmentShader:@"line_sc.fsh"];
-    anchorRenderer = [self createRenderResourceFromVertexShader:@"anchor.vsh" fragmentShader:@"anchor.fsh"];
-    meshRenderer   = [self createRenderResourceFromVertexShader:@"mesh.vsh" fragmentShader:@"mesh.fsh"];
-    frameRenderer  = [self createRenderResourceFromProgram:meshRenderer.program];
-    blurRenderer   = [self createRenderResourceFromVertexShader:@"mesh.vsh" fragmentShader:@"blur.fsh"];
-    
     //NSLog(@"Each renderer uses %zu bytes", sizeof(RenderResource));
     //NSLog(@"meshRenderer's drawColor @ %d / %d / %d", meshRenderer.colorUI, meshRenderer.positionAI, meshRenderer.textureCoordAI);
 
+    //NSLog(@"========:");
     textRenderer = [GLText new];
-//    tTextRenderer = [[GLText alloc] initWithFont:[NSFont fontWithName:@"Gas" size:72.0f]];
+    //NSLog(@"========:");
+    //tTextRenderer = [[GLText alloc] initWithFont:[NSFont fontWithName:@"Gas" size:72.0f]];
     tTextRenderer = [[GLText alloc] initWithFont:[NSFont fontWithName:@"Weird Science NBP" size:144.0f]];
-//    fwTextRenderer = [[GLText alloc] initWithFont:[NSFont fontWithName:@"Menlo" size:40.0f]];
+    //fwTextRenderer = [[GLText alloc] initWithFont:[NSFont fontWithName:@"Menlo" size:40.0f]];
     fwTextRenderer = [[GLText alloc] initWithFont:[NSFont fontWithName:@"White Rabbit" size:40.0f]];
-    
+
     overlayRenderer = [GLOverlay new];
     
 #ifdef DEBUG_GL
@@ -881,8 +880,10 @@ unsigned int grayToBinary(unsigned int num)
 
     [self makePrimitives];
     
+    NSLog(@"delegate @ %@", delegate);
+    
     // Tell the delegate that the OpenGL context is ready for sharing and set up renderer's body count
-	[delegate glContextVAOPrepared];
+    [delegate glContextVAOPrepared];
 
     [self updateStatusMessage];
 }
@@ -896,7 +897,25 @@ unsigned int grayToBinary(unsigned int num)
 	NSLog(@"Allocating (%d, %d) particles on GPU ...", bodyRenderer[0].count, bodyRenderer[1].count);
 	#endif
     
-    // Grid lines
+    // Anchors
+    glBindVertexArray(anchorRenderer.vao);
+    
+    glDeleteBuffers(1, anchorRenderer.vbo);
+    glGenBuffers(1, anchorRenderer.vbo);
+    
+    // Use .w element for anchor size, scale by pixel ratio for Retina displays
+    if (anchorRenderer.positions[3] == 1.0f && devicePixelRatio > 1.0f) {
+        for (i = 0; i < anchorRenderer.count; i++) {
+            anchorRenderer.positions[4 * i + 3] *= devicePixelRatio;
+        }
+    }
+    
+    glBindBuffer(GL_ARRAY_BUFFER, anchorRenderer.vbo[0]);
+    glBufferData(GL_ARRAY_BUFFER, anchorRenderer.count * sizeof(cl_float4), anchorRenderer.positions, GL_STATIC_DRAW);
+    glVertexAttribPointer(anchorRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(anchorRenderer.positionAI);
+    
+    // Lines
 	glBindVertexArray(lineRenderer.vao);
 
     glDeleteBuffers(1, lineRenderer.vbo);
@@ -906,50 +925,6 @@ unsigned int grayToBinary(unsigned int num)
     glBufferData(GL_ARRAY_BUFFER, lineRenderer.segmentNextOrigin * 4 * sizeof(GLfloat), lineRenderer.positions, GL_STATIC_DRAW);
 	glVertexAttribPointer(lineRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
 	glEnableVertexAttribArray(lineRenderer.positionAI);
-	
-	// Scatter body (spheroid)
-    for (i = 0; i < clDeviceCount; i++) {
-        if (bodyRenderer[i].count == 0) {
-            continue;
-        }
-        glBindVertexArray(bodyRenderer[i].vao);
-        
-        glDeleteBuffers(3, bodyRenderer[i].vbo);
-        glGenBuffers(3, bodyRenderer[i].vbo);
-        
-        glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer[i].vbo[0]);  // position
-        glBufferData(GL_ARRAY_BUFFER, bodyRenderer[i].count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
-        glVertexAttribPointer(bodyRenderer[i].positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
-        glEnableVertexAttribArray(bodyRenderer[i].positionAI);
-        
-        glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer[i].vbo[1]);  // color
-        glBufferData(GL_ARRAY_BUFFER, bodyRenderer[i].count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
-        glVertexAttribPointer(bodyRenderer[i].colorAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
-        glEnableVertexAttribArray(bodyRenderer[i].colorAI);
-
-        glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer[i].vbo[2]);  // orientation
-        glBufferData(GL_ARRAY_BUFFER, bodyRenderer[i].count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
-        glVertexAttribPointer(bodyRenderer[i].quaternionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
-        glEnableVertexAttribArray(bodyRenderer[i].quaternionAI);
-    }
-    
-    // Use .w element for anchor size, scale by pixel ratio for Retina displays
-    if (anchorRenderer.positions[3] == 1.0f && devicePixelRatio > 1.0f) {
-        for (i = 0; i < anchorRenderer.count; i++) {
-            anchorRenderer.positions[4 * i + 3] *= devicePixelRatio;
-        }
-    }
-
-    // Anchors
-	glBindVertexArray(anchorRenderer.vao);
-	
-    glDeleteBuffers(1, anchorRenderer.vbo);
-	glGenBuffers(1, anchorRenderer.vbo);
-	
-	glBindBuffer(GL_ARRAY_BUFFER, anchorRenderer.vbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, anchorRenderer.count * sizeof(cl_float4), anchorRenderer.positions, GL_STATIC_DRAW);
-	glVertexAttribPointer(anchorRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
-	glEnableVertexAttribArray(anchorRenderer.positionAI);
 	
     // Mesh 1 : colorbar
     glBindVertexArray(meshRenderer.vao);
@@ -977,28 +952,13 @@ unsigned int grayToBinary(unsigned int num)
     glBufferData(GL_ARRAY_BUFFER, lineRenderer.segmentLengths[RendererLineSegmentBasicRectangle] * 4 * sizeof(GLfloat), &lineRenderer.positions[lineRenderer.segmentOrigins[RendererLineSegmentBasicRectangle]], GL_STATIC_DRAW);
     glVertexAttribPointer(meshRenderer.positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(meshRenderer.positionAI);
-
+    
     // textureCoord
     glBindBuffer(GL_ARRAY_BUFFER, meshRenderer.vbo[1]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(texCoord), texCoord, GL_STATIC_DRAW);
     glVertexAttribPointer(meshRenderer.textureCoordAI, 2, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(meshRenderer.textureCoordAI);
-
-	#ifdef DEBUG
-	NSLog(@"VBOs   %d %d %d   %d %d %d   %d ...",
-          bodyRenderer[0].vbo[0], bodyRenderer[0].vbo[1], bodyRenderer[0].vbo[2],
-          bodyRenderer[1].vbo[0], bodyRenderer[1].vbo[1], bodyRenderer[1].vbo[2],
-          anchorRenderer.vbo[0]);
-	#endif
-	
-    GLuint vbos[RENDERER_MAX_VBO_GROUPS][8];
-    for (i = 0; i < clDeviceCount; i++) {
-        vbos[i][0] = bodyRenderer[i].vbo[0];
-        vbos[i][1] = bodyRenderer[i].vbo[1];
-        vbos[i][2] = bodyRenderer[i].vbo[2];
-    }
-	[delegate vbosAllocated:vbos];
-	
+    
     // Frame renderer VBOs
     float coord[] = {
         0.0f, 0.0f,
@@ -1020,7 +980,7 @@ unsigned int grayToBinary(unsigned int num)
     glBufferData(GL_ARRAY_BUFFER, sizeof(coord), coord, GL_STATIC_DRAW);
     glVertexAttribPointer(frameRenderer.textureCoordAI, 2, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(frameRenderer.textureCoordAI);
-
+    
     // Blur renderer
     glBindVertexArray(blurRenderer.vao);
     
@@ -1037,27 +997,89 @@ unsigned int grayToBinary(unsigned int num)
     glVertexAttribPointer(blurRenderer.textureCoordAI, 2, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(blurRenderer.textureCoordAI);
 
+    // Scatter body (spheroid)
+    for (i = 0; i < clDeviceCount; i++) {
+        if (bodyRenderer[i].count == 0) {
+            continue;
+        }
+        glBindVertexArray(bodyRenderer[i].vao);
+        
+        glDeleteBuffers(3, bodyRenderer[i].vbo);
+        glGenBuffers(3, bodyRenderer[i].vbo);
+        
+        glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer[i].vbo[0]);  // position
+        glBufferData(GL_ARRAY_BUFFER, bodyRenderer[i].count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
+        glVertexAttribPointer(bodyRenderer[i].positionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+        glEnableVertexAttribArray(bodyRenderer[i].positionAI);
+        
+        glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer[i].vbo[1]);  // color
+        glBufferData(GL_ARRAY_BUFFER, bodyRenderer[i].count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
+        glVertexAttribPointer(bodyRenderer[i].colorAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+        glEnableVertexAttribArray(bodyRenderer[i].colorAI);
+
+        glBindBuffer(GL_ARRAY_BUFFER, bodyRenderer[i].vbo[2]);  // orientation
+        glBufferData(GL_ARRAY_BUFFER, bodyRenderer[i].count * sizeof(cl_float4), NULL, GL_STATIC_DRAW);
+        glVertexAttribPointer(bodyRenderer[i].quaternionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+        glEnableVertexAttribArray(bodyRenderer[i].quaternionAI);
+    }
+    
+    GLuint vbos[RENDERER_MAX_VBO_GROUPS][8];
+    for (i = 0; i < clDeviceCount; i++) {
+        vbos[i][0] = bodyRenderer[i].vbo[0];
+        vbos[i][1] = bodyRenderer[i].vbo[1];
+        vbos[i][2] = bodyRenderer[i].vbo[2];
+    }
+
+#ifdef DEBUG
+    NSLog(@"anchorRenderer.vbo = %d   lineRenderer.vbo = %d",
+          anchorRenderer.vbo[0], lineRenderer.vbo[0]);
+    NSLog(@"meshRenderer.vbo = %d %d   frameRenderer.vbo = %d %d   blurRenderer.vbo = %d %d",
+          meshRenderer.vbo[0], meshRenderer.vbo[1],
+          frameRenderer.vbo[0], frameRenderer.vbo[1],
+          blurRenderer.vbo[0], blurRenderer.vbo[1]);
+    NSLog(@"bodyRenderer.vbos = %d %d %d / %d %d %d",
+          bodyRenderer[0].vbo[0], bodyRenderer[0].vbo[1], bodyRenderer[0].vbo[2],
+          bodyRenderer[1].vbo[0], bodyRenderer[1].vbo[1], bodyRenderer[1].vbo[2]);
+#endif
+    
+    [delegate vbosAllocated:vbos];
+    
 	viewParametersNeedUpdate = true;
 }
 
 - (void)allocateFBO {
     GLenum status;
 
+    #ifdef DEBUG
+    NSLog(@"Allocating FBO ...");
+    #endif
+
+    GLint w = width * devicePixelRatio;
+    GLint h = height * devicePixelRatio;
+    
+    if (w == 0 || h == 0) {
+        NSLog(@"Error. Unexpected combination of w = %d, h = %d", w, h);
+        return;
+    }
+    
     glDeleteFramebuffersEXT(RENDERER_FBO_COUNT, frameBuffers);
     glGenFramebuffersEXT(RENDERER_FBO_COUNT, frameBuffers);
     glDeleteTextures(RENDERER_FBO_COUNT, frameBufferTextures);
     glGenTextures(RENDERER_FBO_COUNT, frameBufferTextures);
-    GLvoid *zeros = (GLvoid *)malloc(width * devicePixelRatio * height * devicePixelRatio * 16);
-    memset(zeros, 0, width * devicePixelRatio * height * devicePixelRatio * 16);
+    GLvoid *zeros = (GLvoid *)malloc(w * h * 4 * sizeof(unsigned short));
+    if (zeros == NULL) {
+        NSLog(@"Error allocating zeros.");
+        return;
+    }
+    memset(zeros, 0, w * h * 4 * sizeof(unsigned short));
     for (int i = 0; i < RENDERER_FBO_COUNT; i++) {
         glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[i]);
         glBindTexture(GL_TEXTURE_2D, frameBufferTextures[i]);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-//        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width * devicePixelRatio, height * devicePixelRatio, 0, GL_RGBA, GL_BYTE, zeros);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16, width * devicePixelRatio, height * devicePixelRatio, 0, GL_RGBA, GL_UNSIGNED_SHORT, zeros);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16, w, h, 0, GL_RGBA, GL_UNSIGNED_SHORT, zeros);
         glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, frameBufferTextures[i], 0);
         status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
         if (status != GL_FRAMEBUFFER_COMPLETE_EXT) {
@@ -1142,6 +1164,11 @@ unsigned int grayToBinary(unsigned int num)
     int i;
     int k;
     
+    if (fboNeedsUpdate) {
+        fboNeedsUpdate = false;
+        [self allocateFBO];
+    }
+    
 	if (vbosNeedUpdate) {
 		vbosNeedUpdate = false;
 		[self allocateVBO];
@@ -1165,11 +1192,6 @@ unsigned int grayToBinary(unsigned int num)
 		[self updateViewParameters];
 	}
     
-    if (fboNeedsUpdate) {
-        fboNeedsUpdate = false;
-        [self allocateFBO];
-    }
-	
     // Breathing phase
 #ifdef GEN_IMG
     phase = 0.425459064119661f * (exp(-cos(iframe * 0.01666666666667f)) - 0.36787944117144f);
@@ -1181,7 +1203,7 @@ unsigned int grayToBinary(unsigned int num)
     
 #ifdef DEBUG_GL
     if (iframe == 0) {
-        NSLog(@"First frame <==============================");
+        NSLog(@"First frame %.1f x %.1f", width * devicePixelRatio, height * devicePixelRatio);
     }
 #endif
     
@@ -1195,9 +1217,11 @@ unsigned int grayToBinary(unsigned int num)
     [delegate willDrawScatterBody];
 #endif
 
-    glViewport(0, 0, width * devicePixelRatio, height * devicePixelRatio);
-    
+//    NSLog(@"render %d", iframe);
+
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, frameBuffers[0]);
+
+    glViewport(0, 0, width * devicePixelRatio, height * devicePixelRatio);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
 
@@ -1216,7 +1240,7 @@ unsigned int grayToBinary(unsigned int num)
         glBindTexture(GL_TEXTURE_2D, bodyRenderer[i].colormapID);
         glDrawArrays(GL_POINTS, 0, debrisRenderer[0].count); // Yes, debrisRenderer[0].count is used for the background.
     }
-    //glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
+//    glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
@@ -1485,7 +1509,8 @@ unsigned int grayToBinary(unsigned int num)
     // Show the framebuffer on the window
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glUseProgram(frameRenderer.program);
+    glUniformMatrix4fv(frameRenderer.mvpUI, 1, GL_FALSE, frameRenderer.modelViewProjection.m);
+    glUniform4f(frameRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
     glBindTexture(GL_TEXTURE_2D, frameBufferTextures[ifbo]);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 

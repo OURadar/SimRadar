@@ -97,7 +97,7 @@ ADMHandle ADM_init_with_path(const char *path) {
         if (dir_ret == 0 && S_ISDIR(path_stat.st_mode) && S_ISREG(file_stat.st_mode)) {
             
             #ifdef DEBUG
-            printf("DEBUG ADM: Found ADM folder @ %s\n", dat_path);
+            printf("DEBUG ADM : Found ADM folder @ %s\n", dat_path);
             #endif
             
             found_dir = 1;
