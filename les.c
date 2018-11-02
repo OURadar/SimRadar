@@ -109,9 +109,9 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
         }
         if (dir_ret == 0 && S_ISDIR(path_stat.st_mode) && S_ISREG(file_stat.st_mode)) {
 
-#ifdef DEBUG
-            printf("Found LES folder @ %s\n", les_path);
-#endif
+            #ifdef DEBUG
+            rsprint("Found LES folder @ %s\n", les_path);
+            #endif
 
             found_dir = 1;
             break;
@@ -157,7 +157,7 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
     //    snprintf(grid_file, 1024, "%s/fort.10_2", h->data_path);
 
 #ifdef DEBUG
-    printf("index @ %s\n", les_file_path);
+    rsprint("LES index @ %s\n", les_file_path);
 #endif
 
     h->enclosing_grid = LES_enclosing_grid_create_from_file(les_file_path);
@@ -201,7 +201,7 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
     h->ncubes = h->nfiles * h->nvol;
 
     #ifdef DEBUG
-    printf("DEBUG LES : file count = %zu    nvol = %zu    ncubes = %zu\n", h->nfiles, h->nvol, h->ncubes);
+    rsprint("LES file count = %zu    nvol = %zu    ncubes = %zu\n", h->nfiles, h->nvol, h->ncubes);
     #endif
 
     // Allocate data boxes
@@ -291,7 +291,7 @@ void *LES_background_read(LESHandle i) {
         int file_id = frame / LES_file_nblock;
 
         #ifdef DEBUG
-        printf("DEBUG LES : Background ingest from file %s for frame %d to slot %d ...\n", h->files[file_id], h->req, h->ibuf);
+        rsprint("Background ingest from file %s for frame %d to slot %d ...\n", h->files[file_id], h->req, h->ibuf);
         #endif
 
         // The table in collection of data boxes
@@ -708,7 +708,7 @@ LESTable *LES_get_frame(const LESHandle i, const int n) {
     } while (n != h->data_id[k] && k > 0);
     if (n == h->data_id[k]) {
         #ifdef DEBUG
-        printf("DEBUG LES : Found n = %d = %d @ k = %d / %d\n", n, h->data_id[k], k, LES_num);
+        rsprint("Found n = %d = %d @ k = %d / %d\n", n, h->data_id[k], k, LES_num);
         #endif
         table = h->data_boxes[k];
         // What to read in next

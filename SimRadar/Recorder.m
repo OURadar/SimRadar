@@ -38,11 +38,11 @@
                                         [NSNumber numberWithInteger:bitrate], AVVideoAverageBitRateKey,
                                         nil], AVVideoCompressionPropertiesKey,
                                        nil];
-        
+
         AVAssetWriterInput *videoWriterInput = [AVAssetWriterInput
                                                 assetWriterInputWithMediaType:AVMediaTypeVideo
                                                 outputSettings:videoSettings];
-        
+
         videoWriter = [[AVAssetWriter alloc] initWithURL:[NSURL URLWithString:outputFilename]
                                                 fileType:AVFileTypeMPEG4
                                                    error:&error];

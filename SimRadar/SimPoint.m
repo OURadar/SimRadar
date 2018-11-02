@@ -72,8 +72,6 @@
             RS_set_density(S, 50.0f);
         }
 
-        //RS_set_density(S, 1000);
-
         // Copy out some convenient constants
         nearest_thousand = (size_t)ceilf(1000.0f / S->preferred_multiple) * S->preferred_multiple;
         nearest_hundred = (size_t)ceilf(100.0f / S->preferred_multiple) * S->preferred_multiple;
@@ -171,19 +169,14 @@
 - (void)populate
 {
     RS_set_dsd_to_mp(S);
-    
-	RS_populate(S);
 
-//    float x = S->domain.origin.x + 0.5f * S->domain.size.x;
-//    float y = S->domain.origin.y + 0.5f * S->domain.size.y;
-//    float r = sqrtf(x * x + y * y);
-//    el_deg = atan2f(S->domain.origin.z + 0.5f * S->domain.size.z, r) * 180.0f / M_PI;
+    RS_populate(S);
 
     az_deg = 4.0f;
     el_deg = 5.0f;
 
     RS_set_beam_pos(S, az_deg, el_deg);
-    
+
     if ([delegate respondsToSelector:@selector(progressUpdated:message:)]) {
         [delegate progressUpdated:100.0f message:@"Ready"];
     }

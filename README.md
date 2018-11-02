@@ -1,7 +1,7 @@
 Simulation of a Radar
 =====================
 
-A polarimetric radar time-series emulator utilizing air-drag model for particle motions and a realistic radar cross library for particle back scattering calculations. Implemented with OpenCL for massive parallel computations. This is awesome!  If you would like to contribute to the framework, please me at <boonleng@ou.edu>.
+A polarimetric radar time-series emulator utilizing air-drag model for particle motions and a realistic radar cross library for particle back scattering calculations. Implemented with OpenCL for parallel computaing. If you would like to contribute to the framework, please email me at <boonleng@ou.edu>.
 
 
 Getting the Project
@@ -25,6 +25,7 @@ Follow these steps to get the project
 5. Download [Matlab Scripts] for reading the I/Q data into Matlab.
 
 [^1]: An Xcode project is included so you can manage the source codes using Xcode on Mac OS X. Git is readily supported under Xcode.
+
 [^2]: The latest release of Sparkle framework, which is developed and maintained by a third party (http://sparkle-project.org), can be downloaded from the official website but not necessary. The provided link works just as well.
 
 Requirements
@@ -37,7 +38,7 @@ On Linux:
 
 On Mac:
 
-* [Xcode 6]
+* [Xcode 6] or above
 * [Sparkle Framework]
 
 [GCC]: http://gcc.gnu.org

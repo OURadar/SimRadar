@@ -37,8 +37,8 @@
 - (IBAction)playPause:(id)sender;
 - (IBAction)resetSimulator:(id)sender;
 - (IBAction)topView:(id)sender;
-- (IBAction)startRecord:(id)sender;
-- (IBAction)stopRecord:(id)sender;
+//- (IBAction)startRecord:(id)sender;
+//- (IBAction)stopRecord:(id)sender;
 
 - (void)alertMissingResources;
 

@@ -8,7 +8,7 @@
 #import <Cocoa/Cocoa.h>
 #import "SimPoint.h"
 #import "SimGLView.h"
-#import "Recorder.h"
+//#import "Recorder.h"
 
 @interface DisplayController : NSWindowController <NSWindowDelegate> {
 	
@@ -24,7 +24,7 @@
     
     GLfloat *sampleAnchorLines, *sampleAnchors;
     
-    Recorder *recorder;
+//    Recorder *recorder;
     
     int mkey;
 }

@@ -24,6 +24,8 @@
 #include <sys/types.h>
 #include <pthread.h>
 
+#include "log.h"
+
 typedef void * LESHandle;
 typedef char * LESConfig;
 typedef float LESFloat4[4];

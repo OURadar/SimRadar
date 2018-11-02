@@ -138,7 +138,7 @@ enum RendererLineSegment {
     
     unsigned int hudConfigDecimal, hudConfigGray;
     
-    BOOL applyVFX;
+    int applyVFX;
     BOOL colorbarNeedsUpdate;
     BOOL fadeSmallScatterers;
     BOOL showDebrisAttributes;
@@ -159,8 +159,8 @@ enum RendererLineSegment {
     RenderResource bodyRenderer[RENDERER_MAX_CL_DEVICE];
     RenderResource instancedGeometryRenderer;
 
-    RenderResource anchorRenderer;
     RenderResource lineRenderer;
+    RenderResource anchorRenderer;
     RenderResource debrisRenderer[RENDERER_MAX_DEBRIS_TYPES];
     RenderResource meshRenderer;
     RenderResource frameRenderer;

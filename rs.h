@@ -26,6 +26,7 @@
 
 #include "rs_const.h"
 #include "rs_types.h"
+#include "log.h"
 #include "les.h"
 #include "obj.h"
 //#include "arps.h"
@@ -450,15 +451,6 @@ struct _rs_handle {
 };
 
 #pragma pack(pop)
-
-#pragma mark -
-#pragma mark Convenient functions
-
-char *commaint(long long num);
-char *commafloat(float num);
-char *now(void);
-char *nowlong(void);
-char *nowlongoffset(const int offset);
 
 cl_uint RS_gpu_count(void);
 

@@ -65,25 +65,23 @@ NSWindow *standardWindow;
 	
 	RSVolume domain = [sim simulationDomain];
     
-    //NSLog(@"sim.anchorCount = %d", sim.anchorCount);
+    //NSLog(@"sim.anchorCount = %ld", sim.anchorCount);
     
     NSString *name = [[NSRunningApplication currentApplication] localizedName];
     [glView.renderer setTitleString:name];
-
+    
 	[glView.renderer setBodyCount:(GLuint)sim.pointCount forDevice:0];
 	[glView.renderer setGridAtOrigin:(GLfloat *)&domain.origin size:(GLfloat *)&domain.size];
 	[glView.renderer setAnchorPoints:(GLfloat *)sim.anchors number:(GLuint)sim.anchorCount];
 	[glView.renderer setAnchorLines:(GLfloat *)sim.anchorLines number:(GLuint)sim.anchorLineCount];
-	
 	[glView.renderer setCenterPoisitionX:domain.origin.x + 0.5f * domain.size.x
 									   y:domain.origin.y + 0.5f * domain.size.y
 									   z:domain.origin.z + 0.5f * domain.size.z];
-    
     [glView.renderer setResetRange:sim.recommendedViewRange];
 
 //    GLKMatrix4 modelRotate = GLKMatrix4MakeRotation(-0.15f, 1.0f, 0.0f, 0.0f);
 //    modelRotate = GLKMatrix4RotateY(modelRotate, 1.5f);
-    
+
     GLKMatrix4 modelRotate = GLKMatrix4MakeRotation(0.25f, 1.0f, 0.0f, 0.0f);
     modelRotate = GLKMatrix4RotateY(modelRotate, -0.3f);
     
@@ -115,10 +113,20 @@ NSWindow *standardWindow;
 #pragma mark -
 #pragma mark Initialization
 
+//- (void)windowDidLoad {
+//    [super windowDidLoad];
+//    
+//    NSLog(@"windowDidLoad");
+//}
+
 - (void)awakeFromNib
 {
 	// Initialization code here.
-	[glView.renderer setDelegate:rootSender];
+    #ifdef DEBUG_GL
+    NSLog(@"awakeFromNib %@ <- %@", glView.renderer, rootSender);
+    #endif
+    [glView prepareRendererWithDelegate:rootSender];
+    //[glView startAnimation];
     
     [self becomeFirstResponder];
 }
@@ -130,7 +138,7 @@ NSWindow *standardWindow;
 	if (self) {
 		rootSender = sender;
         debrisId = 1;
-        NSLog(@"Allocating recorder ...");
+        //NSLog(@"Allocating recorder ...");
 	}
 	return self;
 }
@@ -161,10 +169,10 @@ NSWindow *standardWindow;
 	NSLog(@"Stopping animation ...");
 	#endif
     
-    if (recorder) {
-        [recorder stopRecording];
-        recorder = nil;
-    }
+//    if (recorder) {
+//        [recorder stopRecording];
+//        recorder = nil;
+//    }
 }
 
 #pragma mark -
@@ -204,6 +212,7 @@ NSWindow *standardWindow;
     [glView setBoundsSize:size];
     [glView.renderer setSize:size];
 }
+
 
 #pragma mark -
 #pragma NSResponder
@@ -657,11 +666,6 @@ NSWindow *standardWindow;
     [glView.renderer setAnchorLines:sampleAnchorLines number:sizeof(anchorLines) / sizeof(cl_float4)];
     [glView.renderer setOverlayText:@"No tables" withTitle:@"Error"];
     [glView.renderer showAllHUD];
-
-    NSSize newSize = NSMakeSize(1280.0f, 720.0f);
-    CGFloat xPos = (self.window.screen.frame.size.width - newSize.width) * 0.5f;
-    CGFloat yPos = (self.window.screen.frame.size.height - newSize.height) * 0.5f;
-    [self.window setFrame:NSMakeRect(xPos, yPos, newSize.width, newSize.height) display:YES];
 }
 
 @end

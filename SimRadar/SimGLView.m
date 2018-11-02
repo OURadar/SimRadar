@@ -16,23 +16,33 @@
 
 @implementation SimGLView
 
-@synthesize animating;
-@synthesize renderer;
-@synthesize recorder;
-
 // This is the renderer output callback function
 static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
-									  const CVTimeStamp* now,
-									  const CVTimeStamp* outputTime,
-									  CVOptionFlags flagsIn,
-									  CVOptionFlags* flagsOut,
-									  void* displayLinkContext)
+                                      const CVTimeStamp* now,
+                                      const CVTimeStamp* outputTime,
+                                      CVOptionFlags flagsIn,
+                                      CVOptionFlags* flagsOut,
+                                      void* displayLinkContext)
 {
-	[(SimGLView *)displayLinkContext drawView];
+    [(SimGLView *)displayLinkContext drawView];
     return kCVReturnSuccess;
 }
 
-#pragma mark -
+@synthesize animating;
+@synthesize renderer;
+//@synthesize recorder;
+
+- (void)setFrame:(NSRect)frameRect
+{
+    CGLLockContext([[self openGLContext] CGLContextObj]);
+    CGSize size = CGSizeMake(frameRect.size.width, frameRect.size.height);
+    [renderer setSize:size];
+    CGLUnlockContext([[self openGLContext] CGLContextObj]);
+    
+    [super setFrame:frameRect];
+}
+
+#pragma mark - Overrides
 
 // We setup the display window using Interface Builder so setup should be
 // done here after the interface has been properly loaded and wired up.
@@ -47,37 +57,38 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 		0
 	};
 	
-	NSOpenGLPixelFormat *pf = [[NSOpenGLPixelFormat alloc] initWithAttributes:attr];
-	
-	if (pf == NULL) {
+	NSOpenGLPixelFormat *pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attr];
+	if (pixelFormat == NULL) {
 		NSLog(@"Unable to create OpenGL pixel format object");
 	}
 	
-	NSOpenGLContext *context = [[NSOpenGLContext alloc] initWithFormat:pf shareContext:nil];
-	CGLEnable([context CGLContextObj], kCGLCECrashOnRemovedFunctions);
+	NSOpenGLContext *context = [[NSOpenGLContext alloc] initWithFormat:pixelFormat shareContext:nil];
+    if (context == NULL) {
+        NSLog(@"Unable to create OpenGL context");
+    }
 	
 	CGLContextObj cglContext = [context CGLContextObj];
-    CGLSetCurrentContext(cglContext);
+    CGLEnable(cglContext, kCGLCECrashOnRemovedFunctions);
+
     CGLShareGroupObj cglSharegroup = CGLGetShareGroup(cglContext);
-                                                   
     gcl_gl_set_sharegroup(cglSharegroup);
-    
+    NSLog(@"OpenGL context prepared.  cglContext %p   cglShareGroup %p", cglContext, cglSharegroup);
+
+    [self setPixelFormat:pixelFormat];
     [self setOpenGLContext:context];
 
-    NSLog(@"OpenGL context prepared.  cglContext %p   cglShareGroup %p", cglContext, cglSharegroup);
-    
-	[context release];
-	[pf release];
-
-    if (self.wantsBestResolutionOpenGLSurface) {
-        renderer = [[Renderer alloc] initWithDevicePixelRatio:[self.window backingScaleFactor]];
-    } else {
-        renderer = [Renderer new];
-    }
+    CGLSetCurrentContext(cglContext);
+   
+	[pixelFormat release];
+    [context release];
 
     posix_memalign(&scratchBuffer, 64, 5120 * 2880 * 4);
 }
 
+- (void)windowWillClose:(NSNotification *)notification
+{
+    [self stopAnimation];
+}
 
 - (void)dealloc
 {
@@ -89,14 +100,12 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	CVDisplayLinkRelease(displayLink);
 	
 	[renderer release];
-    [recorder release];
+//    [recorder release];
     
     free(scratchBuffer);
 	
 	[super dealloc];
 }
-
-#pragma mark -
 
 - (void)prepareOpenGL
 {
@@ -107,19 +116,12 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	// makeCurrentContext to ensure that our OpenGL context current to this
 	// thread (i.e. makeCurrentContext directs all OpenGL calls on this thread
 	// to [self openGLContext])
-	[[self openGLContext] makeCurrentContext];
+	[self.openGLContext makeCurrentContext];
 	
 	// Synchronize buffer swaps with vertical refresh rate
 	GLint ival = 1;
-	[[self openGLContext] setValues:&ival forParameter:NSOpenGLCPSwapInterval];
+	[self.openGLContext setValues:&ival forParameter:NSOpenGLCPSwapInterval];
 
-    // Set the render size to bound size
-    [renderer setSize:self.bounds.size];
-
-    // Allocate VAO based on the number of CL devices
-    //[renderer allocateVAO:RS_gpu_count()];
-    [renderer allocateVAO:1];
-    
 	// Create a display link capable of being used with all active displays
 	CVDisplayLinkCreateWithActiveCGDisplays(&displayLink);
 	
@@ -137,19 +139,6 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 												 name:NSWindowWillCloseNotification
 											   object:[self window]];
 }
-
-#pragma mark -
-
-- (void)setFrame:(NSRect)frameRect {
-	CGLLockContext([[self openGLContext] CGLContextObj]);
-	CGSize size = CGSizeMake(frameRect.size.width, frameRect.size.height);
-	[renderer setSize:size];
-	CGLUnlockContext([[self openGLContext] CGLContextObj]);
-	
-	[super setFrame:frameRect];
-}
-
-#pragma mark -
 
 - (void)drawRect:(NSRect)dirtyRect
 {
@@ -199,8 +188,23 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
     
 }
 
+#pragma mark - Methods
 
-- (void)startAnimation {
+- (void)prepareRendererWithDelegate:(id)sender
+{
+    // Allocate a separate renderer
+    if (self.wantsBestResolutionOpenGLSurface) {
+        renderer = [[Renderer alloc] initWithDevicePixelRatio:[self.window backingScaleFactor]];
+    } else {
+        renderer = [Renderer new];
+    }
+    [renderer setSize:self.bounds.size];
+    [renderer setDelegate:sender];
+    [renderer allocateVAO:1];
+}
+
+- (void)startAnimation
+{
 	if (!animating) {
         animating = true;
         CVDisplayLinkStart(displayLink);
@@ -216,13 +220,7 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	}
 }
 
-
-- (void)windowWillClose:(NSNotification *)notification {
-	[self stopAnimation];
-}
-
-#pragma mark -
-#pragma mark Image Export
+#pragma mark - Image Export
 
 - (NSBitmapImageRep *)bitmapImageRepFromViewWithClearBackground:(BOOL)clearBackground {
     
@@ -255,11 +253,13 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
     return imageRep;
 }
 
-- (NSBitmapImageRep *)bitmapImageRepFromView {
+- (NSBitmapImageRep *)bitmapImageRepFromView
+{
 	return [self bitmapImageRepFromViewWithClearBackground:NO];
 }
 
-- (NSImage *)imageFromView {
+- (NSImage *)imageFromView
+{
     
 	NSBitmapImageRep *imageRep = [self bitmapImageRepFromView];
     
@@ -271,7 +271,8 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 }
 
 
-- (void)viewToFile:(NSString *)filename {
+- (void)viewToFile:(NSString *)filename
+{
 	NSBitmapImageRep *imageRep = [self bitmapImageRepFromView];
     NSLog(@"%@", imageRep);
 	NSData *data = [imageRep representationUsingType:NSPNGFileType properties:[NSDictionary dictionaryWithObjectsAndKeys:[NSColor blackColor], NSImageFallbackBackgroundColor, nil]];
@@ -279,9 +280,9 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
 }
 
 
-- (void)detachRecorder {
-    [recorder release];
-    [self setRecorder:nil];
-}
+//- (void)detachRecorder {
+//    [recorder release];
+//    [self setRecorder:nil];
+//}
 
 @end

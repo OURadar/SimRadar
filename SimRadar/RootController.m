@@ -92,20 +92,20 @@
     [dc.glView.renderer topView];
 }
 
-- (IBAction)startRecord:(id)sender
-{
-    if ([dc.glView recorder]) {
-        NSLog(@"Recorder exists.");
-        return;
-    }
-    Recorder *recorder = [[Recorder alloc] initForView:dc.glView];
-    [dc.glView setRecorder:recorder];
-}
+//- (IBAction)startRecord:(id)sender
+//{
+//    if ([dc.glView recorder]) {
+//        NSLog(@"Recorder exists.");
+//        return;
+//    }
+//    Recorder *recorder = [[Recorder alloc] initForView:dc.glView];
+//    [dc.glView setRecorder:recorder];
+//}
 
-- (IBAction)stopRecord:(id)sender
-{
-    [dc.glView detachRecorder];
-}
+//- (IBAction)stopRecord:(id)sender
+//{
+//    [dc.glView detachRecorder];
+//}
 
 #pragma mark -
 
@@ -169,7 +169,9 @@
 - (void)createSimulation:(NSNumber *)number {
     @autoreleasepool {
         CGLShareGroupObj sharegroup = (CGLShareGroupObj)[number longValue];
+        NSLog(@"Creating a simulation with sharedGroup %p ...", sharegroup);
         sim = [[SimPoint alloc] initWithDelegate:self cglShareGroup:sharegroup];
+//        sim = nil;
         if (sim) {
             // Wire the simulator to the controller.
             // The displayController will tell the renderer how many scatter body
@@ -179,10 +181,9 @@
             [dc.glView startAnimation];
         } else {
             NSLog(@"Error initializing simulation domain.");
-            //[self performSelectorOnMainThread:@selector(alertMissingResources) withObject:nil waitUntilDone:true];
-            //[[NSApplication sharedApplication] terminate:self];
             [dc emptyDomain];
             [dc.glView startAnimation];
+            [dc performSelectorOnMainThread:@selector(setSizeTo720p:) withObject:nil waitUntilDone:NO];
 
             sleep(2);
             
@@ -217,7 +218,7 @@
         [sim shareVBOsWithGL:vbos];
         
         [sim populate];
-        
+
         for (int k = 1; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
             GLuint pop = [sim populationForDebris:k];
             [dc.glView.renderer setPopulationTo:pop forDebris:k forDevice:0];
@@ -235,6 +236,7 @@
 - (void)willDrawScatterBody
 {
     if (sim == nil) {
+        NSLog(@"No simulation");
         return;
     }
     if (!sim.isPopulated) {
@@ -288,19 +290,25 @@
     sc = nil;
 }
 
-- (void)progressUpdated:(double)completionPercentage message:(NSString *)message
+- (void)progressUpdatedMain:(NSArray *)input
 {
-    initProgress = completionPercentage;
-    [self performSelectorOnMainThread:@selector(updateProgressIndicator:) withObject:nil waitUntilDone:NO];
-
-    [sc.label performSelectorOnMainThread:@selector(setStringValue:) withObject:message waitUntilDone:NO];
-    
-    if (completionPercentage >= 99.0) {
+    NSNumber *number = [input objectAtIndex:0];
+    NSString *message = [input objectAtIndex:1];
+    initProgress = [number doubleValue];
+    [self updateProgressIndicator:nil];
+    [sc.label setStringValue:message];
+    if (initProgress >= 99.0) {
         [sc close];
         [sc release];
         sc = nil;
-        [self performSelectorOnMainThread:@selector(showLiveDisplay:) withObject:nil waitUntilDone:NO];
+        [self showLiveDisplay:self];
     }
+}
+
+- (void)progressUpdated:(double)completionPercentage message:(NSString *)message
+{
+    NSArray *input = @[[NSNumber numberWithDouble:completionPercentage], message];
+    [self performSelectorOnMainThread:@selector(progressUpdatedMain:) withObject:input waitUntilDone:YES];
 }
 
 @end

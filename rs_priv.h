@@ -89,7 +89,6 @@ enum RSScattererAngularWeightKernalArgument {
 #pragma mark General Methods
 
 void get_device_info(cl_device_type device_type, cl_uint *num_devices, cl_device_id *devices, cl_uint *num_cus, cl_uint *vendors, cl_int detail_level);
-void rsprint(const char *format, ...);
 void pfn_prog_notify(cl_program program, void *user_data);
 void pfn_notify(const char *errinfo, const void *private_info, size_t cb, void *user_data);
 cl_uint read_kernel_source_from_files(char *src_ptr[], ...);
