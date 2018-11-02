@@ -25,6 +25,7 @@ Follow these steps to get the project
 5. Download [Matlab Scripts] for reading the I/Q data into Matlab.
 
 [^1]: An Xcode project is included so you can manage the source codes using Xcode on Mac OS X. Git is readily supported under Xcode.
+
 [^2]: The latest release of Sparkle framework, which is developed and maintained by a third party (http://sparkle-project.org), can be downloaded from the official website but not necessary. The provided link works just as well.
 
 Requirements
@@ -37,7 +38,7 @@ On Linux:
 
 On Mac:
 
-* [Xcode 6]
+* [Xcode 6] or above
 * [Sparkle Framework]
 
 [GCC]: http://gcc.gnu.org
