@@ -29,6 +29,8 @@
 	NSArray *icons;
 
     double initProgress;
+    
+    int noSimWarning;
 }
 
 @property (nonatomic, retain) NSMenuItem *startRecordMenuItem, *stopRecordMenuItem;

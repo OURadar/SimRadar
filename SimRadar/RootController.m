@@ -236,7 +236,9 @@
 - (void)willDrawScatterBody
 {
     if (sim == nil) {
-        NSLog(@"No simulation");
+        if (noSimWarning++ < 3) {
+            NSLog(@"willDrawScatterBody: No simulation");
+        }
         return;
     }
     if (!sim.isPopulated) {
