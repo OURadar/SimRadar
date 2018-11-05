@@ -31,6 +31,7 @@
 @private
 	
 	RSHandle *S;
+    POSPattern *scan;
 
     size_t returnCounts[RS_MAX_GPU_DEVICE];
     

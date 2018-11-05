@@ -20,7 +20,7 @@
 		B5201C701C22396A00EACF53 /* SplashController.m in Sources */ = {isa = PBXBuildFile; fileRef = B5201C6E1C22396A00EACF53 /* SplashController.m */; };
 		B5201C721C2239D100EACF53 /* Splash.xib in Resources */ = {isa = PBXBuildFile; fileRef = B5201C711C2239D100EACF53 /* Splash.xib */; };
 		B5201C731C2239D100EACF53 /* Splash.xib in Resources */ = {isa = PBXBuildFile; fileRef = B5201C711C2239D100EACF53 /* Splash.xib */; };
-		B527893118A13C4400650679 /* radarsim.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281717D7C2F400E4DE66 /* radarsim.c */; };
+		B527893118A13C4400650679 /* simradar.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281717D7C2F400E4DE66 /* simradar.c */; };
 		B527893318A13C5F00650679 /* rs.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281917D7C4D500E4DE66 /* rs.c */; };
 		B527893418A13C6D00650679 /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
 		B527893518A13C6D00650679 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5EF31BD18205EC8002DDEFC /* OpenGL.framework */; };
@@ -269,7 +269,7 @@
 		B50A280617D7B1EC00E4DE66 /* cldemo.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = cldemo.c; sourceTree = "<group>"; };
 		B50A281117D7B24500E4DE66 /* OpenCL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenCL.framework; path = System/Library/Frameworks/OpenCL.framework; sourceTree = SDKROOT; };
 		B50A281617D7C21F00E4DE66 /* rs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = rs.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		B50A281717D7C2F400E4DE66 /* radarsim.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = radarsim.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
+		B50A281717D7C2F400E4DE66 /* simradar.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = simradar.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		B50A281917D7C4D500E4DE66 /* rs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = rs.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		B50CD9EC1BE8117E0034B5BB /* Recorder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Recorder.h; sourceTree = "<group>"; };
 		B50CD9ED1BE8117E0034B5BB /* Recorder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Recorder.m; sourceTree = "<group>"; };
@@ -288,7 +288,7 @@
 		B535159C1AD32077004C0F50 /* MainMenu.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
 		B54601BB1CAA1940005A8BF6 /* lsiq.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = lsiq.c; sourceTree = "<group>"; };
 		B54601C01CAA19A8005A8BF6 /* lsiq */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = lsiq; sourceTree = BUILT_PRODUCTS_DIR; };
-		B54DEB3618A5453800EBEC07 /* Minion-Icons */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "Minion-Icons"; path = "SimRadar/Minion-Icons"; sourceTree = "<group>"; };
+		B54DEB3618A5453800EBEC07 /* Minion-Icons */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "Minion-Icons"; path = "macOS/SimRadar/Minion-Icons"; sourceTree = "<group>"; };
 		B54DEB3E18A5742300EBEC07 /* SimRadar-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "SimRadar-Info.plist"; sourceTree = "<group>"; };
 		B54DEB3F18A5742300EBEC07 /* SimRadar-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SimRadar-Prefix.pch"; sourceTree = "<group>"; };
 		B55716841AB75186001984E0 /* rcs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rcs.h; sourceTree = "<group>"; };
@@ -300,9 +300,9 @@
 		B567F8B11A6D522F00F40660 /* adm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = adm.c; sourceTree = "<group>"; };
 		B567F8B41A6D635100F40660 /* test_adm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = test_adm.c; sourceTree = "<group>"; };
 		B567F8BB1A6D66E700F40660 /* test_adm */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_adm; sourceTree = BUILT_PRODUCTS_DIR; };
-		B56A7CE71C0F5AF700133ACF /* Shaders */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Shaders; path = SimRadar/Shaders; sourceTree = "<group>"; };
-		B56C7FA41ADC22E300552B1E /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Sparkle.framework; path = SimRadar/Sparkle.framework; sourceTree = "<group>"; };
-		B56D60441C9DF47E0016AFEC /* Fonts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Fonts; path = SimRadar/Fonts; sourceTree = "<group>"; };
+		B56A7CE71C0F5AF700133ACF /* Shaders */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Shaders; path = macOS/SimRadar/Shaders; sourceTree = "<group>"; };
+		B56C7FA41ADC22E300552B1E /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Sparkle.framework; path = macOS/SimRadar/Sparkle.framework; sourceTree = "<group>"; };
+		B56D60441C9DF47E0016AFEC /* Fonts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Fonts; path = macOS/SimRadar/Fonts; sourceTree = "<group>"; };
 		B570B0AF18BC5B5500391717 /* rs.cl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.opencl; path = rs.cl; sourceTree = "<group>"; };
 		B5715B4F218CDF8000FD4064 /* log.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = log.h; sourceTree = "<group>"; };
 		B5715B50218CDF8000FD4064 /* log.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = log.c; sourceTree = "<group>"; };
@@ -319,7 +319,7 @@
 		B5A5142518328A2F00921ACE /* FullscreenWindow.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FullscreenWindow.h; sourceTree = "<group>"; };
 		B5A5142618328A2F00921ACE /* FullscreenWindow.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FullscreenWindow.m; sourceTree = "<group>"; };
 		B5B574791B690A45002AD2E7 /* iq.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = iq.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		B5B7584B218B8D4B0091E464 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = SimRadar/Assets.xcassets; sourceTree = "<group>"; };
+		B5B7584B218B8D4B0091E464 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = macOS/SimRadar/Assets.xcassets; sourceTree = "<group>"; };
 		B5B9C6541D302D0E00AD8154 /* do_more.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = do_more.sh; sourceTree = "<group>"; };
 		B5B9F5871C6BF2B7007FC9A4 /* rs_const.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rs_const.h; sourceTree = "<group>"; };
 		B5BAD55618B67E80007AC15D /* test_rs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = test_rs.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
@@ -329,7 +329,7 @@
 		B5CFAD1F1ADF4A1800360E9A /* rs_priv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rs_priv.h; sourceTree = "<group>"; };
 		B5D1420A18AA72E90041566E /* test_make_pulse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_make_pulse.c; sourceTree = "<group>"; };
 		B5D1420F18AA72F80041566E /* test_make_pulse */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_make_pulse; sourceTree = BUILT_PRODUCTS_DIR; };
-		B5D22A171C10D62C00CE15EB /* Images */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Images; path = SimRadar/Images; sourceTree = "<group>"; };
+		B5D22A171C10D62C00CE15EB /* Images */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Images; path = macOS/SimRadar/Images; sourceTree = "<group>"; };
 		B5EF317018204B5C002DDEFC /* SimRadarGCL.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimRadarGCL.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5EF317118204B5C002DDEFC /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		B5EF317418204B5C002DDEFC /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
@@ -564,7 +564,7 @@
 		B519295217D9153C00AB3687 /* Programs */ = {
 			isa = PBXGroup;
 			children = (
-				B50A281717D7C2F400E4DE66 /* radarsim.c */,
+				B50A281717D7C2F400E4DE66 /* simradar.c */,
 				B518D41D1C849FDF00BAF67D /* simple_ppi.c */,
 				B54601BB1CAA1940005A8BF6 /* lsiq.c */,
 				B5BAD55618B67E80007AC15D /* test_rs.c */,
@@ -630,7 +630,8 @@
 				B5201C711C2239D100EACF53 /* Splash.xib */,
 				B5EF317818204B5C002DDEFC /* Supporting Files */,
 			);
-			path = SimRadar;
+			name = SimRadar;
+			path = macOS/SimRadar;
 			sourceTree = "<group>";
 		};
 		B5EF317818204B5C002DDEFC /* Supporting Files */ = {
@@ -978,7 +979,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "#!/bin/bash\n# Auto Increment Version Script\nbuildPlist=\"SimRadar/SimRadar-Info.plist\"\nN=$(/usr/libexec/PlistBuddy -c \"Print CFBundleVersion\" $buildPlist)\nN=$(($N + 1))\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $N\" $buildPlist\nCFBuildDate=$(date)\n/usr/libexec/PlistBuddy -c \"Set :CFBuildDate $CFBuildDate\" $buildPlist\n";
+			shellScript = "#!/bin/bash\n# Auto Increment Version Script\nbuildPlist=\"macOS/SimRadar/SimRadar-Info.plist\"\nN=$(/usr/libexec/PlistBuddy -c \"Print CFBundleVersion\" $buildPlist)\nN=$(($N + 1))\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $N\" $buildPlist\nCFBuildDate=$(date)\n/usr/libexec/PlistBuddy -c \"Set :CFBuildDate $CFBuildDate\" $buildPlist\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -1009,7 +1010,7 @@
 				B5F7A0CF21495F87001E8515 /* pos.c in Sources */,
 				B5715B52218CDF8000FD4064 /* log.c in Sources */,
 				B527893318A13C5F00650679 /* rs.c in Sources */,
-				B527893118A13C4400650679 /* radarsim.c in Sources */,
+				B527893118A13C4400650679 /* simradar.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2226,7 +2227,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(PROJECT_DIR)/SimRadar",
+					"$(PROJECT_DIR)/macOS/SimRadar",
 				);
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -2237,7 +2238,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = /usr/local/include;
-				INFOPLIST_FILE = "SimRadar/SimRadar-Info.plist";
+				INFOPLIST_FILE = "macOS/SimRadar/SimRadar-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
@@ -2280,7 +2281,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(PROJECT_DIR)/SimRadar",
+					"$(PROJECT_DIR)/macOS/SimRadar",
 				);
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -2291,7 +2292,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = /usr/local/include;
-				INFOPLIST_FILE = "SimRadar/SimRadar-Info.plist";
+				INFOPLIST_FILE = "macOS/SimRadar/SimRadar-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
@@ -2336,7 +2337,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(PROJECT_DIR)/SimRadar",
+					"$(PROJECT_DIR)/macOS/SimRadar",
 				);
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -2353,7 +2354,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = /usr/local/include;
-				INFOPLIST_FILE = "SimRadar/SimRadar-Info.plist";
+				INFOPLIST_FILE = "macOS/SimRadar/SimRadar-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
@@ -2395,7 +2396,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(PROJECT_DIR)/SimRadar",
+					"$(PROJECT_DIR)/macOS/SimRadar",
 				);
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -2412,7 +2413,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = /usr/local/include;
-				INFOPLIST_FILE = "SimRadar/SimRadar-Info.plist";
+				INFOPLIST_FILE = "macOS/SimRadar/SimRadar-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
@@ -3582,7 +3583,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(PROJECT_DIR)/SimRadar",
+					"$(PROJECT_DIR)/macOS/SimRadar",
 				);
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -3593,7 +3594,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = /usr/local/include;
-				INFOPLIST_FILE = "SimRadar/SimRadar-Info.plist";
+				INFOPLIST_FILE = "macOS/SimRadar/SimRadar-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;

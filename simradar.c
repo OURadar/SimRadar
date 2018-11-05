@@ -1,6 +1,6 @@
 //
-//  radarsim.c
-//  Radar Simulator
+//  simradar.c
+//  SimRadar
 //
 //  This is an example of how to use the Radar Simulator framework (librs.a).
 //  All functions with prefix RS_ are built-in functions in the framework
@@ -164,13 +164,13 @@ static char *scan_mode_str(char scan_mode) {
 //
 //   s h o w _ h e l p
 //
-#define PROGNAME      "radarsim"
+#define PROGNAME      "SimRadar"
 
 void show_help() {
     int k;
     int size = 10 * 1024;
     char *buff = (char *)malloc(size);
-    k = sprintf(buff, "Radar Simulation\n\n"
+    k = sprintf(buff, "SimRadar\n\n"
            PROGNAME " [options]\n\n"
            "OPTIONS\n"
            "     Unless specifically stated, all options are interpreted in sequence. Some\n"

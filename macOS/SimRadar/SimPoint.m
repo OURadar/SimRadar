@@ -57,6 +57,14 @@
             return nil;
         }
 
+        // Allocate a scan pattern object
+        scan = (POSPattern *)malloc(sizeof(POSPosition));
+        if (scan == NULL) {
+            NSLog(@"Unable to allocate a scan object.");
+            [delegate progressUpdated:3.0 message:@"Unable to allocate a scan object."];
+            return nil;
+        }
+        
         // Special cases for laptop demos, etc.
         if (S->vendors[0] == RS_GPU_VENDOR_INTEL) {
             if (S->num_cus[0] <= 16) {

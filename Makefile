@@ -12,7 +12,7 @@ OBJS = log.o les.o adm.o rcs.o obj.o pos.o rs.o
 
 MYLIB = lib/librs.a
 
-PROGS = cldemo test_clreduce test_make_pulse test_rs test_les test_adm test_rcs simple_ppi lsiq radarsim
+PROGS = cldemo test_clreduce test_make_pulse test_rs test_les test_adm test_rcs simple_ppi lsiq simradar
 
 MPI_PROGS =
 
@@ -30,7 +30,7 @@ else
     LDFLAGS += -L /opt/oscer/software/CUDA/8.0.44-GCC-4.9.3-2.25/lib64 -lOpenCL
     ifeq ($(MPIVER), true)
         # Cluster with OpenMPI support
-        MPI_PROGS += radarsim-mpi
+        MPI_PROGS += simradar-mpi
         MPI_CFLAGS = -I /opt/oscer/software/OpenMPI/1.10.2-GCC-4.9.3-2.25/include
         MPI_LDFLAGS = -L /opt/oscer/software/OpenMPI/1.10.2-GCC-4.9.3-2.25/lib -lmpi
     endif
@@ -53,8 +53,8 @@ lib/librs.a: $(OBJS)
 $(MPI_PROGS): %: %.c $(MYLIB)
 	$(CC) $(CFLAGS) -D_OPEN_MPI $(MPI_CFLAGS) -o $@ $@.c $(LDFLAGS) $(MPI_LDFLAGS)
 
-prep: radarsim-mpi.c
-	@ln -sfn radarsim.c radarsim-mpi.c
+prep: simradar-mpi.c
+	@ln -sfn simradar.c simradar-mpi.c
 
 clean:
 	rm -f *.o *.a

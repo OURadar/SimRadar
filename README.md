@@ -15,7 +15,7 @@ Follow these steps to get the project
 
         git clone https://git.arrc.ou.edu/cheo4524/simradar.git
 
-3. Download [Sparkle Framework], extract and move the folder **Sparkle.framework**[^2] into the sub-folder **SimRadar**
+3. Download [Sparkle Framework], extract and move the folder **Sparkle.framework**[^2] into the sub-folder **maOS/SimRadar**
 
 4. Download the [LES, ADM & RCS data] in a zip archive (15GB), extract and move the folder **tables** into one of the following locations:
     - ~/Downloads
