@@ -164,7 +164,7 @@ static char *scan_mode_str(char scan_mode) {
 //
 //   s h o w _ h e l p
 //
-#define PROGNAME      "SimRadar"
+#define PROGNAME      "simradar"
 
 void show_help() {
     int k;

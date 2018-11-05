@@ -24,13 +24,13 @@ ref/
 
 # Symbolic links
 o
-radarsim-mpi.c
+simradar-mpi.c
 
 # Programs
 test_*
 cldemo
-radarsim
-radarsim-mpi
+simradar
+simradar-mpi
 simple_ppi
 lsiq
 
