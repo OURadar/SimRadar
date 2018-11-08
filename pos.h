@@ -14,7 +14,8 @@
 
 #include "log.h"
 
-#define POS_MAX_PATTERN_COUNT 100
+#define POS_MAX_PATTERN_COUNT    1000
+#define POS_MAX_SWEEP_COUNT      50
 
 // Test with this:
 // radarsim -p50 -SD:0,75,10/90,75,10/0,90,10 -N
@@ -23,12 +24,21 @@
 
 //typedef void * POSHandle;
 
-typedef struct pos {
+typedef struct pos_pos {
     float       az;
     float       el;
     uint32_t    index;                                 // Iteration of this position
     uint32_t    count;                                 // Repetition of this position
 } POSPosition;
+
+typedef struct pos_sweep {
+    float       azStart;
+    float       azEnd;
+    float       azDelta;
+    float       elStart;
+    float       elEnd;
+    float       elDelta;
+} POSSweep;
 
 typedef struct pos_pattern {
     char        mode;
@@ -37,7 +47,10 @@ typedef struct pos_pattern {
     char        reserved3;
     uint32_t    index;                                 // The index of POSPosition elements
     uint32_t    count;                                 // The count of POSPosition elements
+    uint32_t    sweepIndex;                            // The index of POSSweep elements
+    uint32_t    sweepCount;                            // The count of POSSweep elements
     POSPosition positions[POS_MAX_PATTERN_COUNT];      // Array of positions
+    POSSweep    sweeps[POS_MAX_SWEEP_COUNT];           // For summary generation only
     float       az;                                    // Current azimuth to use
     float       el;                                    // Current elevation to use
 } POSPattern;

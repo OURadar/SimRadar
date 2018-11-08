@@ -59,7 +59,7 @@
 
         POSPattern *scan_pattern = &S->P;
 //        const char scan_string[] = "D:0,75,50/90,75,50/0,90,50";
-        const char scan_string[] = "P:-12:12:0.01";
+        const char scan_string[] = "P:5,-12:12:0.05";
         
         POS_parse_from_string(scan_pattern, scan_string);
         

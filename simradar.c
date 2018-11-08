@@ -34,21 +34,21 @@ enum ACCEL_TYPE {
     ACCEL_TYPE_CPU
 };
 
-enum SCAN_MODE {
-    SCAN_MODE_STARE,
-    SCAN_MODE_PPI,
-    SCAN_MODE_RHI,
-    SCAN_MODE_DBS
-};
+//enum SCAN_MODE {
+//    SCAN_MODE_STARE,
+//    SCAN_MODE_PPI,
+//    SCAN_MODE_RHI,
+//    SCAN_MODE_DBS
+//};
 
-typedef struct scan_params {
-    char mode;
-    float start;
-    float end;
-    float delta;
-    float az;
-    float el;
-} ScanParams;
+//typedef struct scan_params {
+//    char mode;
+//    float start;
+//    float end;
+//    float delta;
+//    float az;
+//    float el;
+//} ScanParams;
 
 // New array type for DBS
 typedef struct scan_position {
@@ -101,65 +101,65 @@ typedef union simstate {
     RSHandle master;
 } SimState;
 
-int get_next_scan_angles(ScanParams *params) {
-    if (params->mode == SCAN_MODE_PPI) {
-        params->az += params->delta;
-        if (params->delta > 0.0f) {
-            if (params->az > params->end) {
-                params->az = params->start;
-            } else if (params->az < params->start) {
-                params->az = params->end;
-            }
-        } else {
-            if (params->az > params->start) {
-                params->az = params->end;
-            } else if (params->az < params->end) {
-                params->az = params->start;
-            }
+//int get_next_scan_angles(ScanParams *params) {
+//    if (params->mode == SCAN_MODE_PPI) {
+//        params->az += params->delta;
+//        if (params->delta > 0.0f) {
+//            if (params->az > params->end) {
+//                params->az = params->start;
+//            } else if (params->az < params->start) {
+//                params->az = params->end;
+//            }
+//        } else {
+//            if (params->az > params->start) {
+//                params->az = params->end;
+//            } else if (params->az < params->end) {
+//                params->az = params->start;
+//            }
+//
+//        }
+//        if (params->az < params->start || params->az > params->end) {
+//            return 1;
+//        }
+//    } else if (params->mode == SCAN_MODE_RHI) {
+//        params->el += params->delta;
+//        if (params->el > params->end) {
+//            params->el = params->start;
+//        } else if (params->el < params->start) {
+//            params->el = params->end;
+//        }
+//        if (params->el < params->start || params->el > params->end) {
+//            return 2;
+//        }
+//    }
+//    return 0;
+//}
 
-        }
-        if (params->az < params->start || params->az > params->end) {
-            return 1;
-        }
-    } else if (params->mode == SCAN_MODE_RHI) {
-        params->el += params->delta;
-        if (params->el > params->end) {
-            params->el = params->start;
-        } else if (params->el < params->start) {
-            params->el = params->end;
-        }
-        if (params->el < params->start || params->el > params->end) {
-            return 2;
-        }
-    }
-    return 0;
-}
-
-static char *scan_mode_str(char scan_mode) {
-    static char str[16];
-    switch (scan_mode) {
-        case SCAN_MODE_PPI:
-            snprintf(str, sizeof(str), "PPI");
-            break;
-            
-        case SCAN_MODE_RHI:
-            snprintf(str, sizeof(str), "RHI");
-            break;
-            
-        case SCAN_MODE_STARE:
-            snprintf(str, sizeof(str), "STARE");
-            break;
-            
-        case SCAN_MODE_DBS:
-            snprintf(str, sizeof(str), "DBS");
-            break;
-
-        default:
-            snprintf(str, sizeof(str), "UNK");
-            break;
-    }
-    return str;
-}
+//static char *scan_mode_str(char scan_mode) {
+//    static char str[16];
+//    switch (scan_mode) {
+//        case SCAN_MODE_PPI:
+//            snprintf(str, sizeof(str), "PPI");
+//            break;
+//
+//        case SCAN_MODE_RHI:
+//            snprintf(str, sizeof(str), "RHI");
+//            break;
+//
+//        case SCAN_MODE_STARE:
+//            snprintf(str, sizeof(str), "STARE");
+//            break;
+//
+//        case SCAN_MODE_DBS:
+//            snprintf(str, sizeof(str), "DBS");
+//            break;
+//
+//        default:
+//            snprintf(str, sizeof(str), "UNK");
+//            break;
+//    }
+//    return str;
+//}
 
 //
 //   s h o w _ h e l p
@@ -216,10 +216,6 @@ void show_help() {
            "  --dontask\n"
            "         Sets the program to skip all the confirmation questions.\n"
            "\n"
-           "  -e (--elevation) " UNDERLINE("angle") "\n"
-           "         Sets the scan elevation to " UNDERLINE("angle") " degrees.\n"
-           "         See --sweep for more information.\n"
-           "\n"
            "  -f " UNDERLINE("count") "\n"
            "         Sets the number of frames to " UNDERLINE("count") ". This option is identical -p.\n"
            "         See -p for more information.\n"
@@ -264,15 +260,15 @@ void show_help() {
            "            M = R for RHI (range height indicator) mode\n"
            "            M = D for DBS (Doppler beam swinging) mode\n"
            "         Examples:\n"
-           "            --sweep P:-12:12:0.01\n"
-           "                sets the scan mode in PPI, start from azimuth -12-deg and ends\n"
-           "                at azimuth +12-deg. The beam. Position delta is 0.01-deg, which\n"
-           "                means the azimuth changes by 0.01-deg at every pulse.\n"
-           "            --sweep R:0.5:12.0:0.02\n"
-           "                sets the scan mode in RHI, start from elevation 0.5-deg and ends\n"
-           "                at elevation 12.0-deg. The beam position delta is 0.02-deg, which\n"
-           "                means the elevation changes by 0.02-deg at every pulse.\n"
-           "            --sweep D:0,75,100;90,75,100;0,90,100\n"
+           "            --sweep P:3.0,-12:12:0.01\n"
+           "                sets the scan mode in PPI, start at elevation 3.0, from azimuth -12 deg\n"
+           "                and ends at azimuth +12 deg. The beam position delta is 0.01 deg, which\n"
+           "                means the azimuth changes by 0.01 deg at every pulse.\n"
+           "            --sweep R:90.0,0.5:12.0:0.02\n"
+           "                sets the scan mode in RHI, start at azimuth 90.0 deg, from elevation 0.5-deg\n"
+           "                and ends at elevation 12.0 deg. The beam position delta is 0.02 deg, which\n"
+           "                means the elevation changes by 0.02 deg at every pulse.\n"
+           "            --sweep D:0,75,100/90,75,100/0,90,100\n"
            "                sets the scan mode in DBS, start with beam azimuth 100-deg, elevation\n"
            "                75-deg for 100 pulses, then azimuth 90-deg and elevation 75-deg for\n"
            "                100 pulses, and finally, azimuth 0-deg and elevation 90-deg for 100\n"
@@ -337,7 +333,7 @@ enum ValueType {
 #define PARAMS_FLOAT_NOT_SUPPLIED   -999.9f
 #define PARAMS_INT_NOT_SUPPLIED     -999
 
-void show_user_param(const char *name, const void* value, const char *unit, const char type, const int count) {
+static void show_user_param(const char *name, const void* value, const char *unit, const char type, const int count) {
     char str_buf[64] = "not supplied";
     char *value_str = str_buf;
     float *fp;
@@ -390,15 +386,15 @@ void show_user_param(const char *name, const void* value, const char *unit, cons
     }
 }
 
-void write_iq_file(const UserParams user, const ScanParams scan, const IQFileHeader *file_header, const IQPulseHeader *pulse_headers, const cl_float4 *pulse_cache, const int stride, const int offset) {
+static void write_iq_file(const UserParams user, POSPattern *scan, const IQFileHeader *file_header, const IQPulseHeader *pulse_headers, const cl_float4 *pulse_cache, const int stride, const int offset) {
     char charbuff[2048];
     
     memset(charbuff, 0, sizeof(charbuff));
     snprintf(charbuff, sizeof(charbuff), "%s/sim-%s-%s%04.1f.iq",
              user.output_dir,
              nowlongoffset(offset),
-             scan.mode == SCAN_MODE_PPI ? "E": (scan.mode == SCAN_MODE_RHI ? "A" : "S"),
-             scan.mode == SCAN_MODE_PPI ? scan.el: (scan.mode == SCAN_MODE_RHI ? scan.az : (float)user.num_pulses));
+             POS_is_ppi(scan) ? "E": (POS_is_rhi(scan) ? "A" : "S"),
+             POS_is_ppi(scan) ? scan->sweeps[0].elStart : (POS_is_rhi(scan) ? scan->sweeps[0].azStart : (float)user.num_pulses));
     printf("%s : Output file : " UNDERLINE("%s") "\n", now(), charbuff);
     FILE *fid = fopen(charbuff, "wb");
     if (fid == NULL) {
@@ -498,7 +494,7 @@ int get_last_seed(const char *output_dir) {
 //
 int main(int argc, char *argv[]) {
     
-    int j, k = 0;
+    int k = 0;
     char verb = 0;
     char accel_type = 0;
     char charbuff[4096];
@@ -530,16 +526,7 @@ int main(int argc, char *argv[]) {
     
     user.output_dir[0]     = '\0';
 
-    // A structure unit that encapsulates a sweep based scanning strategy (PPI / RHI)
-    ScanParams scan;
-    scan.mode     = SCAN_MODE_PPI;
-    scan.start    = -12.0f;
-    scan.end      = +12.0f;
-    scan.delta    = 0.01f;
-    scan.az       = scan.start;
-    scan.el       = 3.0f;
-    
-    // A structure unit that encapsulates a steer based scanning strategy (DBS)
+    // A structure unit that encapsulates a canning strategy
     POSPattern *dbs_scan = (POSPattern *)malloc(sizeof(POSPattern));
     if (dbs_scan == NULL) {
         fprintf(stderr, "Error allocating space for scan pattern.\n");
@@ -572,10 +559,8 @@ int main(int argc, char *argv[]) {
         {"sweep"         , required_argument, 0, 'S'},
         {"tightbox"      , no_argument      , 0, 'T'},
         {"warmup"        , required_argument, 0, 'W'},
-        {"azimuth"       , required_argument, 0, 'a'}, // ASCII 97 - 122 : a - z
-        {"concept"       , required_argument, 0, 'c'},
+        {"concept"       , required_argument, 0, 'c'}, // ASCII 97 - 122 : a - z
         {"debris"        , required_argument, 0, 'd'},
-        {"elevation"     , required_argument, 0, 'e'},
         {"help"          , no_argument      , 0, 'h'},
         {"gpu"           , no_argument      , 0, 'g'},
         {"frames"        , required_argument, 0, 'f'},
@@ -601,16 +586,10 @@ int main(int argc, char *argv[]) {
 
 	uint32_t u1, u2;
     char c1, *pc1, *pc2;
-    float f1, f2, f3;
-    char scan_pattern[1024], *token;
-    const char delim[] = "/";
     // Process the input arguments and set the simulator parameters
     int opt, long_index = 0;
     while ((opt = getopt_long(argc, argv, str, long_options, &long_index)) != -1) {
         switch (opt) {
-            case 'a':
-                scan.az = atof(optarg);
-                break;
             case 'A':
                 user.quiet_mode = false;
                 break;
@@ -651,9 +630,6 @@ int main(int argc, char *argv[]) {
                 break;
             case 'D':
                 user.density = atof(optarg);
-                break;
-            case 'e':
-                scan.el = atof(optarg);
                 break;
             case 'E':
                 user.output_state_file = true;
@@ -712,42 +688,7 @@ int main(int argc, char *argv[]) {
                 user.seed = atoi(optarg);
                 break;
             case 'S':
-                k = sscanf(optarg, "%c:%f:%f:%f", &c1, &f1, &f2, &f3);
-                if (k < 4 && c1 != 'D') {
-                    fprintf(stderr, "Error in scanmode argument.   k = %d\n", k);
-                    exit(EXIT_FAILURE);
-                }
-                scan.mode = c1 == 'P' ? SCAN_MODE_PPI : ( c1 == 'R' ? SCAN_MODE_RHI : ( c1 == 'D' ? SCAN_MODE_DBS : SCAN_MODE_STARE));
-                if (scan.mode == SCAN_MODE_PPI || scan.mode == SCAN_MODE_RHI) {
-                    scan.start = f1;
-                    scan.end = f2;
-                    scan.delta = f3;
-                    if (scan.mode == SCAN_MODE_PPI) {
-                        scan.az = f1;
-                    } else if (scan.mode == SCAN_MODE_RHI) {
-                        scan.el = f1;
-                    }
-                } else if (scan.mode == SCAN_MODE_DBS) {
-                    strcpy(scan_pattern, strstr(optarg, ":") + 1);
-                    printf("Parsing DBS scanning pattern '%s'...\n", scan_pattern);
-                    printf("Pattern %s\n", scan_pattern);
-                    token = strtok(scan_pattern, delim);
-                    j = 0;
-                    while (token && j < MAX_SCAN_PATTERN_COUNT) {
-                        k = sscanf(token, "%f,%f,%f", &f1, &f2, &f3);
-                        //printf("k = %d   f1 = %.3f   f2 = %.3f   f3 = %.3f\n", k, f1, f2, f3);
-                        dbs_scan->positions[j].az = f1;
-                        dbs_scan->positions[j].el = f2;
-                        dbs_scan->positions[j].count = (uint32_t)f3;
-                        printf("j = %d   el = %5.2f   az = %6.2f   count = %u \n",
-                               j, dbs_scan->positions[j].el, dbs_scan->positions[j].az, dbs_scan->positions[j].count);
-                        token = strtok(NULL, delim);
-                        j++;
-                    }
-                    dbs_scan->count = j;
-                    dbs_scan->az = dbs_scan->positions[0].az;
-                    dbs_scan->el = dbs_scan->positions[0].el;
-                }
+                POS_parse_from_string(dbs_scan, optarg);
                 break;
             case 't':
                 user.prt = atof(optarg);
@@ -858,33 +799,21 @@ int main(int argc, char *argv[]) {
     // Preview only
     if (user.preview_only) {
         #define FLT_FMT  "\033[1;33m%+6.2f\033[0m"
-        printf("Scan mode: \033[1;92m%s\033[0m", scan_mode_str(scan.mode));
-        if (scan.mode == SCAN_MODE_RHI) {
-            printf("   RHI   AZ: " FLT_FMT " deg   EL: " FLT_FMT " -- " FLT_FMT " deg    delta: " FLT_FMT " deg\n",
-                   scan.az, scan.start, scan.end, scan.delta);
-        } else if (scan.mode == SCAN_MODE_PPI) {
-            printf("   PPI   EL: " FLT_FMT " deg   AZ: " FLT_FMT " -- " FLT_FMT " deg    delta: " FLT_FMT " deg\n",
-                   scan.el, scan.start, scan.end, scan.delta);
-        } else if (scan.mode == SCAN_MODE_STARE) {
-            printf("   STARE   EL: " FLT_FMT " deg   AZ: " FLT_FMT " deg", scan.el, scan.az);
-        } else if (scan.mode == SCAN_MODE_DBS) {
-            printf("   DBS Scan");
+        printf("Scan mode: \033[1;92m%c\033[0m\n", dbs_scan->mode);
+        if (dbs_scan->mode == 'P' || dbs_scan->mode == 'p') {
+            for (k = 0; k < dbs_scan->sweepCount; k++) {
+                printf("    %d   EL: " FLT_FMT " deg   AZ: " FLT_FMT " -- " FLT_FMT " deg    delta: " FLT_FMT " deg\n",
+                       k, dbs_scan->sweeps[k].elStart, dbs_scan->sweeps[k].azStart, dbs_scan->sweeps[k].azEnd, dbs_scan->sweeps[k].azDelta);
+            }
+        } else if (dbs_scan->mode == 'R' || dbs_scan->mode == 'r') {
+            printf("    %d   AZ: " FLT_FMT " deg   EL: " FLT_FMT " -- " FLT_FMT " deg    delta: " FLT_FMT " deg\n",
+                   k, dbs_scan->sweeps[0].azStart, dbs_scan->sweeps[0].elStart, dbs_scan->sweeps[0].elEnd, dbs_scan->sweeps[0].elDelta);
         } else {
             printf("   I need upgrade here.\n");
         }
-        if (scan.mode == SCAN_MODE_PPI || scan.mode == SCAN_MODE_RHI || scan.mode == SCAN_MODE_STARE) {
-            for (k = 0; k < user.num_pulses; k++) {
-                printf("k = %4d   el = %6.2f deg   az = %5.2f deg\n", k, scan.el, scan.az);
-                get_next_scan_angles(&scan);
-            }
-        } else if (scan.mode == SCAN_MODE_DBS) {
-            for (k = 0; k < user.num_pulses; k++) {
-                printf("k = %4d   el = %6.2f deg   az = %5.2f deg\n", k, dbs_scan->el, dbs_scan->az);
-                //get_next_dbs_scan_angles(dbs_scan);
-                POS_get_next_angles(dbs_scan);
-            }
-        } else {
-            printf("   I need upgrade here.\n");
+        for (k = 0; k < user.num_pulses; k++) {
+            POS_get_next_angles(dbs_scan);
+            printf("k = %4d   el = %6.2f deg   az = %6.2f deg\n", k, dbs_scan->el, dbs_scan->az);
         }
         return EXIT_SUCCESS;
     }
@@ -992,12 +921,14 @@ int main(int argc, char *argv[]) {
     RS_revise_debris_counts_to_gpu_preference(S);
     
     if (user.tight_box) {
-        if (scan.mode == SCAN_MODE_PPI) {
+        if (dbs_scan->mode == 'P' || dbs_scan->mode == 'p') {
             // No need to go all the way up if we are looking low
-            box.size.e = MIN(box.size.e, scan.el);
-        } else if (scan.mode == SCAN_MODE_RHI) {
+            //box.size.e = MIN(box.size.e, scan.el);
+            box.size.e = MIN(box.size.e, dbs_scan->sweeps[dbs_scan->sweepCount - 1].elStart);
+        } else if (dbs_scan->mode == 'R' || dbs_scan->mode == 'r') {
             // Need to make sure we cover the very top
-            box.size.e = MAX(scan.start, scan.end);
+            //box.size.e = MAX(scan.start, scan.end);
+            box.size.e = MIN(box.size.e, dbs_scan->sweeps[dbs_scan->sweepCount - 1].elEnd);
         }
     }
     
@@ -1095,11 +1026,11 @@ int main(int argc, char *argv[]) {
                 eta = (float)(user.num_pulses - k) / fps;
                 k0 = k;
                 if (verb < 2) {
-                    printf("k %5d   (e%6.2f, a%5.2f)   %.2f fps   \033[1;33m%.2f%%\033[0m   eta %.0f second%s   \r", k, scan.el, scan.az, fps, prog, eta, eta > 1.5f ? "s" : "");
+                    printf("k %5d   (e%6.2f, a%5.2f)   %.2f fps   \033[1;33m%.2f%%\033[0m   eta %.0f second%s   \r", k, dbs_scan->el, dbs_scan->az, fps, prog, eta, eta > 1.5f ? "s" : "");
                  }
             }
         }
-        RS_set_beam_pos(S, scan.az, scan.el);
+        RS_set_beam_pos(S, dbs_scan->az, dbs_scan->el);
         RS_make_pulse(S);
 
         // Only download the necessary data
@@ -1135,8 +1066,8 @@ int main(int argc, char *argv[]) {
         // Gather information for the  pulse header
         if (user.output_iq_file) {
             pulse_headers[k].time = S->sim_tic;
-            pulse_headers[k].az_deg = scan.az;
-            pulse_headers[k].el_deg = scan.el;
+            pulse_headers[k].az_deg = dbs_scan->az;
+            pulse_headers[k].el_deg = dbs_scan->el;
             memcpy(&pulse_cache[k * S->params.range_count], S->pulse, S->params.range_count * sizeof(cl_float4));
         }
 
@@ -1144,7 +1075,8 @@ int main(int argc, char *argv[]) {
         RS_advance_time(S);
 
         // Update scan angles for the next pulse
-        get_next_scan_angles(&scan);
+        //get_next_scan_angles(&scan);
+        POS_get_next_angles(dbs_scan);
     }
 
     // Overall fps
@@ -1188,10 +1120,10 @@ int main(int argc, char *argv[]) {
         for (k = 0; k < S->num_types; k++) {
             file_header.counts[k] = (uint32_t)S->counts[k];
         }
-        snprintf(file_header.scan_mode, sizeof(file_header.scan_mode), "%s", scan_mode_str(scan.mode));
-        file_header.scan_start      = scan.start;
-        file_header.scan_end        = scan.end;
-        file_header.scan_delta      = scan.delta;
+        snprintf(file_header.scan_mode, sizeof(file_header.scan_mode), "%c", dbs_scan->mode);
+        file_header.scan_start      = dbs_scan->sweeps[0].azStart;
+        file_header.scan_end        = dbs_scan->sweeps[0].azEnd;
+        file_header.scan_delta      = dbs_scan->sweeps[0].azDelta;
         file_header.simulation_seed = S->random_seed;
     }
 
@@ -1249,7 +1181,7 @@ int main(int argc, char *argv[]) {
 
 #else
         
-        write_iq_file(user, scan, &file_header, pulse_headers, pulse_cache, S->params.range_count, 0);
+        write_iq_file(user, dbs_scan, &file_header, pulse_headers, pulse_cache, S->params.range_count, 0);
         
 #endif
         
@@ -1260,8 +1192,8 @@ int main(int argc, char *argv[]) {
         snprintf(charbuff, sizeof(charbuff), "%s/sim-%s-%s%04.1f.simstate",
                  user.output_dir,
                  nowlong(),
-                 scan.mode == SCAN_MODE_PPI ? "E": (scan.mode == SCAN_MODE_RHI ? "A" : "S"),
-                 scan.mode == SCAN_MODE_PPI ? scan.el: (scan.mode == SCAN_MODE_RHI ? scan.az : (float)user.num_pulses));
+                 POS_is_ppi(dbs_scan) ? "E": (dbs_scan->mode == 'R' || dbs_scan->mode == 'r' ? "A" : "S"),
+                 POS_is_ppi(dbs_scan) ? dbs_scan->sweeps[0].elStart: (POS_is_rhi(dbs_scan) ? dbs_scan->sweeps[0].azStart : (float)user.num_pulses));
         printf("%s : Output file : " UNDERLINE ("%s") "\n", now(), charbuff);
         fid = fopen(charbuff, "wb");
         if (fid == NULL) {

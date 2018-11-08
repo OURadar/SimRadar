@@ -32,31 +32,63 @@ int POS_get_next_angles(POSPattern *scan) {
 }
 
 int POS_parse_from_string(POSPattern *scan, const char *string) {
-    int j, k;
-    float f1, f2, f3;
+    int i, j, k;
+    float f1, f2, f3, f4;
     const char delim[] = "/";
     char scan_pattern[1024], *token;
     rsprint("Parsing scanning pattern '%s' ...\n", string);
+    if (string[1] != ':') {
+        rsprint("Expected : after the scan mode character.\n");
+        return 1;
+    }
+    strcpy(scan_pattern, string + 2);
     scan->mode = string[0];
     switch (scan->mode) {
         case 'p':
         case 'P':
             // PPI
-            rsprint("PPI scanning pattern ... (coming soon)\n");
+            rsprint("PPI scanning pattern ...\n");
+            token = strtok(scan_pattern, delim);
+            i = 0;
+            j = 0;
+            while (token && j < POS_MAX_PATTERN_COUNT) {
+                k = sscanf(token, "%f,%f:%f:%f", &f1, &f2, &f3, &f4);
+                scan->sweeps[i].elStart = f1;
+                scan->sweeps[i].elEnd = f1;
+                scan->sweeps[i].elDelta = 0.0f;
+                scan->sweeps[i].azStart = f2;
+                scan->sweeps[i].azEnd = f3;
+                scan->sweeps[i].azDelta = f4;
+                //printf("k = %d   f1 = %.3f   f2 = %.3f   f3 = %.3f   f4 = %.3f\n", k, f1, f2, f3, f4);
+                do {
+                    scan->positions[j].el = f1;
+                    scan->positions[j].az = f2;
+                    scan->positions[j].index = 0;
+                    scan->positions[j].count = 1;
+                    #if defined(DEBUG_POS)
+                    rsprint("POS: j = %d   el = %5.2f   az = %6.2f   count = %u \n",
+                            j, scan->positions[j].el, scan->positions[j].az, scan->positions[j].count);
+                    #endif
+                    f2 += f4;
+                    j++;
+                } while (fabs(scan->positions[j - 1].az - f3) > 0.1f * f4 && j < POS_MAX_PATTERN_COUNT);
+                token = strtok(NULL, delim);
+                i++;
+            }
+            scan->sweepCount = i;
+            scan->sweepIndex = 0;
+            scan->count = j;
+            scan->index = 0;
             break;
         case 'r':
         case 'R':
             // RHI
             rsprint("RHI scanning pattern ... (coming soon)\n");
+            token = strtok(scan_pattern, delim);
             break;
         case 'd':
         case 'D':
             rsprint("DBS scanning pattern ...\n");
-            if (string[1] != ':') {
-                rsprint("Expected : after the scan mode character.\n");
-                return 1;
-            }
-            strcpy(scan_pattern, string + 2);
             token = strtok(scan_pattern, delim);
             j = 0;
             while (token && j < POS_MAX_PATTERN_COUNT) {
@@ -66,6 +98,7 @@ int POS_parse_from_string(POSPattern *scan, const char *string) {
                 #endif
                 scan->positions[j].az = f1;
                 scan->positions[j].el = f2;
+                scan->positions[j].index = 0;
                 scan->positions[j].count = (uint32_t)f3;
                 rsprint("POS: j = %d   el = %5.2f   az = %6.2f   count = %u \n",
                         j, scan->positions[j].el, scan->positions[j].az, scan->positions[j].count);
@@ -73,6 +106,7 @@ int POS_parse_from_string(POSPattern *scan, const char *string) {
                 j++;
             }
             scan->count = j;
+            scan->index = 0;
             break;
         default:
             break;

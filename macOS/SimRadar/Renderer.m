@@ -1669,8 +1669,10 @@ unsigned int grayToBinary(unsigned int num)
 
     GLfloat w = hudSize.width / hudSize.height;
     beamProjection = GLKMatrix4MakeFrustum(-w, w, -1.0f, 1.0f, beamNearZ, RENDERER_FAR_RANGE);
-    mat = GLKMatrix4MakeZRotation(beamAzimuth);
-    mat = GLKMatrix4RotateX(mat, -M_PI_2 - beamElevation);
+//    mat = GLKMatrix4MakeZRotation(beamAzimuth);
+//    mat = GLKMatrix4RotateX(mat, -M_PI_2 - beamElevation);
+    mat = GLKMatrix4MakeXRotation(-M_PI_2 - beamElevation);
+    mat = GLKMatrix4RotateZ(mat, beamAzimuth);
     beamModelViewProjection = GLKMatrix4Multiply(beamProjection, mat);
     
     float cx = roundf(0.25f * width);
