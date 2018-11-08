@@ -11,6 +11,14 @@
 #include "adm.h"
 #include "rcs.h"
 
+#define OBJConfigString(x) \
+(x == OBJConfigLeaf ? "Leaf" : \
+(x == OBJConfigLeafBig ? "Big Leaf" : \
+(x == OBJConfigWoodboard2x4 ? "2x4 Woodboard" : \
+(x == OBJConfigWoodboard4x8 ? "4x8 Woodboard" : \
+(x == OBJConfigMetalSheet ? "Metal Sheet" : \
+(x == OBJConfigBrick ? "Brick" : "Unknown" ))))))
+
 typedef int OBJConfig;
 
 enum OBJConfig {
@@ -23,14 +31,6 @@ enum OBJConfig {
     OBJConfigBrick         = 6,
 	OBJConfigCount
 };
-
-#define OBJConfigString(x) \
-(x == OBJConfigLeaf ? "Leaf" : \
-(x == OBJConfigLeafBig ? "Big Leaf" : \
-(x == OBJConfigWoodboard2x4 ? "2x4 Woodboard" : \
-(x == OBJConfigWoodboard4x8 ? "4x8 Woodboard" : \
-(x == OBJConfigMetalSheet ? "Metal Sheet" : \
-(x == OBJConfigBrick ? "Brick" : "Unknown" ))))))
 
 typedef struct _obj_table {
     ADMTable *adm_table;

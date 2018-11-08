@@ -119,7 +119,8 @@
 	iconFolder = [[[NSBundle mainBundle] pathForResource:@"Minion-Icons" ofType:nil] retain];
 	icons = [[[NSFileManager defaultManager] contentsOfDirectoryAtPath:iconFolder error:nil] retain];
 
-    state = 2;
+    // Default simulation state: 0 - advance beam and time; 1 - advance nothing; 2 - advance beam
+    state = 0;
 
 //    NSLog(@"%@ %@", startRecordMenuItem, stopRecordMenuItem);
     
@@ -171,7 +172,6 @@
         CGLShareGroupObj sharegroup = (CGLShareGroupObj)[number longValue];
         NSLog(@"Creating a simulation with sharedGroup %p ...", sharegroup);
         sim = [[SimPoint alloc] initWithDelegate:self cglShareGroup:sharegroup];
-//        sim = nil;
         if (sim) {
             // Wire the simulator to the controller.
             // The displayController will tell the renderer how many scatter body

@@ -2,6 +2,7 @@ uniform mat4 modelViewProjectionMatrix;
 uniform vec4 drawColor;
 uniform vec4 drawSize;
 uniform bool pingPong;
+uniform float lowZ;
 
 uniform sampler2D colormapTexture;
 
@@ -41,7 +42,11 @@ void main (void)
     }
     
     // Make debris closer to surface more transparent
-    if (inTranslation.z < 25.0) {
-        varColor.a *= inTranslation.z * 0.04;
+    float a = 1.0f;
+    if (inTranslation.z < 0.1 * lowZ) {
+        0.0f;
+    } else if (inTranslation.z < lowZ) {
+        a = (inTranslation.z - 0.1 * lowZ) / (0.9 * lowZ);
     }
+    varColor.a *= a * a;
 }

@@ -1434,12 +1434,14 @@ void RS_set_scan_box(RSHandle *H,
     H->params.elevation_end_deg = elevation_end;
     H->params.elevation_delta_deg = elevation_delta;
     
-    const RSfloat r_lo = floor((H->params.range_start - H->params.domain_pad_factor * H->params.dr) / H->params.range_delta) * H->params.range_delta;
-    const RSfloat r_hi =  ceil((H->params.range_end   + H->params.domain_pad_factor * H->params.dr) / H->params.range_delta) * H->params.range_delta;
-    const RSfloat az_lo = floor((H->params.azimuth_start_deg - H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg) * H->params.antenna_bw_deg;
-    const RSfloat az_hi =  ceil((H->params.azimuth_end_deg   + H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg) * H->params.antenna_bw_deg;
-    const RSfloat el_lo = MAX(0.0f, floor((H->params.elevation_start_deg - H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg) * H->params.antenna_bw_deg);
-    const RSfloat el_hi = MIN(90.0f,  ceil((H->params.elevation_end_deg   + H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg) * H->params.antenna_bw_deg);
+    bool is_full_sweep = fabs(azimuth_start - 0.0f) < 0.01f && fabs(azimuth_end - 360.0f) < 0.01f;
+    
+    const RSfloat r_lo = floor(MAX(100.0f, H->params.range_start - H->params.domain_pad_factor * H->params.dr) / H->params.range_delta) * H->params.range_delta;
+    const RSfloat r_hi = ceil(MIN(10.0e3f, H->params.range_end + H->params.domain_pad_factor * H->params.dr) / H->params.range_delta) * H->params.range_delta;
+    const RSfloat az_lo = is_full_sweep ? 0.0f : floor(H->params.azimuth_start_deg - H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg * H->params.antenna_bw_deg;
+    const RSfloat az_hi = is_full_sweep ? 360.0f : ceil(H->params.azimuth_end_deg + H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg * H->params.antenna_bw_deg;
+    const RSfloat el_lo = floor(MAX(0.0f, H->params.elevation_start_deg - H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg) * H->params.antenna_bw_deg;
+    const RSfloat el_hi = ceil(MIN(90.0f, H->params.elevation_end_deg + H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg) * H->params.antenna_bw_deg;
     const RSfloat tiny = 1.0e-5f;
     
     int nr = 0;
@@ -1452,35 +1454,47 @@ void RS_set_scan_box(RSHandle *H,
     
     int ii = 0;
     
-    // Number of range gates
+    rsprint("Deriving scan box ... BW %.2f   DR %.2f\n", H->params.antenna_bw_deg, H->params.range_delta);
+
+    // Range
     r = floor(H->params.range_start / H->params.range_delta) * H->params.range_delta;
     while (r <= ceil(H->params.range_end / H->params.range_delta) * H->params.range_delta) {
         r += H->params.range_delta;
         nr++;
     }
     H->params.range_count = MIN(RS_MAX_GATES, nr);
-    
-    // Evaluate the number of scatterers needed
+    if (H->verb > 1) {
+        rsprint("  o Domain range ... %.2f ~ %.2f (%d)\n", r_lo, r_hi, nr);
+    }
+
+    // Azimuth
     az = az_lo;
     while (az <= az_hi + tiny) {
         az += H->params.azimuth_delta_deg;
-        if (az >= 360.0f) {
-            az -= 360.0f;
-        }
         naz++;
     }
+    if (H->verb > 1) {
+        rsprint("  o Domain azimuth ... %.2f ~ %.2f (%d)\n", az_lo, az_hi, naz);
+    }
+
+    // Elevation
     el = el_lo;
     while (el <= el_hi) {
         el += H->params.elevation_delta_deg;
         nel++;
     }
+    if (H->verb > 1) {
+        rsprint("  o Domain elevation ... %.2f ~ %.2f (%d)\n", el_lo, el_hi, nel);
+    }
+
     // Zero volume
     if (naz == 0 || nel == 0) {
         rsprint("NEL = %d and/or NAZ = %d resulted in a zero volumne.\n", naz, nel);
         return;
     }
+    
+    // Evaluate the number of scatterers needed
     H->num_anchors  = 2 * naz * nel + 1;  // Save one for radar origin
-    // printf("%s : RS : Number of anchors needed = %d  (naz = %d  nel = %d)\n", now(), (int)H->num_anchors, naz, nel);
     if (H->anchor_pos) {
         if (H->verb > 2) {
             rsprint("Freeing existing anchor memory.");
@@ -1501,7 +1515,8 @@ void RS_set_scan_box(RSHandle *H,
     el = el_lo / 180.0f * M_PI;
     while (el <= el_hi / 180.0f * M_PI + tiny && ii < H->num_anchors - 1) {
         az = az_lo / 180.0f * M_PI;
-        while (az <= az_hi / 180.0f * M_PI + tiny && ii < H->num_anchors - 1) {
+        while ((is_full_sweep && az < (az_hi - azimuth_delta) / 180.0f * M_PI) || (!is_full_sweep && az <= az_hi / 180.0f * M_PI + tiny && ii < H->num_anchors - 1)) {
+            //rsprint("ii %d   AZ %.2f   EL %.2f\n", ii, az / M_PI * 180.0f, el / M_PI * 180.0f);
             H->anchor_pos[ii].x = r_lo * cos(el) * sin(az);
             H->anchor_pos[ii].y = r_lo * cos(el) * cos(az);
             H->anchor_pos[ii].z = r_lo * sin(el);
@@ -1531,6 +1546,8 @@ void RS_set_scan_box(RSHandle *H,
         el += elevation_delta / 180.0f * M_PI;
     }
     
+    rsprint("num_anchors = %d\n", H->num_anchors);
+    
     // Radar origin at (0, 0, 0)
     H->anchor_pos[ii].x = 0.0f;
     H->anchor_pos[ii].y = 0.0f;
@@ -1548,12 +1565,12 @@ void RS_set_scan_box(RSHandle *H,
     H->sim_desc.s[RSSimulationDescriptionBoundOriginZ] = zmin;
     
     sprintf(H->summary,
-            "User domain @\n  R:[ %6.2f ~ %6.2f ] km\n  E:[ %6.2f ~ %6.2f ] deg\n  A:[ %+6.2f ~ %+6.2f ] deg\n",
+            "User domain @\n  R:[  %6.2f ~  %6.2f ] km\n  E:[  %6.2f ~  %6.2f ] deg\n  A:[ %+7.2f ~ %+7.2f ] deg\n",
             1.0e-3 * H->params.range_start, 1e-3 * H->params.range_end,
             H->params.elevation_start_deg, H->params.elevation_end_deg,
             H->params.azimuth_start_deg, H->params.azimuth_end_deg);
     sprintf(H->summary + strlen(H->summary),
-            "Work domain @\n  R:[ %6.2f ~ %6.2f ] km  (%d gates)\n  E:[ %6.2f ~ %6.2f ] deg  (%d rays)\n  A:[ %+6.2f ~ %+6.2f ] deg  (%d rays)\n",
+            "Work domain @\n  R:[  %6.2f ~  %6.2f ] km  (%d gates)\n  E:[  %6.2f ~  %6.2f ] deg  (%d rays)\n  A:[ %+7.2f ~ %+7.2f ] deg  (%d rays)\n",
             1.0e-3 * r_lo, 1.0e-3 * r_hi, H->params.range_count,
             el_lo, el_hi, nel,
             az_lo, az_hi, naz);
@@ -1570,15 +1587,15 @@ void RS_set_scan_box(RSHandle *H,
             H->sim_concept & RSSimulationConceptUniformDSDScaledRCS ? "U" : "");
     
     if (H->verb) {
-        rsprint("User domain @ R:[ %5.2f ~ %5.2f ] km   E:[ %5.2f ~ %5.2f ] deg   A:[ %+6.2f ~ %+6.2f ] deg\n",
+        rsprint("User domain @ R:[ %5.2f ~ %5.2f ] km   E:[ %5.2f ~ %5.2f ] deg   A:[ %+7.2f ~ %+7.2f ] deg\n",
                 1.0e-3 * H->params.range_start, 1e-3 * H->params.range_end,
                 H->params.elevation_start_deg, H->params.elevation_end_deg,
                 H->params.azimuth_start_deg, H->params.azimuth_end_deg);
-        rsprint("Work domain @ R:[ %5.2f ~ %5.2f ] km   E:[ %5.2f ~ %5.2f ] deg   A:[ %+6.2f ~ %+6.2f ] deg\n",
+        rsprint("Work domain @ R:[ %5.2f ~ %5.2f ] km   E:[ %5.2f ~ %5.2f ] deg   A:[ %+7.2f ~ %+7.2f ] deg\n",
                 1.0e-3 * r_lo, 1.0e-3 * r_hi,
                 el_lo, el_hi,
                 az_lo, az_hi);
-        rsprint("            @ R:[       %-3d     ]      E:[       %-3d     ]       A:[        %-3d      ]",
+        rsprint("            @ R:[       %-3d     ]      E:[       %-3d     ]       A:[         %-3d       ]",
                 H->params.range_count, nel, naz);
         rsprint("            @ X:[ %.2f ~ %.2f ] m   Y:[ %.2f ~ %.2f ] m   Z:[ %.2f ~ %.2f ] m\n",
                 xmin, xmax,
@@ -1623,195 +1640,226 @@ void RS_set_scan_box(RSHandle *H,
     }
     ii = 0;
     
-    el = H->params.elevation_start_deg / 180.0 * M_PI;
-    az = H->params.azimuth_start_deg / 180.0 * M_PI;
-    while (az < (H->params.azimuth_end_deg - H->params.azimuth_delta_deg) / 180.0 * M_PI + tiny && ii < H->num_anchor_lines - 1) {
-        H->anchor_lines[ii].x = H->params.range_start * cos(el) * sin(az);
-        H->anchor_lines[ii].y = H->params.range_start * cos(el) * cos(az);
-        H->anchor_lines[ii].z = H->params.range_start * sin(el);
-        H->anchor_lines[ii].w = 1.0;
-        ii++;
-        
-        az += H->params.azimuth_delta_deg / 180.0 * M_PI;
-        
-        H->anchor_lines[ii].x = H->params.range_start * cos(el) * sin(az);
-        H->anchor_lines[ii].y = H->params.range_start * cos(el) * cos(az);
-        H->anchor_lines[ii].z = H->params.range_start * sin(el);
-        H->anchor_lines[ii].w = 1.0;
-        ii++;
-    }
-    el = H->params.elevation_end_deg / 180.0 * M_PI;
-    az = H->params.azimuth_start_deg / 180.0 * M_PI;
-    while (az < (H->params.azimuth_end_deg - H->params.azimuth_delta_deg) / 180.0 * M_PI + tiny && ii < H->num_anchor_lines - 1) {
-        H->anchor_lines[ii].x = H->params.range_start * cos(el) * sin(az);
-        H->anchor_lines[ii].y = H->params.range_start * cos(el) * cos(az);
-        H->anchor_lines[ii].z = H->params.range_start * sin(el);
-        H->anchor_lines[ii].w = 1.0;
-        ii++;
-        
-        az += H->params.azimuth_delta_deg / 180.0 * M_PI;
-        
-        H->anchor_lines[ii].x = H->params.range_start * cos(el) * sin(az);
-        H->anchor_lines[ii].y = H->params.range_start * cos(el) * cos(az);
-        H->anchor_lines[ii].z = H->params.range_start * sin(el);
-        H->anchor_lines[ii].w = 1.0;
-        ii++;
-    }
-    el = H->params.elevation_start_deg / 180.0 * M_PI;
-    az = H->params.azimuth_start_deg / 180.0 * M_PI;
-    while (az < (H->params.azimuth_end_deg - H->params.azimuth_delta_deg) / 180.0 * M_PI + tiny && ii < H->num_anchor_lines - 1) {
-        H->anchor_lines[ii].x = H->params.range_end * cos(el) * sin(az);
-        H->anchor_lines[ii].y = H->params.range_end * cos(el) * cos(az);
-        H->anchor_lines[ii].z = H->params.range_end * sin(el);
-        H->anchor_lines[ii].w = 1.0;
-        ii++;
-        
-        az += H->params.azimuth_delta_deg / 180.0 * M_PI;
-        
-        H->anchor_lines[ii].x = H->params.range_end * cos(el) * sin(az);
-        H->anchor_lines[ii].y = H->params.range_end * cos(el) * cos(az);
-        H->anchor_lines[ii].z = H->params.range_end * sin(el);
-        H->anchor_lines[ii].w = 1.0;
-        ii++;
-    }
-    el = H->params.elevation_end_deg / 180.0 * M_PI;
-    az = H->params.azimuth_start_deg / 180.0 * M_PI;
-    while (az < (H->params.azimuth_end_deg - H->params.azimuth_delta_deg) / 180.0 * M_PI + tiny && ii < H->num_anchor_lines - 1) {
-        H->anchor_lines[ii].x = H->params.range_end * cos(el) * sin(az);
-        H->anchor_lines[ii].y = H->params.range_end * cos(el) * cos(az);
-        H->anchor_lines[ii].z = H->params.range_end * sin(el);
-        H->anchor_lines[ii].w = 1.0;
-        ii++;
-        
-        az += H->params.azimuth_delta_deg / 180.0 * M_PI;
-        
-        H->anchor_lines[ii].x = H->params.range_end * cos(el) * sin(az);
-        H->anchor_lines[ii].y = H->params.range_end * cos(el) * cos(az);
-        H->anchor_lines[ii].z = H->params.range_end * sin(el);
-        H->anchor_lines[ii].w = 1.0;
-        ii++;
-    }
+    //
+    //             o----(4)----o             (end)
+    //            /:          /|
+    //           / :         / |
+    //         (B)(7)      (C)(8)             EL
+    //        /    :       /   |
+    //       /     :      /    |
+    //       o----(3)---[2]....o   (end)   (start)
+    //       |    /      |    /
+    //       |   /       |   /
+    //      (5)(9)      (6)(A)    R
+    //       | /         | /
+    //       |/          |/
+    //       o----(1)----o   (start)
+    //
+    //    (start)  AZ   (end)
+    //
     
-    el = H->params.elevation_start_deg / 180.0 * M_PI;
-    az = H->params.azimuth_start_deg / 180.0 * M_PI;
-    while (el < (H->params.elevation_end_deg - H->params.elevation_delta_deg) / 180.0 * M_PI + tiny && ii < H->num_anchor_lines - 1) {
+    if (H->params.elevation_start_deg < 90.0f) {
+        // Line 1
+        el = H->params.elevation_start_deg / 180.0 * M_PI;
+        az = H->params.azimuth_start_deg / 180.0 * M_PI;
+        while (az < (H->params.azimuth_end_deg - H->params.azimuth_delta_deg) / 180.0 * M_PI + tiny && ii < H->num_anchor_lines - 1) {
+            H->anchor_lines[ii].x = H->params.range_start * cos(el) * sin(az);
+            H->anchor_lines[ii].y = H->params.range_start * cos(el) * cos(az);
+            H->anchor_lines[ii].z = H->params.range_start * sin(el);
+            H->anchor_lines[ii].w = 1.0;
+            ii++;
+            
+            az += H->params.azimuth_delta_deg / 180.0 * M_PI;
+            
+            H->anchor_lines[ii].x = H->params.range_start * cos(el) * sin(az);
+            H->anchor_lines[ii].y = H->params.range_start * cos(el) * cos(az);
+            H->anchor_lines[ii].z = H->params.range_start * sin(el);
+            H->anchor_lines[ii].w = 1.0;
+            ii++;
+        }
+        // Line 2
+        el = H->params.elevation_start_deg / 180.0 * M_PI;
+        az = H->params.azimuth_start_deg / 180.0 * M_PI;
+        while (az < (H->params.azimuth_end_deg - H->params.azimuth_delta_deg) / 180.0 * M_PI + tiny && ii < H->num_anchor_lines - 1) {
+            H->anchor_lines[ii].x = H->params.range_end * cos(el) * sin(az);
+            H->anchor_lines[ii].y = H->params.range_end * cos(el) * cos(az);
+            H->anchor_lines[ii].z = H->params.range_end * sin(el);
+            H->anchor_lines[ii].w = 1.0;
+            ii++;
+            
+            az += H->params.azimuth_delta_deg / 180.0 * M_PI;
+            
+            H->anchor_lines[ii].x = H->params.range_end * cos(el) * sin(az);
+            H->anchor_lines[ii].y = H->params.range_end * cos(el) * cos(az);
+            H->anchor_lines[ii].z = H->params.range_end * sin(el);
+            H->anchor_lines[ii].w = 1.0;
+            ii++;
+        }
+    }
+    if (H->params.elevation_end_deg < 90.0f) {
+        // Line 3
+        el = H->params.elevation_end_deg / 180.0 * M_PI;
+        az = H->params.azimuth_start_deg / 180.0 * M_PI;
+        while (az < (H->params.azimuth_end_deg - H->params.azimuth_delta_deg) / 180.0 * M_PI + tiny && ii < H->num_anchor_lines - 1) {
+            H->anchor_lines[ii].x = H->params.range_start * cos(el) * sin(az);
+            H->anchor_lines[ii].y = H->params.range_start * cos(el) * cos(az);
+            H->anchor_lines[ii].z = H->params.range_start * sin(el);
+            H->anchor_lines[ii].w = 1.0;
+            ii++;
+            
+            az += H->params.azimuth_delta_deg / 180.0 * M_PI;
+            
+            H->anchor_lines[ii].x = H->params.range_start * cos(el) * sin(az);
+            H->anchor_lines[ii].y = H->params.range_start * cos(el) * cos(az);
+            H->anchor_lines[ii].z = H->params.range_start * sin(el);
+            H->anchor_lines[ii].w = 1.0;
+            ii++;
+        }
+        // Line 4
+        el = H->params.elevation_end_deg / 180.0 * M_PI;
+        az = H->params.azimuth_start_deg / 180.0 * M_PI;
+        while (az < (H->params.azimuth_end_deg - H->params.azimuth_delta_deg) / 180.0 * M_PI + tiny && ii < H->num_anchor_lines - 1) {
+            H->anchor_lines[ii].x = H->params.range_end * cos(el) * sin(az);
+            H->anchor_lines[ii].y = H->params.range_end * cos(el) * cos(az);
+            H->anchor_lines[ii].z = H->params.range_end * sin(el);
+            H->anchor_lines[ii].w = 1.0;
+            ii++;
+            
+            az += H->params.azimuth_delta_deg / 180.0 * M_PI;
+            
+            H->anchor_lines[ii].x = H->params.range_end * cos(el) * sin(az);
+            H->anchor_lines[ii].y = H->params.range_end * cos(el) * cos(az);
+            H->anchor_lines[ii].z = H->params.range_end * sin(el);
+            H->anchor_lines[ii].w = 1.0;
+            ii++;
+        }
+        // Line 5
+        el = H->params.elevation_start_deg / 180.0 * M_PI;
+        az = H->params.azimuth_start_deg / 180.0 * M_PI;
+        while (el < (H->params.elevation_end_deg - H->params.elevation_delta_deg) / 180.0 * M_PI + tiny && ii < H->num_anchor_lines - 1) {
+            H->anchor_lines[ii].x = H->params.range_start * cos(el) * sin(az);
+            H->anchor_lines[ii].y = H->params.range_start * cos(el) * cos(az);
+            H->anchor_lines[ii].z = H->params.range_start * sin(el);
+            H->anchor_lines[ii].w = 1.0;
+            ii++;
+            
+            el += H->params.elevation_delta_deg / 180.0 * M_PI;
+            
+            H->anchor_lines[ii].x = H->params.range_start * cos(el) * sin(az);
+            H->anchor_lines[ii].y = H->params.range_start * cos(el) * cos(az);
+            H->anchor_lines[ii].z = H->params.range_start * sin(el);
+            H->anchor_lines[ii].w = 1.0;
+            ii++;
+        }
+        // Line 6
+        el = H->params.elevation_start_deg / 180.0 * M_PI;
+        az = H->params.azimuth_end_deg / 180.0 * M_PI;
+        while (el < (H->params.elevation_end_deg - H->params.elevation_delta_deg) / 180.0 * M_PI + tiny && ii < H->num_anchor_lines - 1) {
+            H->anchor_lines[ii].x = H->params.range_start * cos(el) * sin(az);
+            H->anchor_lines[ii].y = H->params.range_start * cos(el) * cos(az);
+            H->anchor_lines[ii].z = H->params.range_start * sin(el);
+            H->anchor_lines[ii].w = 1.0;
+            ii++;
+            
+            el += H->params.elevation_delta_deg / 180.0 * M_PI;
+            
+            H->anchor_lines[ii].x = H->params.range_start * cos(el) * sin(az);
+            H->anchor_lines[ii].y = H->params.range_start * cos(el) * cos(az);
+            H->anchor_lines[ii].z = H->params.range_start * sin(el);
+            H->anchor_lines[ii].w = 1.0;
+            ii++;
+        }
+        // Line 7
+        el = H->params.elevation_start_deg / 180.0 * M_PI;
+        az = H->params.azimuth_start_deg / 180.0 * M_PI;
+        while (el < (H->params.elevation_end_deg - H->params.elevation_delta_deg) / 180.0 * M_PI + tiny && ii < H->num_anchor_lines - 1) {
+            H->anchor_lines[ii].x = H->params.range_end * cos(el) * sin(az);
+            H->anchor_lines[ii].y = H->params.range_end * cos(el) * cos(az);
+            H->anchor_lines[ii].z = H->params.range_end * sin(el);
+            H->anchor_lines[ii].w = 1.0;
+            ii++;
+            
+            el += H->params.elevation_delta_deg / 180.0 * M_PI;
+            
+            H->anchor_lines[ii].x = H->params.range_end * cos(el) * sin(az);
+            H->anchor_lines[ii].y = H->params.range_end * cos(el) * cos(az);
+            H->anchor_lines[ii].z = H->params.range_end * sin(el);
+            H->anchor_lines[ii].w = 1.0;
+            ii++;
+        }
+        // Line 8
+        el = H->params.elevation_start_deg / 180.0 * M_PI;
+        az = H->params.azimuth_end_deg / 180.0 * M_PI;
+        while (el < (H->params.elevation_end_deg - H->params.elevation_delta_deg) / 180.0 * M_PI + tiny && ii < H->num_anchor_lines - 1) {
+            H->anchor_lines[ii].x = H->params.range_end * cos(el) * sin(az);
+            H->anchor_lines[ii].y = H->params.range_end * cos(el) * cos(az);
+            H->anchor_lines[ii].z = H->params.range_end * sin(el);
+            H->anchor_lines[ii].w = 1.0;
+            ii++;
+            
+            el += H->params.elevation_delta_deg / 180.0 * M_PI;
+            
+            H->anchor_lines[ii].x = H->params.range_end * cos(el) * sin(az);
+            H->anchor_lines[ii].y = H->params.range_end * cos(el) * cos(az);
+            H->anchor_lines[ii].z = H->params.range_end * sin(el);
+            H->anchor_lines[ii].w = 1.0;
+            ii++;
+        }
+    }
+    if (!is_full_sweep) {
+        // Line 9
+        el = H->params.elevation_start_deg / 180.0 * M_PI;
+        az = H->params.azimuth_start_deg / 180.0 * M_PI;
         H->anchor_lines[ii].x = H->params.range_start * cos(el) * sin(az);
         H->anchor_lines[ii].y = H->params.range_start * cos(el) * cos(az);
         H->anchor_lines[ii].z = H->params.range_start * sin(el);
         H->anchor_lines[ii].w = 1.0;
         ii++;
-        
-        el += H->params.elevation_delta_deg / 180.0 * M_PI;
-        
+        H->anchor_lines[ii].x = H->params.range_end * cos(el) * sin(az);
+        H->anchor_lines[ii].y = H->params.range_end * cos(el) * cos(az);
+        H->anchor_lines[ii].z = H->params.range_end * sin(el);
+        H->anchor_lines[ii].w = 1.0;
+        ii++;
+        // Line A
+        el = H->params.elevation_start_deg / 180.0 * M_PI;
+        az = H->params.azimuth_end_deg / 180.0 * M_PI;
         H->anchor_lines[ii].x = H->params.range_start * cos(el) * sin(az);
         H->anchor_lines[ii].y = H->params.range_start * cos(el) * cos(az);
         H->anchor_lines[ii].z = H->params.range_start * sin(el);
         H->anchor_lines[ii].w = 1.0;
         ii++;
-    }
-    el = H->params.elevation_start_deg / 180.0 * M_PI;
-    az = H->params.azimuth_end_deg / 180.0 * M_PI;
-    while (el < (H->params.elevation_end_deg - H->params.elevation_delta_deg) / 180.0 * M_PI + tiny && ii < H->num_anchor_lines - 1) {
+        H->anchor_lines[ii].x = H->params.range_end * cos(el) * sin(az);
+        H->anchor_lines[ii].y = H->params.range_end * cos(el) * cos(az);
+        H->anchor_lines[ii].z = H->params.range_end * sin(el);
+        H->anchor_lines[ii].w = 1.0;
+        ii++;
+        // Line B
+        el = H->params.elevation_end_deg / 180.0 * M_PI;
+        az = H->params.azimuth_start_deg / 180.0 * M_PI;
         H->anchor_lines[ii].x = H->params.range_start * cos(el) * sin(az);
         H->anchor_lines[ii].y = H->params.range_start * cos(el) * cos(az);
         H->anchor_lines[ii].z = H->params.range_start * sin(el);
         H->anchor_lines[ii].w = 1.0;
         ii++;
-        
-        el += H->params.elevation_delta_deg / 180.0 * M_PI;
-        
+        H->anchor_lines[ii].x = H->params.range_end * cos(el) * sin(az);
+        H->anchor_lines[ii].y = H->params.range_end * cos(el) * cos(az);
+        H->anchor_lines[ii].z = H->params.range_end * sin(el);
+        H->anchor_lines[ii].w = 1.0;
+        ii++;
+        // Line C
+        el = H->params.elevation_end_deg / 180.0 * M_PI;
+        az = H->params.azimuth_end_deg / 180.0 * M_PI;
         H->anchor_lines[ii].x = H->params.range_start * cos(el) * sin(az);
         H->anchor_lines[ii].y = H->params.range_start * cos(el) * cos(az);
         H->anchor_lines[ii].z = H->params.range_start * sin(el);
         H->anchor_lines[ii].w = 1.0;
         ii++;
-    }
-    el = H->params.elevation_start_deg / 180.0 * M_PI;
-    az = H->params.azimuth_start_deg / 180.0 * M_PI;
-    while (el < (H->params.elevation_end_deg - H->params.elevation_delta_deg) / 180.0 * M_PI + tiny && ii < H->num_anchor_lines - 1) {
-        H->anchor_lines[ii].x = H->params.range_end * cos(el) * sin(az);
-        H->anchor_lines[ii].y = H->params.range_end * cos(el) * cos(az);
-        H->anchor_lines[ii].z = H->params.range_end * sin(el);
-        H->anchor_lines[ii].w = 1.0;
-        ii++;
-        
-        el += H->params.elevation_delta_deg / 180.0 * M_PI;
-        
         H->anchor_lines[ii].x = H->params.range_end * cos(el) * sin(az);
         H->anchor_lines[ii].y = H->params.range_end * cos(el) * cos(az);
         H->anchor_lines[ii].z = H->params.range_end * sin(el);
         H->anchor_lines[ii].w = 1.0;
         ii++;
     }
-    el = H->params.elevation_start_deg / 180.0 * M_PI;
-    az = H->params.azimuth_end_deg / 180.0 * M_PI;
-    while (el < (H->params.elevation_end_deg - H->params.elevation_delta_deg) / 180.0 * M_PI + tiny && ii < H->num_anchor_lines - 1) {
-        H->anchor_lines[ii].x = H->params.range_end * cos(el) * sin(az);
-        H->anchor_lines[ii].y = H->params.range_end * cos(el) * cos(az);
-        H->anchor_lines[ii].z = H->params.range_end * sin(el);
-        H->anchor_lines[ii].w = 1.0;
-        ii++;
-        
-        el += H->params.elevation_delta_deg / 180.0 * M_PI;
-        
-        H->anchor_lines[ii].x = H->params.range_end * cos(el) * sin(az);
-        H->anchor_lines[ii].y = H->params.range_end * cos(el) * cos(az);
-        H->anchor_lines[ii].z = H->params.range_end * sin(el);
-        H->anchor_lines[ii].w = 1.0;
-        ii++;
-    }
-    
-    el = H->params.elevation_start_deg / 180.0 * M_PI;
-    az = H->params.azimuth_start_deg / 180.0 * M_PI;
-    H->anchor_lines[ii].x = H->params.range_start * cos(el) * sin(az);
-    H->anchor_lines[ii].y = H->params.range_start * cos(el) * cos(az);
-    H->anchor_lines[ii].z = H->params.range_start * sin(el);
-    H->anchor_lines[ii].w = 1.0;
-    ii++;
-    H->anchor_lines[ii].x = H->params.range_end * cos(el) * sin(az);
-    H->anchor_lines[ii].y = H->params.range_end * cos(el) * cos(az);
-    H->anchor_lines[ii].z = H->params.range_end * sin(el);
-    H->anchor_lines[ii].w = 1.0;
-    ii++;
-    
-    el = H->params.elevation_start_deg / 180.0 * M_PI;
-    az = H->params.azimuth_end_deg / 180.0 * M_PI;
-    H->anchor_lines[ii].x = H->params.range_start * cos(el) * sin(az);
-    H->anchor_lines[ii].y = H->params.range_start * cos(el) * cos(az);
-    H->anchor_lines[ii].z = H->params.range_start * sin(el);
-    H->anchor_lines[ii].w = 1.0;
-    ii++;
-    H->anchor_lines[ii].x = H->params.range_end * cos(el) * sin(az);
-    H->anchor_lines[ii].y = H->params.range_end * cos(el) * cos(az);
-    H->anchor_lines[ii].z = H->params.range_end * sin(el);
-    H->anchor_lines[ii].w = 1.0;
-    ii++;
-    
-    el = H->params.elevation_end_deg / 180.0 * M_PI;
-    az = H->params.azimuth_end_deg / 180.0 * M_PI;
-    H->anchor_lines[ii].x = H->params.range_start * cos(el) * sin(az);
-    H->anchor_lines[ii].y = H->params.range_start * cos(el) * cos(az);
-    H->anchor_lines[ii].z = H->params.range_start * sin(el);
-    H->anchor_lines[ii].w = 1.0;
-    ii++;
-    H->anchor_lines[ii].x = H->params.range_end * cos(el) * sin(az);
-    H->anchor_lines[ii].y = H->params.range_end * cos(el) * cos(az);
-    H->anchor_lines[ii].z = H->params.range_end * sin(el);
-    H->anchor_lines[ii].w = 1.0;
-    ii++;
-    
-    el = H->params.elevation_end_deg / 180.0 * M_PI;
-    az = H->params.azimuth_start_deg / 180.0 * M_PI;
-    H->anchor_lines[ii].x = H->params.range_start * cos(el) * sin(az);
-    H->anchor_lines[ii].y = H->params.range_start * cos(el) * cos(az);
-    H->anchor_lines[ii].z = H->params.range_start * sin(el);
-    H->anchor_lines[ii].w = 1.0;
-    ii++;
-    H->anchor_lines[ii].x = H->params.range_end * cos(el) * sin(az);
-    H->anchor_lines[ii].y = H->params.range_end * cos(el) * cos(az);
-    H->anchor_lines[ii].z = H->params.range_end * sin(el);
-    H->anchor_lines[ii].w = 1.0;
-    ii++;
     
     // printf("num_anchor_lines = %zu  ii = %d\n", H->num_anchor_lines, ii);
     
@@ -4443,6 +4491,12 @@ void RS_advance_time(RSHandle *H) {
 }
 
 
+void RS_advance_beam(RSHandle *H) {
+    POSPattern *scan = &H->P;
+    POS_get_next_angles(scan);
+    RS_set_beam_pos(H, scan->az, scan->el);
+}
+
 
 void RS_make_pulse(RSHandle *H) {
     
@@ -4836,39 +4890,75 @@ RSBox RS_suggest_scan_domain(RSHandle *H, const int nbeams) {
     float w = H->vel_desc.ax * (1.0f - powf(H->vel_desc.rx, 0.5f * (float)(H->vel_desc.nx - 3))) / (1.0f - H->vel_desc.rx);
     float h = H->vel_desc.az * (1.0f - powf(H->vel_desc.rz,        (float)(H->vel_desc.nz - 1))) / (1.0f - H->vel_desc.rz);
     
-    // Maximum number of beams plus the padding on one side in azimuth
-    float na = 0.5f * (float)nbeams + RS_DOMAIN_PAD + 0.5f;
+    float na = 0.0f, ne = 0.0f, nr = 0.0f;
     
-    // Maximum number of beams in elevation
-    float ne = 18.0f;
+    POSPattern *scan = &H->P;
     
-    // Maximum y of the emulation box: The range when the width is fully utilized; This is also rmax
-    float rmax = w / sinf(na * H->params.antenna_bw_rad);
-    
-    // Minimum y of the emulation box: The range when the height is fully utilized
-    float rmin = (rmax - 2.0f * w) / cosf(na * H->params.antenna_bw_rad) / cosf(ne * H->params.antenna_bw_rad);
-    
-    // If we cannot respect the padding on both sides
-    // Maximum number of range cells minus the padding on both sides minus one radar cell
-    float nr = (rmax - rmin) / H->params.dr - 2.0f * RS_DOMAIN_PAD - 1.0f;
-    nr = ceilf(nr * 0.5f) * 2.0f;
-    if (rmax - rmin < 8.0f * H->params.dr) {
-        rsprint("ERROR: Range resolution of the radar is too coarse!");
-        rsprint("rmax = %.3f  rmin = %.3f   dr = %.2f", rmax, rmin, H->params.dr);
-        exit(EXIT_FAILURE);
+    if (POS_is_dbs(scan)) {
+
+        // Go through the DBS pattern
+        float emax = 0.0f;
+        float emin = 90.0f;
+        float rmax = 900.0f;
+        float rmin = 300.0f;
+        
+        int j = 0;
+        while (j < scan->count) {
+            emin = MIN(emin, scan->positions[j].el);
+            emax = MAX(emax, scan->positions[j].el);
+            j++;
+        }
+        rsprint("POS: emin = %.2f   emax = %.2f\n", emin, emax);
+
+        na = 360.0f;
+        ne = (emax - emin) / H->params.antenna_bw_deg;
+        nr = (rmax - rmin) / H->params.dr;
+        
+        box.origin.a = 0.0f;
+        box.size.a = 360.0f;
+        
+        box.origin.e = emin;
+        box.size.e = emax - emin;
+        
+        box.origin.r = rmax - (nr + RS_DOMAIN_PAD - 1.0f) * H->params.dr;
+        box.size.r = floorf(nr - RS_DOMAIN_PAD - 1.0f) * H->params.dr;
+
+    } else {
+
+        // Maximum number of beams plus the padding on one side in azimuth
+        na = 0.5f * (float)nbeams + RS_DOMAIN_PAD + 0.5f;
+        
+        // Maximum number of beams in elevation
+        ne = 18.0f;
+        
+        // Maximum y of the emulation box: The range when the width is fully utilized; This is also rmax
+        float rmax = w / sinf(na * H->params.antenna_bw_rad);
+        
+        // Minimum y of the emulation box: The range when the height is fully utilized
+        float rmin = (rmax - 2.0f * w) / cosf(na * H->params.antenna_bw_rad) / cosf(ne * H->params.antenna_bw_rad);
+        
+        // If we cannot respect the padding on both sides
+        // Maximum number of range cells minus the padding on both sides minus one radar cell
+        nr = (rmax - rmin) / H->params.dr - 2.0f * RS_DOMAIN_PAD - 1.0f;
+        nr = ceilf(nr * 0.5f) * 2.0f;
+        if (rmax - rmin < 8.0f * H->params.dr) {
+            rsprint("ERROR: Range resolution of the radar is too coarse!");
+            rsprint("rmax = %.3f  rmin = %.3f   dr = %.2f", rmax, rmin, H->params.dr);
+        }
+        
+        box.origin.a = ceilf(-0.5f * (float)nbeams) * H->params.antenna_bw_rad * 180.0f / M_PI;
+        box.size.a = nbeams * H->params.antenna_bw_deg;
+        
+        box.origin.r = rmax - (nr + 2.0f * RS_DOMAIN_PAD - 1.0f) * H->params.dr;
+        box.size.r = floorf(nr - 2.0f * RS_DOMAIN_PAD - 1.0f) * H->params.dr;
+        
+        box.origin.e = 0.0f;
+        box.size.e = ne * H->params.antenna_bw_deg;
+
     }
     
-    box.origin.a = ceilf(-0.5f * (float)nbeams) * H->params.antenna_bw_rad * 180.0f / M_PI;
-    box.size.a = nbeams * H->params.antenna_bw_deg;
-    
-    box.origin.r = rmax - (nr + 2.0f * RS_DOMAIN_PAD - 1.0f) * H->params.dr;
-    box.size.r = floorf(nr - 2.0f * RS_DOMAIN_PAD - 1.0f) * H->params.dr;
-    
-    box.origin.e = 0.0f;
-    box.size.e = ne * H->params.antenna_bw_deg;
-    
     if (H->verb) {
-        printf("%s : RS : Suggest scan box based on [ 2w = %.1f m, h = %.1f m ] : nr = %.1f   na = %.1f   ne = %.1f\n"
+        printf("%s : RS : Suggest scan box < [ 2w = %.1f m, h = %.1f m ] : nr = %.1f   na = %.1f   ne = %.1f\n"
                "%s : RS : Best fit with R:[ %5.2f ~ %5.2f ] km   E:[ %5.2f ~ %5.2f ] deg   A:[ %6.2f ~ %6.2f ] deg\n",
                now(), 2.0f * w, h, nr, na, ne,
                now(), 1.0e-3f * box.origin.r, 1.0e-3f * (box.origin.r + box.size.r), box.origin.e, box.origin.e + box.size.e, box.origin.a, box.origin.a + box.size.a);

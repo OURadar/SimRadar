@@ -82,10 +82,10 @@ NSWindow *standardWindow;
 //    GLKMatrix4 modelRotate = GLKMatrix4MakeRotation(-0.15f, 1.0f, 0.0f, 0.0f);
 //    modelRotate = GLKMatrix4RotateY(modelRotate, 1.5f);
 
-    GLKMatrix4 modelRotate = GLKMatrix4MakeRotation(0.25f, 1.0f, 0.0f, 0.0f);
-    modelRotate = GLKMatrix4RotateY(modelRotate, -0.3f);
+//    GLKMatrix4 modelRotate = GLKMatrix4MakeRotation(0.25f, 1.0f, 0.0f, 0.0f);
+//    modelRotate = GLKMatrix4RotateY(modelRotate, -0.3f);
     
-    [glView.renderer setResetModelRotate:modelRotate];
+//    [glView.renderer setResetModelRotate:modelRotate];
     
     [glView.renderer stopSpinModel];
     
@@ -94,12 +94,14 @@ NSWindow *standardWindow;
     // Set mkey to some big number so the next selection will be 0
     mkey = 999;
     [self chooseNextDrawModeForward:TRUE];
-    
+        
 #ifdef DEBUG
     NSLog(@"Recommend viewing at %.2f m", sim.recommendedViewRange);
-	NSLog(@"Particles wired to view renderer (%d)", (int)sim.pointCount);
-	NSLog(@"Domain center @ [ X %.2f  Y %.2f  Z %.2f ]", domain.origin.x + 0.5f * domain.size.x,
-		  domain.origin.y + 0.5f * domain.size.y, domain.origin.z + 0.5f * domain.size.z);
+	NSLog(@"Particles wired to view renderer (%s)", commaint(sim.pointCount));
+	NSLog(@"Domain center @ [ X %.2f  Y %.2f  Z %.2f ]",
+          domain.origin.x + 0.5f * domain.size.x,
+		  domain.origin.y + 0.5f * domain.size.y,
+          domain.origin.z + 0.5f * domain.size.z);
 #endif
     
 }
