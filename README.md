@@ -11,9 +11,13 @@ Follow these steps to get the project
 
 1. For nVidia GPU users, make sure you have the latest [nVidia CUDA Driver].
 
-2. Clone a git project[^1] using the following command in Terminal:
+2. Clone a git project[^1] from either ARRC's Git server or GitHub, using one of the following commands in Terminal:
 
         git clone https://git.arrc.ou.edu/cheo4524/simradar.git
+    
+    or
+
+        git clone https://github.com/ouradar/simradar.git
 
 3. Download [Sparkle Framework], extract and move the folder **Sparkle.framework**[^2] into the sub-folder **maOS/SimRadar**
 
