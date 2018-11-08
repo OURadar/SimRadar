@@ -74,9 +74,6 @@ NSWindow *standardWindow;
 	[glView.renderer setGridAtOrigin:(GLfloat *)&domain.origin size:(GLfloat *)&domain.size];
 	[glView.renderer setAnchorPoints:(GLfloat *)sim.anchors number:(GLuint)sim.anchorCount];
 	[glView.renderer setAnchorLines:(GLfloat *)sim.anchorLines number:(GLuint)sim.anchorLineCount];
-	[glView.renderer setCenterPoisitionX:domain.origin.x + 0.5f * domain.size.x
-									   y:domain.origin.y + 0.5f * domain.size.y
-									   z:domain.origin.z + 0.5f * domain.size.z];
     [glView.renderer setResetRange:sim.recommendedViewRange];
 
 //    GLKMatrix4 modelRotate = GLKMatrix4MakeRotation(-0.15f, 1.0f, 0.0f, 0.0f);
@@ -662,9 +659,6 @@ NSWindow *standardWindow;
     
     [glView.renderer setGridAtOrigin:orig size:size];
     [glView.renderer setAnchorPoints:sampleAnchors number:sizeof(anchors) / sizeof(cl_float4)];
-    [glView.renderer setCenterPoisitionX:orig[0] + 0.5f * size[0]
-                                       y:orig[1] + 0.5f * size[1]
-                                       z:orig[2] + 0.5f * size[2]];
     [glView.renderer setAnchorLines:sampleAnchorLines number:sizeof(anchorLines) / sizeof(cl_float4)];
     [glView.renderer setOverlayText:@"No tables" withTitle:@"Error"];
     [glView.renderer showAllHUD];

@@ -280,7 +280,7 @@
 		B5201C711C2239D100EACF53 /* Splash.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = Splash.xib; sourceTree = "<group>"; };
 		B524E9221DE89AE0004C3D7B /* test_wx_db_compare.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = test_wx_db_compare.sh; sourceTree = "<group>"; };
 		B52609D019D665E800709AFD /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
-		B527892C18A13C0100650679 /* radarsim */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = radarsim; sourceTree = BUILT_PRODUCTS_DIR; };
+		B527892C18A13C0100650679 /* simradar */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = simradar; sourceTree = BUILT_PRODUCTS_DIR; };
 		B52B2BD91BE8F75C00F1F91D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		B52B2BDB1BE8F76E00F1F91D /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		B52B2BDD1BE8F77C00F1F91D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
@@ -504,7 +504,7 @@
 			children = (
 				B56077EF17E356910068C6BE /* cldemo */,
 				B5EF317018204B5C002DDEFC /* SimRadarGCL.app */,
-				B527892C18A13C0100650679 /* radarsim */,
+				B527892C18A13C0100650679 /* simradar */,
 				B5760E9E18A938D3008DAF83 /* test_clreduce */,
 				B5D1420F18AA72F80041566E /* test_make_pulse */,
 				B5BAD56218B67E8B007AC15D /* test_make_pulse copy */,
@@ -667,9 +667,9 @@
 			productReference = B518D4221C84A0BD00BAF67D /* simple_ppi */;
 			productType = "com.apple.product-type.tool";
 		};
-		B527892B18A13C0100650679 /* radarsim */ = {
+		B527892B18A13C0100650679 /* simradar */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = B527893018A13C0100650679 /* Build configuration list for PBXNativeTarget "radarsim" */;
+			buildConfigurationList = B527893018A13C0100650679 /* Build configuration list for PBXNativeTarget "simradar" */;
 			buildPhases = (
 				B527892818A13C0100650679 /* Sources */,
 				B527892918A13C0100650679 /* Frameworks */,
@@ -679,9 +679,9 @@
 			);
 			dependencies = (
 			);
-			name = radarsim;
+			name = simradar;
 			productName = radarsim;
-			productReference = B527892C18A13C0100650679 /* radarsim */;
+			productReference = B527892C18A13C0100650679 /* simradar */;
 			productType = "com.apple.product-type.tool";
 		};
 		B54601BF1CAA19A8005A8BF6 /* lsiq */ = {
@@ -898,10 +898,10 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				B518D4211C84A0BD00BAF67D /* simple_ppi */,
-				B527892B18A13C0100650679 /* radarsim */,
 				B572419D1C0CA05F00B76BCB /* SimRadar */,
 				B5EF316F18204B5C002DDEFC /* SimRadarGCL */,
+				B518D4211C84A0BD00BAF67D /* simple_ppi */,
+				B527892B18A13C0100650679 /* simradar */,
 				B56077EE17E356910068C6BE /* cldemo */,
 				B54601BF1CAA19A8005A8BF6 /* lsiq */,
 				B5BAD55718B67E8B007AC15D /* test_rs */,
@@ -3706,7 +3706,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		B527893018A13C0100650679 /* Build configuration list for PBXNativeTarget "radarsim" */ = {
+		B527893018A13C0100650679 /* Build configuration list for PBXNativeTarget "simradar" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B527892E18A13C0100650679 /* Release */,

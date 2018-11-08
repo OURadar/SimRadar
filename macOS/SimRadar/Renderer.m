@@ -78,6 +78,10 @@ unsigned int grayToBinary(unsigned int num)
     domainSize.y = size[1];
     domainSize.z = size[2];
 
+    modelCenter.x = domainOrigin.x + 0.5 * domainSize.x;
+    modelCenter.y = domainOrigin.y + 0.5 * domainSize.y;
+    modelCenter.z = domainOrigin.z + 0.5 * domainSize.z;
+
     GLfloat *pos = lineRenderer.positions + lineRenderer.segmentOrigins[RendererLineSegmentSimulationGrid] * 4;
 
 	*pos++ = origin[0];
@@ -227,14 +231,6 @@ unsigned int grayToBinary(unsigned int num)
 {
     lineRenderer.count = 2;
     [self addLinesToLineRenderer:lines number:number];
-}
-
-
-- (void)setCenterPoisitionX:(GLfloat)x y:(GLfloat)y z:(GLfloat)z
-{
-	modelCenter.x = x;
-	modelCenter.y = y;
-	modelCenter.z = z;
 }
 
 

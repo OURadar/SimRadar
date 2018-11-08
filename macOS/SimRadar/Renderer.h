@@ -219,7 +219,6 @@ enum RendererLineSegment {
 - (void)setGridAtOrigin:(GLfloat *)origin size:(GLfloat *)size;
 - (void)setAnchorPoints:(GLfloat *)points number:(GLuint)number;
 - (void)setAnchorLines:(GLfloat *)lines number:(GLuint)number;
-- (void)setCenterPoisitionX:(GLfloat)x y:(GLfloat)y z:(GLfloat)z;
 - (void)setBeamElevation:(GLfloat)elevation azimuth:(GLfloat)azimuth;
 
 - (void)allocateVAO:(GLuint)count;
