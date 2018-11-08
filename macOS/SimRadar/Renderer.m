@@ -81,6 +81,10 @@ unsigned int grayToBinary(unsigned int num)
     modelCenter.x = domainOrigin.x + 0.5 * domainSize.x;
     modelCenter.y = domainOrigin.y + 0.5 * domainSize.y;
     modelCenter.z = domainOrigin.z + 0.5 * domainSize.z;
+    
+    // Field of view to be about 1/4 of the domain
+    beamNearZ = 4.0 * sqrt(domainOrigin.x * domainOrigin.x + domainOrigin.y * domainOrigin.y + domainOrigin.z * domainOrigin.z)
+              / MAX(MAX(domainSize.x, domainSize.y), domainSize.z);
 
     GLfloat *pos = lineRenderer.positions + lineRenderer.segmentOrigins[RendererLineSegmentSimulationGrid] * 4;
 
