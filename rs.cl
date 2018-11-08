@@ -794,7 +794,15 @@ __kernel void db_atts(__global float4 *p,
     if (is_outside) {
         uint4 seed = y[i];
         float4 r = rand(&seed);
-        pos.xyz = (float3)(fma(r.xy, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT);  // This is kind of cool!
+
+        // Random within the box but z component is at MIN_HEIGHT
+        //pos.xyz = (float3)(fma(r.xy, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT);
+        
+        // Random within the box but z component is at the lowest + MIN_HEIGHT
+        pos.xyz = (float3)(fma(r.xy, sim_desc.hi.s45, sim_desc.hi.s01), sim_desc.hi.s2 + MIN_HEIGHT);
+        
+        // Random within the box
+        //pos.xyz = fma(r.xyz, sim_desc.hi.s456, sim_desc.hi.s012);
 
         r = rand(&seed);
         float4 c = (float4)(sqrt(-2.0f * log(r.s012)), r.s3);

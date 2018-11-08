@@ -10,7 +10,7 @@
 #import "GLText.h"
 #import "GLOverlay.h"
 
-#define RENDERER_NEAR_RANGE                 100.0f      // View range in m
+#define RENDERER_NEAR_RANGE                 10.0f       // View range in m
 #define RENDERER_FAR_RANGE                  100000.0f   // View range in m
 #define RENDERER_TIC_COUNT                  10          //
 #define RENDERER_MAX_DEBRIS_TYPES           8           // Actual plus one
@@ -18,6 +18,10 @@
 #define RENDERER_MAX_VBO_GROUPS             8
 #define RENDERER_DEFAULT_BODY_COLOR_INDEX   27          // Default colormap index
 #define RENDERER_FBO_COUNT                  5
+
+#ifndef CLAMP
+#define CLAMP(x, lo, hi)  MIN(MAX((x), (lo)), (hi));
+#endif
 
 enum hudConfig {
     hudConfigShowNothing          = 0,
@@ -43,6 +47,7 @@ typedef struct _draw_resource {
     GLint          textureUI;
     GLint          colormapUI;
     GLint          pingPongUI;
+    GLint          lowZUI;
 	
     GLuint         count;
 	
@@ -117,7 +122,7 @@ enum RendererLineSegment {
 	GLfloat aspectRatio;
 	GLfloat rotateX, rotateY, rotateZ, range;
 
-	GLKMatrix4 modelView, projection, modelViewProjection;
+	GLKMatrix4 modelView, camera, projection, modelViewProjection;
 	GLKMatrix4 modelRotate;
     GLKMatrix4 hudProjection, hudModelViewProjection;
     GLKMatrix4 beamProjection, beamModelViewProjection;
@@ -132,7 +137,9 @@ enum RendererLineSegment {
 	GLfloat unitsPerPixel;
     GLfloat devicePixelRatio;
 
-    GLfloat beamAzimuth, beamElevation;
+    GLfloat beamAzimuth, beamElevation, beamNearZ;
+    
+    GLfloat cameraRoll, cameraPitch, cameraYaw;
     
 	id<RendererDelegate> delegate;
     
@@ -148,6 +155,9 @@ enum RendererLineSegment {
     cl_uint clDeviceCount;
     
 	cl_float4 modelCenter;
+    
+    cl_float4 domainOrigin;
+    cl_float4 domainSize;
 
     BOOL fboNeedsUpdate;
     BOOL vbosNeedUpdate;
@@ -169,7 +179,7 @@ enum RendererLineSegment {
     RenderPrimitive primitives[8];
 
     GLfloat backgroundOpacity;
-    GLfloat theta, phase;
+    GLfloat phase;
 
     GLText *textRenderer;
     GLText *tTextRenderer;

@@ -448,6 +448,7 @@ struct _rs_handle {
     // Other handlers for LES and OBJ (ADM, RCS)
     LESHandle              L;
     OBJHandle              O;
+    POSPattern             P;
 };
 
 #pragma pack(pop)
@@ -548,6 +549,7 @@ void RS_compute_rcs_ellipsoids(RSHandle *H);
 #pragma mark Simulation Time Evolution
 
 void RS_advance_time(RSHandle *H);
+void RS_advance_beam(RSHandle *H);
 void RS_make_pulse(RSHandle *H);
 
 #pragma mark -

@@ -9,11 +9,6 @@
 #ifndef _radarsim_les_h
 #define _radarsim_les_h
 
-#define LESConfigNull                  ""
-#define LESConfigTwoCell               "twocell"
-#define LESConfigSuctionVortices       "suctvort"
-#define LESConfigSuctionVorticesLarge  "suctvort_large"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -25,6 +20,11 @@
 #include <pthread.h>
 
 #include "log.h"
+
+#define LESConfigNull                  ""
+#define LESConfigTwoCell               "twocell"
+#define LESConfigSuctionVortices       "suctvort"
+#define LESConfigSuctionVorticesLarge  "suctvort_large"
 
 typedef void * LESHandle;
 typedef char * LESConfig;

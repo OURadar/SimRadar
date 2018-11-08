@@ -53,12 +53,6 @@ unsigned int grayToBinary(unsigned int num)
 @synthesize beamAzimuth, beamElevation;
 @synthesize showDebrisAttributes, fadeSmallScatterers, viewParametersNeedUpdate;
 
-- (void)setRange:(float)newRange
-{
-	projection = GLKMatrix4MakeFrustum(-aspectRatio, aspectRatio, -1.0f, 1.0f, RENDERER_NEAR_RANGE, RENDERER_FAR_RANGE);
-}
-
-
 - (void)setSize:(CGSize)size
 {
 	width = (GLsizei)size.width;
@@ -67,8 +61,6 @@ unsigned int grayToBinary(unsigned int num)
 	glViewport(0, 0, width * devicePixelRatio, height * devicePixelRatio);
 	
 	aspectRatio = size.width / size.height;
-	
-	[self setRange:10.0f];
     
     viewParametersNeedUpdate = true;
     fboNeedsUpdate = true;
@@ -77,8 +69,15 @@ unsigned int grayToBinary(unsigned int num)
 
 - (void)setGridAtOrigin:(GLfloat *)origin size:(GLfloat *)size
 {
-	NSLog(@"grid @ (%.1f, %.1f, %.1f)  (%.1f, %.1f, %.1f)", origin[0], origin[1], origin[2], size[0], size[1], size[2]);
-    
+	NSLog(@"Renderer grid @ (%.1f, %.1f, %.1f)  (%.1f, %.1f, %.1f)", origin[0], origin[1], origin[2], size[0], size[1], size[2]);
+
+    domainOrigin.x = origin[0];
+    domainOrigin.y = origin[1];
+    domainOrigin.z = origin[2];
+    domainSize.x = size[0];
+    domainSize.y = size[1];
+    domainSize.z = size[2];
+
     GLfloat *pos = lineRenderer.positions + lineRenderer.segmentOrigins[RendererLineSegmentSimulationGrid] * 4;
 
 	*pos++ = origin[0];
@@ -90,8 +89,8 @@ unsigned int grayToBinary(unsigned int num)
 	*pos++ = origin[2];
 	*pos++ = 1.0f;
 
-	*pos++  = origin[0];
-	*pos++  = origin[1];
+	*pos++ = origin[0];
+	*pos++ = origin[1];
 	*pos++ = origin[2];
 	*pos++ = 1.0f;
 	*pos++ = origin[0];
@@ -299,7 +298,7 @@ unsigned int grayToBinary(unsigned int num)
     pos[20] =  0.0f;   pos[21] =  0.0f;   pos[22] =  0.0f;   pos[23] = 0.0f;
     prim->vertexSize = 24 * sizeof(GLfloat);
     for (int i = 0; i < 24; i++) {
-        pos[i] *= 5.5f;
+        pos[i] *= 4.5f;
     }
     prim->instanceSize = 7;
     GLuint ind0[] = {5, 1, 2, 0, 5, 3, 4};
@@ -535,6 +534,12 @@ unsigned int grayToBinary(unsigned int num)
         glUniform1i(resource->pingPongUI, 1);
     }
     
+    // This is specific to instanced geometry shader
+    resource->lowZUI = glGetUniformLocation(resource->program, "lowZ");
+    if (resource->lowZUI >= 0) {
+        glUniform1f(resource->lowZUI, 1.0f);
+    }
+    
     // Get attributes
     resource->colorAI = glGetAttribLocation(resource->program, "inColor");
     resource->positionAI = glGetAttribLocation(resource->program, "inPosition");
@@ -738,7 +743,7 @@ unsigned int grayToBinary(unsigned int num)
         height = 1;
         spinModel = 5;
         aspectRatio = 1.0f;
-        beamElevation = 5.0f / 180.0f * M_PI;
+        beamElevation = 75.0f / 180.0f * M_PI;
         
         iframe = -1;
         
@@ -748,6 +753,8 @@ unsigned int grayToBinary(unsigned int num)
         
         hudConfigGray = hudConfigShowGrid | hudConfigShowOverlay | hudConfigShowRadarView;
         hudConfigDecimal = grayToBinary(hudConfigGray);
+        
+        beamNearZ = 2.0f;
         
         hudModelViewProjection = GLKMatrix4Identity;
         beamModelViewProjection = GLKMatrix4Identity;
@@ -833,7 +840,7 @@ unsigned int grayToBinary(unsigned int num)
     //instancedGeometryRenderer = [self createRenderResourceFromVertexShader:@"inst-geom.vsh" fragmentShader:@"inst-geom.fsh"];
     instancedGeometryRenderer = [self createRenderResourceFromVertexShader:@"inst-geom-t.vsh" fragmentShader:@"inst-geom.fsh"];
     glUniform4f(instancedGeometryRenderer.colorUI, 1.0f, 1.0f, 1.0f, 1.0f);
-
+    
     // Local rotating color table
     const GLfloat colors[][4] = {
         {1.00f, 1.00f, 1.00f, 1.00f},
@@ -1104,10 +1111,12 @@ unsigned int grayToBinary(unsigned int num)
             debrisRenderer[k].sourceOffset = offset;
         }
     }
-    
+
     // Various Debris
     for (k = 1; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
+        #if defined(DEBUG_DEBRIS_MAPPING)
         NSLog(@"Mapping debris %d  count = %d", k, debrisRenderer[k].count);
+        #endif
         if (debrisRenderer[k].count == 0) {
             continue;
         }
@@ -1181,9 +1190,12 @@ unsigned int grayToBinary(unsigned int num)
     }
     
 	if (spinModel) {
-		//modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeYRotation(0.001f * spinModel), modelRotate);
-        modelRotate = GLKMatrix4Multiply(modelRotate, GLKMatrix4MakeYRotation(0.001f * spinModel));
-        theta = theta + 0.005f;
+        cameraYaw -= 0.001f * spinModel;
+        if (cameraYaw > 2.0 * M_PI) {
+            cameraYaw -= 2.0 * M_PI;
+        } else if (cameraYaw < -2.0 * M_PI) {
+            cameraYaw += 2.0 * M_PI;
+        }
 		viewParametersNeedUpdate = true;
 	}
 	
@@ -1232,6 +1244,7 @@ unsigned int grayToBinary(unsigned int num)
         glUseProgram(bodyRenderer[i].program);
         glUniform4f(bodyRenderer[i].sizeUI, pixelsPerUnit * devicePixelRatio, 1.0f, 1.0f, 1.0f);
         glUniform4f(bodyRenderer[i].colorUI, bodyRenderer[i].colormapIndexNormalized, 1.0f, 1.0f, backgroundOpacity);
+        
         glUniformMatrix4fv(bodyRenderer[i].mvpUI, 1, GL_FALSE, modelViewProjection.m);
         glUniform1i(bodyRenderer[i].pingPongUI, fadeSmallScatterers);
         glActiveTexture(GL_TEXTURE0);
@@ -1263,6 +1276,7 @@ unsigned int grayToBinary(unsigned int num)
     // Various debris types
     glUseProgram(instancedGeometryRenderer.program);
     glUniformMatrix4fv(instancedGeometryRenderer.mvpUI, 1, GL_FALSE, modelViewProjection.m);
+    glUniform1f(instancedGeometryRenderer.lowZUI, domainOrigin.z + 0.1f * domainSize.z);
     for (i = 0; i < clDeviceCount; i++) {
         for (k = 1; k < RENDERER_MAX_DEBRIS_TYPES; k++) {
             //NSLog(@"k = %d  debris count = %d", k, debrisRenderer[k].count);
@@ -1275,7 +1289,7 @@ unsigned int grayToBinary(unsigned int num)
             if (showDebrisAttributes) {
                 glUniform1i(instancedGeometryRenderer.pingPongUI, 1);
                 glUniform4f(instancedGeometryRenderer.colorUI, bodyRenderer[0].colormapIndexNormalized, 1.0f, 1.0f, 1.0f);
-                
+
                 glBindBuffer(GL_COPY_READ_BUFFER, bodyRenderer[i].vbo[1]);             // color index
                 glBindBuffer(GL_COPY_WRITE_BUFFER, debrisRenderer[k].vbo[4]);          // color index of debris[k]
                 glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, debrisRenderer[k].sourceOffset * sizeof(cl_float4), 0, debrisRenderer[k].count * sizeof(cl_float4));
@@ -1621,23 +1635,31 @@ unsigned int grayToBinary(unsigned int num)
     NSLog(@"updateViewParameters:");
     #endif
     
-    GLfloat near = 2.0f / range * modelCenter.y;
+    GLfloat s;
     
     unitsPerPixel = range / height / devicePixelRatio;
     pixelsPerUnit = 1.0f / unitsPerPixel;
 
     GLKMatrix4 mat;
 
-    // Finally, world's z-axis (up) should be antenna's y-axis (up)
-    modelView = GLKMatrix4MakeTranslation(0.0f, 0.0f, -modelCenter.y);
-    modelView = GLKMatrix4Multiply(modelView, modelRotate);
-    modelView = GLKMatrix4Translate(modelView, -modelCenter.x, -modelCenter.z, modelCenter.y);
-    modelView = GLKMatrix4RotateX(modelView, -M_PI_2);
+    // Manipulate the model if we wanted to
+    modelView = GLKMatrix4Identity;
     
-    projection = GLKMatrix4MakeFrustum(-aspectRatio, aspectRatio, -1.0f, 1.0f, MIN(RENDERER_NEAR_RANGE, near), RENDERER_FAR_RANGE);
+    // Camera (inverse of the desired view parameters)
+    camera = GLKMatrix4MakeXRotation(-M_PI_2);
+    camera = GLKMatrix4Translate(camera, -modelCenter.x, 2.0f * range - modelCenter.y, 0.0);
+    camera = GLKMatrix4RotateY(camera, cameraRoll);
+    camera = GLKMatrix4Translate(camera, 0.0, modelCenter.y, 0.0);
+    camera = GLKMatrix4RotateX(camera, cameraPitch);
+    camera = GLKMatrix4RotateZ(camera, cameraYaw);
+    camera = GLKMatrix4Translate(camera, 0.0, -modelCenter.y, -modelCenter.z);
+
+    modelView = GLKMatrix4Multiply(camera, modelView);
+
+    projection = GLKMatrix4MakeFrustum(-aspectRatio, aspectRatio, -1.0f, 1.0f, 3.0f, RENDERER_FAR_RANGE);
     modelViewProjection = GLKMatrix4Multiply(projection, modelView);
 
-    GLfloat s = roundf(MAX(height * 0.25f, width * 0.2f));
+    s = roundf(MAX(height * 0.25f, width * 0.2f));
     hudSize = CGSizeMake(s, s);
     hudOrigin = CGPointMake(width - hudSize.width - 30.5f, height - hudSize.height - 35.0f);
     hudProjection = GLKMatrix4MakeOrtho(0.0f, width, 0.0f, height, 0.0f, 1.0f);
@@ -1646,11 +1668,9 @@ unsigned int grayToBinary(unsigned int num)
     hudModelViewProjection = GLKMatrix4Multiply(hudProjection, mat);
 
     GLfloat w = hudSize.width / hudSize.height;
-    beamProjection = GLKMatrix4MakeFrustum(-w, w, -1.0f, 1.0f, MIN(RENDERER_NEAR_RANGE, 2.0f * near), RENDERER_FAR_RANGE);
-    mat = GLKMatrix4Identity;
-    mat = GLKMatrix4RotateY(mat, beamAzimuth);
-    mat = GLKMatrix4RotateX(mat, -beamElevation);
-    mat = GLKMatrix4RotateX(mat, -M_PI_2);
+    beamProjection = GLKMatrix4MakeFrustum(-w, w, -1.0f, 1.0f, beamNearZ, RENDERER_FAR_RANGE);
+    mat = GLKMatrix4MakeZRotation(beamAzimuth);
+    mat = GLKMatrix4RotateX(mat, -M_PI_2 - beamElevation);
     beamModelViewProjection = GLKMatrix4Multiply(beamProjection, mat);
     
     float cx = roundf(0.25f * width);
@@ -1700,27 +1720,39 @@ unsigned int grayToBinary(unsigned int num)
 
 - (void)panX:(GLfloat)x Y:(GLfloat)y dx:(GLfloat)dx dy:(GLfloat)dy
 {
-	modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeYRotation(2.0f * dx / width), modelRotate);
-	modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeXRotation(2.0f * dy / height), modelRotate);
+    cameraPitch += 2.0f * dy / height;
+    if (cameraPitch > 2.0 * M_PI) {
+        cameraPitch -= 2.0 * M_PI;
+    } else if (cameraPitch < -2.0 * M_PI) {
+        cameraPitch += 2.0 * M_PI;
+    }
+    cameraYaw += 2.0f * dx / width;
+    if (cameraYaw > 2.0 * M_PI) {
+        cameraYaw -= 2.0 * M_PI;
+    } else if (cameraYaw < -2.0 * M_PI) {
+        cameraYaw += 2.0 * M_PI;
+    }
     viewParametersNeedUpdate = true;
 }
 
 
 - (void)magnify:(GLfloat)scale
 {
-	range = MIN(RENDERER_FAR_RANGE, MAX(RENDERER_NEAR_RANGE, range * (1.0f - scale)));
+    range = CLAMP(range * (1.0f - scale), RENDERER_NEAR_RANGE, RENDERER_FAR_RANGE);
+    beamNearZ = CLAMP(beamNearZ * (1.0f + scale), 0.1f, 1000.0f);
 	viewParametersNeedUpdate = true;
 }
 
 
 - (void)rotate:(GLfloat)angle
 {
-	if (angle > 2.0 * M_PI) {
-		angle -= 2.0 * M_PI;
-	} else if (angle < -2.0 * M_PI) {
-		angle += 2.0 * M_PI;
-	}
-	modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeZRotation(angle), modelRotate);
+	//modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeYRotation(-angle), modelRotate);
+    cameraRoll -= angle;
+    if (cameraRoll > 2.0 * M_PI) {
+        cameraRoll -= 2.0 * M_PI;
+    } else if (cameraRoll < -2.0 * M_PI) {
+        cameraRoll += 2.0 * M_PI;
+    }
 	viewParametersNeedUpdate = true;
 }
 

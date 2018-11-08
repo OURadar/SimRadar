@@ -317,6 +317,9 @@ void show_help() {
            "     The following simulates the same as before but loads the domain with 10^5\n"
            "     debris objects\n"
            "           " PROGNAME " -o --concept DBU -T --sweep P:-12:12:0.005 -t 0.0005 -p 4800 -d 1,10000\n"
+           "\n"
+           "     The following simulates ... (to be completed)\n"
+           "           " PROGNAME " --o -T --sweep D:0,75,10/90,75,10/0,90,10 -t 0.01 -p 30 -N\n"
            );
     printf("%s\n(%.1f)\n", buff, (float)k / size * 100.0f);
     free(buff);
@@ -725,8 +728,8 @@ int main(int argc, char *argv[]) {
                         scan.el = f1;
                     }
                 } else if (scan.mode == SCAN_MODE_DBS) {
-                    printf("Parsing DBS scanning pattern...\n");
                     strcpy(scan_pattern, strstr(optarg, ":") + 1);
+                    printf("Parsing DBS scanning pattern '%s'...\n", scan_pattern);
                     printf("Pattern %s\n", scan_pattern);
                     token = strtok(scan_pattern, delim);
                     j = 0;
