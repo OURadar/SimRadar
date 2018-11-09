@@ -39,8 +39,6 @@
 - (IBAction)setSizeTo720p:(id)sender;
 - (IBAction)setSizeTo1080p:(id)sender;
 - (IBAction)setSizeTo4K:(id)sender;
-- (IBAction)windowMode:(id)sender;
-- (IBAction)fullscreenMode:(id)sender;
 
 - (void)emptyDomain;
 

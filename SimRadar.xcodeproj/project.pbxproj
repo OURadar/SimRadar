@@ -68,7 +68,6 @@
 		B57241BE1C0CA21700B76BCB /* Recorder.m in Sources */ = {isa = PBXBuildFile; fileRef = B50CD9ED1BE8117E0034B5BB /* Recorder.m */; };
 		B57241BF1C0CA21900B76BCB /* SimGLView.m in Sources */ = {isa = PBXBuildFile; fileRef = B5EF31AD1820526F002DDEFC /* SimGLView.m */; };
 		B57241C01C0CA21C00B76BCB /* SimPoint.m in Sources */ = {isa = PBXBuildFile; fileRef = B5576B8A18315B3B0012E6F5 /* SimPoint.m */; };
-		B57241C11C0CA21F00B76BCB /* FullscreenWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = B5A5142618328A2F00921ACE /* FullscreenWindow.m */; };
 		B57241C21C0CA22200B76BCB /* GLText.m in Sources */ = {isa = PBXBuildFile; fileRef = B5FDCAE419D453B10016C2F7 /* GLText.m */; };
 		B57241C31C0CA22900B76BCB /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5EF31BF18205ED1002DDEFC /* QuartzCore.framework */; };
 		B57241C41C0CA23700B76BCB /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5EF317118204B5C002DDEFC /* Cocoa.framework */; };
@@ -93,7 +92,6 @@
 		B58F632C1C177EE40010AEE6 /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = B58F632A1C177EE40010AEE6 /* dsa_pub.pem */; };
 		B5916CC61ABC7069007EA0B9 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = B5916CC51ABC7069007EA0B9 /* README.md */; };
 		B59FE7821D00D2C9007B878E /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = B5916CC51ABC7069007EA0B9 /* README.md */; };
-		B5A5142718328A2F00921ACE /* FullscreenWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = B5A5142618328A2F00921ACE /* FullscreenWindow.m */; };
 		B5B7584C218B8D4B0091E464 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B5B7584B218B8D4B0091E464 /* Assets.xcassets */; };
 		B5B7584D218B8D4B0091E464 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B5B7584B218B8D4B0091E464 /* Assets.xcassets */; };
 		B5BAD55A18B67E8B007AC15D /* rs.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281917D7C4D500E4DE66 /* rs.c */; };
@@ -316,8 +314,6 @@
 		B57D8E961DDE131100B69805 /* obj.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = obj.h; sourceTree = "<group>"; };
 		B58F632A1C177EE40010AEE6 /* dsa_pub.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = dsa_pub.pem; path = delivery/dsa_pub.pem; sourceTree = SOURCE_ROOT; };
 		B5916CC51ABC7069007EA0B9 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		B5A5142518328A2F00921ACE /* FullscreenWindow.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FullscreenWindow.h; sourceTree = "<group>"; };
-		B5A5142618328A2F00921ACE /* FullscreenWindow.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FullscreenWindow.m; sourceTree = "<group>"; };
 		B5B574791B690A45002AD2E7 /* iq.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = iq.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		B5B7584B218B8D4B0091E464 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = macOS/SimRadar/Assets.xcassets; sourceTree = "<group>"; };
 		B5B9C6541D302D0E00AD8154 /* do_more.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = do_more.sh; sourceTree = "<group>"; };
@@ -619,8 +615,6 @@
 				B5EF31AD1820526F002DDEFC /* SimGLView.m */,
 				B5576B8918315B3B0012E6F5 /* SimPoint.h */,
 				B5576B8A18315B3B0012E6F5 /* SimPoint.m */,
-				B5A5142518328A2F00921ACE /* FullscreenWindow.h */,
-				B5A5142618328A2F00921ACE /* FullscreenWindow.m */,
 				B5FDCAE319D453B10016C2F7 /* GLText.h */,
 				B5FDCAE419D453B10016C2F7 /* GLText.m */,
 				B500A4861C2F418F00CCA108 /* GLOverlay.h */,
@@ -1059,7 +1053,6 @@
 				B57241BF1C0CA21900B76BCB /* SimGLView.m in Sources */,
 				B5201C701C22396A00EACF53 /* SplashController.m in Sources */,
 				B57241C01C0CA21C00B76BCB /* SimPoint.m in Sources */,
-				B57241C11C0CA21F00B76BCB /* FullscreenWindow.m in Sources */,
 				B57241C21C0CA22200B76BCB /* GLText.m in Sources */,
 				B518D4311C85DBED00BAF67D /* GLOverlay.m in Sources */,
 			);
@@ -1124,7 +1117,6 @@
 				B5EF31AE1820526F002DDEFC /* SimGLView.m in Sources */,
 				B5FDCAE519D453B10016C2F7 /* GLText.m in Sources */,
 				B500A4881C2F418F00CCA108 /* GLOverlay.m in Sources */,
-				B5A5142718328A2F00921ACE /* FullscreenWindow.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -7,15 +7,7 @@
 //
 
 #import "DisplayController.h"
-#import "FullscreenWindow.h"
 #import "RootController.h"
-
-// Fullscreen window
-FullscreenWindow *fullscreenWindow;
-
-// The initial window
-NSWindow *standardWindow;
-
 
 @interface DisplayController ()
 - (void)setSizeAndCentralized:(NSSize)newSize;
@@ -29,10 +21,6 @@ NSWindow *standardWindow;
 
 - (void)setSizeAndCentralized:(NSSize)newSize
 {
-	if (fullscreenWindow) {
-		return;
-	}
-	
 	NSRect rect = self.window.frame;
 	rect.origin.x += roundf(0.5f * (rect.size.width - newSize.width));
 	rect.origin.y += roundf(0.5f * (rect.size.height - newSize.height));
@@ -222,9 +210,6 @@ NSWindow *standardWindow;
 
 - (void)mouseDragged:(NSEvent *)event
 {
-    if (fullscreenWindow == nil && event.locationInWindow.y > glView.bounds.size.height) {
-    return;
-    }
     [glView.renderer panX:event.locationInWindow.x Y:event.locationInWindow.y dx:event.deltaX dy:event.deltaY];
 }
 
@@ -261,13 +246,6 @@ NSWindow *standardWindow;
     
 	switch (c)
 	{
-		case 27:
-			// Handle [ESC] key
-			if (fullscreenWindow != nil) {
-                [self windowMode:nil];
-			}
-			break;
-			
 		case NSLeftArrowFunctionKey:
 			// Left
 			[glView.renderer panX:0.0f Y:0.0f dx:-30.0f dy:0.0f];
@@ -537,70 +515,6 @@ NSWindow *standardWindow;
 			[glView.renderer magnify:-0.02f];
 		}
 	}
-}
-
-- (IBAction)windowMode:(id)sender
-{
-	if (fullscreenWindow == nil) {
-		// Application is still in window mode
-		return;
-	}
-	
-	[glView setFrameSize:standardWindow.frame.size];
-	
-	[self setWindow:standardWindow];
-	
-	[standardWindow release];
-	
-	[self.window setContentView:glView];
-	
-	[self.window makeKeyAndOrderFront:self];
-	
-	// Release the fullscreen window
-	[fullscreenWindow release];
-	
-	// Set to nil because we will use this to check the mode
-	fullscreenWindow = nil;
-	
-	// Stop the input check
-	[inputMonitorTimer invalidate];
-	[NSCursor unhide];
-}
-
-- (IBAction)fullscreenMode:(id)sender
-{
-	if (fullscreenWindow) {
-		[fullscreenWindow makeKeyAndOrderFront:self];
-		return;
-	}
-	
-	fullscreenWindow = [FullscreenWindow new];
-	
-	[glView setFrameSize:fullscreenWindow.frame.size];
-	
-	[fullscreenWindow setContentView:glView];
-	
-	standardWindow = [self.window retain];
-	
-	// Hide non-fullscreen window so it doesn't show up when switching out
-	// of this app (i.e. with CMD-TAB)
-	[standardWindow orderOut:self];
-	
-	// Set controller to the fullscreen window so that all input will go to
-	// this controller (self)
-	[self setWindow:fullscreenWindow];
-	
-	// Show the window and make it the key window for input
-	[fullscreenWindow makeKeyAndOrderFront:self];
-	
-	[NSCursor setHiddenUntilMouseMoves:YES];
-
-	inputMonitorTimer = [NSTimer scheduledTimerWithTimeInterval:0.5
-														 target:self
-													   selector:@selector(checkInputIdling)
-													   userInfo:nil
-														repeats:YES];
-	
 }
 
 - (void)emptyDomain {
