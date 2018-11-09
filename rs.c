@@ -1454,7 +1454,7 @@ void RS_set_scan_box(RSHandle *H,
     
     int ii = 0;
     
-    rsprint("Deriving scan box ... BW %.2f   DR %.2f\n", H->params.antenna_bw_deg, H->params.range_delta);
+    rsprint("Deriving scan box ... BW %.2f deg   DR %.2f m\n", H->params.antenna_bw_deg, H->params.range_delta);
 
     // Range
     r = floor(H->params.range_start / H->params.range_delta) * H->params.range_delta;
@@ -1546,7 +1546,7 @@ void RS_set_scan_box(RSHandle *H,
         el += elevation_delta / 180.0f * M_PI;
     }
     
-    rsprint("num_anchors = %d\n", H->num_anchors);
+    rsprint("Anchors computed   num_anchors = %d\n", H->num_anchors);
     
     // Radar origin at (0, 0, 0)
     H->anchor_pos[ii].x = 0.0f;
@@ -3649,7 +3649,7 @@ void RS_populate(RSHandle *H) {
     int i, k, n, w;
     
     if (H->verb > 1) {
-        rsprint("RS_populate()\n");
+        rsprint("RS_populate()   preferred_multiple = %s\n", commaint(H->preferred_multiple));
     }
     
     if (H->num_scats > RS_MAX_NUM_SCATS) {

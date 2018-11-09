@@ -124,7 +124,6 @@
             
         }
         
-        NSLog(@"S->preferred_multiple = %d", (int)S->preferred_multiple);
         RS_revise_debris_counts_to_gpu_preference(S);
 
         RS_set_prt(S, 1.0f / 60.0f);

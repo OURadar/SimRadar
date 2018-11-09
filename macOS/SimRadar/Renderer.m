@@ -69,7 +69,7 @@ unsigned int grayToBinary(unsigned int num)
 
 - (void)setGridAtOrigin:(GLfloat *)origin size:(GLfloat *)size
 {
-	NSLog(@"Renderer grid @ (%.1f, %.1f, %.1f)  (%.1f, %.1f, %.1f)", origin[0], origin[1], origin[2], size[0], size[1], size[2]);
+	//NSLog(@"Renderer grid @ (%.1f, %.1f, %.1f)  (%.1f, %.1f, %.1f)", origin[0], origin[1], origin[2], size[0], size[1], size[2]);
 
     domainOrigin.x = origin[0];
     domainOrigin.y = origin[1];
