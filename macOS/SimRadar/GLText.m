@@ -96,7 +96,7 @@
     self = [super init];
     if (self) {
         baseFont = [userFont retain];
-        devicePixelRatio = [[NSScreen mainScreen] backingScaleFactor];
+        devicePixelRatio = [NSScreen.mainScreen backingScaleFactor];
         bitmapWidth = (userFont.pointSize > 100.0f ? 2048 : 1024) * devicePixelRatio;
         bitmapHeight = (userFont.pointSize > 100.0f ? 2048 : 1024) * devicePixelRatio;
         bitmap = (GLubyte *)malloc(bitmapWidth * bitmapHeight * 4);
@@ -109,7 +109,8 @@
 
 - (id)init
 {
-    return [self initWithFont:[NSFont systemFontOfSize:72.0f]];
+    NSFont *font = [NSFont systemFontOfSize:72.0f];
+    return [self initWithFont:font];
 }
 
 
@@ -238,7 +239,7 @@
     
     //NSLog(@"UI = %d %d %d   AI = %d %d", mvpUI, colorUI, textureUI, positionAI, textureCoordAI);
     
-    NSAutoreleasePool *pool = [NSAutoreleasePool new];
+    //NSAutoreleasePool *pool = [NSAutoreleasePool new];
     
     // Create a bitmap canvas, draw all the symbols
     const float w = (float)bitmapWidth / devicePixelRatio;
@@ -247,8 +248,9 @@
     // Use Core Graphics to draw a texture atlas
     CGRect rect = CGRectMake(0.0f, 0.0f, (CGFloat)bitmapWidth, (CGFloat)bitmapHeight);
     NSImage *image = [[NSImage alloc] initWithSize:rect.size];
+
     [image lockFocus];
-    
+
     CGContextRef context = (CGContextRef)[[NSGraphicsContext currentContext] graphicsPort];
     
     // Black background
@@ -342,7 +344,7 @@
     }
     
     [image unlockFocus];
-    
+
     // NSImage to CIImage
     CIImage *letterMap = [[CIImage alloc] initWithBitmapImageRep:[NSBitmapImageRep imageRepWithData:[image TIFFRepresentation]]];
     
@@ -389,6 +391,7 @@
     result = [sourceOverBlendFilter valueForKey:kCIOutputImageKey];
     
 #ifdef DEBUG_GL
+
     [colorMatrixFilter setValue:[CIVector vectorWithX:0.0f Y:0.0f Z:0.0f W:0.0f] forKey:@"inputRVector"];
     [colorMatrixFilter setValue:[CIVector vectorWithX:0.0f Y:1.0f Z:0.0f W:0.0f] forKey:@"inputGVector"];
     [colorMatrixFilter setValue:[CIVector vectorWithX:0.0f Y:0.0f Z:0.0f W:0.0f] forKey:@"inputBVector"];
@@ -410,13 +413,16 @@
     [sourceOverBlendFilter setValue:img forKey:kCIInputImageKey];
     [sourceOverBlendFilter setValue:result forKey:kCIInputBackgroundImageKey];
     result = [sourceOverBlendFilter valueForKey:kCIOutputImageKey];
+
 #endif
     
     result = [result imageByCroppingToRect:rect];
-//        result = alphaMask;
+//    result = alphaMask;
     //    result = letterMap;
     
+    NSLog(@"bitmapImageRep --->");
     NSBitmapImageRep *bitmapImageRep = [[NSBitmapImageRep alloc] initWithCIImage:result];
+    NSLog(@"bitmapImageRep <---");
     memcpy(bitmap, [bitmapImageRep bitmapData], bitmapWidth * bitmapHeight * 4);
     [bitmapImageRep release];
     
@@ -424,7 +430,7 @@
     
     [image release];
     
-    [pool release];
+    //[pool release];
     
     GLTextVertex pos[] = {
         {0.0f, 0.0f, 0.0f, 0.0f},

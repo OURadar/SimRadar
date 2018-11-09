@@ -3,7 +3,6 @@
     <dependencies>
         <deployment identifier="macosx"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="14460.31"/>
-        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="NSApplication">
@@ -616,7 +615,7 @@
                             <menuItem isSeparatorItem="YES" id="Jm9-mS-0PT">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="Spin Model" id="C6i-MD-aw6">
+                            <menuItem title="Spin Model" keyEquivalent="s" id="C6i-MD-aw6">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="spinModel:" target="-1" id="1xr-vo-KcG"/>
@@ -638,6 +637,15 @@
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="topView:" target="GhL-Pn-w7R" id="IIk-ow-Akd"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem isSeparatorItem="YES" id="9M8-lq-s70">
+                                <modifierMask key="keyEquivalentModifierMask" command="YES"/>
+                            </menuItem>
+                            <menuItem title="Enter Full Screen" keyEquivalent="f" id="iKv-Ub-mlt" userLabel="Top View">
+                                <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
+                                <connections>
+                                    <action selector="toggleFullScreen:" target="-1" id="tfL-Yc-a6b"/>
                                 </connections>
                             </menuItem>
                         </items>
@@ -680,22 +688,9 @@
                     </menu>
                 </menuItem>
             </items>
+            <point key="canvasLocation" x="-1558" y="214"/>
         </menu>
-        <window title="RadarSimView" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="371">
-            <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
-            <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
-            <rect key="contentRect" x="335" y="390" width="335" height="143"/>
-            <rect key="screenRect" x="0.0" y="0.0" width="2560" height="1418"/>
-            <view key="contentView" id="372">
-                <rect key="frame" x="0.0" y="0.0" width="335" height="143"/>
-                <autoresizingMask key="autoresizingMask"/>
-            </view>
-        </window>
-        <customObject id="494" customClass="AppDelegate">
-            <connections>
-                <outlet property="window" destination="371" id="532"/>
-            </connections>
-        </customObject>
+        <customObject id="494" customClass="AppDelegate"/>
         <customObject id="420" customClass="NSFontManager"/>
         <customObject id="GhL-Pn-w7R" customClass="RootController">
             <connections>

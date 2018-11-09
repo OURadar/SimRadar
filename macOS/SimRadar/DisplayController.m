@@ -257,6 +257,8 @@ NSWindow *standardWindow;
     GLint ret;
     GLint counts[RS_MAX_GPU_DEVICE];
 
+    NSWindow *mainWindow = self.window;
+    
 	switch (c)
 	{
 		case 27:
@@ -308,11 +310,9 @@ NSWindow *standardWindow;
 			
 		case 'f':
 			// Have [f] key toggle fullscreen
-			if (fullscreenWindow == nil) {
-				[self fullscreenMode:nil];
-			} else {
-                [self windowMode:nil];
-			}
+            if ([mainWindow respondsToSelector:@selector(toggleFullScreen:)]) {
+                [mainWindow toggleFullScreen:self];
+            }
 			break;
 			
         case 'g':
@@ -344,7 +344,6 @@ NSWindow *standardWindow;
 		case ']':
             ret = [sim increasePopulationForDebris:debrisId returnCounts:counts];
             if (ret >= 0) {
-//                [glView.renderer setPopulationTo:ret forDebris:debrisId];
                 for (int i = 0; i< sim.deviceCount; i++) {
                     [glView.renderer setPopulationTo:counts[i] forDebris:debrisId forDevice:i];
                 }
@@ -354,7 +353,6 @@ NSWindow *standardWindow;
 		case '[':
             ret = [sim decreasePopulationForDebris:debrisId returnCounts:counts];
             if (ret >= 0) {
-//                [glView.renderer setPopulationTo:ret forDebris:debrisId];
                 for (int i = 0; i< sim.deviceCount; i++) {
                     [glView.renderer setPopulationTo:counts[i] forDebris:debrisId forDevice:i];
                 }

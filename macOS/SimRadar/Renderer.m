@@ -860,12 +860,11 @@ unsigned int grayToBinary(unsigned int num)
     //NSLog(@"Each renderer uses %zu bytes", sizeof(RenderResource));
     //NSLog(@"meshRenderer's drawColor @ %d / %d / %d", meshRenderer.colorUI, meshRenderer.positionAI, meshRenderer.textureCoordAI);
 
-    //NSLog(@"========:");
-    textRenderer = [GLText new];
-    //NSLog(@"========:");
     //tTextRenderer = [[GLText alloc] initWithFont:[NSFont fontWithName:@"Gas" size:72.0f]];
-    tTextRenderer = [[GLText alloc] initWithFont:[NSFont fontWithName:@"Weird Science NBP" size:144.0f]];
     //fwTextRenderer = [[GLText alloc] initWithFont:[NSFont fontWithName:@"Menlo" size:40.0f]];
+
+    textRenderer = [GLText new];
+    tTextRenderer = [[GLText alloc] initWithFont:[NSFont fontWithName:@"Weird Science NBP" size:144.0f]];
     fwTextRenderer = [[GLText alloc] initWithFont:[NSFont fontWithName:@"White Rabbit" size:40.0f]];
 
     overlayRenderer = [GLOverlay new];
@@ -1544,6 +1543,7 @@ unsigned int grayToBinary(unsigned int num)
     
 #ifdef DEBUG_GL
     [tTextRenderer showTextureMap];
+    //[fwTextRenderer showTextureMap];
 #endif
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
