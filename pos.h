@@ -14,7 +14,7 @@
 
 #include "log.h"
 
-#define POS_MAX_PATTERN_COUNT    1000
+#define POS_MAX_PATTERN_COUNT    10000
 #define POS_MAX_SWEEP_COUNT      50
 
 // Test with this:

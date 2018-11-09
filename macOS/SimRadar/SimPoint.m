@@ -59,7 +59,8 @@
 
         POSPattern *scan_pattern = &S->P;
 //        const char scan_string[] = "D:0,75,50/90,75,50/0,90,50";
-        const char scan_string[] = "P:5,-12:12:0.05";
+        const char scan_string[] = "P:5,-12:12:0.05/10,-12:12:0.05/15,-12:12:0.05";
+//        const char scan_string[] = "R:-3,0.5:25.0:0.05/3,0.5:25.0:0.05";
         
         POS_parse_from_string(scan_pattern, scan_string);
         
@@ -90,7 +91,19 @@
             [delegate progressUpdated:10.0 message:[NSString stringWithFormat:@"Configuring radar parameters ..."]];
         }
         
-        if (scan_pattern->mode == 'P') {
+        if (scan_pattern->mode == 'D') {
+            
+            RS_set_concept(S, RSSimulationConceptUniformDSDScaledRCS);
+            
+            RS_set_antenna_params(S, 5.0f, 30.0f);                // 5.0-deg beamwidth, 30-dBi gain
+            
+            RS_set_tx_params(S, 30.0f * 2.0f / 3.0e8f, 10.0e3);   // Resolution in m, power in W
+            
+            RS_set_debris_count(S, 1, 512);
+            
+            RS_set_obj_data_to_config(S, OBJConfigLeaf);
+            
+        } else {
             
             RS_set_concept(S,
                            RSSimulationConceptDraggedBackground |
@@ -101,7 +114,6 @@
             
             RS_set_tx_params(S, 30.0f * 2.0f / 3.0e8f, 10.0e3);   // Resolution in m, power in W
             
-            NSLog(@"S->preferred_multiple = %d", (int)S->preferred_multiple);
             RS_set_debris_count(S, 1, 10000);
             RS_set_debris_count(S, 2, 512);
             RS_set_debris_count(S, 3, 512);
@@ -110,20 +122,9 @@
             RS_set_obj_data_to_config(S, OBJConfigMetalSheet);
             RS_set_obj_data_to_config(S, OBJConfigBrick);
             
-        } else if (scan_pattern->mode == 'D') {
-
-            RS_set_concept(S, RSSimulationConceptUniformDSDScaledRCS);
-
-            RS_set_antenna_params(S, 5.0f, 30.0f);                // 5.0-deg beamwidth, 30-dBi gain
-
-            RS_set_tx_params(S, 30.0f * 2.0f / 3.0e8f, 10.0e3);   // Resolution in m, power in W
-
-            RS_set_debris_count(S, 1, 512);
-
-            RS_set_obj_data_to_config(S, OBJConfigLeaf);
-
         }
         
+        NSLog(@"S->preferred_multiple = %d", (int)S->preferred_multiple);
         RS_revise_debris_counts_to_gpu_preference(S);
 
         RS_set_prt(S, 1.0f / 60.0f);
@@ -139,16 +140,16 @@
             [delegate progressUpdated:95.0 message:@"ADM / RCS table"];
         }
         if (useLES) {
-            if (scan_pattern->mode == 'P') {
-                RS_set_scan_box(S,
-                                box.origin.r, box.origin.r + box.size.r, 60.0f,   // Range
-                                box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
-                                box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
-            } else if (scan_pattern->mode == 'D') {
+            if (scan_pattern->mode == 'D') {
                 RS_set_scan_box(S,
                                 box.origin.r, box.origin.r + box.size.r, 30.0f,    // Range
                                 box.origin.a, box.origin.a + box.size.a, 15.0f,    // Azimuth
                                 box.origin.e, box.origin.e + box.size.e, 15.0f);   // Elevation
+            } else {
+                RS_set_scan_box(S,
+                                box.origin.r, box.origin.r + box.size.r, 60.0f,    // Range
+                                box.origin.a, box.origin.a + box.size.a, 1.0f,     // Azimuth
+                                box.origin.e, box.origin.e + box.size.e, 1.0f);    // Elevation
             }
             S->draw_mode.s1 = (cl_uint)(box.origin.r + 0.5 * box.size.r);
         } else {

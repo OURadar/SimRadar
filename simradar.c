@@ -23,7 +23,6 @@
 #include <errno.h>
 
 #define MAX_FILELIST                65536
-#define MAX_SCAN_PATTERN_COUNT      100
 
 #if defined (_OPEN_MPI)
 #include <mpi.h>
@@ -33,39 +32,6 @@ enum ACCEL_TYPE {
     ACCEL_TYPE_GPU,
     ACCEL_TYPE_CPU
 };
-
-//enum SCAN_MODE {
-//    SCAN_MODE_STARE,
-//    SCAN_MODE_PPI,
-//    SCAN_MODE_RHI,
-//    SCAN_MODE_DBS
-//};
-
-//typedef struct scan_params {
-//    char mode;
-//    float start;
-//    float end;
-//    float delta;
-//    float az;
-//    float el;
-//} ScanParams;
-
-// New array type for DBS
-typedef struct scan_position {
-    float az;
-    float el;
-    uint32_t count;
-    uint32_t index;
-} ScanPosition;
-
-typedef struct scan_pattern {
-    ScanPosition positions[MAX_SCAN_PATTERN_COUNT];
-    uint32_t count;
-    uint32_t index;                 // The index of position
-    uint32_t scan_index;            // The index of scan
-    float az;                       // Current azimuth to use
-    float el;                       // Current elevation to use
-} ScanPattern;
 
 typedef struct user_params {
     float beamwidth;
@@ -80,11 +46,11 @@ typedef struct user_params {
     int   seed;
     int   dsd_count;
 
-	int   debris_type[RS_MAX_DEBRIS_TYPES];
-	int   debris_count[RS_MAX_DEBRIS_TYPES];
-	int   debris_group_count;
-    
-	bool  output_iq_file;
+    int   debris_type[RS_MAX_DEBRIS_TYPES];
+    int   debris_count[RS_MAX_DEBRIS_TYPES];
+    int   debris_group_count;
+
+    bool  output_iq_file;
     bool  output_state_file;
     bool  preview_only;
     bool  quiet_mode;
@@ -92,7 +58,7 @@ typedef struct user_params {
     bool  tight_box;
     bool  show_progress;
     bool  resume_seed;
-    
+
     char output_dir[1024];
 } UserParams;
 
@@ -260,7 +226,7 @@ void show_help() {
            "           " PROGNAME " -o --concept DBU -T --sweep P:-12:12:0.005 -t 0.0005 -p 4800 -d 1,10000\n"
            "\n"
            "     The following simulates ... (to be completed)\n"
-           "           " PROGNAME " --o -T --sweep D:0,75,10/90,75,10/0,90,10 -t 0.01 -p 30 -N\n"
+           "           " PROGNAME " -o -T --sweep D:0,75,10/90,75,10/0,90,10 -t 0.01 -p 30 -N\n"
            );
     printf("%s\n(%.1f)\n", buff, (float)k / size * 100.0f);
     free(buff);
@@ -333,7 +299,7 @@ static void show_user_param(const char *name, const void* value, const char *uni
 
 static void write_iq_file(const UserParams user, POSPattern *scan, const IQFileHeader *file_header, const IQPulseHeader *pulse_headers, const cl_float4 *pulse_cache, const int stride, const int offset) {
     char charbuff[2048];
-    
+
     memset(charbuff, 0, sizeof(charbuff));
     snprintf(charbuff, sizeof(charbuff), "%s/sim-%s-%s%04.1f.iq",
              user.output_dir,
@@ -346,7 +312,7 @@ static void write_iq_file(const UserParams user, POSPattern *scan, const IQFileH
         fprintf(stderr, "%s : Error creating file for IQ data.\n", now());
     }
     fwrite(file_header, sizeof(IQFileHeader), 1, fid);
-    
+
     // Flush out the cache
     for (int k = 0; k < user.num_pulses; k++) {
         fwrite(&pulse_headers[k], sizeof(IQPulseHeader), 1, fid);
@@ -447,7 +413,7 @@ int main(int argc, char *argv[]) {
 
     // A structure unit that encapsulates command line user parameters
     UserParams user;
-	memset(&user, 0, sizeof(UserParams));
+    memset(&user, 0, sizeof(UserParams));
 
     user.beamwidth         = PARAMS_FLOAT_NOT_SUPPLIED;
     user.density           = PARAMS_FLOAT_NOT_SUPPLIED;
@@ -468,7 +434,7 @@ int main(int argc, char *argv[]) {
     user.show_progress     = true;
     user.tight_box         = false;
     user.resume_seed       = false;
-    
+
     user.output_dir[0]     = '\0';
 
     // A structure unit that encapsulates a canning strategy
@@ -479,9 +445,9 @@ int main(int argc, char *argv[]) {
     }
 
     struct timeval t0, t1, t2;
-    
+
     gettimeofday(&t0, NULL);
-    
+
     RSSimulationConcept concept = RSSimulationConceptDraggedBackground
                                 | RSSimulationConceptBoundedParticleVelocity
                                 | RSSimulationConceptUniformDSDScaledRCS;
@@ -529,7 +495,7 @@ int main(int argc, char *argv[]) {
     }
     //printf("str = '%s'\n", str);
 
-	uint32_t u1, u2;
+    uint32_t u1, u2;
     char c1, *pc1, *pc2;
     // Process the input arguments and set the simulator parameters
     int opt, long_index = 0;
@@ -557,20 +523,20 @@ int main(int argc, char *argv[]) {
                 accel_type = ACCEL_TYPE_CPU;
                 break;
             case 'd':
-				k = sscanf(optarg, "%d,%d", &u1, &u2);
-				if (k == 2) {
-					if (u1 < 1 || u1 >= OBJConfigCount) {
-						fprintf(stderr, "Debris type %d is invalid.\n", u1);
-						exit(EXIT_FAILURE);
-					}
-					user.debris_type[user.debris_group_count] = u1;
-					user.debris_count[user.debris_group_count] = u2;
-					user.debris_group_count++;
-				} else {
-					fprintf(stderr, "Each debris group should be specified as -dTYPE,COUNT without space before or after comma.\n");
-					exit(EXIT_FAILURE);
-					break;
-				}
+                k = sscanf(optarg, "%d,%d", &u1, &u2);
+                if (k == 2) {
+                    if (u1 < 1 || u1 >= OBJConfigCount) {
+                        fprintf(stderr, "Debris type %d is invalid.\n", u1);
+                        exit(EXIT_FAILURE);
+                    }
+                    user.debris_type[user.debris_group_count] = u1;
+                    user.debris_count[user.debris_group_count] = u2;
+                    user.debris_group_count++;
+                } else {
+                    fprintf(stderr, "Each debris group should be specified as -dTYPE,COUNT without space before or after comma.\n");
+                    exit(EXIT_FAILURE);
+                    break;
+                }
                 //debris_count[debris_types++] = atoi(optarg);
                 break;
             case 'D':
@@ -662,7 +628,7 @@ int main(int argc, char *argv[]) {
     // ---------------------------------------------------------------------------------------------------------------
 
 #if defined (_OPEN_MPI)
-    
+
     int world_size, world_rank;
     char processor_name[MPI_MAX_PROCESSOR_NAME];
     MPI_Status status;
@@ -671,9 +637,9 @@ int main(int argc, char *argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
     MPI_Get_processor_name(processor_name, &k);
-    
+
     //printf("Node " UNDERLINE("%s") " ( %d out of %d )\n",  processor_name, world_rank, world_size);
-    
+
     if (user.resume_seed) {
         if (world_rank == 0) {
             user.seed = get_last_seed(user.output_dir) + 1;
@@ -685,19 +651,19 @@ int main(int argc, char *argv[]) {
             MPI_Recv(&user.seed, sizeof(user.seed), MPI_BYTE, 0, 's', MPI_COMM_WORLD, &status);
         }
     }
-    
+
     if (user.seed != PARAMS_INT_NOT_SUPPLIED) {
         user.seed += world_rank;
     }
-    
+
 #else
-    
+
     if (user.resume_seed) {
         user.seed = get_last_seed(user.output_dir) + 1;
     }
-    
+
 #endif
-    
+
     if (verb > 1) {
         printf("----------------------------------------------\n");
         printf("  User parameters:\n");
@@ -711,18 +677,18 @@ int main(int argc, char *argv[]) {
         show_user_param("Output directory", user.output_dir, "", ValueTypeChar, 0);
         show_user_param("User random seed", &user.seed, "", ValueTypeInt, 0);
         show_user_param("User DSD profile", user.dsd_sizes, "mm", ValueTypeFloatArray, user.dsd_count);
-		char name[64];
-		char type[64];
-		for (k = 0; k < user.debris_group_count; k++) {
-			sprintf(name, "Debris [%d]", k);
-			sprintf(type, "%s @", OBJConfigString(user.debris_type[k]));
-			show_user_param(name, type, commaint(user.debris_count[k]), ValueTypeChar, 0);
-		}
+        char name[64];
+        char type[64];
+        for (k = 0; k < user.debris_group_count; k++) {
+            sprintf(name, "Debris [%d]", k);
+            sprintf(type, "%s @", OBJConfigString(user.debris_type[k]));
+            show_user_param(name, type, commaint(user.debris_count[k]), ValueTypeChar, 0);
+        }
         printf("----------------------------------------------\n");
     }
 
     // ---------------------------------------------------------------------------------------------------------------
-    
+
     // Some conditions that no simulation should be commenced
     if (user.num_pulses < 0) {
         fprintf(stderr, "Error. No pulses was specified.\n");
@@ -775,23 +741,23 @@ int main(int argc, char *argv[]) {
     if (S == NULL) {
         return EXIT_FAILURE;
     }
-    
+
 #if defined (_OPEN_MPI)
 
     printf("%s : Session started on %s (%d / %d / %s)\n", now(), processor_name, world_rank, world_size, commaint(user.seed));
 
 #else
-    
+
     printf("%s : Session started\n", now());
 
 #endif
-    
+
     RS_set_concept(S, concept);
-    
+
     // ---------------------------------------------------------------------------------------------------------------
-    
+
     // Pre-process some parameters to ensure proper logic
-    
+
     if (user.num_pulses > 1000 && user.output_iq_file == false && user.skip_questions == false) {
         printf("Simulating more than 1,000 pulses but no file will be generated.\n"
                "Do you want to generate an output file instead (Y/N/N) ? ");
@@ -800,7 +766,7 @@ int main(int argc, char *argv[]) {
             user.output_iq_file = true;
         }
     }
-    
+
     if (user.warm_up_pulses == PARAMS_INT_NOT_SUPPLIED) {
         if (user.num_pulses > 1000)  {
             user.warm_up_pulses = 2000;
@@ -808,9 +774,9 @@ int main(int argc, char *argv[]) {
             user.warm_up_pulses = 0;
         }
     }
-    
+
     // ---------------------------------------------------------------------------------------------------------------
-    
+
     // Set user parameters that were supplied
     if (user.beamwidth != PARAMS_FLOAT_NOT_SUPPLIED) {
         RS_set_antenna_params(S, user.beamwidth, 44.5f);
@@ -819,19 +785,19 @@ int main(int argc, char *argv[]) {
     if (user.density != PARAMS_FLOAT_NOT_SUPPLIED) {
         RS_set_density(S, user.density);
     }
-    
+
     if (user.pw != PARAMS_FLOAT_NOT_SUPPLIED) {
         RS_set_tx_params(S, user.pw, 50.0e3f);
     }
-    
+
     if (user.lambda != PARAMS_FLOAT_NOT_SUPPLIED) {
         RS_set_lambda(S, user.lambda);
     }
-    
+
     if (user.seed != PARAMS_INT_NOT_SUPPLIED) {
         RS_set_random_seed(S, user.seed);
     }
-    
+
     if (user.dsd_count > 0) {
         RS_set_dsd_to_mp_with_sizes(S, user.dsd_sizes, user.dsd_count);
     } else {
@@ -841,30 +807,30 @@ int main(int argc, char *argv[]) {
     RS_set_vel_data_to_config(S, LESConfigSuctionVortices);
 
     // ---------------------------------------------------------------------------------------------------------------
-    
+
 #if defined (_OPEN_MPI)
 
     // Suppress child nodes output after this point for Open MPI runs
-    
+
     if (world_rank > 0) {
         verb = 0;
         RS_set_verbosity(S, 0);
     }
-    
+
 #endif
 
     RSBox box = RS_suggest_scan_domain(S, 16);
-    
+
     // Set debris population
     for (k = 0; k < user.debris_group_count; k++) {
         if (user.debris_count[k]) {
-			RS_add_debris(S, user.debris_type[k], user.debris_count[k]);
+            RS_add_debris(S, user.debris_type[k], user.debris_count[k]);
         }
     }
-	
+
     // Revise the counts so that we use GPU preferred numbers
     RS_revise_debris_counts_to_gpu_preference(S);
-    
+
     if (user.tight_box) {
         if (dbs_scan->mode == 'P' || dbs_scan->mode == 'p') {
             // No need to go all the way up if we are looking low
@@ -876,7 +842,7 @@ int main(int argc, char *argv[]) {
             box.size.e = MIN(box.size.e, dbs_scan->sweeps[dbs_scan->sweepCount - 1].elEnd);
         }
     }
-    
+
     RS_set_scan_box(S,
                     box.origin.r, box.origin.r + box.size.r, 15.0f,                       // Range
                     box.origin.a, box.origin.a + box.size.a, S->params.antenna_bw_deg,    // Azimuth
@@ -895,12 +861,12 @@ int main(int argc, char *argv[]) {
     if (verb) {
         RS_show_radar_params(S);
     }
-    
+
     // Populate the domain with scatter bodies.
     // This is also the function that triggers kernel compilation, GPU memory allocation and
     // upload all the parameters to the GPU.
     RS_populate(S);
-        
+
     // Show some basic info
 
 #if defined (_OPEN_MPI)
@@ -909,15 +875,15 @@ int main(int argc, char *argv[]) {
            now(), commaint(user.num_pulses), user.num_pulses > 1 ? "s" : "", commaint(S->num_scats), processor_name);
 
 #else
-    
+
     printf("%s : Emulating %s frame%s with %s scatter bodies\n",
            now(), commaint(user.num_pulses), user.num_pulses > 1 ? "s" : "", commaint(S->num_scats));
-    
+
 #endif
 
     // At this point, we are ready to bake
     float dt = 0.1f, fps = 0.0f, prog = 0.0f, eta = 9999999.0f;
-    
+
     // Some warm up if we are going for real
     setbuf(stdout, NULL);
     if (user.warm_up_pulses > 0) {
@@ -945,15 +911,15 @@ int main(int argc, char *argv[]) {
     RS_set_prt(S, user.prt);
 
     // ---------------------------------------------------------------------------------------------------------------
-    
+
     gettimeofday(&t1, NULL);
-    
+
     // Allocate a pulse cache
     IQPulseHeader *pulse_headers = (IQPulseHeader *)malloc(user.num_pulses * sizeof(IQPulseHeader));
     cl_float4 *pulse_cache = (cl_float4 *)malloc(user.num_pulses * S->params.range_count * sizeof(cl_float4));
     memset(pulse_headers, 0, user.num_pulses * sizeof(IQPulseHeader));
     memset(pulse_cache, 0, user.num_pulses * S->params.range_count * sizeof(cl_float4));
-    
+
     // Now we bake
     int k0 = 0;
     for (k = 0; k < user.num_pulses; k++) {
@@ -1125,13 +1091,13 @@ int main(int argc, char *argv[]) {
         }
 
 #else
-        
+
         write_iq_file(user, dbs_scan, &file_header, pulse_headers, pulse_cache, S->params.range_count, 0);
         
 #endif
-        
+
     }
-    
+
     if (user.output_state_file) {
         memset(charbuff, 0, sizeof(charbuff));
         snprintf(charbuff, sizeof(charbuff), "%s/sim-%s-%s%04.1f.simstate",
@@ -1164,22 +1130,21 @@ int main(int argc, char *argv[]) {
         printf("%s : State file with %s B.\n", now(), commaint(ftell(fid)));
         fclose(fid);
     }
-    
+
     free(pulse_headers);
     free(pulse_cache);
-    
+
     printf("%s : Session ended\n", now());
 
     RS_free(S);
-    
+
 #if defined (_OPEN_MPI)
 
     MPI_Finalize();
-    
+
 #endif
-    
+
     free(dbs_scan);
-    
+
     return EXIT_SUCCESS;
 }
-

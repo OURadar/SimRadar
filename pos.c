@@ -83,8 +83,38 @@ int POS_parse_from_string(POSPattern *scan, const char *string) {
         case 'r':
         case 'R':
             // RHI
-            rsprint("RHI scanning pattern ... (coming soon)\n");
+            rsprint("RHI scanning pattern ...\n");
             token = strtok(scan_pattern, delim);
+            i = 0;
+            j = 0;
+            while (token && j < POS_MAX_PATTERN_COUNT) {
+                k = sscanf(token, "%f,%f:%f:%f", &f1, &f2, &f3, &f4);
+                scan->sweeps[i].azStart = f1;
+                scan->sweeps[i].azEnd = f1;
+                scan->sweeps[i].azDelta = 0.0f;
+                scan->sweeps[i].elStart = f2;
+                scan->sweeps[i].elEnd = f3;
+                scan->sweeps[i].elDelta = f4;
+                //printf("k = %d   f1 = %.3f   f2 = %.3f   f3 = %.3f   f4 = %.3f\n", k, f1, f2, f3, f4);
+                do {
+                    scan->positions[j].az = f1;
+                    scan->positions[j].el = f2;
+                    scan->positions[j].index = 0;
+                    scan->positions[j].count = 1;
+                    #if defined(DEBUG_POS)
+                    rsprint("POS: j = %d   el = %5.2f   az = %6.2f   count = %u \n",
+                            j, scan->positions[j].el, scan->positions[j].az, scan->positions[j].count);
+                    #endif
+                    f2 += f4;
+                    j++;
+                } while (fabs(scan->positions[j - 1].el - f3) > 0.1f * f4 && j < POS_MAX_PATTERN_COUNT);
+                token = strtok(NULL, delim);
+                i++;
+            }
+            scan->sweepCount = i;
+            scan->sweepIndex = 0;
+            scan->count = j;
+            scan->index = 0;
             break;
         case 'd':
         case 'D':
