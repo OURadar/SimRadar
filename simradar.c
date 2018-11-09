@@ -11,7 +11,7 @@
 //
 //  Framework requirements: OpenCL 1.1
 //
-//  Created by Boon Leng Cheong.
+//  Created by Boonleng Cheong.
 //
 //
 
@@ -100,66 +100,6 @@ typedef union simstate {
     char raw[63 * 1024];
     RSHandle master;
 } SimState;
-
-//int get_next_scan_angles(ScanParams *params) {
-//    if (params->mode == SCAN_MODE_PPI) {
-//        params->az += params->delta;
-//        if (params->delta > 0.0f) {
-//            if (params->az > params->end) {
-//                params->az = params->start;
-//            } else if (params->az < params->start) {
-//                params->az = params->end;
-//            }
-//        } else {
-//            if (params->az > params->start) {
-//                params->az = params->end;
-//            } else if (params->az < params->end) {
-//                params->az = params->start;
-//            }
-//
-//        }
-//        if (params->az < params->start || params->az > params->end) {
-//            return 1;
-//        }
-//    } else if (params->mode == SCAN_MODE_RHI) {
-//        params->el += params->delta;
-//        if (params->el > params->end) {
-//            params->el = params->start;
-//        } else if (params->el < params->start) {
-//            params->el = params->end;
-//        }
-//        if (params->el < params->start || params->el > params->end) {
-//            return 2;
-//        }
-//    }
-//    return 0;
-//}
-
-//static char *scan_mode_str(char scan_mode) {
-//    static char str[16];
-//    switch (scan_mode) {
-//        case SCAN_MODE_PPI:
-//            snprintf(str, sizeof(str), "PPI");
-//            break;
-//
-//        case SCAN_MODE_RHI:
-//            snprintf(str, sizeof(str), "RHI");
-//            break;
-//
-//        case SCAN_MODE_STARE:
-//            snprintf(str, sizeof(str), "STARE");
-//            break;
-//
-//        case SCAN_MODE_DBS:
-//            snprintf(str, sizeof(str), "DBS");
-//            break;
-//
-//        default:
-//            snprintf(str, sizeof(str), "UNK");
-//            break;
-//    }
-//    return str;
-//}
 
 //
 //   s h o w _ h e l p
@@ -253,12 +193,17 @@ void show_help() {
            "         simulation. An output file like sim-20160229-143941-E03.0.simstate will\n"
            "         be generated in the ~/Downloads folder.\n"
            "\n"
-           "  --sweep " UNDERLINE("M:S:E:D") "\n"
+           "  --sweep " UNDERLINE("M:...") "\n"
            "         Sets the beam to scan mode.\n"
-           "         The argument " UNDERLINE("M:S:E:D") " are parameters for mode, start, end, and delta.\n"
+           "         The argument " UNDERLINE("M:...") " are parameters for mode, followed\n"
+           "         the by scan-specific paramters.\n"
            "            M = P for PPI (plane position indicator) mode\n"
            "            M = R for RHI (range height indicator) mode\n"
            "            M = D for DBS (Doppler beam swinging) mode\n"
+           "         For PPI and RHI scans, the scan-specific parameters are expected as:\n"
+           "            (P/R):(sweep angle),(start),(end),(delta)\n"
+           "         For DBS scans, the scan-specific parameters are expected as:\n"
+           "             D:(azimuth),(elevation),(count)\n"
            "         Examples:\n"
            "            --sweep P:3.0,-12:12:0.01\n"
            "                sets the scan mode in PPI, start at elevation 3.0, from azimuth -12 deg\n"

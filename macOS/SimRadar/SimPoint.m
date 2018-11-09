@@ -200,11 +200,6 @@
 
     RS_populate(S);
 
-//    az_deg = 4.0f;
-//    el_deg = 80.0f;
-//
-//    RS_set_beam_pos(S, az_deg, el_deg);
-
     if ([delegate respondsToSelector:@selector(progressUpdated:message:)]) {
         [delegate progressUpdated:100.0f message:@"Ready"];
     }

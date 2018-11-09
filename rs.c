@@ -3529,8 +3529,10 @@ void RS_update_colors(RSHandle *H) {
     }
     for (i = 0; i < H->num_workers; i++) {
         clWaitForEvents(1, &events[i][1]);
-        clReleaseEvent(events[i][0]);
         clReleaseEvent(events[i][1]);
+        if (H->status & RSStatusScattererSignalNeedsUpdate) {
+            clReleaseEvent(events[i][0]);
+        }
     }
     
 #endif
