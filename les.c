@@ -101,7 +101,7 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
 
     for (int i = 0; i < sizeof(search_paths) / sizeof(search_paths[0]); i++) {
         les_path = search_paths[i];
-        snprintf(les_file_path, 1024, "%s/%s/fort.10_2", les_path, config);
+        snprintf(les_file_path, 1024, "%s/%s/LES_mean_1_6_fnum1.dat", les_path, config);
         dir_ret = stat(les_path, &path_stat);
         file_ret = stat(les_file_path, &file_stat);
         if (dir_ret < 0 || file_ret < 0) {

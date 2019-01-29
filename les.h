@@ -22,6 +22,7 @@
 #include "log.h"
 
 #define LESConfigNull                  ""
+#define LESConfigFlat                  "flat"
 #define LESConfigTwoCell               "twocell"
 #define LESConfigSuctionVortices       "suctvort"
 #define LESConfigSuctionVorticesLarge  "suctvort_large"
