@@ -1030,7 +1030,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 
 #else
 
-    H->verb = 0;
+    H->verb = verb > 1 ? verb : 0;
 
 #endif
     
@@ -1058,9 +1058,13 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
     
     //RS_set_angular_weight_to_double_cone(H, 2.0f / 180.0f * M_PI);
     
+    printf("--->  v = %d\n", H->verb);
+    
     // Initialize the LES ingest
     //RS_set_vel_data_to_config(H, LESConfigSuctionVorticesLarge);
     RS_set_vel_data_to_config(H, LESConfigSuctionVortices);
+
+    printf("--->\n");
 
     H->verb = verb;
     

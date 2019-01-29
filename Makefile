@@ -5,6 +5,7 @@ UNAME := $(shell uname)
 MPIVER := $(shell [ ! -z ${EBVERSIONOPENMPI} ] && echo true || echo false)
 
 CFLAGS = -std=gnu99 -Wall -Wno-unknown-pragmas -Os -msse2 -mavx -I /usr/local/include
+CFLAGS += -DDEBUG
 
 LDFLAGS = -L lib -L /usr/local/lib -lrs
 

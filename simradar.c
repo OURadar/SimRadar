@@ -770,6 +770,7 @@ int main(int argc, char *argv[]) {
             user.warm_up_pulses = 0;
         }
     }
+    
 
     // ---------------------------------------------------------------------------------------------------------------
 
@@ -843,7 +844,6 @@ int main(int argc, char *argv[]) {
                     box.origin.r, box.origin.r + box.size.r, 15.0f,                       // Range
                     box.origin.a, box.origin.a + box.size.a, S->params.antenna_bw_deg,    // Azimuth
                     box.origin.e, box.origin.e + box.size.e, S->params.antenna_bw_deg);   // Elevation
-    
 
     // Save the framework default PRT for later
     if (user.prt == PARAMS_FLOAT_NOT_SUPPLIED) {
