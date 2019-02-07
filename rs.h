@@ -239,7 +239,9 @@ enum RSSimulationConcept {
     RSSimulationConceptDraggedBackground           = 1,
     RSSimulationConceptTransparentBackground       = 1 << 1,
     RSSimulationConceptBoundedParticleVelocity     = 1 << 2,
-    RSSimulationConceptUniformDSDScaledRCS         = 1 << 3
+    RSSimulationConceptUniformDSDScaledRCS         = 1 << 3,
+    RSSimulationConceptFixedScattererPosition      = 1 << 4,
+    RSSimulationConceptVerticallyPointingRadar     = 1 << 5
 };
 
 #pragma pack(push, 1)
@@ -448,7 +450,7 @@ struct _rs_handle {
     // Other handlers for LES and OBJ (ADM, RCS)
     LESHandle              L;
     OBJHandle              O;
-    POSPattern             P;
+    POSHandle              P;
 };
 
 #pragma pack(pop)
@@ -508,6 +510,8 @@ void RS_set_vel_data_to_cube27(RSHandle *H);
 void RS_set_vel_data_to_cube125(RSHandle *H);
 void RS_clear_vel_data(RSHandle *H);
 
+void RS_set_scan_pattern(RSHandle *H, const POSPattern *scan_pattern);
+
 // New methods
 void RS_set_obj_data_to_config(RSHandle *H, OBJConfig type);
 void RS_set_random_seed(RSHandle *H, const unsigned int seed);
@@ -528,13 +532,11 @@ void RS_derive_ndranges(RSHandle *H);
 
 void RS_io_test(RSHandle *H);
 
-#pragma mark -
-#pragma mark Populate the Emulation Domain
+#pragma mark - Populate the Emulation Domain
 
 void RS_populate(RSHandle *H);
 
-#pragma mark -
-#pragma mark Accessing Data on the GPUs
+#pragma mark - Accessing Data on the GPUs
 
 void RS_upload(RSHandle *H);
 void RS_download(RSHandle *H);
@@ -545,15 +547,13 @@ void RS_download_pulse_only(RSHandle *H);
 //void RS_rcs_from_dsd(RSHandle *H);
 void RS_compute_rcs_ellipsoids(RSHandle *H);
 
-#pragma mark -
-#pragma mark Simulation Time Evolution
+#pragma mark - Simulation Time Evolution
 
 void RS_advance_time(RSHandle *H);
 void RS_advance_beam(RSHandle *H);
 void RS_make_pulse(RSHandle *H);
 
-#pragma mark -
-#pragma mark General Table Allocation
+#pragma mark - General Table Allocation
 
 RSTable RS_table_init(size_t numel);
 void RS_table_free(RSTable T);
@@ -562,8 +562,7 @@ void RS_table2d_free(RSTable2D T);
 RSTable3D RS_table3d_init(size_t numel);
 void RS_table3d_free(RSTable3D T);
 
-#pragma mark -
-#pragma mark Text Output
+#pragma mark - Text Output
 
 void RS_show_radar_params(RSHandle *H);
 void RS_show_scat_pos(RSHandle *H);
@@ -571,8 +570,7 @@ void RS_show_scat_sig(RSHandle *H);
 void RS_show_scat_att(RSHandle *H);
 void RS_show_pulse(RSHandle *H);
 
-#pragma mark -
-#pragma mark High-Level Functions to Condition Emulation Setup
+#pragma mark - High-Level Functions to Condition Emulation Setup
 
 RSBox RS_suggest_scan_domain(RSHandle *H, const int nbeams);
 void RS_revise_debris_counts_to_gpu_preference(RSHandle *H);

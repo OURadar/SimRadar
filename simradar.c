@@ -434,8 +434,8 @@ int main(int argc, char *argv[]) {
     user.output_dir[0]     = '\0';
 
     // A structure unit that encapsulates a canning strategy
-    POSPattern *dbs_scan = (POSPattern *)malloc(sizeof(POSPattern));
-    if (dbs_scan == NULL) {
+    POSPattern *scan_pattern = (POSPattern *)malloc(sizeof(POSPattern));
+    if (scan_pattern == NULL) {
         fprintf(stderr, "Error allocating space for scan pattern.\n");
         exit(EXIT_FAILURE);
     }
@@ -513,6 +513,12 @@ int main(int argc, char *argv[]) {
                 }
                 if (strcasestr(optarg, "T")) {
                     concept |= RSSimulationConceptTransparentBackground;
+                }
+                if (strcasestr(optarg, "F")) {
+                    concept |= RSSimulationConceptFixedScattererPosition;
+                }
+                if (strcasestr(optarg, "V")) {
+                    concept |= RSSimulationConceptVerticallyPointingRadar;
                 }
                 break;
             case 'C':
@@ -595,7 +601,7 @@ int main(int argc, char *argv[]) {
                 user.seed = atoi(optarg);
                 break;
             case 'S':
-                POS_parse_from_string(dbs_scan, optarg);
+                POS_parse_from_string(scan_pattern, optarg);
                 break;
             case 't':
                 user.prt = atof(optarg);
@@ -706,21 +712,21 @@ int main(int argc, char *argv[]) {
     // Preview only
     if (user.preview_only) {
         #define FLT_FMT  "\033[1;33m%+6.2f\033[0m"
-        printf("Scan mode: \033[1;92m%c\033[0m\n", dbs_scan->mode);
-        if (dbs_scan->mode == 'P' || dbs_scan->mode == 'p') {
-            for (k = 0; k < dbs_scan->sweepCount; k++) {
+        printf("Scan mode: \033[1;92m%c\033[0m\n", scan_pattern->mode);
+        if (scan_pattern->mode == 'P' || scan_pattern->mode == 'p') {
+            for (k = 0; k < scan_pattern->sweepCount; k++) {
                 printf("    %d   EL: " FLT_FMT " deg   AZ: " FLT_FMT " -- " FLT_FMT " deg    delta: " FLT_FMT " deg\n",
-                       k, dbs_scan->sweeps[k].elStart, dbs_scan->sweeps[k].azStart, dbs_scan->sweeps[k].azEnd, dbs_scan->sweeps[k].azDelta);
+                       k, scan_pattern->sweeps[k].elStart, scan_pattern->sweeps[k].azStart, scan_pattern->sweeps[k].azEnd, scan_pattern->sweeps[k].azDelta);
             }
-        } else if (dbs_scan->mode == 'R' || dbs_scan->mode == 'r') {
+        } else if (scan_pattern->mode == 'R' || scan_pattern->mode == 'r') {
             printf("    %d   AZ: " FLT_FMT " deg   EL: " FLT_FMT " -- " FLT_FMT " deg    delta: " FLT_FMT " deg\n",
-                   k, dbs_scan->sweeps[0].azStart, dbs_scan->sweeps[0].elStart, dbs_scan->sweeps[0].elEnd, dbs_scan->sweeps[0].elDelta);
+                   k, scan_pattern->sweeps[0].azStart, scan_pattern->sweeps[0].elStart, scan_pattern->sweeps[0].elEnd, scan_pattern->sweeps[0].elDelta);
         } else {
             printf("   I need upgrade here.\n");
         }
         for (k = 0; k < user.num_pulses; k++) {
-            POS_get_next_angles(dbs_scan);
-            printf("k = %4d   el = %6.2f deg   az = %6.2f deg\n", k, dbs_scan->el, dbs_scan->az);
+            POS_get_next_angles(scan_pattern);
+            printf("k = %4d   el = %6.2f deg   az = %6.2f deg\n", k, scan_pattern->el, scan_pattern->az);
         }
         return EXIT_SUCCESS;
     }
@@ -749,6 +755,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     RS_set_concept(S, concept);
+    RS_set_scan_pattern(S, scan_pattern);
 
     // ---------------------------------------------------------------------------------------------------------------
 
@@ -801,7 +808,8 @@ int main(int argc, char *argv[]) {
         RS_set_dsd_to_mp(S);
     }
 
-    RS_set_vel_data_to_config(S, LESConfigSuctionVortices);
+    //RS_set_vel_data_to_config(S, LESConfigSuctionVortices);
+    RS_set_vel_data_to_config(S, LESConfigFlat);
 
     // ---------------------------------------------------------------------------------------------------------------
 
@@ -825,18 +833,21 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // Revise the counts so that we use GPU preferred numbers
-    RS_revise_debris_counts_to_gpu_preference(S);
+    printf("scan mode = %c\n", scan_pattern->mode);
+    if (scan_pattern->mode != 'D') {
+        // Revise the counts so that we use GPU preferred numbers
+        RS_revise_debris_counts_to_gpu_preference(S);
+    }
 
     if (user.tight_box) {
-        if (dbs_scan->mode == 'P' || dbs_scan->mode == 'p') {
+        if (scan_pattern->mode == 'P' || scan_pattern->mode == 'p') {
             // No need to go all the way up if we are looking low
             //box.size.e = MIN(box.size.e, scan.el);
-            box.size.e = MIN(box.size.e, dbs_scan->sweeps[dbs_scan->sweepCount - 1].elStart);
-        } else if (dbs_scan->mode == 'R' || dbs_scan->mode == 'r') {
+            box.size.e = MIN(box.size.e, scan_pattern->sweeps[scan_pattern->sweepCount - 1].elStart);
+        } else if (scan_pattern->mode == 'R' || scan_pattern->mode == 'r') {
             // Need to make sure we cover the very top
             //box.size.e = MAX(scan.start, scan.end);
-            box.size.e = MIN(box.size.e, dbs_scan->sweeps[dbs_scan->sweepCount - 1].elEnd);
+            box.size.e = MIN(box.size.e, scan_pattern->sweeps[scan_pattern->sweepCount - 1].elEnd);
         }
     }
 
@@ -933,11 +944,11 @@ int main(int argc, char *argv[]) {
                 eta = (float)(user.num_pulses - k) / fps;
                 k0 = k;
                 if (verb < 2) {
-                    printf("k %5d   (e%6.2f, a%5.2f)   %.2f fps   \033[1;33m%.2f%%\033[0m   eta %.0f second%s   \r", k, dbs_scan->el, dbs_scan->az, fps, prog, eta, eta > 1.5f ? "s" : "");
+                    printf("k %5d   (e%6.2f, a%5.2f)   %.2f fps   \033[1;33m%.2f%%\033[0m   eta %.0f second%s   \r", k, scan_pattern->el, scan_pattern->az, fps, prog, eta, eta > 1.5f ? "s" : "");
                  }
             }
         }
-        RS_set_beam_pos(S, dbs_scan->az, dbs_scan->el);
+        RS_set_beam_pos(S, scan_pattern->az, scan_pattern->el);
         RS_make_pulse(S);
 
         // Only download the necessary data
@@ -973,8 +984,8 @@ int main(int argc, char *argv[]) {
         // Gather information for the  pulse header
         if (user.output_iq_file) {
             pulse_headers[k].time = S->sim_tic;
-            pulse_headers[k].az_deg = dbs_scan->az;
-            pulse_headers[k].el_deg = dbs_scan->el;
+            pulse_headers[k].az_deg = scan_pattern->az;
+            pulse_headers[k].el_deg = scan_pattern->el;
             memcpy(&pulse_cache[k * S->params.range_count], S->pulse, S->params.range_count * sizeof(cl_float4));
         }
 
@@ -983,7 +994,7 @@ int main(int argc, char *argv[]) {
 
         // Update scan angles for the next pulse
         //get_next_scan_angles(&scan);
-        POS_get_next_angles(dbs_scan);
+        POS_get_next_angles(scan_pattern);
     }
 
     // Overall fps
@@ -1027,10 +1038,10 @@ int main(int argc, char *argv[]) {
         for (k = 0; k < S->num_types; k++) {
             file_header.counts[k] = (uint32_t)S->counts[k];
         }
-        snprintf(file_header.scan_mode, sizeof(file_header.scan_mode), "%c", dbs_scan->mode);
-        file_header.scan_start      = dbs_scan->sweeps[0].azStart;
-        file_header.scan_end        = dbs_scan->sweeps[0].azEnd;
-        file_header.scan_delta      = dbs_scan->sweeps[0].azDelta;
+        snprintf(file_header.scan_mode, sizeof(file_header.scan_mode), "%c", scan_pattern->mode);
+        file_header.scan_start      = scan_pattern->sweeps[0].azStart;
+        file_header.scan_end        = scan_pattern->sweeps[0].azEnd;
+        file_header.scan_delta      = scan_pattern->sweeps[0].azDelta;
         file_header.simulation_seed = S->random_seed;
     }
 
@@ -1088,7 +1099,7 @@ int main(int argc, char *argv[]) {
 
 #else
 
-        write_iq_file(user, dbs_scan, &file_header, pulse_headers, pulse_cache, S->params.range_count, 0);
+        write_iq_file(user, scan_pattern, &file_header, pulse_headers, pulse_cache, S->params.range_count, 0);
         
 #endif
 
@@ -1099,8 +1110,8 @@ int main(int argc, char *argv[]) {
         snprintf(charbuff, sizeof(charbuff), "%s/sim-%s-%s%04.1f.simstate",
                  user.output_dir,
                  nowlong(),
-                 POS_is_ppi(dbs_scan) ? "E": (dbs_scan->mode == 'R' || dbs_scan->mode == 'r' ? "A" : "S"),
-                 POS_is_ppi(dbs_scan) ? dbs_scan->sweeps[0].elStart: (POS_is_rhi(dbs_scan) ? dbs_scan->sweeps[0].azStart : (float)user.num_pulses));
+                 POS_is_ppi(scan_pattern) ? "E": (scan_pattern->mode == 'R' || scan_pattern->mode == 'r' ? "A" : "S"),
+                 POS_is_ppi(scan_pattern) ? scan_pattern->sweeps[0].elStart: (POS_is_rhi(scan_pattern) ? scan_pattern->sweeps[0].azStart : (float)user.num_pulses));
         printf("%s : Output file : " UNDERLINE ("%s") "\n", now(), charbuff);
         fid = fopen(charbuff, "wb");
         if (fid == NULL) {
@@ -1140,7 +1151,7 @@ int main(int argc, char *argv[]) {
 
 #endif
 
-    free(dbs_scan);
+    free(scan_pattern);
 
     return EXIT_SUCCESS;
 }

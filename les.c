@@ -133,7 +133,27 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
     snprintf(h->data_path, sizeof(h->data_path), "%s/%s", les_path, config);
     h->ibuf = 0;
     h->tr = 50.0f;
+
+    //    char grid_file[1024];
+    //    snprintf(grid_file, 1024, "%s/fort.10_2", h->data_path);
+
+    #ifdef DEBUG
+    rsprint("LES index @ %s\n", les_file_path);
+    #endif
+
+    h->enclosing_grid = LES_enclosing_grid_create_from_file(les_file_path);
+    if (h->enclosing_grid == NULL) {
+        fprintf(stderr, "Unable to get the enclosing grid for LES framework.\n");
+        return NULL;
+    }
+    rsprint("LES enclosing_grid = %u x %u x %u\n", h->enclosing_grid->nx, h->enclosing_grid->ny, h->enclosing_grid->nz);
+
+    // Extract only a sub-domain at a given origin. This is not complete, will come back for it.
+    h->data_grid = LES_data_grid_create_from_enclosing_grid(h->enclosing_grid, 0, 0);
+
+    // Override if needed
     if (!strcmp(config, LESConfigSuctionVortices) || !strcmp(config, LESConfigSuctionVorticesLarge)) {
+        // Stretched grid
         h->v0 = 100.0f;
         h->ax = 2.0f;
         h->ay = 2.0f;
@@ -142,6 +162,7 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
         h->ry = 1.0212f;
         h->rz = 1.05f;
         h->tp = 2.0f;
+        h->data_grid->is_stretched = true;
     } else if (!strcmp(config, LESConfigTwoCell)) {
         h->v0 = 225.0f;
         h->ax = 1.0f;
@@ -151,25 +172,27 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
         h->ry = 1.0f;
         h->rz = 1.0f;
         h->tp = 5.0f;
+    } else if (!strcmp(config, LESConfigFlat)) {
+        h->v0 = 100.0f;
+        h->ax = 0.0f;
+        h->ay = 0.0f;
+        h->az = 0.0f;
+        h->rx = 1.0e3f * (h->data_grid->x[1]                                   - h->data_grid->x[0]);
+        h->ry = 1.0e3f * (h->data_grid->y[h->data_grid->nx]                    - h->data_grid->y[0]);
+        h->rz = 1.0e3f * (h->data_grid->z[h->data_grid->nx * h->data_grid->ny] - h->data_grid->z[0]);
+        rsprint("LES Grid Spacing = %.2f x %.2f x %.2f\n", h->rx, h->ry, h->rz);
+        h->tp = 60.0f;
+    } else {
+        h->v0 = 225.0f;
+        h->ax = 1.0f;
+        h->ay = 1.0f;
+        h->az = 1.0f;
+        h->rx = 1.0f;
+        h->ry = 1.0f;
+        h->rz = 1.0f;
+        h->tp = 5.0f;
     }
-
-    //    char grid_file[1024];
-    //    snprintf(grid_file, 1024, "%s/fort.10_2", h->data_path);
-
-#ifdef DEBUG
-    rsprint("LES index @ %s\n", les_file_path);
-#endif
-
-    h->enclosing_grid = LES_enclosing_grid_create_from_file(les_file_path);
-    if (h->enclosing_grid == NULL) {
-        fprintf(stderr, "Unable to get the enclosing grid for LES framework.\n");
-        return NULL;
-    }
-    // printf("enclosing_grid = %u x %u x %u\n", h->enclosing_grid->nx, h->enclosing_grid->ny, h->enclosing_grid->nz);
-
-    // Extract only a sub-domain. This is not complete, will come back for it.
-    h->data_grid = LES_data_grid_create_from_enclosing_grid(h->enclosing_grid, 0, 0);
-
+    
     // Go through and check available tables
     k = 0;
     while (true) {
@@ -428,6 +451,7 @@ void LES_show_slice_dots() {
 
 LESGrid *LES_enclosing_grid_create_from_file(const char *filename) {
 	LESGrid *grid = (LESGrid *)malloc(sizeof(LESGrid));
+    memset(grid, 0, sizeof(LESGrid));
 	if (grid == NULL) {
 		fprintf(stderr, "Unable to allocate LES grid.\n");
 		return NULL;
@@ -457,12 +481,19 @@ LESGrid *LES_enclosing_grid_create_from_file(const char *filename) {
 	fread(grid->z, sizeof(float), count, fid);
 	fclose(fid);
 	
+    #ifdef DEBUG_LES
+    printf("x @ %.2f %.2f %.2f ...\n", grid->x[0], grid->x[1], grid->x[2]);
+    printf("y @ %.2f %.2f %.2f ...\n", grid->y[0], grid->y[grid->nx], grid->y[2 * grid->nx]);
+    printf("z @ %.2f %.2f %.2f ...\n", grid->z[0], grid->z[grid->nx * grid->ny], grid->z[2 * grid->nx * grid->ny]);
+    #endif
+    
 	return grid;
 }
 
 
 LESGrid *LES_data_grid_create_from_enclosing_grid(LESGrid *grid, const int ox, const int oy) {
 	LESGrid *subgrid = (LESGrid *)malloc(sizeof(LESGrid));
+    memset(subgrid, 0, sizeof(LESGrid));
 	// Sub-domain size
 	subgrid->nx = grid->nx - (2 * ox);
 	subgrid->ny = grid->ny - (2 * oy);

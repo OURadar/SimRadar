@@ -1058,13 +1058,9 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
     
     //RS_set_angular_weight_to_double_cone(H, 2.0f / 180.0f * M_PI);
     
-    printf("--->  v = %d\n", H->verb);
-    
     // Initialize the LES ingest
     //RS_set_vel_data_to_config(H, LESConfigSuctionVorticesLarge);
     RS_set_vel_data_to_config(H, LESConfigSuctionVortices);
-
-    printf("--->\n");
 
     H->verb = verb;
     
@@ -1427,6 +1423,11 @@ void RS_set_scan_box(RSHandle *H,
         return;
     }
     
+    if (H->verb) {
+        rsprint("Mode 0x%x\n", H->sim_concept);
+    }
+    //rsprint("%.2f  %.2f  %.2f  /  %.2f  %.2f  %.2f\n", azimuth_start, azimuth_end, azimuth_delta, elevation_start, elevation_end, elevation_delta);
+    
     //	H->status &= !RSStatusDomainPopulated;
     H->params.range_start = range_start;
     H->params.range_end = range_end;
@@ -1440,7 +1441,7 @@ void RS_set_scan_box(RSHandle *H,
     
     bool is_full_sweep = fabs(azimuth_start - 0.0f) < 0.01f && fabs(azimuth_end - 360.0f) < 0.01f;
     
-    const RSfloat r_lo = floor(MAX(100.0f, H->params.range_start - H->params.domain_pad_factor * H->params.dr) / H->params.range_delta) * H->params.range_delta;
+    const RSfloat r_lo = floor(MAX(H->params.range_delta, H->params.range_start - H->params.domain_pad_factor * H->params.dr) / H->params.range_delta) * H->params.range_delta;
     const RSfloat r_hi = ceil(MIN(10.0e3f, H->params.range_end + H->params.domain_pad_factor * H->params.dr) / H->params.range_delta) * H->params.range_delta;
     const RSfloat az_lo = is_full_sweep ? 0.0f : floor(H->params.azimuth_start_deg - H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg * H->params.antenna_bw_deg;
     const RSfloat az_hi = is_full_sweep ? 360.0f : ceil(H->params.azimuth_end_deg + H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg * H->params.antenna_bw_deg;
@@ -1448,10 +1449,19 @@ void RS_set_scan_box(RSHandle *H,
     const RSfloat el_hi = ceil(MIN(90.0f, H->params.elevation_end_deg + H->params.domain_pad_factor * H->params.antenna_bw_deg) / H->params.antenna_bw_deg) * H->params.antenna_bw_deg;
     const RSfloat tiny = 1.0e-5f;
     
+//    printf("range_start = %.2f   r_lo = %.2f   %.2f   %.2f  %.1f  ... %.2f\n",
+//           H->params.range_start, r_lo, H->params.dr, H->params.range_delta, H->params.domain_pad_factor,
+//           MAX(H->params.range_delta, H->params.range_start - H->params.domain_pad_factor * H->params.dr));
+    
     int nr = 0;
     int naz = 0;
     int nel = 0;
     
+    RSfloat
+    xmin = INFINITY, xmax = -INFINITY,
+    ymin = INFINITY, ymax = -INFINITY,
+    zmin = INFINITY, zmax = -INFINITY;
+
     RSfloat r;
     RSfloat az;
     RSfloat el;
@@ -1471,83 +1481,165 @@ void RS_set_scan_box(RSHandle *H,
         rsprint("  o Domain range ... %.2f ~ %.2f (%d)\n", r_lo, r_hi, nr);
     }
 
-    // Azimuth
-    az = az_lo;
-    while (az <= az_hi + tiny) {
-        az += H->params.azimuth_delta_deg;
-        naz++;
-    }
-    if (H->verb > 1) {
-        rsprint("  o Domain azimuth ... %.2f ~ %.2f (%d)\n", az_lo, az_hi, naz);
-    }
-
-    // Elevation
-    el = el_lo;
-    while (el <= el_hi) {
-        el += H->params.elevation_delta_deg;
-        nel++;
-    }
-    if (H->verb > 1) {
-        rsprint("  o Domain elevation ... %.2f ~ %.2f (%d)\n", el_lo, el_hi, nel);
-    }
-
-    // Zero volume
-    if (naz == 0 || nel == 0) {
-        rsprint("NEL = %d and/or NAZ = %d resulted in a zero volumne.\n", naz, nel);
-        return;
-    }
-    
-    // Evaluate the number of scatterers needed
-    H->num_anchors  = 2 * naz * nel + 1;  // Save one for radar origin
-    if (H->anchor_pos) {
-        if (H->verb > 2) {
-            rsprint("Freeing existing anchor memory.");
+    if (H->sim_concept & RSSimulationConceptVerticallyPointingRadar) {
+        const RSfloat delta = MIN(elevation_delta, azimuth_delta);
+        const RSfloat edge = el_lo;
+        // Raster grid for AZ, EL
+        if (H->verb) {
+            rsprint("xx / yy = %.2f ... %.2f\n", edge - 90.0f, 90.0f - edge);
         }
-        free(H->anchor_pos);
-    }
-    H->anchor_pos = (cl_float4 *)malloc(H->num_anchors * sizeof(cl_float4));
-    if (H->anchor_pos == NULL) {
-        rsprint("ERROR: Unable to allocate memory for anchors.");
-        return;
-    }
-    
-    // Domain size
-    RSfloat
-    xmin = INFINITY, xmax = -INFINITY,
-    ymin = INFINITY, ymax = -INFINITY,
-    zmin = INFINITY, zmax = -INFINITY;
-    el = el_lo / 180.0f * M_PI;
-    while (el <= el_hi / 180.0f * M_PI + tiny && ii < H->num_anchors - 1) {
-        az = az_lo / 180.0f * M_PI;
-        while ((is_full_sweep && az < (az_hi - azimuth_delta) / 180.0f * M_PI) || (!is_full_sweep && az <= az_hi / 180.0f * M_PI + tiny && ii < H->num_anchors - 1)) {
-            //rsprint("ii %d   AZ %.2f   EL %.2f\n", ii, az / M_PI * 180.0f, el / M_PI * 180.0f);
-            H->anchor_pos[ii].x = r_lo * cos(el) * sin(az);
-            H->anchor_pos[ii].y = r_lo * cos(el) * cos(az);
-            H->anchor_pos[ii].z = r_lo * sin(el);
-            H->anchor_pos[ii].w = 1.0f;
-            xmin = H->anchor_pos[ii].x < xmin ? H->anchor_pos[ii].x : xmin;
-            xmax = H->anchor_pos[ii].x > xmax ? H->anchor_pos[ii].x : xmax;
-            ymin = H->anchor_pos[ii].y < ymin ? H->anchor_pos[ii].y : ymin;
-            ymax = H->anchor_pos[ii].y > ymax ? H->anchor_pos[ii].y : ymax;
-            zmin = H->anchor_pos[ii].z < zmin ? H->anchor_pos[ii].z : zmin;
-            zmax = H->anchor_pos[ii].z > zmax ? H->anchor_pos[ii].z : zmax;
-            ii++;
-            
-            H->anchor_pos[ii].x = r_hi * cos(el) * sin(az);
-            H->anchor_pos[ii].y = r_hi * cos(el) * cos(az);
-            H->anchor_pos[ii].z = r_hi * sin(el);
-            H->anchor_pos[ii].w = 1.0f;
-            xmin = H->anchor_pos[ii].x < xmin ? H->anchor_pos[ii].x : xmin;
-            xmax = H->anchor_pos[ii].x > xmax ? H->anchor_pos[ii].x : xmax;
-            ymin = H->anchor_pos[ii].y < ymin ? H->anchor_pos[ii].y : ymin;
-            ymax = H->anchor_pos[ii].y > ymax ? H->anchor_pos[ii].y : ymax;
-            zmin = H->anchor_pos[ii].z < zmin ? H->anchor_pos[ii].z : zmin;
-            zmax = H->anchor_pos[ii].z > zmax ? H->anchor_pos[ii].z : zmax;
-            ii++;
-            
-            az += azimuth_delta / 180.0f * M_PI;
+        RSfloat xx;
+        RSfloat yy = edge - 90.0f;
+        while (yy < (90.0f - edge) + tiny) {
+            xx = el_lo - 90.0f;
+            while (xx < (90.0f - edge) + tiny) {
+                az = atan2f(yy, xx);
+                el = 90.0f - sqrtf(yy * yy + xx * xx);
+                #if defined(DEBUG_POS)
+                rsprint("ii %d   xx = %.2f  yy = %.2f  AZ %.2f   EL %.2f\n", naz, xx, yy, az, el);
+                #endif
+                xx += delta;
+                ii++;
+            }
+            yy += delta;
         }
-        el += elevation_delta / 180.0f * M_PI;
+
+        // Total number of anchors, add one for radar origin
+        H->num_anchors  = 2 * ii + 1;
+        if (H->anchor_pos) {
+            if (H->verb > 2) {
+                rsprint("Freeing existing anchor memory.");
+            }
+            free(H->anchor_pos);
+        }
+        H->anchor_pos = (cl_float4 *)malloc(H->num_anchors * sizeof(cl_float4));
+        if (H->anchor_pos == NULL) {
+            rsprint("ERROR: Unable to allocate memory for anchors.");
+            return;
+        }
+
+        // Now populate an actual array
+        ii = 0;
+        yy = edge - 90.0f;
+        while (yy < (90.0f - edge) + tiny) {
+            xx = edge - 90.0f;
+            while (xx < (90.0f - edge) + tiny) {
+                az = atan2f(yy, xx);
+                el = 90.0f - sqrtf(yy * yy + xx * xx);
+        
+                #if defined(DEBUG_POS)
+                rsprint("ii %d   xx = %.2f  yy = %.2f  AZ %.2f   EL %.2f\n", ii, xx, yy, az, el);
+                #endif
+
+                el = el / 180.0f * M_PI;
+                
+                H->anchor_pos[ii].x = r_lo * cos(el) * sin(az);
+                H->anchor_pos[ii].y = r_lo * cos(el) * cos(az);
+                H->anchor_pos[ii].z = r_lo * sin(el);
+                H->anchor_pos[ii].w = 1.0f;
+                xmin = H->anchor_pos[ii].x < xmin ? H->anchor_pos[ii].x : xmin;
+                xmax = H->anchor_pos[ii].x > xmax ? H->anchor_pos[ii].x : xmax;
+                ymin = H->anchor_pos[ii].y < ymin ? H->anchor_pos[ii].y : ymin;
+                ymax = H->anchor_pos[ii].y > ymax ? H->anchor_pos[ii].y : ymax;
+                zmin = H->anchor_pos[ii].z < zmin ? H->anchor_pos[ii].z : zmin;
+                zmax = H->anchor_pos[ii].z > zmax ? H->anchor_pos[ii].z : zmax;
+                ii++;
+                
+                H->anchor_pos[ii].x = r_hi * cos(el) * sin(az);
+                H->anchor_pos[ii].y = r_hi * cos(el) * cos(az);
+                H->anchor_pos[ii].z = r_hi * sin(el);
+                H->anchor_pos[ii].w = 1.0f;
+                xmin = H->anchor_pos[ii].x < xmin ? H->anchor_pos[ii].x : xmin;
+                xmax = H->anchor_pos[ii].x > xmax ? H->anchor_pos[ii].x : xmax;
+                ymin = H->anchor_pos[ii].y < ymin ? H->anchor_pos[ii].y : ymin;
+                ymax = H->anchor_pos[ii].y > ymax ? H->anchor_pos[ii].y : ymax;
+                zmin = H->anchor_pos[ii].z < zmin ? H->anchor_pos[ii].z : zmin;
+                zmax = H->anchor_pos[ii].z > zmax ? H->anchor_pos[ii].z : zmax;
+                ii++;
+                
+                xx += delta;
+            }
+            yy += delta;
+        }
+        
+        naz = 360;
+        nel = 1;
+
+    } else {
+        // Azimuth
+        az = az_lo;
+        while (az <= az_hi + tiny) {
+            az += H->params.azimuth_delta_deg;
+            naz++;
+        }
+        if (H->verb > 1) {
+            rsprint("  o Domain azimuth ... %.2f ~ %.2f (%d)\n", az_lo, az_hi, naz);
+        }
+
+        // Elevation
+        el = el_lo;
+        while (el <= el_hi) {
+            el += H->params.elevation_delta_deg;
+            nel++;
+        }
+        if (H->verb > 1) {
+            rsprint("  o Domain elevation ... %.2f ~ %.2f (%d)\n", el_lo, el_hi, nel);
+        }
+
+        // Zero volume
+        if (naz == 0 || nel == 0) {
+            rsprint("NEL = %d and/or NAZ = %d resulted in a zero volumne.\n", naz, nel);
+            return;
+        }
+        
+        // Evaluate the number of scatterers needed
+        H->num_anchors  = 2 * naz * nel + 1;  // Save one for radar origin
+        if (H->anchor_pos) {
+            if (H->verb > 2) {
+                rsprint("Freeing existing anchor memory.");
+            }
+            free(H->anchor_pos);
+        }
+        H->anchor_pos = (cl_float4 *)malloc(H->num_anchors * sizeof(cl_float4));
+        if (H->anchor_pos == NULL) {
+            rsprint("ERROR: Unable to allocate memory for anchors.");
+            return;
+        }
+        
+        // Domain size
+        el = el_lo / 180.0f * M_PI;
+        while (el <= el_hi / 180.0f * M_PI + tiny && ii < H->num_anchors - 1) {
+            az = az_lo / 180.0f * M_PI;
+            while ((is_full_sweep && az < (az_hi - azimuth_delta) / 180.0f * M_PI) || (!is_full_sweep && az <= az_hi / 180.0f * M_PI + tiny && ii < H->num_anchors - 1)) {
+                //rsprint("ii %d   AZ %.2f   EL %.2f\n", ii, az / M_PI * 180.0f, el / M_PI * 180.0f);
+                H->anchor_pos[ii].x = r_lo * cos(el) * sin(az);
+                H->anchor_pos[ii].y = r_lo * cos(el) * cos(az);
+                H->anchor_pos[ii].z = r_lo * sin(el);
+                H->anchor_pos[ii].w = 1.0f;
+                xmin = H->anchor_pos[ii].x < xmin ? H->anchor_pos[ii].x : xmin;
+                xmax = H->anchor_pos[ii].x > xmax ? H->anchor_pos[ii].x : xmax;
+                ymin = H->anchor_pos[ii].y < ymin ? H->anchor_pos[ii].y : ymin;
+                ymax = H->anchor_pos[ii].y > ymax ? H->anchor_pos[ii].y : ymax;
+                zmin = H->anchor_pos[ii].z < zmin ? H->anchor_pos[ii].z : zmin;
+                zmax = H->anchor_pos[ii].z > zmax ? H->anchor_pos[ii].z : zmax;
+                ii++;
+                
+                H->anchor_pos[ii].x = r_hi * cos(el) * sin(az);
+                H->anchor_pos[ii].y = r_hi * cos(el) * cos(az);
+                H->anchor_pos[ii].z = r_hi * sin(el);
+                H->anchor_pos[ii].w = 1.0f;
+                xmin = H->anchor_pos[ii].x < xmin ? H->anchor_pos[ii].x : xmin;
+                xmax = H->anchor_pos[ii].x > xmax ? H->anchor_pos[ii].x : xmax;
+                ymin = H->anchor_pos[ii].y < ymin ? H->anchor_pos[ii].y : ymin;
+                ymax = H->anchor_pos[ii].y > ymax ? H->anchor_pos[ii].y : ymax;
+                zmin = H->anchor_pos[ii].z < zmin ? H->anchor_pos[ii].z : zmin;
+                zmax = H->anchor_pos[ii].z > zmax ? H->anchor_pos[ii].z : zmax;
+                ii++;
+                
+                az += azimuth_delta / 180.0f * M_PI;
+            }
+            el += elevation_delta / 180.0f * M_PI;
+        }
     }
     
     rsprint("Anchors computed   num_anchors = %d\n", H->num_anchors);
@@ -1557,7 +1649,6 @@ void RS_set_scan_box(RSHandle *H,
     H->anchor_pos[ii].y = 0.0f;
     H->anchor_pos[ii].z = 0.0f;
     H->anchor_pos[ii].w = 5.0f;
-    
     //printf("H->num_anchors = %zu   ii = %d\n", H->num_anchors, ii);
     
     // The closing domain of the simulation
@@ -1584,11 +1675,12 @@ void RS_set_scan_box(RSHandle *H,
             ymin, ymax, H->sim_desc.s[RSSimulationDescriptionBoundSizeY],
             zmin, zmax, H->sim_desc.s[RSSimulationDescriptionBoundSizeZ]);
     sprintf(H->summary + strlen(H->summary),
-            "Concepts used: %s%s%s%s\n",
+            "Concepts used: %s%s%s%s%s\n",
             H->sim_concept & RSSimulationConceptBoundedParticleVelocity ? "B" : "",
             H->sim_concept & RSSimulationConceptDraggedBackground ? "D" : "",
             H->sim_concept & RSSimulationConceptTransparentBackground ? "T" : "",
-            H->sim_concept & RSSimulationConceptUniformDSDScaledRCS ? "U" : "");
+            H->sim_concept & RSSimulationConceptUniformDSDScaledRCS ? "U" : "",
+            H->sim_concept & RSSimulationConceptFixedScattererPosition ? "F" : "");
     
     if (H->verb) {
         rsprint("User domain @ R:[ %5.2f ~ %5.2f ] km   E:[ %5.2f ~ %5.2f ] deg   A:[ %+7.2f ~ %+7.2f ] deg\n",
@@ -1622,6 +1714,12 @@ void RS_set_scan_box(RSHandle *H,
             }
             if (H->sim_concept & RSSimulationConceptUniformDSDScaledRCS) {
                 printf(RS_INDENT "o U - Uniform DSD with Scaled RCS\n");
+            }
+            if (H->sim_concept & RSSimulationConceptFixedScattererPosition) {
+                printf(RS_INDENT "o F - Fixed Scatterer Positions\n");
+            }
+            if (H->sim_concept & RSSimulationConceptVerticallyPointingRadar) {
+                printf(RS_INDENT "o V - Vertically Pointing Radar\n");
             }
         }
     }
@@ -1934,62 +2032,79 @@ void RS_set_debris_count(RSHandle *H, const int debris_id, const size_t count) {
 void RS_revise_population(RSHandle *H) {
     int ii;
     
-    // Volume of a single resolution cell at the start of the domain (svol = smallest volume)
-    RSfloat r = H->params.range_start;
-    RSfloat svol = (H->params.antenna_bw_rad * r) * (H->params.antenna_bw_rad * r) * (H->params.c * H->params.tau * 0.5f);
-    RSfloat nvol = H->sim_desc.s[RSSimulationDescriptionBoundSizeX]
-    * H->sim_desc.s[RSSimulationDescriptionBoundSizeY]
-    * H->sim_desc.s[RSSimulationDescriptionBoundSizeZ] / svol;
-    
-    // Suggest a number of scatter bodies to use
-    H->num_scats = (size_t)(H->params.body_per_cell * nvol);
-    H->counts[0] = H->num_scats;
-    
     // Get GPU preferred multiplication factor
     // NOTE: make_pulse_pass_1 uses 2 x max_work_group_size stride
     size_t max_work_group_size;
     clGetDeviceInfo(H->workers[0].dev, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max_work_group_size), &max_work_group_size, NULL);
     const size_t mul = H->num_cus[0] * H->num_workers * max_work_group_size * 2;
     
-    // Round the total population to a GPU preferred number
-    size_t preferred_n = H->num_scats;
-    if (H->num_scats > 50000) {
-        preferred_n = (size_t)(H->num_scats / mul) * mul;
-        if (preferred_n < H->params.body_per_cell * 9 / 10) {
-            preferred_n += mul;
+    if (H->sim_concept & RSSimulationConceptVerticallyPointingRadar) {
+        size_t anchors_per_plane = (H->num_anchors - 1) / 2;
+        H->num_scats = H->params.range_count * anchors_per_plane;
+        H->counts[0] = H->num_scats;
+
+        // Round the total population to a GPU preferred number
+        //size_t preferred_n = (size_t)((H->num_scats + mul - 1) / mul) * mul;
+        
+        // Revise the background (rain)
+        //H->counts[0] = preferred_n;
+        
+        sprintf(H->summary + strlen(H->summary),
+                "anchors_per_plane = %s\n", commafloat(anchors_per_plane));
+        if (H->verb) {
+            rsprint("anchors_per_plane = %s\n", commaint(anchors_per_plane));
+        }
+    } else {
+        // Volume of a single resolution cell at the start of the domain (svol = smallest volume)
+        RSfloat r = H->params.range_start;
+        RSfloat svol = (H->params.antenna_bw_rad * r) * (H->params.antenna_bw_rad * r) * (H->params.c * H->params.tau * 0.5f);
+        RSfloat nvol = H->sim_desc.s[RSSimulationDescriptionBoundSizeX]
+        * H->sim_desc.s[RSSimulationDescriptionBoundSizeY]
+        * H->sim_desc.s[RSSimulationDescriptionBoundSizeZ] / svol;
+        
+        // Suggest a number of scatter bodies to use
+        H->num_scats = (size_t)(H->params.body_per_cell * nvol);
+        H->counts[0] = H->num_scats;
+        
+        // Round the total population to a GPU preferred number
+        size_t preferred_n = H->num_scats;
+        if (H->num_scats > 50000) {
+            preferred_n = (size_t)(H->num_scats / mul) * mul;
+            if (preferred_n < H->params.body_per_cell * 9 / 10) {
+                preferred_n += mul;
+            }
+        }
+        
+        // Revise the background (rain)
+        H->counts[0] = preferred_n;
+
+        sprintf(H->summary + strlen(H->summary),
+                "nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(svol));
+        sprintf(H->summary + strlen(H->summary),
+                "Average meteor. scatterer density = %s\n", commafloat((float)H->counts[0] / nvol));
+        if (H->verb) {
+            rsprint("nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(svol));
+            rsprint("Setting to GPU preferred %s", commaint(preferred_n));
+            rsprint("Average all-type scatterer density = %s scatterers / closest radar cell\n", commafloat((float)preferred_n / nvol));
+            rsprint("Average meteorological scatterer density = %s scatterers / closest radar cell\n", commafloat((float)H->counts[0] / nvol));
         }
     }
     
-    // Revise the background (rain)
-    H->counts[0] = preferred_n;
-    
     // Add in the debris
+    H->num_scats = H->counts[0];
     for (ii = 1; ii < RS_MAX_DEBRIS_TYPES; ii++) {
         if (H->counts[ii] > 0) {
-            preferred_n += H->counts[ii];
+            H->num_scats += H->counts[ii];
         }
     }
     
     // A hard limit here. Will do something about this next time.
-    if (preferred_n > 20000000) {
-        rsprint("Too many scatterers.\n");
+    if (H->num_scats > 20000000) {
+        rsprint("Too many scatterers (%s).\n", commaint(H->num_scats));
         exit(0);
     }
     
-    sprintf(H->summary + strlen(H->summary),
-            "nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(svol));
-    sprintf(H->summary + strlen(H->summary),
-            "Average meteor. scatterer density = %s\n", commafloat((float)H->counts[0] / nvol));
-    if (H->verb) {
-        rsprint("nvol = %s x volumes of %s m^3\n", commafloat(nvol), commafloat(svol));
-        rsprint("Setting to GPU preferred %s", commaint(preferred_n));
-        rsprint("Average all-type scatterer density = %s scatterers / closest radar cell\n", commafloat((float)preferred_n / nvol));
-        rsprint("Average meteorological scatterer density = %s scatterers / closest radar cell\n", commafloat((float)H->counts[0] / nvol));
-    }
-    
-    
-    // Now, we actually set it to suggested debris count
-    H->num_scats = preferred_n;
+    // The population count is now considered defined
     H->status |= RSStatusPopulationDefined;
 }
 
@@ -2690,45 +2805,58 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
         return;
     }
     
-    // For LES tables:
-    //
-    // dz(k) = a * r ^ 1.05
-    //
-    //  z(k) = a * ( 1 - r ^ k ) / ( 1 - r )
-    //
-    //     k = 1 / log(r) * log( 1 - ( 1 - r ) / a * z( k ) )
-    //       = 1 / log(r) * log( 1 + ( r - 1 ) / a * z( k ) )
-    //
-    // For a = 2.7, r = 1.05, these values may be documented in the data files at some point
-    //
-    //     k = 20.495934314287851 * log1p ( 0.018518518518519 * z( k ) )
-    
-    table.x_ = leslie->nx;    table.xm = 0.5f * (float)(leslie->nx - 1);    table.xs = 1.0f / log(leslie->rx);    table.xo = (leslie->rx - 1.0f) / leslie->ax;
-    table.y_ = leslie->ny;    table.ym = 0.5f * (float)(leslie->ny - 1);    table.ys = 1.0f / log(leslie->ry);    table.yo = (leslie->ry - 1.0f) / leslie->ay;
-    table.z_ = leslie->nz;    table.zm = 0.0f;                              table.zs = 1.0f / log(leslie->rz);    table.zo = (leslie->rz - 1.0f) / leslie->az;
-    
-    hmax = leslie->ax * (1.0f - powf(leslie->rx, table.xm)) / (1.0f - leslie->rx);
-    zmax = leslie->az * (1.0f - powf(leslie->rz, (float)(leslie->nz - 1))) / (1.0f - leslie->rz);
-    
-    if (H->verb > 1) {
-        if (H->vel_idx == 0) {
+    if (leslie->is_stretched) {
+        //
+        // For LES tables with streched grid:
+        //
+        // dz(k) = a * r ^ 1.05
+        //
+        //  z(k) = a * ( 1 - r ^ k ) / ( 1 - r )
+        //
+        //     k = 1 / log(r) * log( 1 - ( 1 - r ) / a * z( k ) )
+        //       = 1 / log(r) * log( 1 + ( r - 1 ) / a * z( k ) )
+        //
+        // For a = 2.7, r = 1.05, these values may be documented in the data files at some point
+        //
+        //     k = 20.495934314287851 * log1p ( 0.018518518518519 * z( k ) )
+        //
+        table.spacing = RSTableSpacingStretchedX | RSTableSpacingStretchedY | RSTableSpacingStretchedZ;
+        table.x_ = leslie->nx;    table.xm = 0.5f * (float)(leslie->nx - 1);    table.xs = 1.0f / log(leslie->rx);    table.xo = (leslie->rx - 1.0f) / leslie->ax;
+        table.y_ = leslie->ny;    table.ym = 0.5f * (float)(leslie->ny - 1);    table.ys = 1.0f / log(leslie->ry);    table.yo = (leslie->ry - 1.0f) / leslie->ay;
+        table.z_ = leslie->nz;    table.zm = 0.0f;                              table.zs = 1.0f / log(leslie->rz);    table.zo = (leslie->rz - 1.0f) / leslie->az;
+        hmax = leslie->ax * (1.0f - powf(leslie->rx, table.xm)) / (1.0f - leslie->rx);
+        zmax = leslie->az * (1.0f - powf(leslie->rz, (float)(leslie->nz - 1))) / (1.0f - leslie->rz);
+        if (H->verb > 0 && H->vel_idx == 0) {
             rsprint("LES stretched x-grid using %.6f * log1p( %.6f * x )    Mid = %.2f m\n",
                     table.xs, table.xo, hmax);
             rsprint("LES stretched z-grid using %.6f * log1p( %.6f * z )    Max = %.2f m\n",
                     table.zs, table.zo, zmax);
+            rsprint("GPU LES[%2d/%2d] @ X:[ %.2f - %.2f ] m   Y:[ %.2f - %.2f ] m   Z:[ %.2f - %.2f ] m   (%d, %s MB)\n",
+                    H->vel_idx, H->vel_count,
+                    -hmax, hmax,
+                    -hmax, hmax,
+                    0.0, zmax,
+                    H->workers[0].vel_id,
+                    commaint(leslie->nn * sizeof(cl_float4) / 1024 / 1024));
         }
-        rsprint("GPU LES[%2d/%2d] @ X:[ %.2f - %.2f ] m   Y:[ %.2f - %.2f ] m   Z:[ %.2f - %.2f ] m   (%d, %s MB)\n",
-                H->vel_idx, H->vel_count,
-                -hmax, hmax,
-                -hmax, hmax,
-                0.0, zmax,
-                H->workers[0].vel_id,
-                commaint(leslie->nn * sizeof(cl_float4) / 1024 / 1024));
+    } else {
+        table.x_ = leslie->nx;    table.xm = 0.0f;    table.xs = 1.0f / leslie->rx;    table.xo = (float)((leslie->nx - 1) / 2);
+        table.y_ = leslie->ny;    table.ym = 0.0f;    table.ys = 1.0f / leslie->ry;    table.yo = (float)((leslie->ny - 1) / 2);
+        table.z_ = leslie->nz;    table.zm = 0.0f;    table.zs = 1.0f / leslie->rz;    table.zo = 0.0f;
+        if (H->verb > 0 && H->vel_idx == 0) {
+            rsprint("LES grid using uniform grid spacing %.2f, %.2f, %.2f m\n", leslie->rx, leslie->ry, leslie->rz);
+            rsprint("GPU LES[%2d/%2d] @ X:[ %.2f - %.2f ] m   Y:[ %.2f - %.2f ] m   Z:[ %.2f - %.2f ] m   (%d, %s MB)\n",
+                    H->vel_idx, H->vel_count,
+                    table.xo, table.xm,
+                    table.yo, table.ym,
+                    table.zo, table.zm,
+                    H->workers[0].vel_id,
+                    commaint(leslie->nn * sizeof(cl_float4) / 1024 / 1024));
+        }
     }
     
     // Some other parameters
     table.tr = leslie->tr;
-    table.spacing = RSTableSpacingStretchedX | RSTableSpacingStretchedY | RSTableSpacingStretchedZ;
     
     // There is a toll-free bridge: LESTable has a remapped data structure during background read so there is no need to copy, just reassign the pointer, gotta love C!
     void *tmp = table.data;
@@ -2762,9 +2890,9 @@ void RS_set_vel_data_to_uniform(RSHandle *H, cl_float4 velocity) {
     }
     
     // Set up the mapping coefficients:
-    table.x_ = 1;    table.xm = 0.0f;    table.xs = 1.0f / domain.size.x;    table.xo = -domain.origin.x * table.xs;
-    table.y_ = 1;    table.ym = 0.0f;    table.ys = 1.0f / domain.size.y;    table.yo = -domain.origin.y * table.ys;
-    table.z_ = 1;    table.zm = 0.0f;    table.zs = 1.0f / domain.size.z;    table.zo = -domain.origin.z * table.zs;
+    table.x_ = 1;    table.xm = 0.0f;    table.xs = 1.0f / domain.size.x;    table.xo = 0;
+    table.y_ = 1;    table.ym = 0.0f;    table.ys = 1.0f / domain.size.y;    table.yo = 0;
+    table.z_ = 1;    table.zm = 0.0f;    table.zs = 1.0f / domain.size.z;    table.zo = 0;
     
     table.tr = 1000.0f;
     
@@ -2795,9 +2923,9 @@ void RS_set_vel_data_to_cube27(RSHandle *H) {
     }
     
     // Set up the mapping coefficients: -table_start * table_xs
-    table.x_ = 3;    table.xm = 2.0f;    table.xs = 3.0f / domain.size.x;    table.xo = -domain.origin.x * table.xs;
-    table.y_ = 3;    table.ym = 2.0f;    table.ys = 3.0f / domain.size.y;    table.yo = -domain.origin.y * table.ys;
-    table.z_ = 3;    table.zm = 2.0f;    table.zs = 3.0f / domain.size.z;    table.zo = -domain.origin.z * table.zs;
+    table.x_ = 3;    table.xm = 2.0f;    table.xs = 3.0f / domain.size.x;    table.xo = 0;
+    table.y_ = 3;    table.ym = 2.0f;    table.ys = 3.0f / domain.size.y;    table.yo = 0;
+    table.z_ = 3;    table.zm = 2.0f;    table.zs = 3.0f / domain.size.z;    table.zo = 0;
     
     table.tr = 1000.0f;
     
@@ -2864,6 +2992,14 @@ void RS_clear_vel_data(RSHandle *H) {
         cl_uint ny = (cl_uint)H->workers[i].vel_desc.s[RSTable3DDescriptionMaximumY] + 1;
         cl_uint nz = (cl_uint)H->workers[i].vel_desc.s[RSTable3DDescriptionMaximumZ] + 1;
         H->workers[i].mem_usage -= nx * ny * nz * sizeof(cl_float4);
+    }
+}
+
+
+void RS_set_scan_pattern(RSHandle *H, const POSPattern *scan_pattern) {
+    H->P = (POSHandle)scan_pattern;
+    if (H->verb) {
+        POS_summary(H->P);
     }
 }
 
@@ -3765,29 +3901,44 @@ void RS_populate(RSHandle *H) {
     
     RSVolume domain = RS_get_domain(H);
     
-    //
-    // Initialize the scatter body positions & velocities
-    //
     uint32_t uid = 0;
-    for (k = 0; k < H->num_types; k++) {
-        for (w = 0; w < H->num_workers; w++) {
-            
-            i = (int)(H->offset[w] + H->workers[w].origins[k]);
-            
-#ifdef DEBUG_HEAVY
-            rsprint(RS_INDENT "type[%d]   workers[%d]   n = %d", k, w,  H->workers[w].counts[k]);
-#endif
-            
-            for (n = 0; n < H->workers[w].counts[k]; n++) {
+
+    if (H->sim_concept & RSSimulationConceptFixedScattererPosition) {
+        if (H->num_types > 1) {
+            rsprint("WARNING. Debris particles are not emulated in RSSimulationConceptFixedScattererPosition mode.\n");
+        }
+        rsprint("num_workers = %d\n", H->num_workers);
+
+        const RSfloat r_lo = sqrtf(H->anchor_pos[0].x * H->anchor_pos[0].x + H->anchor_pos[0].y * H->anchor_pos[0].y + H->anchor_pos[0].z * H->anchor_pos[0].z);
+
+        // Anchor points alternate between the low and high. First plan can be retrieved from the lower portion
+        i = 0;
+        for (k = 0; k < H->num_anchors - 1; k++) {
+            if (k % 2 == 0) {
+                H->scat_pos[i].x = H->anchor_pos[k].x / r_lo * H->params.range_start;
+                H->scat_pos[i].y = H->anchor_pos[k].y / r_lo * H->params.range_start;
+                H->scat_pos[i].z = H->anchor_pos[k].z / r_lo * H->params.range_start;
+                H->scat_pos[i].w = 0.0f;
+                i++;
+            }
+        }
+        if (i != (H->num_anchors - 1) / 2) {
+            rsprint("WARNING. Inconsistency detected. H->num_anchors = %lu != %d\n", H->num_anchors, i);
+        }
+        const int anchors_per_layer = i;
+        // Use the first plane and duplicate to the rest of the volume
+        i = 0;
+        for (n = 0; n < H->params.range_count; n++) {
+            for (k = 0; k < anchors_per_layer; k++) {
                 H->scat_uid[i].s0 = uid++;
-                H->scat_uid[i].s1 = n;
-                H->scat_uid[i].s2 = k;
-                H->scat_uid[i].s3 = w;
+                H->scat_uid[i].s1 = (cl_uint)H->num_scats;
+                H->scat_uid[i].s2 = 0;
+                H->scat_uid[i].s3 = 0;
                 
-                H->scat_pos[i].x = (float)rand() / RAND_MAX * domain.size.x + domain.origin.x;
-                H->scat_pos[i].y = (float)rand() / RAND_MAX * domain.size.y + domain.origin.y;
-                H->scat_pos[i].z = (float)rand() / RAND_MAX * domain.size.z + domain.origin.z;
-                H->scat_pos[i].w = 0.0f;                       // Use this to store drop radius in m
+                H->scat_pos[i].x = H->scat_pos[k].x / H->params.range_start * (H->params.range_start + (float)n * H->params.range_delta);
+                H->scat_pos[i].y = H->scat_pos[k].y / H->params.range_start * (H->params.range_start + (float)n * H->params.range_delta);
+                H->scat_pos[i].z = H->scat_pos[k].z / H->params.range_start * (H->params.range_start + (float)n * H->params.range_delta);
+                H->scat_pos[i].w = 0.0f;
                 
                 H->scat_aux[i].s0 = 0.0f;                      // range
                 H->scat_aux[i].s1 = (float)rand() / RAND_MAX;  // age
@@ -3804,40 +3955,7 @@ void RS_populate(RSHandle *H) {
                 H->scat_ori[i].y = 0.0f;                       // y of quaternion
                 H->scat_ori[i].z = 0.0f;                       // z of quaternion
                 H->scat_ori[i].w = 1.0f;                       // w of quaternion
-                
-#if defined(QUAT_INIT_FACE_SKY)
-                
-                // Facing the sky
-                H->scat_ori[i].x =  0.0f;                      // x of quaternion
-                H->scat_ori[i].y = -0.707106781186547f;        // y of quaternion
-                H->scat_ori[i].z =  0.0f;                      // z of quaternion
-                H->scat_ori[i].w =  0.707106781186548f;        // w of quaternion
-                
-#elif defined(QUAT_INIT_OTHER)
-                
-                // Some other tests
-                H->scat_ori[i].x =  0.5f;                      // x of quaternion
-                H->scat_ori[i].y = -0.5f;                      // y of quaternion
-                H->scat_ori[i].z =  0.5f;                      // z of quaternion
-                H->scat_ori[i].w =  0.5f;                      // w of quaternion
-                
-#elif defined(QUAT_INIT_ROTATE_THETA)
-                
-                // Rotate by theta
-                float theta = -70.0f / 180.0f * M_PI;
-                H->scat_ori[i].x = 0.0f;
-                H->scat_ori[i].y = sinf(0.5f * theta);
-                H->scat_ori[i].z = 0.0f;
-                H->scat_ori[i].w = cosf(0.5f * theta);
-                
-#endif
-                
-                // Facing the beam
-                H->scat_ori[i].x =  0.5f;                      // x of quaternion
-                H->scat_ori[i].y = -0.5f;                      // y of quaternion
-                H->scat_ori[i].z = -0.5f;                      // z of quaternion
-                H->scat_ori[i].w =  0.5f;                      // w of quaternion
-                
+
                 // Tumbling vector for orientation update
                 H->scat_tum[i].x = 0.0f;                       // x of quaternion
                 H->scat_tum[i].y = 0.0f;                       // y of quaternion
@@ -3859,7 +3977,102 @@ void RS_populate(RSHandle *H) {
                 i++;
             }
         }
-    }
+    } else {
+        //
+        // Initialize the scatter body positions & velocities
+        //
+        for (k = 0; k < H->num_types; k++) {
+            for (w = 0; w < H->num_workers; w++) {
+                
+                i = (int)(H->offset[w] + H->workers[w].origins[k]);
+                
+    #ifdef DEBUG_HEAVY
+                rsprint(RS_INDENT "type[%d]   workers[%d]   n = %d", k, w,  H->workers[w].counts[k]);
+    #endif
+                
+                for (n = 0; n < H->workers[w].counts[k]; n++) {
+                    H->scat_uid[i].s0 = uid++;
+                    H->scat_uid[i].s1 = n;
+                    H->scat_uid[i].s2 = k;
+                    H->scat_uid[i].s3 = w;
+                    
+                    H->scat_pos[i].x = (float)rand() / RAND_MAX * domain.size.x + domain.origin.x;
+                    H->scat_pos[i].y = (float)rand() / RAND_MAX * domain.size.y + domain.origin.y;
+                    H->scat_pos[i].z = (float)rand() / RAND_MAX * domain.size.z + domain.origin.z;
+                    H->scat_pos[i].w = 0.0f;                       // Use this to store drop radius in m
+                    
+                    H->scat_aux[i].s0 = 0.0f;                      // range
+                    H->scat_aux[i].s1 = (float)rand() / RAND_MAX;  // age
+                    H->scat_aux[i].s2 = 0.0f;                      // dsd bin index
+                    H->scat_aux[i].s3 = 1.0f;                      // angular weight [0.0, 1.0]
+                    
+                    H->scat_vel[i].x = 0.0f;                       // u component of velocity
+                    H->scat_vel[i].y = 0.0f;                       // v component of velocity
+                    H->scat_vel[i].z = 0.0f;                       // w component of velocity
+                    H->scat_vel[i].w = 0.0f;                       // n/a
+                    
+                    // At the reference
+                    H->scat_ori[i].x = 0.0f;                       // x of quaternion
+                    H->scat_ori[i].y = 0.0f;                       // y of quaternion
+                    H->scat_ori[i].z = 0.0f;                       // z of quaternion
+                    H->scat_ori[i].w = 1.0f;                       // w of quaternion
+                    
+    #if defined(QUAT_INIT_FACE_SKY)
+                    
+                    // Facing the sky
+                    H->scat_ori[i].x =  0.0f;                      // x of quaternion
+                    H->scat_ori[i].y = -0.707106781186547f;        // y of quaternion
+                    H->scat_ori[i].z =  0.0f;                      // z of quaternion
+                    H->scat_ori[i].w =  0.707106781186548f;        // w of quaternion
+                    
+    #elif defined(QUAT_INIT_OTHER)
+                    
+                    // Some other tests
+                    H->scat_ori[i].x =  0.5f;                      // x of quaternion
+                    H->scat_ori[i].y = -0.5f;                      // y of quaternion
+                    H->scat_ori[i].z =  0.5f;                      // z of quaternion
+                    H->scat_ori[i].w =  0.5f;                      // w of quaternion
+                    
+    #elif defined(QUAT_INIT_ROTATE_THETA)
+                    
+                    // Rotate by theta
+                    float theta = -70.0f / 180.0f * M_PI;
+                    H->scat_ori[i].x = 0.0f;
+                    H->scat_ori[i].y = sinf(0.5f * theta);
+                    H->scat_ori[i].z = 0.0f;
+                    H->scat_ori[i].w = cosf(0.5f * theta);
+                    
+    #endif
+                    
+                    // Facing the beam
+                    H->scat_ori[i].x =  0.5f;                      // x of quaternion
+                    H->scat_ori[i].y = -0.5f;                      // y of quaternion
+                    H->scat_ori[i].z = -0.5f;                      // z of quaternion
+                    H->scat_ori[i].w =  0.5f;                      // w of quaternion
+                    
+                    // Tumbling vector for orientation update
+                    H->scat_tum[i].x = 0.0f;                       // x of quaternion
+                    H->scat_tum[i].y = 0.0f;                       // y of quaternion
+                    H->scat_tum[i].z = 0.0f;                       // z of quaternion
+                    H->scat_tum[i].w = 1.0f;                       // w of quaternion
+                    
+                    // Initial return from each point
+                    H->scat_rcs[i].s0 = 1.0f;                      // sh_real of rcs
+                    H->scat_rcs[i].s1 = 0.0f;                      // sh_imag of rcs
+                    H->scat_rcs[i].s2 = 1.0f;                      // sv_real of rcs
+                    H->scat_rcs[i].s3 = 0.0f;                      // sv_imag of rcs
+                    
+                    // Random seeds
+                    H->scat_rnd[i].s0 = rand();                    // random seed
+                    H->scat_rnd[i].s1 = rand();                    // random seed
+                    H->scat_rnd[i].s2 = rand();                    // random seed
+                    H->scat_rnd[i].s3 = rand();                    // random seed
+                    
+                    i++;
+                }
+            } // for (w = 0; w < H->num_workers; w++) ...
+        } // for (k = 0; k < H->num_types; k++) ...
+    } // if (H->sim_concept & RSSimulationConceptFixedScattererPosition) ...
     
     // Volume of the simulation domain (m^3)
     float vol = H->sim_desc.s[RSSimulationDescriptionBoundSizeX] * H->sim_desc.s[RSSimulationDescriptionBoundSizeY] * H->sim_desc.s[RSSimulationDescriptionBoundSizeZ];
@@ -4498,7 +4711,7 @@ void RS_advance_time(RSHandle *H) {
 
 
 void RS_advance_beam(RSHandle *H) {
-    POSPattern *scan = &H->P;
+    POSPattern *scan = H->P;
     POS_get_next_angles(scan);
     RS_set_beam_pos(H, scan->az, scan->el);
 }
@@ -4888,25 +5101,30 @@ void RS_show_pulse(RSHandle *H) {
 RSBox RS_suggest_scan_domain(RSHandle *H, const int nbeams) {
     RSBox box;
     
+    if (H->P == NULL) {
+        rsprint("RS : Need to use RS_set_scan_pattern() before this.\n");
+        memset(&box, 0, sizeof(RSBox));
+        return box;
+    }
+    
     if (H->verb > 1) {
         rsprint("RS_suggest_scan_domain()");
     }
     
     // Extremas of the domain
-    float w = H->vel_desc.ax * (1.0f - powf(H->vel_desc.rx, 0.5f * (float)(H->vel_desc.nx - 3))) / (1.0f - H->vel_desc.rx);
-    float h = H->vel_desc.az * (1.0f - powf(H->vel_desc.rz,        (float)(H->vel_desc.nz - 1))) / (1.0f - H->vel_desc.rz);
-    
+    float w = 0.0f, h = 0.0f;
     float na = 0.0f, ne = 0.0f, nr = 0.0f;
+
+    POSPattern *scan = H->P;
     
-    POSPattern *scan = &H->P;
-    
-    if (POS_is_dbs(scan)) {
+    //if (POS_is_dbs(scan)) {
+    if (H->sim_concept & RSSimulationConceptVerticallyPointingRadar) {
 
         // Go through the DBS pattern
-        float emax = 0.0f;
         float emin = 90.0f;
-        float rmax = 900.0f;
-        float rmin = 300.0f;
+        float emax = 0.0f;
+        float rmin = 100.0f;
+        float rmax = ceilf((2000.0f - rmin) / (2.0f * H->params.range_delta)) * 2.0f * H->params.range_delta;
         
         int j = 0;
         while (j < scan->count) {
@@ -4914,7 +5132,10 @@ RSBox RS_suggest_scan_domain(RSHandle *H, const int nbeams) {
             emax = MAX(emax, scan->positions[j].el);
             j++;
         }
-        rsprint("POS: emin = %.2f   emax = %.2f\n", emin, emax);
+        rsprint("scan_count = %d   emin = %.2f   emax = %.2f   rmin = %.2f   rmax = %.2f\n", scan->count, emin, emax, rmin, rmax);
+
+        w = rmax * cos(emin / 180.0f * M_PI);
+        h = rmax * sin(emax / 180.0f * M_PI);
 
         na = 360.0f;
         ne = (emax - emin) / H->params.antenna_bw_deg;
@@ -4930,6 +5151,10 @@ RSBox RS_suggest_scan_domain(RSHandle *H, const int nbeams) {
         box.size.r = floorf(nr - RS_DOMAIN_PAD - 1.0f) * H->params.dr;
 
     } else {
+
+        // Extremas of the domain
+        w = H->vel_desc.ax * (1.0f - powf(H->vel_desc.rx, 0.5f * (float)(H->vel_desc.nx - 3))) / (1.0f - H->vel_desc.rx);
+        h = H->vel_desc.az * (1.0f - powf(H->vel_desc.rz,        (float)(H->vel_desc.nz - 1))) / (1.0f - H->vel_desc.rz);
 
         // Maximum number of beams plus the padding on one side in azimuth
         na = 0.5f * (float)nbeams + RS_DOMAIN_PAD + 0.5f;

@@ -39,6 +39,7 @@ typedef struct les_grid {
 	float     *x;             // X values
 	float     *y;             // Y values
 	float     *z;             // Z values
+    bool      is_stretched;   // Uniform or stretched
 } LESGrid;
 
 typedef struct _les_value {
@@ -60,14 +61,15 @@ typedef struct _les_table {
 	uint32_t  nn;             // Number of cells in all directions combined
 	uint32_t  nt;             // Number of time steps in a file
     uint32_t  nc;             // Number of cubes in this set
+    bool      is_stretched;   // Uniform or stretched
 	float     tr;             // Replenishing time constant
     float     tp;             // Time period of a table entry
     float     ax;             // Base value "a" in geometric series a r ^ n in x direction
     float     ay;             // Base value "a" in geometric series a r ^ n in y direction
     float     az;             // Base value "a" in geometric series a r ^ n in z direction
-    float     rx;             // Ratio value "r" in the geometric series in x direction
-    float     ry;             // Ratio value "r" in the geometric series in y direction
-    float     rz;             // Ratio value "r" in the geometric series in z direction
+    float     rx;             // Ratio value "r" in the geometric series in x direction. Otherwise, this is delta x.
+    float     ry;             // Ratio value "r" in the geometric series in y direction. Otherwise, this is delta y.
+    float     rz;             // Ratio value "r" in the geometric series in z direction. Otherwise, this is delta z.
     LESValue  data;           // Raw data from LES table
     LESFloat4 *uvwt;          // Remapped (u, v, w, t) data for efficient transfer in RS framework
 } LESTable;

@@ -696,15 +696,15 @@ unsigned int grayToBinary(unsigned int num)
 - (void)validateLineRenderer:(GLuint)number
 {
     if (lineRenderer.positions == NULL) {
-        lineRenderer.positions = (GLfloat *)malloc(4 * 1024 * sizeof(GLfloat));      // Start with 1024 vertices, should be more than enough
-        lineRenderer.segmentOrigins = (GLuint *)malloc(1024 * sizeof(GLuint));
-        lineRenderer.segmentLengths = (GLuint *)malloc(1024 * sizeof(GLuint));
-        lineRenderer.segmentMax = 1024;
+        lineRenderer.positions = (GLfloat *)malloc(4 * 2048 * sizeof(GLfloat));      // Start with 1024 vertices, should be more than enough
+        lineRenderer.segmentOrigins = (GLuint *)malloc(2048 * sizeof(GLuint));
+        lineRenderer.segmentLengths = (GLuint *)malloc(2048 * sizeof(GLuint));
+        lineRenderer.segmentMax = 2048;
     }
     // To add: check if number can fit in the allocated buffer
     if (lineRenderer.segmentMax < lineRenderer.segmentNextOrigin + number) {
         size_t next_vertex_count = ((lineRenderer.segmentMax + number) / 1024) * 1024;
-        NSLog(@"Expanding lineRenderer buffers to %zu vertices ...", next_vertex_count);
+        NSLog(@"Expanding lineRenderer buffers to %zu vertices to accomodate %u lines ...", next_vertex_count, lineRenderer.segmentMax + number);
         lineRenderer.positions = (GLfloat *)realloc(lineRenderer.positions, 4 * next_vertex_count * sizeof(GLfloat));
         lineRenderer.segmentOrigins = (GLuint *)realloc(lineRenderer.segmentOrigins, next_vertex_count);
         lineRenderer.segmentLengths = (GLuint *)realloc(lineRenderer.segmentLengths, next_vertex_count);
@@ -751,7 +751,7 @@ unsigned int grayToBinary(unsigned int num)
         resetModelRotate = GLKMatrix4Identity;
         //resetModelRotate = GLKMatrix4MakeRotation(1.0, 0.0f, 1.0f, 1.0f);
         
-        hudConfigGray = hudConfigShowGrid | hudConfigShowOverlay | hudConfigShowRadarView;
+        hudConfigGray = hudConfigShowGrid | hudConfigShowOverlay | hudConfigShowRadarView | hudConfigShowAnchors;
         hudConfigDecimal = grayToBinary(hudConfigGray);
         
         beamNearZ = 2.0f;
@@ -1237,11 +1237,12 @@ unsigned int grayToBinary(unsigned int num)
     glEnable(GL_DEPTH_TEST);
 
     // The background scatter bodies
+    const float minimumSize = 4.0f;
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     for (i = 0; i < clDeviceCount; i++) {
         glBindVertexArray(bodyRenderer[i].vao);
         glUseProgram(bodyRenderer[i].program);
-        glUniform4f(bodyRenderer[i].sizeUI, pixelsPerUnit * devicePixelRatio, 1.0f, 1.0f, 1.0f);
+        glUniform4f(bodyRenderer[i].sizeUI, minimumSize * pixelsPerUnit * devicePixelRatio, 1.0f, 1.0f, 1.0f);
         glUniform4f(bodyRenderer[i].colorUI, bodyRenderer[i].colormapIndexNormalized, 1.0f, 1.0f, backgroundOpacity);
         
         glUniformMatrix4fv(bodyRenderer[i].mvpUI, 1, GL_FALSE, modelViewProjection.m);
