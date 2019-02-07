@@ -156,3 +156,12 @@ bool POS_is_rhi(POSPattern *scan) {
 bool POS_is_dbs(POSPattern *scan) {
     return scan->mode == 'd' || scan->mode == 'D';
 }
+
+void POS_summary(POSHandle P) {
+    POSPattern *scan = (POSPattern *)P;
+    int j;
+    for (j = 0; j < scan->count; j++) {
+        rsprint("POS: j = %d   el = %5.2f   az = %6.2f   count = %u \n",
+                j, scan->positions[j].el, scan->positions[j].az, scan->positions[j].count);
+    }
+}

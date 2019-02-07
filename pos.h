@@ -22,7 +22,7 @@
 //
 
 
-//typedef void * POSHandle;
+typedef void * POSHandle;
 
 typedef struct pos_pos {
     float       az;
@@ -60,5 +60,7 @@ int POS_parse_from_string(POSPattern *scan, const char *string);
 bool POS_is_ppi(POSPattern *scan);
 bool POS_is_rhi(POSPattern *scan);
 bool POS_is_dbs(POSPattern *scan);
+
+void POS_summary(POSHandle P);
 
 #endif

@@ -50,16 +50,24 @@
 
         cl_context_properties property = (cl_context_properties)shareGroup;
 
-        S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, property, 2);
+        S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, property, 1);
         if (S == NULL) {
             NSLog(@"Some error(s) in RS_init() occurred.");
             [delegate progressUpdated:3.0 message:@"LES / ADM / RCS table not found."];
             return nil;
         }
 
-        POSPattern *scan_pattern = &S->P;
-//        const char scan_string[] = "D:0,75,50/90,75,50/0,90,50";
-        const char scan_string[] = "P:5,-12:12:0.05/10,-12:12:0.05/15,-12:12:0.05";
+        //POSPattern *scan_pattern = &S->P;
+        
+        POSPattern *scan_pattern = (POSPattern *)malloc(sizeof(POSPattern));
+        if (scan_pattern == NULL) {
+            NSLog(@"Unable to allocate memory for scan_pattern");
+            return nil;
+        }
+        RS_set_scan_pattern(S, scan_pattern);
+        
+        const char scan_string[] = "D:0,75,50/90,75,50/0,90,50";
+//        const char scan_string[] = "P:5,-12:12:0.05/10,-12:12:0.05/15,-12:12:0.05";
 //        const char scan_string[] = "R:-3,0.5:25.0:0.05/3,0.5:25.0:0.05";
         
         POS_parse_from_string(scan_pattern, scan_string);
@@ -76,8 +84,11 @@
                 RS_set_density(S, 50.0f);
             }
         } else {
-            RS_set_density(S, 50.0f);
+            RS_set_density(S, 1.0f);
         }
+
+        // Choose an LES configuration
+        RS_set_vel_data_to_config(S, LESConfigFlat);
 
         // Copy out some convenient constants
         nearest_thousand = (size_t)ceilf(1000.0f / S->preferred_multiple) * S->preferred_multiple;
@@ -93,15 +104,19 @@
         
         if (scan_pattern->mode == 'D') {
             
-            RS_set_concept(S, RSSimulationConceptUniformDSDScaledRCS);
+//            RS_set_concept(S, RSSimulationConceptUniformDSDScaledRCS |
+//                           RSSimulationConceptFixedScattererPosition);
+            RS_set_concept(S, RSSimulationConceptUniformDSDScaledRCS |
+                              RSSimulationConceptFixedScattererPosition |
+                              RSSimulationConceptVerticallyPointingRadar);
             
             RS_set_antenna_params(S, 5.0f, 30.0f);                // 5.0-deg beamwidth, 30-dBi gain
             
             RS_set_tx_params(S, 30.0f * 2.0f / 3.0e8f, 10.0e3);   // Resolution in m, power in W
             
-            RS_set_debris_count(S, 1, 512);
+            //RS_set_debris_count(S, 1, 512);
             
-            RS_set_obj_data_to_config(S, OBJConfigLeaf);
+            //RS_set_obj_data_to_config(S, OBJConfigLeaf);
             
         } else {
             
@@ -122,10 +137,9 @@
             RS_set_obj_data_to_config(S, OBJConfigMetalSheet);
             RS_set_obj_data_to_config(S, OBJConfigBrick);
             
+            RS_revise_debris_counts_to_gpu_preference(S);
         }
         
-        RS_revise_debris_counts_to_gpu_preference(S);
-
         RS_set_prt(S, 1.0f / 60.0f);
         
         BOOL useLES = TRUE;
@@ -142,8 +156,8 @@
             if (scan_pattern->mode == 'D') {
                 RS_set_scan_box(S,
                                 box.origin.r, box.origin.r + box.size.r, 30.0f,    // Range
-                                box.origin.a, box.origin.a + box.size.a, 15.0f,    // Azimuth
-                                box.origin.e, box.origin.e + box.size.e, 15.0f);   // Elevation
+                                box.origin.a, box.origin.a + box.size.a, 1.0f,     // Azimuth
+                                box.origin.e, box.origin.e + box.size.e, 1.0f);    // Elevation
             } else {
                 RS_set_scan_box(S,
                                 box.origin.r, box.origin.r + box.size.r, 60.0f,    // Range
@@ -170,6 +184,8 @@
 
 - (void)dealloc
 {
+    POSPattern *scan_pattern = S->P;
+    free(scan_pattern);
 	RS_free(S);
 
 	[super dealloc];
@@ -220,8 +236,9 @@
 {
     RS_advance_beam(S);
     RS_update_colors(S);
-    az_deg = S->P.az;
-    el_deg = S->P.el;
+    POSPattern *scan_pattern = S->P;
+    az_deg = scan_pattern->az;
+    el_deg = scan_pattern->el;
 }
 
 - (void)advanceTimeAndBeamPosition
@@ -229,8 +246,9 @@
     RS_advance_beam(S);
     RS_advance_time(S);
     RS_update_colors(S);
-    az_deg = S->P.az;
-    el_deg = S->P.el;
+    POSPattern *scan_pattern = S->P;
+    az_deg = scan_pattern->az;
+    el_deg = scan_pattern->el;
 }
 
 - (void)randomBeamPosition
