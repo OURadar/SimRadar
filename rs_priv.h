@@ -30,18 +30,6 @@ enum RSBackgroundAttributeKernelArgument {
     RSBackgroundAttributeKernelArgumentSimulationDescription
 };
 
-enum RSEllipsoidAttributeKernelArgument {
-    RSEllipsoidAttributeKernelArgumentPosition,
-    RSEllipsoidAttributeKernelArgumentVelocity,
-    RSEllipsoidAttributeKernelArgumentRadarCrossSection,
-    RSEllipsoidAttributeKernelArgumentRandomSeed,
-    RSEllipsoidAttributeKernelArgumentBackgroundVelocity,
-    RSEllipsoidAttributeKernelArgumentBackgroundVelocityDescription,
-    RSEllipsoidAttributeKernelArgumentEllipsoidRCS,
-    RSEllipsoidAttributeKernelArgumentEllipsoidRCSDescription,
-    RSEllipsoidAttributeKernelArgumentSimulationDescription
-};
-
 enum RSDebrisAttributeKernelArgument {
     RSDebrisAttributeKernelArgumentPosition,
     RSDebrisAttributeKernelArgumentOrientation,

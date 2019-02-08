@@ -25,7 +25,7 @@ void main (void)
 {
 	// Transform the vertex by the model view projection matrix so
 	// the polygon shows up in the right place
-	gl_Position = modelViewProjectionMatrix * vec4(inPosition.xyz, 1.0);
+	gl_Position = modelViewProjectionMatrix * vec4(inPosition.xyz, 1.0f);
 
     //varColor = texture(colormapTexture, vec2(inPosition.w * 250.0f, drawColor.x));
     varColor = texture(colormapTexture, vec2(inColor.x, drawColor.x));
@@ -35,13 +35,14 @@ void main (void)
     if (pingPong) {
         // Make smaller drops even more transparent
         varColor.w *= inColor.x;
+        gl_PointSize = min(40.0f, 150.0f * (inColor.x + 0.5f) * sqrt(drawSize.x / gl_Position.z));
+    } else {
+        gl_PointSize = min(40.0f, 200.0f * sqrt(drawSize.x / gl_Position.z));
     }
 
-    gl_PointSize = min(40.0, 150.0 * (inColor.x + 0.5) * sqrt(drawSize.x / gl_Position.z));
-
-//    gl_PointSize = 8000.0 * (inColor.x + 0.75) * drawSize.x / gl_Position.z;
-//    gl_PointSize = 5000.0 * (inColor.x + 1.0) * drawSize.x / gl_Position.z;
-//    gl_PointSize = 5000.0 * (inColor.x + 1.25) * drawSize.x / gl_Position.z;
-//    gl_PointSize = 10000.0 * drawSize.x / gl_Position.z;
-//    gl_PointSize = 15000.0 * (inColor.x) * drawSize.x / gl_Position.z;
+//    gl_PointSize = 8000.0f * (inColor.x + 0.75f) * drawSize.x / gl_Position.z;
+//    gl_PointSize = 5000.0f * (inColor.x + 1.0f) * drawSize.x / gl_Position.z;
+//    gl_PointSize = 5000.0f * (inColor.x + 1.25f) * drawSize.x / gl_Position.z;
+//    gl_PointSize = 10000.0f * drawSize.x / gl_Position.z;
+//    gl_PointSize = 15000.0f * (inColor.x) * drawSize.x / gl_Position.z;
 }

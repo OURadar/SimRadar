@@ -658,6 +658,78 @@ __kernel void bg_atts(__global float4 *p,
     x[i] = rcs;
 }
 
+//RSSimulationDescriptionWaveNumber         =  4,
+//RSSimulationDescriptionConcept            =  5,
+//RSSimulationDescription6                  =  6,
+//RSSimulationDescriptionSimTic             =  7,
+
+//
+// background attributes with fixed position
+//
+__kernel void fp_atts(__global float4 *p,
+                      __global float4 *v,
+                      __global float4 *x,
+                      __global uint4 *y,
+                      __read_only image3d_t wind_uvw,
+                      const float16 wind_desc,
+                      __constant float4 *drop_rcs,
+                      const float4 drop_rcs_desc,
+                      const float16 sim_desc)
+{
+    const unsigned int i = get_global_id(0);
+    const float wav_num = sim_desc.s4;
+    const float dt = sim_desc.sb;
+
+    // p = position that should be fixed in this module
+    // v = velocity but used as phase
+    // x = scattering magnitude from Cn^2
+    // y = not used
+    
+    float4 pos = p[i];
+    float4 vel = v[i];
+    float4 rcs = x[i];
+
+//    pos.xyz += vel.xyz * dt;
+//
+//    int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
+//
+//    if (is_outside) {
+//        uint4 seed = y[i];
+//        float4 r = rand(&seed);
+//        pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
+//        //pos.xyz = (float3)(fma(r.xy, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT);   // Feed from the bottom
+//        vel = FLOAT4_ZERO;
+//
+//        p[i] = pos;
+//        v[i] = vel;
+//        y[i] = seed;
+//    }
+
+    // Derive the lookup index
+    float4 wind_coord = wind_table_index(pos, wind_desc, sim_desc);
+    vel = read_imagef(wind_uvw, sampler, wind_coord);
+    
+    // Derive phase change
+    //float cn2 = vel.s4;
+
+    float phi = rcs.s2 - wav_num * dot(normalize(pos.xyz), vel.xyz) * dt;
+//    float phi = rcs.s2 - 0.05f;
+//    if (i == 0) {
+//        printf("wav_num = %.4f   vel = %.4v4f\n", wav_num, vel);
+//    }
+
+    float c, s;
+    s = sincos(phi, &c);
+    
+    rcs.s0 = c;
+    rcs.s1 = s;
+    rcs.s2 = atan2(s, c);
+    
+    v[i] = vel;
+    x[i] = rcs;
+    p[i] = pos;
+}
+
 //
 // ellipsoid attributes
 //
@@ -989,6 +1061,10 @@ __kernel void scat_clr(__global float4 *c,
     } else if (draw_mode == 'D') {
         m = clamp(10.0f * native_log10(dot(rcs.s01, rcs.s01) / dot(rcs.s23, rcs.s23)), -3.0f, 3.0f) / 6.0f + 0.5f;
         w = clamp(length(rcs) * 25.0f, 0.0f, 1.0f);
+    } else if (draw_mode == 'P') {
+        // Phase of scatterer from H RCS
+        //m = clamp(fma(atan2pi(rcs.s1, rcs.s0), 0.5f, 0.5f), 0.0f, 1.0f);
+        m = clamp(fma(rcs.s2, 0.5f * M_1_PI_F, 0.5f), 0.0f, 1.0f);
     } else {
         m = 0.5f;
     }

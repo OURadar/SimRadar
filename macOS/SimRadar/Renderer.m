@@ -1028,7 +1028,7 @@ unsigned int grayToBinary(unsigned int num)
         glVertexAttribPointer(bodyRenderer[i].quaternionAI, 4, GL_FLOAT, GL_FALSE, 0, NULL);
         glEnableVertexAttribArray(bodyRenderer[i].quaternionAI);
     }
-    
+
     GLuint vbos[RENDERER_MAX_VBO_GROUPS][8];
     for (i = 0; i < clDeviceCount; i++) {
         vbos[i][0] = bodyRenderer[i].vbo[0];

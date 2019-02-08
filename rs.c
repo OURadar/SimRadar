@@ -491,6 +491,7 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     C->kern_dummy = clCreateKernel(C->prog, "dummy", &ret);                                       CHECK_CL_CREATE_KERNEL
     C->kern_db_rcs = clCreateKernel(C->prog, "db_rcs", &ret);                                     CHECK_CL_CREATE_KERNEL
     C->kern_bg_atts = clCreateKernel(C->prog, "bg_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
+    C->kern_fp_atts = clCreateKernel(C->prog, "fp_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
     C->kern_el_atts = clCreateKernel(C->prog, "el_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
     C->kern_db_atts = clCreateKernel(C->prog, "db_atts", &ret);                                   CHECK_CL_CREATE_KERNEL
     C->kern_scat_clr = clCreateKernel(C->prog, "scat_clr", &ret);                                 CHECK_CL_CREATE_KERNEL
@@ -553,6 +554,7 @@ void RS_worker_free(RSWorker *C) {
     clReleaseKernel(C->kern_dummy);
     clReleaseKernel(C->kern_db_rcs);
     clReleaseKernel(C->kern_bg_atts);
+    clReleaseKernel(C->kern_fp_atts);
     clReleaseKernel(C->kern_el_atts);
     clReleaseKernel(C->kern_db_atts);
     clReleaseKernel(C->kern_scat_clr);
@@ -747,15 +749,30 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
     }
     
     ret = CL_SUCCESS;
-    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
-    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
-    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &C->scat_rcs);
-    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
-    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
-    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
-    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentEllipsoidRCS,                  sizeof(cl_mem),     &C->rcs_ellipsoid);
-    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentEllipsoidRCSDescription,       sizeof(cl_float4),  &C->rcs_ellipsoid_desc);
-    ret |= clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
+    ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
+    ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &C->scat_rcs);
+    ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
+    ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
+    ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
+    ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCS,                  sizeof(cl_mem),     &C->rcs_ellipsoid);
+    ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCSDescription,       sizeof(cl_float4),  &C->rcs_ellipsoid_desc);
+    ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
+    if (ret != CL_SUCCESS) {
+        fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_fp_atts().\n", now());
+        exit(EXIT_FAILURE);
+    }
+
+    ret = CL_SUCCESS;
+    ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
+    ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
+    ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &C->scat_rcs);
+    ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
+    ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
+    ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
+    ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCS,                  sizeof(cl_mem),     &C->rcs_ellipsoid);
+    ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCSDescription,       sizeof(cl_float4),  &C->rcs_ellipsoid_desc);
+    ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_el_atts().\n", now());
         exit(EXIT_FAILURE);
@@ -4662,9 +4679,13 @@ void RS_advance_time(RSHandle *H) {
         
         // Need to refresh some parameters of the background at each time update
         if (H->sim_concept & RSSimulationConceptDraggedBackground) {
-            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,      sizeof(cl_mem),     &C->vel[C->vel_id]);
-            clSetKernelArg(C->kern_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription,   sizeof(cl_float16), &H->sim_desc);
+            clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[C->vel_id]);
+            clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
             clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->origins[0], &C->counts[0], NULL, 0, NULL, &events[i][0]);
+        } else if (H->sim_concept & RSSimulationConceptFixedScattererPosition) {
+            clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[C->vel_id]);
+            clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
+            clEnqueueNDRangeKernel(C->que, C->kern_fp_atts, 1, &C->origins[0], &C->counts[0], NULL, 0, NULL, &events[i][0]);
         } else {
             clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[C->vel_id]);
             clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
