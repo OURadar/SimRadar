@@ -140,6 +140,8 @@
             RS_revise_debris_counts_to_gpu_preference(S);
         }
         
+        RS_set_lambda(S, 3.0e8 / 915.0e6);
+        
         RS_set_prt(S, 1.0f / 60.0f);
         
         BOOL useLES = TRUE;
@@ -340,6 +342,15 @@
             tick_pos[3] = 0.75f;
             tick_pos[4] = 1.00f;
             strcpy(tick_title, "H : V (dB)");
+            break;
+        case 'P':
+            tick_lab = [NSArray arrayWithObjects:@"-3.0", @"-1.5", @"0", @"+1.5", @"+3.0", nil];
+            tick_pos[0] = (-3.0 + M_PI) / (2.0 * M_PI);
+            tick_pos[1] = (-1.5 + M_PI) / (2.0 * M_PI);
+            tick_pos[2] = 0.50f;
+            tick_pos[3] = (1.5 + M_PI) / (2.0 * M_PI);
+            tick_pos[4] = (3.0 + M_PI) / (2.0 * M_PI);
+            strcpy(tick_title, "Phi (radians)");
             break;
         default:
             tick_lab = [NSArray array];

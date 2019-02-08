@@ -76,10 +76,6 @@
     
     [glView.renderer resetViewParameters];
     
-    // Set mkey to some big number so the next selection will be 0
-    mkey = 999;
-    [self chooseNextDrawModeForward:TRUE];
-        
 #ifdef DEBUG
     NSLog(@"Recommend viewing at %.2f m", sim.recommendedViewRange);
 	NSLog(@"Particles wired to view renderer (%s)", commaint(sim.pointCount));
@@ -126,6 +122,7 @@
 		rootSender = sender;
         debrisId = 1;
         //NSLog(@"Allocating recorder ...");
+        mkey = 7;
 	}
 	return self;
 }
@@ -199,7 +196,6 @@
     [glView setBoundsSize:size];
     [glView.renderer setSize:size];
 }
-
 
 #pragma mark -
 #pragma NSResponder
@@ -392,84 +388,13 @@
 
 - (void)chooseNextDrawModeForward:(BOOL)forward
 {
-    char ind = 'U';   // individual attribute for debris: U = uniform, I = individual
-    char mode = 'S';  // S = standard drop bin
-    char trans = 'T'; // T = transparent or O = opaque
-    
-    const int max_mkey = 7;
-    
+    const int max_mkey = 8;
     if (forward) {
         mkey = mkey >= max_mkey ? 0 : mkey + 1;
     } else {
         mkey = mkey <= 0 ? max_mkey : mkey - 1;
     }
-    switch (mkey) {
-        case 0:
-            ind = 'U';
-            mode = 'S';
-            trans = 'O';
-            break;
-
-        case 1:
-            ind = 'U';
-            mode = 'S';
-            trans = 'T';
-            break;
-
-        case 2:
-            ind = 'U';
-            mode = 'A';
-            trans = 'O';
-            break;
-
-        case 3:
-            ind = 'U';
-            mode = 'B';
-            trans = 'O';
-            break;
-
-        case 4:
-            ind = 'U';
-            mode = 'R';
-            trans = 'O';
-            break;
-
-        case 5:
-            ind = 'I';
-            mode = 'H';
-            trans = 'O';
-            break;
-
-        case 6:
-            ind = 'I';
-            mode = 'V';
-            trans = 'O';
-            break;
-
-        case 7:
-            ind = 'I';
-            mode = 'D';
-            trans = 'O';
-            break;
-            
-        default:
-            break;
-    }
-    
-    [sim setScattererColorMode:mode];
-    if (ind == 'I') {
-        [glView.renderer setShowDebrisAttributes:TRUE];
-    } else {
-        [glView.renderer setShowDebrisAttributes:FALSE];
-    }
-    if (trans == 'T') {
-        [glView.renderer setFadeSmallScatterers:TRUE];
-    } else {
-        [glView.renderer setFadeSmallScatterers:FALSE];
-    }
-    [glView.renderer setSubtitleString:[NSString stringWithFormat:@"Draw mode %c%c%c (%d)", ind, trans, mode, mkey]];
-    [glView.renderer setColormapTitle:sim.scattererColorTitle tickLabels:sim.scattererColorTickLabels positions:sim.scattererColorTickPositions];
-    [glView.renderer setViewParametersNeedUpdate:TRUE];
+    [self setDrawMode:mkey];
 }
 
 - (void)scrollWheel:(NSEvent *)event
@@ -574,6 +499,89 @@
     [glView.renderer setAnchorLines:sampleAnchorLines number:sizeof(anchorLines) / sizeof(cl_float4)];
     [glView.renderer setOverlayText:@"No tables" withTitle:@"Error"];
     [glView.renderer showAllHUD];
+}
+
+- (void)setDrawMode:(int)newMode {
+    mkey = newMode;
+
+    char ind = 'U';   // individual attribute for debris: U = uniform, I = individual
+    char mode = 'S';  // S = standard drop bin
+    char trans = 'T'; // T = transparent or O = opaque
+    
+    switch (mkey) {
+        case 0:
+            ind = 'U';
+            mode = 'S';
+            trans = 'O';
+            break;
+            
+        case 1:
+            ind = 'U';
+            mode = 'S';
+            trans = 'T';
+            break;
+            
+        case 2:
+            ind = 'U';
+            mode = 'A';
+            trans = 'O';
+            break;
+            
+        case 3:
+            ind = 'U';
+            mode = 'B';
+            trans = 'O';
+            break;
+            
+        case 4:
+            ind = 'U';
+            mode = 'R';
+            trans = 'O';
+            break;
+            
+        case 5:
+            ind = 'I';
+            mode = 'H';
+            trans = 'O';
+            break;
+            
+        case 6:
+            ind = 'I';
+            mode = 'V';
+            trans = 'O';
+            break;
+            
+        case 7:
+            ind = 'I';
+            mode = 'D';
+            trans = 'O';
+            break;
+            
+        case 8:
+            ind = 'I';
+            mode = 'P';
+            trans = 'O';
+            break;
+            
+        default:
+            break;
+    }
+    
+    [sim setScattererColorMode:mode];
+    NSLog(@"==> %s", sim.scattererColorTitle);
+    if (ind == 'I') {
+        [glView.renderer setShowDebrisAttributes:TRUE];
+    } else {
+        [glView.renderer setShowDebrisAttributes:FALSE];
+    }
+    if (trans == 'T') {
+        [glView.renderer setFadeSmallScatterers:TRUE];
+    } else {
+        [glView.renderer setFadeSmallScatterers:FALSE];
+    }
+    [glView.renderer setSubtitleString:[NSString stringWithFormat:@"Draw mode %c%c%c (%d)", ind, trans, mode, mkey]];
+    [glView.renderer setColormapTitle:sim.scattererColorTitle tickLabels:sim.scattererColorTickLabels positions:sim.scattererColorTickPositions];
+    [glView.renderer setViewParametersNeedUpdate:TRUE];
 }
 
 @end

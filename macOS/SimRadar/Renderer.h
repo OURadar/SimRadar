@@ -16,7 +16,7 @@
 #define RENDERER_MAX_DEBRIS_TYPES           8           // Actual plus one
 #define RENDERER_MAX_CL_DEVICE              1
 #define RENDERER_MAX_VBO_GROUPS             8
-#define RENDERER_DEFAULT_BODY_COLOR_INDEX   27          // Default colormap index
+#define RENDERER_DEFAULT_BODY_COLOR_INDEX   1           // Default colormap index
 #define RENDERER_FBO_COUNT                  5
 
 #ifndef CLAMP

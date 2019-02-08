@@ -336,6 +336,7 @@ typedef struct _rs_worker {
     cl_kernel              kern_io;
     cl_kernel              kern_db_rcs;
     cl_kernel              kern_bg_atts;
+    cl_kernel              kern_fp_atts;
     cl_kernel              kern_el_atts;
     cl_kernel              kern_db_atts;
     cl_kernel              kern_scat_clr;

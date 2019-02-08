@@ -41,5 +41,6 @@
 - (IBAction)setSizeTo4K:(id)sender;
 
 - (void)emptyDomain;
+- (void)setDrawMode:(int)mode;
 
 @end
