@@ -2861,7 +2861,7 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
         table.y_ = leslie->ny;    table.ym = 0.0f;    table.ys = 1.0f / leslie->ry;    table.yo = (float)((leslie->ny - 1) / 2);
         table.z_ = leslie->nz;    table.zm = 0.0f;    table.zs = 1.0f / leslie->rz;    table.zo = 0.0f;
         if (H->verb > 0 && H->vel_idx == 0) {
-            rsprint("LES grid using uniform grid spacing %.2f, %.2f, %.2f m\n", leslie->rx, leslie->ry, leslie->rz);
+            rsprint("LES uniform grid spacing using %.2f, %.2f, %.2f m\n", leslie->rx, leslie->ry, leslie->rz);
             rsprint("GPU LES[%2d/%2d] @ X:[ %.2f - %.2f ] m   Y:[ %.2f - %.2f ] m   Z:[ %.2f - %.2f ] m   (%d, %s MB)\n",
                     H->vel_idx, H->vel_count,
                     table.xo, table.xm,
@@ -4089,109 +4089,110 @@ void RS_populate(RSHandle *H) {
                 }
             } // for (w = 0; w < H->num_workers; w++) ...
         } // for (k = 0; k < H->num_types; k++) ...
-    } // if (H->sim_concept & RSSimulationConceptFixedScattererPosition) ...
-    
-    // Volume of the simulation domain (m^3)
-    float vol = H->sim_desc.s[RSSimulationDescriptionBoundSizeX] * H->sim_desc.s[RSSimulationDescriptionBoundSizeY] * H->sim_desc.s[RSSimulationDescriptionBoundSizeZ];
-    
-    // Re-initialize random seed
-    srand(H->random_seed + H->random_seed);
-    
-    // Parameterized drop radius as scat_pos.w if DSD has been set
-    // May want to add maximum relaxation time of each drop size
-    // Potential places: vel.w, aux.s2
-    float a;
-    int bin;
-    if (H->dsd_name != RSDropSizeDistributionUndefined) {
-        float drops_per_scat = (vol * H->dsd_nd_sum) / H->counts[0];
         
-        sprintf(H->summary + strlen(H->summary), "Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->counts[0]));
-        rsprint("Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->counts[0]));
+        // Volume of the simulation domain (m^3)
+        float vol = H->sim_desc.s[RSSimulationDescriptionBoundSizeX] * H->sim_desc.s[RSSimulationDescriptionBoundSizeY] * H->sim_desc.s[RSSimulationDescriptionBoundSizeZ];
         
-        // Store a copy of concentration scale in simulation description
-        H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] = sqrt(drops_per_scat);
+        // Re-initialize random seed
+        srand(H->random_seed + H->random_seed);
         
-        if (H->sim_concept & RSSimulationConceptUniformDSDScaledRCS) {
-            for (w = 0; w < H->num_workers; w++) {
-                i = (int)(H->offset[w] + H->workers[w].origins[0]);
-                for (n = 0; n < H->workers[w].counts[0]; n++) {
-                    a = (float)rand() / RAND_MAX;
-                    bin = (int)(a * (float)H->dsd_count);
-                    H->dsd_pop[bin]++;
-                    H->scat_pos[i].w = H->dsd_r[bin];                                  // set the drop radius
-                    H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // set the dsd bin index (temporary)
-                    
-                    i++;
-                }
-            }
-        } else {
-            for (w = 0; w < H->num_workers; w++) {
-                i = (int)(H->offset[w] + H->workers[w].origins[0]);
-                for (n = 0; n < H->workers[w].counts[0]; n++) {
-                    a = (float)rand() / RAND_MAX;
-                    k = H->dsd_count;
-                    bin = 0;
-                    while (k > 0) {
-                        k--;
-                        if (a >= H->dsd_cdf[k]) {
-                            bin = k;
-                            break;
-                        }
+        // Parameterized drop radius as scat_pos.w if DSD has been set
+        // May want to add maximum relaxation time of each drop size
+        // Potential places: vel.w, aux.s2
+        float a;
+        int bin;
+        if (H->dsd_name != RSDropSizeDistributionUndefined) {
+            float drops_per_scat = (vol * H->dsd_nd_sum) / H->counts[0];
+            
+            sprintf(H->summary + strlen(H->summary), "Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->counts[0]));
+            rsprint("Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->counts[0]));
+            
+            // Store a copy of concentration scale in simulation description
+            H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale] = sqrt(drops_per_scat);
+            
+            if (H->sim_concept & RSSimulationConceptUniformDSDScaledRCS) {
+                for (w = 0; w < H->num_workers; w++) {
+                    i = (int)(H->offset[w] + H->workers[w].origins[0]);
+                    for (n = 0; n < H->workers[w].counts[0]; n++) {
+                        a = (float)rand() / RAND_MAX;
+                        bin = (int)(a * (float)H->dsd_count);
+                        H->dsd_pop[bin]++;
+                        H->scat_pos[i].w = H->dsd_r[bin];                                  // set the drop radius
+                        H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // set the dsd bin index (temporary)
+                        
+                        i++;
                     }
-                    H->dsd_pop[bin]++;
-                    H->scat_pos[i].w = H->dsd_r[bin];                                  // set the drop radius
-                    H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // set the dsd bin index
-                    
-                    i++;
                 }
+            } else {
+                for (w = 0; w < H->num_workers; w++) {
+                    i = (int)(H->offset[w] + H->workers[w].origins[0]);
+                    for (n = 0; n < H->workers[w].counts[0]; n++) {
+                        a = (float)rand() / RAND_MAX;
+                        k = H->dsd_count;
+                        bin = 0;
+                        while (k > 0) {
+                            k--;
+                            if (a >= H->dsd_cdf[k]) {
+                                bin = k;
+                                break;
+                            }
+                        }
+                        H->dsd_pop[bin]++;
+                        H->scat_pos[i].w = H->dsd_r[bin];                                  // set the drop radius
+                        H->scat_aux[i].s2 = ((float)bin + 0.5f) /  (float)(H->dsd_count);  // set the dsd bin index
+                        
+                        i++;
+                    }
+                }
+                
+#if defined(DEBUG_DSD)
+                
+                // Replace a few for debugging purpose
+                H->scat_pos[0].w = 0.0025f;
+                H->scat_pos[1].w = 0.001f;
+                H->scat_pos[2].w = 0.0005f;
+                
+#endif
+                
             }
             
-#if defined(DEBUG_DSD)
-
-            // Replace a few for debugging purpose
-            H->scat_pos[0].w = 0.0025f;
-            H->scat_pos[1].w = 0.001f;
-            H->scat_pos[2].w = 0.0005f;
-
-#endif
-
-        }
-        
-        sprintf(H->summary + strlen(H->summary),
-                "DSD Specifications:\n");
-        for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
-            sprintf(H->summary + strlen(H->summary), "  o %.2f mm - P %.5f / %s particles\n", 2000.0f * H->dsd_r[i], (float)H->dsd_pop[i] / (float)H->counts[0], commaint(H->dsd_pop[i]));
-        }
-        if (H->dsd_count > 8) {
-            sprintf(H->summary + strlen(H->summary), "  o  :      -      :     /  :     /\n");
-            sprintf(H->summary + strlen(H->summary), "  o  :      -      :     /  :     /\n");
-            i = MAX(4, H->dsd_count - 1);
-        }
-        for (; i < H->dsd_count; i++) {
-            sprintf(H->summary + strlen(H->summary), "  o %.2f mm - P %.5f / %s particles\n", 2000.0f * H->dsd_r[i], (float)H->dsd_pop[i] / (float)H->counts[0], commaint(H->dsd_pop[i]));
-        }
-        
-        if (H->verb) {
-            rsprint("Actual DSD Specifications:");
+            sprintf(H->summary + strlen(H->summary),
+                    "DSD Specifications:\n");
             for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
-                printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %s particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->counts[0], commaint(H->dsd_pop[i]));
+                sprintf(H->summary + strlen(H->summary), "  o %.2f mm - P %.5f / %s particles\n", 2000.0f * H->dsd_r[i], (float)H->dsd_pop[i] / (float)H->counts[0], commaint(H->dsd_pop[i]));
             }
             if (H->dsd_count > 8) {
-                printf(RS_INDENT "o  :      -      :     /  :     /\n");
-                printf(RS_INDENT "o  :      -      :     /  :     /\n");
+                sprintf(H->summary + strlen(H->summary), "  o  :      -      :     /  :     /\n");
+                sprintf(H->summary + strlen(H->summary), "  o  :      -      :     /  :     /\n");
                 i = MAX(4, H->dsd_count - 1);
             }
             for (; i < H->dsd_count; i++) {
-                printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %s particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->counts[0], commaint(H->dsd_pop[i]));
+                sprintf(H->summary + strlen(H->summary), "  o %.2f mm - P %.5f / %s particles\n", 2000.0f * H->dsd_r[i], (float)H->dsd_pop[i] / (float)H->counts[0], commaint(H->dsd_pop[i]));
             }
+            
+            if (H->verb) {
+                rsprint("Actual DSD Specifications:");
+                for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
+                    printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %s particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->counts[0], commaint(H->dsd_pop[i]));
+                }
+                if (H->dsd_count > 8) {
+                    printf(RS_INDENT "o  :      -      :     /  :     /\n");
+                    printf(RS_INDENT "o  :      -      :     /  :     /\n");
+                    i = MAX(4, H->dsd_count - 1);
+                }
+                for (; i < H->dsd_count; i++) {
+                    printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %s particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->counts[0], commaint(H->dsd_pop[i]));
+                }
+            }
+        } else {
+            rsprint("INFO: No DSD specified. The meteorological scatterers do not return any power.");
+            float drops_per_scat = (vol * 1000.0f) / H->counts[0];
+            
+            sprintf(H->summary + strlen(H->summary), "Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->counts[0]));
+            rsprint("Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->counts[0]));
         }
-    } else {
-        rsprint("INFO: No DSD specified. The meteorological scatterers do not return any power.");
-        float drops_per_scat = (vol * 1000.0f) / H->counts[0];
         
-        sprintf(H->summary + strlen(H->summary), "Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->counts[0]));
-        rsprint("Drops / scatterer = %s  (%s / %s)\n", commafloat(drops_per_scat), commafloat((vol * H->dsd_nd_sum)), commaint(H->counts[0]));
-    }
+    } // if (H->sim_concept & RSSimulationConceptFixedScattererPosition) ...
     
 #if defined(DEBUG_RCS)
 

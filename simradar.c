@@ -802,12 +802,14 @@ int main(int argc, char *argv[]) {
         RS_set_random_seed(S, user.seed);
     }
 
-    if (user.dsd_count > 0) {
-        RS_set_dsd_to_mp_with_sizes(S, user.dsd_sizes, user.dsd_count);
-    } else {
-        RS_set_dsd_to_mp(S);
+    if (!(S->sim_concept & RSSimulationConceptFixedScattererPosition)) {
+        if (user.dsd_count > 0) {
+            RS_set_dsd_to_mp_with_sizes(S, user.dsd_sizes, user.dsd_count);
+        } else {
+            RS_set_dsd_to_mp(S);
+        }
     }
-
+    
     //RS_set_vel_data_to_config(S, LESConfigSuctionVortices);
     RS_set_vel_data_to_config(S, LESConfigFlat);
 

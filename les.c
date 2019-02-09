@@ -180,7 +180,6 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
         h->rx = 1.0e3f * (h->data_grid->x[1]                                   - h->data_grid->x[0]);
         h->ry = 1.0e3f * (h->data_grid->y[h->data_grid->nx]                    - h->data_grid->y[0]);
         h->rz = 1.0e3f * (h->data_grid->z[h->data_grid->nx * h->data_grid->ny] - h->data_grid->z[0]);
-        rsprint("LES Grid Spacing = %.2f x %.2f x %.2f\n", h->rx, h->ry, h->rz);
         h->tp = 60.0f;
     } else {
         h->v0 = 225.0f;
@@ -192,7 +191,12 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
         h->rz = 1.0f;
         h->tp = 5.0f;
     }
-    
+    rsprint("LES Grid Spacing = %.2f / %.2f   %.2f / %.2f   %.2f / %.2f  (%s)\n",
+            h->ax, h->rx,
+            h->ay, h->ry,
+            h->az, h->rz,
+            h->data_grid->is_stretched ? "streched" : "uniform");
+
     // Go through and check available tables
     k = 0;
     while (true) {
@@ -498,6 +502,7 @@ LESGrid *LES_data_grid_create_from_enclosing_grid(LESGrid *grid, const int ox, c
 	subgrid->nx = grid->nx - (2 * ox);
 	subgrid->ny = grid->ny - (2 * oy);
 	subgrid->nz = grid->nz;
+    subgrid->is_stretched = grid->is_stretched;
 	size_t count = subgrid->nx * subgrid->ny * subgrid->nz;
     //fprintf(stderr, "subgrid [ %d %d %d ]\n", subgrid->nx, subgrid->ny, subgrid->nz);
 	subgrid->x = (float *)malloc(count * sizeof(float));
@@ -756,6 +761,7 @@ LESTable *LES_get_frame(const LESHandle i, const int n) {
         // What to read in next
         h->req = n == h->ncubes - 1 ? 0 : n + 1;
     }
+    table->is_stretched = h->data_grid->is_stretched;
     return table;
 }
 

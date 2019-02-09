@@ -214,7 +214,9 @@
 
 - (void)populate
 {
-    RS_set_dsd_to_mp(S);
+    if (!(S->sim_concept & RSSimulationConceptFixedScattererPosition)) {
+        RS_set_dsd_to_mp(S);
+    }
 
     RS_populate(S);
 
