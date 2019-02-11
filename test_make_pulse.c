@@ -393,15 +393,15 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
     err = CL_SUCCESS;
-    ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &pos);
-    ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &vel);
-    ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &rcs);
-    ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &rnd);
-    ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &les);
-    ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_mem),     &les_desc);
-    ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentEllipsoidRCS,                  sizeof(cl_mem),     &angular_weight);
-    ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentEllipsoidRCSDescription,       sizeof(cl_float4),  &angular_weight_desc);
-    ret |= clSetKernelArg(kernel_el_atts, RSEllipsoidAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
+    ret |= clSetKernelArg(kernel_el_atts, RSBackgroundAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &pos);
+    ret |= clSetKernelArg(kernel_el_atts, RSBackgroundAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &vel);
+    ret |= clSetKernelArg(kernel_el_atts, RSBackgroundAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &rcs);
+    ret |= clSetKernelArg(kernel_el_atts, RSBackgroundAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &rnd);
+    ret |= clSetKernelArg(kernel_el_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &les);
+    ret |= clSetKernelArg(kernel_el_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_mem),     &les_desc);
+    ret |= clSetKernelArg(kernel_el_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCS,                  sizeof(cl_mem),     &angular_weight);
+    ret |= clSetKernelArg(kernel_el_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCSDescription,       sizeof(cl_float4),  &angular_weight_desc);
+    ret |= clSetKernelArg(kernel_el_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel el_atts().\n", now());
         exit(EXIT_FAILURE);

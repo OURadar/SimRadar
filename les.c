@@ -173,7 +173,7 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
         h->rz = 1.0f;
         h->tp = 5.0f;
     } else if (!strcmp(config, LESConfigFlat)) {
-        h->v0 = 100.0f;
+        h->v0 = 25.0f;
         h->ax = 0.0f;
         h->ay = 0.0f;
         h->az = 0.0f;

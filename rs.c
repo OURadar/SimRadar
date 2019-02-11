@@ -1359,7 +1359,7 @@ void RS_set_concept(RSHandle *H, RSSimulationConcept c) {
 char *RS_simulation_concept_string(RSHandle *H) {
     static char string[32];
     sprintf(string,
-            "Concepts used: %s%s%s%s%s%s\n",
+            "Concepts used: %s%s%s%s%s%s",
             H->sim_concept & RSSimulationConceptBoundedParticleVelocity ? "B" : "",
             H->sim_concept & RSSimulationConceptDraggedBackground ? "D" : "",
             H->sim_concept & RSSimulationConceptTransparentBackground ? "T" : "",
