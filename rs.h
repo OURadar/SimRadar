@@ -475,6 +475,8 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count, const cl_uint group_
 #pragma mark Radar and Simulation Parameters
 
 void RS_set_concept(RSHandle *H, RSSimulationConcept c);
+char *RS_simulation_concept_string(RSHandle *);
+char *RS_simulation_concept_bulleted_string(RSHandle *H);
 
 void RS_set_prt(RSHandle *H, const RSfloat prt);
 void RS_set_lambda(RSHandle *H, const RSfloat lambda);

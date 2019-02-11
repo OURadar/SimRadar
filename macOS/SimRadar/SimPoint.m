@@ -104,20 +104,16 @@
         
         if (scan_pattern->mode == 'D') {
             
-//            RS_set_concept(S, RSSimulationConceptUniformDSDScaledRCS |
-//                           RSSimulationConceptFixedScattererPosition);
-            RS_set_concept(S, RSSimulationConceptUniformDSDScaledRCS |
-                              RSSimulationConceptFixedScattererPosition |
+            RS_set_concept(S, RSSimulationConceptFixedScattererPosition |
                               RSSimulationConceptVerticallyPointingRadar);
             
             RS_set_antenna_params(S, 5.0f, 30.0f);                // 5.0-deg beamwidth, 30-dBi gain
             
             RS_set_tx_params(S, 30.0f * 2.0f / 3.0e8f, 10.0e3);   // Resolution in m, power in W
             
-            //RS_set_debris_count(S, 1, 512);
-            
-            //RS_set_obj_data_to_config(S, OBJConfigLeaf);
-            
+            RS_set_lambda(S, 3.0e8 / 915.0e6);
+
+            RS_set_prt(S, 1.0f / 120.0f);
         } else {
             
             RS_set_concept(S,
@@ -138,11 +134,9 @@
             RS_set_obj_data_to_config(S, OBJConfigBrick);
             
             RS_revise_debris_counts_to_gpu_preference(S);
+
+            RS_set_prt(S, 1.0f / 60.0f);
         }
-        
-        RS_set_lambda(S, 3.0e8 / 915.0e6);
-        
-        RS_set_prt(S, 1.0f / 60.0f);
         
         BOOL useLES = TRUE;
         

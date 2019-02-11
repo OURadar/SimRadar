@@ -1356,6 +1356,44 @@ void RS_set_concept(RSHandle *H, RSSimulationConcept c) {
 }
 
 
+char *RS_simulation_concept_string(RSHandle *H) {
+    static char string[32];
+    sprintf(string,
+            "Concepts used: %s%s%s%s%s%s\n",
+            H->sim_concept & RSSimulationConceptBoundedParticleVelocity ? "B" : "",
+            H->sim_concept & RSSimulationConceptDraggedBackground ? "D" : "",
+            H->sim_concept & RSSimulationConceptTransparentBackground ? "T" : "",
+            H->sim_concept & RSSimulationConceptUniformDSDScaledRCS ? "U" : "",
+            H->sim_concept & RSSimulationConceptFixedScattererPosition ? "F" : "",
+            H->sim_concept & RSSimulationConceptVerticallyPointingRadar ? "V" :"");
+    return string;
+}
+
+
+char *RS_simulation_concept_bulleted_string(RSHandle *H) {
+    static char string[1024];
+    sprintf(string, "Concepts used:\n");
+    if (H->sim_concept & RSSimulationConceptBoundedParticleVelocity) {
+        sprintf(string + strlen(string), RS_INDENT "o B - Bounded Particle Velocity\n");
+    }
+    if (H->sim_concept & RSSimulationConceptDraggedBackground) {
+        sprintf(string + strlen(string), RS_INDENT "o D - Dragged Meteorological Scatterers\n");
+    }
+    if (H->sim_concept & RSSimulationConceptTransparentBackground) {
+        sprintf(string + strlen(string), RS_INDENT "o T - Transparent Meteorological Scatterers\n");
+    }
+    if (H->sim_concept & RSSimulationConceptUniformDSDScaledRCS) {
+        sprintf(string + strlen(string), RS_INDENT "o U - Uniform DSD with Scaled RCS\n");
+    }
+    if (H->sim_concept & RSSimulationConceptFixedScattererPosition) {
+        sprintf(string + strlen(string), RS_INDENT "o F - Fixed Scatterer Positions\n");
+    }
+    if (H->sim_concept & RSSimulationConceptVerticallyPointingRadar) {
+        sprintf(string + strlen(string), RS_INDENT "o V - Vertically Pointing Radar\n");
+    }
+    return string;
+}
+
 void RS_set_prt(RSHandle *H, const RSfloat prt) {
     
     //    RSfloat tic_toc_left = H->sim_toc - H->sim_tic;
@@ -1441,7 +1479,7 @@ void RS_set_scan_box(RSHandle *H,
     }
     
     if (H->verb) {
-        rsprint("Mode 0x%x\n", H->sim_concept);
+        rsprint("Simulation concept in hex = 0x%x\n", H->sim_concept);
     }
     //rsprint("%.2f  %.2f  %.2f  /  %.2f  %.2f  %.2f\n", azimuth_start, azimuth_end, azimuth_delta, elevation_start, elevation_end, elevation_delta);
     
@@ -1581,6 +1619,11 @@ void RS_set_scan_box(RSHandle *H,
         
         naz = 360;
         nel = 1;
+        
+        if (H->P) {
+            POSPattern *pattern = (POSPattern *)H->P;
+            nel = pattern->count;
+        }
 
     } else {
         // Azimuth
@@ -1685,20 +1728,15 @@ void RS_set_scan_box(RSHandle *H,
             "Work domain @\n  R:[  %6.2f ~  %6.2f ] km  (%d gates)\n  E:[  %6.2f ~  %6.2f ] deg  (%d rays)\n  A:[ %+7.2f ~ %+7.2f ] deg  (%d rays)\n",
             1.0e-3 * r_lo, 1.0e-3 * r_hi, H->params.range_count,
             el_lo, el_hi, nel,
-            az_lo, az_hi, naz);
+            az_lo, az_hi, H->sim_concept & RSSimulationConceptVerticallyPointingRadar ? nel : naz);
     sprintf(H->summary + strlen(H->summary),
             "==\n  X:[ %7.2f ~ %7.2f ]  (%.2f) m\n  Y:[ %7.2f ~ %7.2f ]  (%.2f) m\n  Z:[ %7.2f ~ %7.2f ]  (%.2f) m\n",
             xmin, xmax, H->sim_desc.s[RSSimulationDescriptionBoundSizeX],
             ymin, ymax, H->sim_desc.s[RSSimulationDescriptionBoundSizeY],
             zmin, zmax, H->sim_desc.s[RSSimulationDescriptionBoundSizeZ]);
     sprintf(H->summary + strlen(H->summary),
-            "Concepts used: %s%s%s%s%s\n",
-            H->sim_concept & RSSimulationConceptBoundedParticleVelocity ? "B" : "",
-            H->sim_concept & RSSimulationConceptDraggedBackground ? "D" : "",
-            H->sim_concept & RSSimulationConceptTransparentBackground ? "T" : "",
-            H->sim_concept & RSSimulationConceptUniformDSDScaledRCS ? "U" : "",
-            H->sim_concept & RSSimulationConceptFixedScattererPosition ? "F" : "");
-    
+            "Concepts used: %s\n", RS_simulation_concept_string(H));
+
     if (H->verb) {
         rsprint("User domain @ R:[ %5.2f ~ %5.2f ] km   E:[ %5.2f ~ %5.2f ] deg   A:[ %+7.2f ~ %+7.2f ] deg\n",
                 1.0e-3 * H->params.range_start, 1e-3 * H->params.range_end,
@@ -1719,25 +1757,7 @@ void RS_set_scan_box(RSHandle *H,
         if (H->sim_concept == RSSimulationConceptNull) {
             rsprint("No special concepts are active.\n");
         } else {
-            rsprint("Concepts used:\n");
-            if (H->sim_concept & RSSimulationConceptBoundedParticleVelocity) {
-                printf(RS_INDENT "o B - Bounded Particle Velocity\n");
-            }
-            if (H->sim_concept & RSSimulationConceptDraggedBackground) {
-                printf(RS_INDENT "o D - Dragged Meteorological Scatterers\n");
-            }
-            if (H->sim_concept & RSSimulationConceptTransparentBackground) {
-                printf(RS_INDENT "o T - Transparent Meteorological Scatterers\n");
-            }
-            if (H->sim_concept & RSSimulationConceptUniformDSDScaledRCS) {
-                printf(RS_INDENT "o U - Uniform DSD with Scaled RCS\n");
-            }
-            if (H->sim_concept & RSSimulationConceptFixedScattererPosition) {
-                printf(RS_INDENT "o F - Fixed Scatterer Positions\n");
-            }
-            if (H->sim_concept & RSSimulationConceptVerticallyPointingRadar) {
-                printf(RS_INDENT "o V - Vertically Pointing Radar\n");
-            }
+            rsprint("%s", RS_simulation_concept_bulleted_string(H));
         }
     }
     
@@ -5295,18 +5315,20 @@ void RS_compute_rcs_ellipsoids(RSHandle *H) {
             memcpy(table_copy, table, n * sizeof(cl_float4));
             memset(table, 0, n * sizeof(cl_float4));
             
-            snprintf(H->summary + strlen(H->summary), sizeof(H->summary), "Drop RCS Scaling:\n");
-            for (i = 0; i < H->dsd_count; i++) {
-                k = (int)(H->dsd_r[i] * 20000.0f) - 5;
-                s = sqrtf(H->dsd_pdf[i] / p);
-                if (H->verb) {
-                    printf(RS_INDENT "o %.2f mm scale by %.4f / %.4f = %.4f = %.2f dB  k = %d\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], p, s, 20.0f * log10f(s), k);
+            if (H->dsd_count) {
+                snprintf(H->summary + strlen(H->summary), sizeof(H->summary), "Drop RCS Scaling:\n");
+                for (i = 0; i < H->dsd_count; i++) {
+                    k = (int)(H->dsd_r[i] * 20000.0f) - 5;
+                    s = sqrtf(H->dsd_pdf[i] / p);
+                    if (H->verb) {
+                        printf(RS_INDENT "o %.2f mm scale by %.4f / %.4f = %.4f = %.2f dB  k = %d\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], p, s, 20.0f * log10f(s), k);
+                    }
+                    snprintf(H->summary + strlen(H->summary), sizeof(H->summary), "  o %.2f mm %.5f -> %.2f dB\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], 20.0f * log10f(s));
+                    table[k].s0 = table_copy[k].s0 * s;
+                    table[k].s1 = table_copy[k].s1 * s;
+                    table[k].s2 = table_copy[k].s2 * s;
+                    table[k].s3 = table_copy[k].s3 * s;
                 }
-                snprintf(H->summary + strlen(H->summary), sizeof(H->summary), "  o %.2f mm %.5f -> %.2f dB\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], 20.0f * log10f(s));
-                table[k].s0 = table_copy[k].s0 * s;
-                table[k].s1 = table_copy[k].s1 * s;
-                table[k].s2 = table_copy[k].s2 * s;
-                table[k].s3 = table_copy[k].s3 * s;
             }
             
 #ifdef DEBUG_HEAVY
