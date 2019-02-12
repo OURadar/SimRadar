@@ -18,6 +18,7 @@
 // Private structure
 
 typedef struct _les_mem {
+    char      config[256];
     char      data_path[1024];
     char      files[1024][1024];
     size_t    nfiles;
@@ -29,6 +30,8 @@ typedef struct _les_mem {
 	float     tr;
     float     tp;
     float     v0;
+    float     p0;
+    float     t0;
     float     ax;             // Base value "a" in geometric series a r ^ n in x direction
     float     ay;             // Base value "a" in geometric series a r ^ n in y direction
     float     az;             // Base value "a" in geometric series a r ^ n in z direction
@@ -130,6 +133,7 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
     }
     memset(h, 0, sizeof(LESMem));
 
+    snprintf(h->config, sizeof(h->config), "%s", config);
     snprintf(h->data_path, sizeof(h->data_path), "%s/%s", les_path, config);
     h->ibuf = 0;
     h->tr = 50.0f;
@@ -155,6 +159,8 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
     if (!strcmp(config, LESConfigSuctionVortices) || !strcmp(config, LESConfigSuctionVorticesLarge)) {
         // Stretched grid
         h->v0 = 100.0f;
+        h->p0 = h->v0 * h->v0;
+        h->t0 = h->v0 * h->v0;
         h->ax = 2.0f;
         h->ay = 2.0f;
         h->az = 2.0f;
@@ -165,6 +171,8 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
         h->data_grid->is_stretched = true;
     } else if (!strcmp(config, LESConfigTwoCell)) {
         h->v0 = 225.0f;
+        h->p0 = h->v0 * h->v0;
+        h->t0 = h->v0 * h->v0;
         h->ax = 1.0f;
         h->ay = 1.0f;
         h->az = 1.0f;
@@ -174,6 +182,8 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
         h->tp = 5.0f;
     } else if (!strcmp(config, LESConfigFlat)) {
         h->v0 = 25.0f;
+        h->p0 = 1.0f;                 // p is used as cn2
+        h->t0 = h->v0 * h->v0;
         h->ax = 0.0f;
         h->ay = 0.0f;
         h->az = 0.0f;
@@ -182,7 +192,9 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
         h->rz = 1.0e3f * (h->data_grid->z[h->data_grid->nx * h->data_grid->ny] - h->data_grid->z[0]);
         h->tp = 60.0f;
     } else {
-        h->v0 = 225.0f;
+        h->v0 = 100.0f;
+        h->p0 = h->v0 * h->v0;
+        h->t0 = h->v0 * h->v0;
         h->ax = 1.0f;
         h->ay = 1.0f;
         h->az = 1.0f;
@@ -308,8 +320,6 @@ void *LES_background_read(LESHandle i) {
     int frame;
     LESTable *table;
 
-    const float v0 = h->v0;
-
     // Read ahead
     while (h->active) {
         frame = h->req;
@@ -373,11 +383,11 @@ void *LES_background_read(LESHandle i) {
 
         // Scale back & remap
         for (int k = 0; k < table->nn; k++) {
-            table->data.u[k] *= v0;
-            table->data.v[k] *= v0;
-            table->data.w[k] *= v0;
-            table->data.p[k] *= v0 * v0;
-            table->data.t[k] *= v0 * v0;
+            table->data.u[k] *= h->v0;
+            table->data.v[k] *= h->v0;
+            table->data.w[k] *= h->v0;
+            table->data.p[k] *= h->p0;
+            table->data.t[k] *= h->t0;
             table->uvwt[k][0] = table->data.u[k];
             table->uvwt[k][1] = table->data.v[k];
             table->uvwt[k][2] = table->data.w[k];
