@@ -15,6 +15,9 @@
 #define RANGE_GATES   (9)
 #define GROUP_ITEMS   (64)
 #define GROUP_COUNTS  (64)
+#define GREEN_COLOR   "\033[38;5;118m"
+#define RED_COLOR     "\033[38;5;203m"
+#define NO_COLOR      "\033[0m"
 
 enum {
 	TEST_N0NE         = 0,
@@ -32,7 +35,7 @@ cl_float4 two_way_effects(const cl_float4 sig_in, const float range, const float
     float atten = powf(range, -2.0f);
     float phase = range * wav_num;
     float c = cosf(phase), s = sinf(phase);
-    cl_float4 tmp = complex_multiply(sig_in, (cl_float4){{c, s, c, s}});
+    cl_float4 tmp = complex_multiply(sig_in, (cl_float4){{c, -s, c, -s}});
     tmp.s0 *= atten;
     tmp.s1 *= atten;
     tmp.s2 *= atten;
@@ -608,18 +611,21 @@ int main(int argc, char **argv)
     }
 	printf("\n");
 	printf("Deltas    :");
-	float delta = 0.0f, avg_delta = 0.0f;
+	float delta = 0.0f, square = 0.0f, avg_delta = 0.0f, avg_square = 0.0f;
 	for (j=0; j<MIN(16, R.range_count); j++) {
 		delta = (cpu_pulse[j].s0 - host_rcs[j].s0) / MAX(1.0f, host_rcs[j].s0);
-		avg_delta += delta;
-		printf(" %.1e", delta);
+        square = (cpu_pulse[j].s0 * cpu_pulse[j].s0 + cpu_pulse[j].s1 * cpu_pulse[j].s1);
+        avg_square += square;
+        avg_delta += delta;
+        printf("%s %.1e%s", delta / MAX(1.0f, square) < 1.0e-3 ? GREEN_COLOR : RED_COLOR, delta, NO_COLOR);
 	}
+    avg_square = avg_square / R.range_count;
 	avg_delta /= R.range_count;
     if (j<RANGE_GATES) {
         printf(" ...");
     }
 	printf("\n");
-	printf("Delta avg : %e\n", avg_delta);
+	printf("Delta avg : %s%e%s\n", avg_delta / sqrtf(avg_square) < 1.0e-3 ? GREEN_COLOR : RED_COLOR, avg_delta, NO_COLOR);
 	
     // Some speed test
     if (test & TEST_ALL) {
