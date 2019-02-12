@@ -4,7 +4,7 @@ UNAME := $(shell uname)
 # Check for availability of MPI
 MPIVER := $(shell [ ! -z ${EBVERSIONOPENMPI} ] && echo true || echo false)
 
-CFLAGS = -std=gnu99 -Wall -Wno-unknown-pragmas -Os -msse2 -mavx -I /usr/local/include
+CFLAGS = -std=gnu99 -Wall -Wno-unknown-pragmas -Wno-deprecated-declarations -Os -msse2 -mavx -I /usr/local/include
 CFLAGS += -DDEBUG
 
 LDFLAGS = -L lib -L /usr/local/lib -lrs
