@@ -60,17 +60,19 @@
         //POSPattern *scan_pattern = &S->P;
         
         POSPattern *scan_pattern = (POSPattern *)malloc(sizeof(POSPattern));
+        memset(scan_pattern, 0, sizeof(POSPattern));
         if (scan_pattern == NULL) {
             NSLog(@"Unable to allocate memory for scan_pattern");
             return nil;
         }
-        RS_set_scan_pattern(S, scan_pattern);
         
         const char scan_string[] = "D:0,75,50/90,75,50/0,90,50";
 //        const char scan_string[] = "P:5,-12:12:0.05/10,-12:12:0.05/15,-12:12:0.05";
 //        const char scan_string[] = "R:-3,0.5:25.0:0.05/3,0.5:25.0:0.05";
         
         POS_parse_from_string(scan_pattern, scan_string);
+        
+        RS_set_scan_pattern(S, scan_pattern);
         
         // Special cases for laptop demos, etc.
         if (S->vendors[0] == RS_GPU_VENDOR_INTEL) {

@@ -130,8 +130,10 @@ int POS_parse_from_string(POSPattern *scan, const char *string) {
                 scan->positions[j].el = f2;
                 scan->positions[j].index = 0;
                 scan->positions[j].count = (uint32_t)f3;
+                #if defined(DEBUG_POS)
                 rsprint("POS: j = %d   el = %5.2f   az = %6.2f   count = %u \n",
                         j, scan->positions[j].el, scan->positions[j].az, scan->positions[j].count);
+                #endif
                 token = strtok(NULL, delim);
                 j++;
             }

@@ -203,7 +203,7 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
         h->rz = 1.0f;
         h->tp = 5.0f;
     }
-    rsprint("LES Grid Spacing = %.2f / %.2f   %.2f / %.2f   %.2f / %.2f  (%s)\n",
+    rsprint("LES grid spacing = %.2f / %.2f   %.2f / %.2f   %.2f / %.2f  (%s)\n",
             h->ax, h->rx,
             h->ay, h->ry,
             h->az, h->rz,
