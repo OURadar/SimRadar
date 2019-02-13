@@ -29,6 +29,16 @@ beta_count = fread(fid, 1, 'uint16');
 table = fread(fid, 'float');
 fclose(fid);
 
+if numel(table) ~= alpha_count * beta_count * 3 * 2
+    fprintf('ERROR. Table elements not consistent.\n')
+    fprintf('beta_count = %d  alpha_count = %d   numel = %d vs expected %d\n', ...
+        alpha_count, beta_count, numel(table), alpha_count * beta_count * 3 * 2);
+    if nargout > 0
+        S = [];
+    end
+    return
+end
+
 table = reshape(table, [alpha_count, beta_count, 3, 2]);
 table = table(:, :, :, 1) + 1i * table(:, :, :, 2);
 
@@ -177,21 +187,21 @@ vp.lp = linkprop(ha, {'CameraPosition', 'CameraViewAngle'});
 view(55, 40)
 set(gcf, 'UserData', vp);
 
-if exist('boonlib', 'file')
+if exist('blib.m', 'file')
     if style == 1
         %cmap = boonlib('zmap');
         cmap = parula(256);
     else
-        cmap = boonlib('rbmap', 256);
+        cmap = blib('rbmap', 256);
     end
     colormap(ha(1), cmap)
     colormap(ha(2), cmap)
     colormap(ha(3), cmap)
     if style == 2 || style == 3
-        boonlib('bsizewin', gcf, [1200, 900])
+        blib('bsizewin', gcf, [1200, 900])
         colormap(ha(4), boonlib('rbmap', 256))
     else
-        boonlib('bsizewin', gcf, [1200, 600])
+        blib('bsizewin', gcf, [800, 450])
     end
 end
 

@@ -275,3 +275,7 @@ else
 end
 
 if nargout == 0, clear C; end
+
+if exist('blib.m', 'file')
+    blib('bsizewin', gcf, [600, 300])
+end
