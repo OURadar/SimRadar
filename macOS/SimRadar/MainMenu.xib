@@ -617,9 +617,6 @@
                             </menuItem>
                             <menuItem title="Spin Model" keyEquivalent="s" id="C6i-MD-aw6">
                                 <modifierMask key="keyEquivalentModifierMask"/>
-                                <connections>
-                                    <action selector="spinModel:" target="-1" id="1xr-vo-KcG"/>
-                                </connections>
                             </menuItem>
                             <menuItem title="Play / Pause" keyEquivalent="p" id="tzp-7z-Bpf">
                                 <modifierMask key="keyEquivalentModifierMask"/>
@@ -629,24 +626,15 @@
                             </menuItem>
                             <menuItem title="Reset" keyEquivalent="r" id="OTs-eP-I9A" userLabel="Reset">
                                 <modifierMask key="keyEquivalentModifierMask"/>
-                                <connections>
-                                    <action selector="resetSimulator:" target="GhL-Pn-w7R" id="a5f-Y9-iQP"/>
-                                </connections>
                             </menuItem>
                             <menuItem title="Top View" keyEquivalent="t" id="LuA-UL-U3G" userLabel="Top View">
                                 <modifierMask key="keyEquivalentModifierMask"/>
-                                <connections>
-                                    <action selector="topView:" target="GhL-Pn-w7R" id="IIk-ow-Akd"/>
-                                </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="9M8-lq-s70">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
                             <menuItem title="Enter Full Screen" keyEquivalent="f" id="iKv-Ub-mlt" userLabel="Top View">
                                 <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
-                                <connections>
-                                    <action selector="toggleFullScreen:" target="-1" id="tfL-Yc-a6b"/>
-                                </connections>
                             </menuItem>
                         </items>
                     </menu>

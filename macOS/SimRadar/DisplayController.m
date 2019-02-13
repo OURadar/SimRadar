@@ -233,7 +233,8 @@
 
 - (void)keyDown:(NSEvent *)event
 {
-	unichar c = [[event charactersIgnoringModifiers] characterAtIndex:0];
+    unichar c = [[event charactersIgnoringModifiers] characterAtIndex:0];
+    //NSLog(@"c = '%c'", c);
 	
     GLint ret;
     GLint counts[RS_MAX_GPU_DEVICE];

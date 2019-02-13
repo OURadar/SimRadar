@@ -1773,13 +1773,17 @@ unsigned int grayToBinary(unsigned int num)
 
 - (void)toggleSpinModel
 {
+    NSLog(@"spinModel = %d", spinModel);
 	spinModel = spinModel == 5 ? 0 : spinModel + 1;
+    NSLog(@"-> (F) -> spinModel = %d", spinModel);
 }
 
 
 - (void)toggleSpinModelReverse
 {
+    NSLog(@"spinModel = %d", spinModel);
 	spinModel = spinModel == 0 ? 5 : spinModel - 1;
+    NSLog(@"-> (R) -> spinModel = %d", spinModel);
 }
 
 
