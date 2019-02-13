@@ -2087,9 +2087,9 @@ void RS_revise_population(RSHandle *H) {
         //H->counts[0] = preferred_n;
         
         sprintf(H->summary + strlen(H->summary),
-                "anchors_per_plane = %s\n", commafloat(anchors_per_plane));
+                "Anchors / Plane = %s\n", commafloat(anchors_per_plane));
         if (H->verb) {
-            rsprint("anchors_per_plane = %s\n", commaint(anchors_per_plane));
+            rsprint("Anchors / Plane = %s\n", commaint(anchors_per_plane));
         }
     } else {
         // Volume of a single resolution cell at the start of the domain (svol = smallest volume)
