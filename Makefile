@@ -15,7 +15,9 @@ OBJS_WITH_PATH = $(addprefix $(OBJS_PATH)/, $(OBJS))
 
 MYLIB = lib/librs.a
 
-PROGS = cldemo test_clreduce test_make_pulse test_rs test_les test_adm test_rcs simple_ppi lsiq simradar
+PROGS = simradar
+PROGS += simple_ppi simple_dbs lsiq 
+PROGS += cldemo test_clreduce test_make_pulse test_rs test_les test_adm test_rcs
 
 MPI_PROGS =
 

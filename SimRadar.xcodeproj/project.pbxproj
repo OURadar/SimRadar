@@ -314,6 +314,7 @@
 		B57D8E961DDE131100B69805 /* obj.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = obj.h; sourceTree = "<group>"; };
 		B58F632A1C177EE40010AEE6 /* dsa_pub.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = dsa_pub.pem; path = delivery/dsa_pub.pem; sourceTree = SOURCE_ROOT; };
 		B5916CC51ABC7069007EA0B9 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		B5A259842215BB7600909464 /* simple_dbs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = simple_dbs.c; sourceTree = "<group>"; };
 		B5B574791B690A45002AD2E7 /* iq.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = iq.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		B5B7584B218B8D4B0091E464 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = macOS/SimRadar/Assets.xcassets; sourceTree = "<group>"; };
 		B5B9C6541D302D0E00AD8154 /* do_more.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = do_more.sh; sourceTree = "<group>"; };
@@ -562,6 +563,7 @@
 			children = (
 				B50A281717D7C2F400E4DE66 /* simradar.c */,
 				B518D41D1C849FDF00BAF67D /* simple_ppi.c */,
+				B5A259842215BB7600909464 /* simple_dbs.c */,
 				B54601BB1CAA1940005A8BF6 /* lsiq.c */,
 				B5BAD55618B67E80007AC15D /* test_rs.c */,
 				B50A280617D7B1EC00E4DE66 /* cldemo.c */,
