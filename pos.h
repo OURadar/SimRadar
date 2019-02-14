@@ -55,6 +55,10 @@ typedef struct pos_pattern {
     float       el;                                    // Current elevation to use
 } POSPattern;
 
+POSPattern *POS_init(void);
+POSPattern *POS_init_with_string(const char *);
+void POS_free(POSPattern *);
+
 int POS_get_next_angles(POSPattern *scan);
 int POS_parse_from_string(POSPattern *scan, const char *string);
 bool POS_is_ppi(POSPattern *scan);

@@ -5140,7 +5140,7 @@ void RS_show_pulse(RSHandle *H) {
 
 #pragma mark -
 
-RSBox RS_suggest_scan_domain(RSHandle *H, const int nbeams) {
+RSBox RS_suggest_scan_domain(RSHandle *H) {
     RSBox box;
     
     if (H->P == NULL) {
@@ -5198,6 +5198,13 @@ RSBox RS_suggest_scan_domain(RSHandle *H, const int nbeams) {
         w = H->vel_desc.ax * (1.0f - powf(H->vel_desc.rx, 0.5f * (float)(H->vel_desc.nx - 3))) / (1.0f - H->vel_desc.rx);
         h = H->vel_desc.az * (1.0f - powf(H->vel_desc.rz,        (float)(H->vel_desc.nz - 1))) / (1.0f - H->vel_desc.rz);
 
+        // NEW:
+        // Derive azimuth swath based on POSPattern
+        //
+        // ...
+        
+        const int nbeams = 16;
+        
         // Maximum number of beams plus the padding on one side in azimuth
         na = 0.5f * (float)nbeams + RS_DOMAIN_PAD + 0.5f;
         

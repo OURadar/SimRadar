@@ -575,7 +575,7 @@ void RS_show_pulse(RSHandle *H);
 
 #pragma mark - High-Level Functions to Condition Emulation Setup
 
-RSBox RS_suggest_scan_domain(RSHandle *H, const int nbeams);
+RSBox RS_suggest_scan_domain(RSHandle *H);
 void RS_revise_debris_counts_to_gpu_preference(RSHandle *H);
 
 char *RS_simulation_description(RSHandle *H);

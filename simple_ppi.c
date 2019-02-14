@@ -41,11 +41,15 @@ int main(int argc, char *argv[]) {
     // Set the first debris type to have a population of 1024
     RS_set_debris_count(S, 1, 1024);
     
-    // After the wind table is set, we can use the API to suggest the optimal scan box
-    RSBox box = RS_suggest_scan_domain(S, 16);
-
     // Revise to the GPU preferred counts if there is no strict requirements on the debris count
     RS_revise_debris_counts_to_gpu_preference(S);
+    
+    // Propose a scan pattern
+    POSPattern *scan_pattern = POS_init();
+    RS_set_scan_pattern(S, scan_pattern);
+    
+    // After the wind table is set, we can use the API to suggest the optimal scan box
+    RSBox box = RS_suggest_scan_domain(S);
     
     // Set the scan box
     RS_set_scan_box(S,

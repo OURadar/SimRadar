@@ -122,7 +122,7 @@ RCSHandle RCS_init_with_path(const char *path) {
     
     for (int i = 0; i < sizeof(search_paths) / sizeof(search_paths[0]); i++) {
         dat_path = search_paths[i];
-        snprintf(dat_file_path, 1024, "%s/%s.rcs", dat_path, RCSConfigLeaf);
+        snprintf(dat_file_path, 1024, "%s/rcs/%s.rcs", dat_path, RCSConfigLeaf);
         dir_ret = stat(dat_path, &path_stat);
         file_ret = stat(dat_file_path, &file_stat);
         if (dir_ret < 0 || file_ret < 0) {
@@ -185,7 +185,7 @@ RCSTable *RCS_get_table(const RCSHandle in, const RCSConfig config) {
 
     // Full path of the data file
     char fullpath[1024];
-    snprintf(fullpath, sizeof(fullpath), "%s/%s.rcs", h->data_path, config);
+    snprintf(fullpath, sizeof(fullpath), "%s/rcs/%s.rcs", h->data_path, config);
     
     // Now, we open the file for reading
     FILE *fid = fopen(fullpath, "r");

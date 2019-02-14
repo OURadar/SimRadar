@@ -57,21 +57,12 @@
             return nil;
         }
 
-        //POSPattern *scan_pattern = &S->P;
+        BOOL useLES = TRUE;
         
-        POSPattern *scan_pattern = (POSPattern *)malloc(sizeof(POSPattern));
-        memset(scan_pattern, 0, sizeof(POSPattern));
-        if (scan_pattern == NULL) {
-            NSLog(@"Unable to allocate memory for scan_pattern");
-            return nil;
-        }
-        
-        const char scan_string[] = "D:0,75,50/90,75,50/0,90,50";
-//        const char scan_string[] = "P:5,-12:12:0.05/10,-12:12:0.05/15,-12:12:0.05";
-//        const char scan_string[] = "R:-3,0.5:25.0:0.05/3,0.5:25.0:0.05";
-        
-        POS_parse_from_string(scan_pattern, scan_string);
-        
+        // POSPattern *scan_pattern = POS_init_with_string("P:5,-12:12:0.05/10,-12:12:0.05/15,-12:12:0.05");
+        // POSPattern *scan_pattern = POS_init_with_string("R:-3,0.5:25.0:0.05/3,0.5:25.0:0.05");
+        POSPattern *scan_pattern = POS_init_with_string("D:0,75,50/90,75,50/0,90,50");
+
         RS_set_scan_pattern(S, scan_pattern);
         
         // Special cases for laptop demos, etc.
@@ -140,17 +131,11 @@
             RS_set_prt(S, 1.0f / 60.0f);
         }
         
-        BOOL useLES = TRUE;
-        
-        RSBox box;
-        if (useLES) {
-            box = RS_suggest_scan_domain(S, 16);
-        }
-
         if (reportProgress) {
             [delegate progressUpdated:95.0 message:@"ADM / RCS table"];
         }
         if (useLES) {
+            RSBox box = RS_suggest_scan_domain(S, 16);
             if (scan_pattern->mode == 'D') {
                 RS_set_scan_box(S,
                                 box.origin.r, box.origin.r + box.size.r, 30.0f,    // Range

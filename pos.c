@@ -8,6 +8,29 @@
 
 #include "pos.h"
 
+#pragma mark - Life Cycle
+
+POSPattern *POS_init(void) {
+    return POS_init_with_string("P:5,-12:12:0.05/10,-12:12:0.05/15,-12:12:0.05");
+}
+
+void POS_free(POSPattern *scan_pattern) {
+    free(scan_pattern);
+}
+
+POSPattern *POS_init_with_string(const char *scan_string) {
+    POSPattern *scan_pattern = (POSPattern *)malloc(sizeof(POSPattern));
+    memset(scan_pattern, 0, sizeof(POSPattern));
+    if (scan_pattern == NULL) {
+        rsprint("Unable to allocate memory for scan_pattern");
+        return NULL;
+    }
+    POS_parse_from_string(scan_pattern, scan_string);
+    return scan_pattern;
+}
+
+#pragma mark - Methods
+
 int POS_get_next_angles(POSPattern *scan) {
     int k = scan->index;
     // Current azimuth and elevation
