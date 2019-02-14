@@ -16,10 +16,9 @@
 //
 int main(int argc, char *argv[]) {
     
-    int k = 0;
-    
     RSHandle  *S;
-    
+    const int num_pulses = 300;
+
     // Initialize the RS framework
     S = RS_init();
     if (S == NULL) {
@@ -32,7 +31,7 @@ int main(int argc, char *argv[]) {
     RS_set_antenna_params(S, 5.0f, 30.5f);    // Antenna beamwidth in degrees and gain in dB
     RS_set_tx_params(S, 0.2e-6f, 10.0e3f);    // Equivalent transmit pulsewidth in seconds and power in watts
     RS_set_lambda(S, 3.0e8 / 915.0e6);        // Wavelength in meters (derived from frequency)
-    RS_set_prt(S, 1.0e-3f);                   // Pulse repetition time in seconds
+    RS_set_prt(S, 1.0 / 140.0);               // Pulse repetition time in seconds
 
     RS_show_radar_params(S);
 
@@ -59,39 +58,28 @@ int main(int argc, char *argv[]) {
     RS_populate(S);
     
     // Show some basic info
-    const int num_pulses = 1200;
     printf("%s : Emulating %s frame%s with %s scatter bodies\n",
            now(), commaint(num_pulses), num_pulses>1?"s":"", commaint(S->num_scats));
     
-    // At this point, we are ready to bake
-    
     // ---------------------------------------------------------------------------------------------------------------
     
-    float el = 3.0f;
-    float az = -12.0f;
-    
     // Now we bake
-    for (k = 0; k < num_pulses; k++) {
-        RS_set_beam_pos(S, az, el);
+    for (int k = 0; k < num_pulses; k++) {
         RS_make_pulse(S);
+        RS_advance_beam(S);
         RS_advance_time(S);
         
-        // This makes az go from -12 to +12.
-        az = az + 0.02f;
-        
-        // Show some output to the screen so we know everything is okay.
-        if (k % 300 == 0) {
-            fprintf(stderr, "Pulse %d\n", k);
-        }
+        POSPattern *scan_pattern = S->P;
+        // printf("k %d    EL %.2f    AZ %.2f\n", k, scan_pattern->el, scan_pattern->az);
     }
     
     // Retrieve the results from the GPUs
     RS_download(S);
     
     printf("%s : Final scatter body positions, velocities and orientations:\n", now());
-    
+ 
+    // Show some scatterer attributes
     RS_show_scat_pos(S);
-    
     RS_show_scat_sig(S);
     
     RS_free(S);

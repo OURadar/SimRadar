@@ -1077,7 +1077,10 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
     
     // Initialize the LES ingest
     //RS_set_vel_data_to_config(H, LESConfigSuctionVorticesLarge);
-    RS_set_vel_data_to_config(H, LESConfigSuctionVortices);
+    rsprint("verb = %d\n", H->verb);
+    
+//    RS_set_vel_data_to_config(H, LESConfigSuctionVortices);
+    //H->L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
 
     H->verb = verb;
     
@@ -2469,7 +2472,7 @@ void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const flo
         H->workers[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionOrigin] = table.x0;
         H->workers[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionMaximum] = table.xm;
         H->workers[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionUserConstant] = H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale];
-        if (H->workers[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionUserConstant] == 0.0f) {
+        if (!(H->sim_concept & RSSimulationConceptFixedScattererPosition) && H->workers[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionUserConstant] == 0.0f) {
             rsprint("WARNING: Drop concentration scale not set.");
         }
         H->workers[i].mem_usage += (cl_uint)(table.xm + 1.0f) * sizeof(cl_float4);
@@ -3841,6 +3844,14 @@ void RS_populate(RSHandle *H) {
         exit(EXIT_FAILURE);
     }
     
+    // Set LES, ADM and RCS tables if they aren't set before
+    if (H->O == NULL) {
+        H->O = OBJ_init();
+    }
+    if (H->L == NULL) {
+        H->L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
+    }
+    
     if (H->adm_count != H->rcs_count) {
         rsprint("ADM & RCS are not consistent. Unexpected behavior may happen.");
     }
@@ -5069,6 +5080,9 @@ void RS_show_scat_pos(RSHandle *H) {
              i += H->workers[w].counts[0] / RS_SHOW_DIV) {
             RS_show_scat_i(H, H->offset[w] + i);
         }
+    }
+    if (H->counts[1] == 0) {
+        return;
     }
     printf("A subset of debris[1] positions, velocities & orientations:\n");
     for (w = 0; w < H->num_workers; w++) {
