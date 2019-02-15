@@ -782,11 +782,11 @@ int main(int argc, char *argv[]) {
 
 #if defined (_OPEN_MPI)
 
-    printf("%s : Session started on %s (%d / %d / %s)\n", now(), processor_name, world_rank, world_size, commaint(user.seed));
+    rsprint("Session initialized on %s (%d / %d / %s)\n", now(), processor_name, world_rank, world_size, commaint(user.seed));
 
 #else
 
-    printf("%s : Session started\n", now());
+    rsprint("Session initialized\n", now());
 
 #endif
 

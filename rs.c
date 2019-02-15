@@ -1051,12 +1051,6 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
 
 #endif
     
-    H->O = OBJ_init();
-    if (H->O == NULL) {
-        rsprint("ERROR: OBJ_init() failed.");
-        return NULL;
-    }
-    
     // Set up some basic parameters to default values, H->verb is still 0 so no API message output
     RS_set_prt(H, RS_PARAMS_PRT);
     
@@ -1074,13 +1068,6 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
                     0.0f, 8.0f, 1.0f);                          // Elevation
     
     //RS_set_angular_weight_to_double_cone(H, 2.0f / 180.0f * M_PI);
-    
-    // Initialize the LES ingest
-    //RS_set_vel_data_to_config(H, LESConfigSuctionVorticesLarge);
-    rsprint("verb = %d\n", H->verb);
-    
-//    RS_set_vel_data_to_config(H, LESConfigSuctionVortices);
-    //H->L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
 
     H->verb = verb;
     
@@ -1526,7 +1513,9 @@ void RS_set_scan_box(RSHandle *H,
     
     int ii = 0;
     
-    rsprint("Deriving scan box ... BW %.2f deg   DR %.2f m\n", H->params.antenna_bw_deg, H->params.range_delta);
+    if (H->verb) {
+        rsprint("Deriving scan box ... BW %.2f deg   DR %.2f m\n", H->params.antenna_bw_deg, H->params.range_delta);
+    }
 
     // Range
     r = floor(H->params.range_start / H->params.range_delta) * H->params.range_delta;
@@ -1705,7 +1694,9 @@ void RS_set_scan_box(RSHandle *H,
         }
     }
     
-    rsprint("Anchors computed   num_anchors = %d\n", H->num_anchors);
+    if (H->verb) {
+        rsprint("Anchors computed   num_anchors = %d\n", H->num_anchors);
+    }
     
     // Radar origin at (0, 0, 0)
     H->anchor_pos[ii].x = 0.0f;
@@ -3498,27 +3489,37 @@ void RS_set_random_seed(RSHandle *H, const unsigned int seed) {
 
 
 void RS_add_debris(RSHandle *H, OBJConfig type, const size_t count) {
+
     int k = 1;
+
+    if (H->O == NULL) {
+        H->O = OBJ_init();
+        if (H->O == NULL) {
+            rsprint("ERROR: OBJ_init() failed.");
+            exit(EXIT_FAILURE);
+        }
+    }
+
     while (H->counts[k] > 0 && k < RS_MAX_DEBRIS_TYPES) {
         k++;
     }
+
     if (k == RS_MAX_DEBRIS_TYPES || H->adm_count == RS_MAX_ADM_TABLES || H->rcs_count == RS_MAX_RCS_TABLES) {
         rsprint("Unable to add more debris type.");
         return;
     }
-    OBJTable *obj_table = OBJ_get_table(H->O, type);
 
+    OBJTable *obj_table = OBJ_get_table(H->O, type);
     RS_set_adm_data_to_ADM_table(H, obj_table->adm_table);
     RS_set_rcs_data_to_RCS_table(H, obj_table->rcs_table);
-
     H->counts[k] = count;
     H->num_types++;
-    if (k != H->adm_count + 1 || k != H->rcs_count + 1) {
-        rsprint("Inconsistent k = %d vs H->adm_count = %d vs H->rcs_count = %d.", k, H->adm_count, H->rcs_count);
+    if (k != H->adm_count || k != H->rcs_count) {
+        rsprint("WARNING: Inconsistent k = %d vs H->adm_count = %d vs H->rcs_count = %d.", k, H->adm_count, H->rcs_count);
         return;
     }
     if (H->verb) {
-        rsprint("Total number of body types = %d", (int)H->num_types);
+        rsprint("Total number of body types = %d (including meteorological scatterers)", (int)H->num_types);
     }
 }
 
@@ -3849,11 +3850,8 @@ void RS_populate(RSHandle *H) {
         rsprint("ERROR: Every scatterer attribute occupies %s B > %s B.", commaint(H->workers[0].num_scats * sizeof(cl_float4)), commaint(max_var_size));
         exit(EXIT_FAILURE);
     }
-    
-    // Set LES, ADM and RCS tables if they aren't set before
-    if (H->O == NULL) {
-        H->O = OBJ_init();
-    }
+
+    // Set LES if they isn't set before
     if (H->L == NULL) {
         H->L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
     }
