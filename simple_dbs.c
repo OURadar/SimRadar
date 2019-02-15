@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
         RS_advance_beam(S);
         RS_advance_time(S);
         
-        POSPattern *scan_pattern = S->P;
+        // POSPattern *scan_pattern = S->P;
         // printf("k %d    EL %.2f    AZ %.2f\n", k, scan_pattern->el, scan_pattern->az);
     }
     

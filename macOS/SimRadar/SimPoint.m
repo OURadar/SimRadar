@@ -123,9 +123,9 @@
             RS_set_debris_count(S, 3, 512);
             
             RS_set_obj_data_to_config(S, OBJConfigLeaf);
-            RS_set_obj_data_to_config(S, OBJConfigMetalSheet);
             RS_set_obj_data_to_config(S, OBJConfigBrick);
-            
+            RS_set_obj_data_to_config(S, OBJConfigMetalSheet);
+
             RS_revise_debris_counts_to_gpu_preference(S);
 
             RS_set_prt(S, 1.0f / 60.0f);
@@ -135,7 +135,7 @@
             [delegate progressUpdated:95.0 message:@"ADM / RCS table"];
         }
         if (useLES) {
-            RSBox box = RS_suggest_scan_domain(S, 16);
+            RSBox box = RS_suggest_scan_domain(S);
             if (scan_pattern->mode == 'D') {
                 RS_set_scan_box(S,
                                 box.origin.r, box.origin.r + box.size.r, 30.0f,    // Range
