@@ -1365,9 +1365,9 @@ char *RS_simulation_concept_string(RSHandle *H) {
             "Concepts used: %s%s%s%s%s%s",
             H->sim_concept & RSSimulationConceptBoundedParticleVelocity ? "B" : "",
             H->sim_concept & RSSimulationConceptDraggedBackground ? "D" : "",
+            H->sim_concept & RSSimulationConceptFixedScattererPosition ? "F" : "",
             H->sim_concept & RSSimulationConceptTransparentBackground ? "T" : "",
             H->sim_concept & RSSimulationConceptUniformDSDScaledRCS ? "U" : "",
-            H->sim_concept & RSSimulationConceptFixedScattererPosition ? "F" : "",
             H->sim_concept & RSSimulationConceptVerticallyPointingRadar ? "V" :"");
     return string;
 }
@@ -1382,14 +1382,14 @@ char *RS_simulation_concept_bulleted_string(RSHandle *H) {
     if (H->sim_concept & RSSimulationConceptDraggedBackground) {
         sprintf(string + strlen(string), RS_INDENT "o D - Dragged Meteorological Scatterers\n");
     }
+    if (H->sim_concept & RSSimulationConceptFixedScattererPosition) {
+        sprintf(string + strlen(string), RS_INDENT "o F - Fixed Scatterer Positions\n");
+    }
     if (H->sim_concept & RSSimulationConceptTransparentBackground) {
         sprintf(string + strlen(string), RS_INDENT "o T - Transparent Meteorological Scatterers\n");
     }
     if (H->sim_concept & RSSimulationConceptUniformDSDScaledRCS) {
         sprintf(string + strlen(string), RS_INDENT "o U - Uniform DSD with Scaled RCS\n");
-    }
-    if (H->sim_concept & RSSimulationConceptFixedScattererPosition) {
-        sprintf(string + strlen(string), RS_INDENT "o F - Fixed Scatterer Positions\n");
     }
     if (H->sim_concept & RSSimulationConceptVerticallyPointingRadar) {
         sprintf(string + strlen(string), RS_INDENT "o V - Vertically Pointing Radar\n");

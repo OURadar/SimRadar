@@ -49,6 +49,8 @@ typedef struct user_params {
     int   debris_type[RS_MAX_DEBRIS_TYPES];
     int   debris_count[RS_MAX_DEBRIS_TYPES];
     int   debris_group_count;
+    
+    char  les_config[256];
 
     bool  output_iq_file;
     bool  output_state_file;
@@ -90,15 +92,17 @@ void show_help() {
            "  -c (--concept) " UNDERLINE("concepts") "\n"
            "         Sets the simulation concepts to be used, which are OR together for\n"
            "         multiple values that can be combined together.\n"
+           "            B - Bounded particle velocity.\n"
            "            D - Dragged background.\n"
+           "            F - Fixed scatterer position.\n"
            "            T - Transparent background.\n"
            "            U - Uniform rain drop size density with scaled RCS.\n"
-           "            V - Bounded particle velocity.\n"
+           "            V - Vertically pointed radar (profiler)\n"
            "         Examples:\n"
            "            --concept DU\n"
            "                sets simulation to use the concept of dragged background and\n"
            "                uniform density of rain drop size.\n"
-           "            --concept V\n"
+           "            --concept B\n"
            "                sets simulation to use the concept of bounded particle velocity\n"
            "                but left the others as default.\n"
            "\n"
@@ -122,11 +126,15 @@ void show_help() {
            "         Sets the number of frames to " UNDERLINE("count") ". This option is identical -p.\n"
            "         See -p for more information.\n"
            "\n"
-           "  --lambda " UNDERLINE("wavelength") "\n"
+           "  -l (--lambda) " UNDERLINE("wavelength") "\n"
            "         Sets the radar wavelength to " UNDERLINE("wavelength") " meters. Framework default value\n"
-           "         is 10 cm.\n"
+           "         is 0.10 m if this is not specified.\n"
            "\n"
-           "  -N (--preview)\n"
+           "  -L (--les) " UNDERLINE("LESTable") "\n"
+           "         Sets the LES field to use. This is the same string that is used to name\n"
+           "         the folder under ${SIMRADAR_TABLE_HOME}/tables/les/${LESTable}\n"
+           "\n"
+           "  -N (--no-run)\n"
            "         No simulation. Previews the scanning angles of the setup. No data will\n"
            "         be generated.\n"
            "\n"
@@ -461,7 +469,8 @@ int main(int argc, char *argv[]) {
         {"no-progress"   , no_argument      , 0, 'F'},
         {"mpdsd"         , required_argument, 0, 'G'},
         {"resume-seed"   , no_argument      , 0, 'H'},
-        {"preview"       , no_argument      , 0, 'N'},
+        {"les"           , required_argument, 0, 'L'},
+        {"no-run"        , no_argument      , 0, 'N'},
         {"out-dir"       , required_argument, 0, 'O'},
         {"sweep"         , required_argument, 0, 'S'},
         {"tightbox"      , no_argument      , 0, 'T'},
@@ -826,7 +835,7 @@ int main(int argc, char *argv[]) {
 
 #endif
 
-    RSBox box = RS_suggest_scan_domain(S, 16);
+    RSBox box = RS_suggest_scan_domain(S);
 
     // Set debris population
     for (k = 0; k < user.debris_group_count; k++) {
