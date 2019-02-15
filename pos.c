@@ -59,7 +59,7 @@ int POS_parse_from_string(POSPattern *scan, const char *string) {
     float f1, f2, f3, f4;
     const char delim[] = "/";
     char scan_pattern[1024], *token;
-    rsprint("Parsing scanning pattern '%s' ...\n", string);
+    rsprint("Parsing scan pattern '%s' ...\n", string);
     if (string[1] != ':') {
         rsprint("Expected : after the scan mode character.\n");
         return 1;
@@ -70,7 +70,9 @@ int POS_parse_from_string(POSPattern *scan, const char *string) {
         case 'p':
         case 'P':
             // PPI
-            rsprint("PPI scanning pattern ...\n");
+            #ifdef DEBUG_POS
+            rsprint("PPI scan pattern ...\n");
+            #endif
             token = strtok(scan_pattern, delim);
             i = 0;
             j = 0;
@@ -106,7 +108,9 @@ int POS_parse_from_string(POSPattern *scan, const char *string) {
         case 'r':
         case 'R':
             // RHI
-            rsprint("RHI scanning pattern ...\n");
+            #ifdef DEBUG_POS
+            rsprint("RHI scan pattern ...\n");
+            #endif
             token = strtok(scan_pattern, delim);
             i = 0;
             j = 0;
@@ -141,7 +145,9 @@ int POS_parse_from_string(POSPattern *scan, const char *string) {
             break;
         case 'd':
         case 'D':
-            rsprint("DBS scanning pattern ...\n");
+            #ifdef DEBUG_POS
+            rsprint("DBS scan pattern ...\n");
+            #endif
             token = strtok(scan_pattern, delim);
             j = 0;
             while (token && j < POS_MAX_PATTERN_COUNT) {

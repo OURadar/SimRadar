@@ -754,8 +754,8 @@ LESTable *LES_get_frame(const LESHandle i, const int n) {
         k--;
     } while (n != h->data_id[k] && k > 0);
     if (n == h->data_id[k]) {
-        #ifdef DEBUG
-        rsprint("Found n = %d = %d @ k = %d / %d\n", n, h->data_id[k], k, LES_num);
+        #ifdef DEBUG_LES
+        printf("Found n = %d vs data_id = %d @ k = %d / %d\n", n, h->data_id[k], k, LES_num);
         #endif
         table = h->data_boxes[k];
         // What to read in next

@@ -468,8 +468,8 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
         clReleaseContext(C->context);
         exit(EXIT_FAILURE);
     }
-    rsprint("clBuildProgram() ...");
     if (verb) {
+        rsprint("clBuildProgram() ... worker[%d]", (int)C->name);
         ret = clBuildProgram(C->prog, 1, &C->dev, "", &pfn_prog_notify, NULL);
     } else {
         ret = clBuildProgram(C->prog, 1, &C->dev, "", NULL, NULL);
@@ -1164,7 +1164,9 @@ void RS_free(RSHandle *H) {
     
     LES_free(H->L);
     
-    OBJ_free(H->O);
+    if (H->O) {
+        OBJ_free(H->O);
+    }
     
     for (i = 0; i < H->num_workers; i++) {
         RS_worker_free(&H->workers[i]);
@@ -1277,9 +1279,9 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count,
     param.local[0] = work_items;
     param.local_mem_size[0] = range_count * work_items * sizeof(cl_float4);
     while (param.local_mem_size[0] > max_local_mem_size) {
-#ifdef DEBUG
-        rsprint("local memory size = %zu. Adjusting ...", (size_t)max_local_mem_size);
-#endif
+        #ifdef DEBUG_CL
+        rsprint("Local memory size = %s. Adjusting ...", commaint((long long)max_local_mem_size));
+        #endif
         if (range_count % 2 == 0) {
             work_items /= 2;
             group_count *= 2;
@@ -5260,7 +5262,7 @@ RSBox RS_suggest_scan_domain(RSHandle *H) {
     }
     
     if (H->verb) {
-        printf("%s : RS : Suggest scan box < [ 2w = %.1f m, h = %.1f m ] : nr = %.1f   na = %.1f   ne = %.1f\n"
+        printf("%s : RS : Suggest scan box < [ 2w = %.1f m, h = %.1f m ]   nr = %.1f   na = %.1f   ne = %.1f\n"
                "%s : RS : Best fit with R:[ %5.2f ~ %5.2f ] km   E:[ %5.2f ~ %5.2f ] deg   A:[ %6.2f ~ %6.2f ] deg\n",
                now(), 2.0f * w, h, nr, na, ne,
                now(), 1.0e-3f * box.origin.r, 1.0e-3f * (box.origin.r + box.size.r), box.origin.e, box.origin.e + box.size.e, box.origin.a, box.origin.a + box.size.a);
