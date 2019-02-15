@@ -170,16 +170,20 @@ int POS_parse_from_string(POSPattern *scan, const char *string) {
     return 0;
 }
 
-bool POS_is_ppi(POSPattern *scan) {
+bool POS_is_ppi(const POSPattern *scan) {
     return scan->mode == 'p' || scan->mode == 'P';
 }
 
-bool POS_is_rhi(POSPattern *scan) {
+bool POS_is_rhi(const POSPattern *scan) {
     return scan->mode == 'r' || scan->mode == 'R';
 }
 
-bool POS_is_dbs(POSPattern *scan) {
+bool POS_is_dbs(const POSPattern *scan) {
     return scan->mode == 'd' || scan->mode == 'D';
+}
+
+bool POS_is_empty(const POSPattern *scan) {
+    return !scan->count;
 }
 
 void POS_summary(POSHandle P) {

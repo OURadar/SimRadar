@@ -34,6 +34,9 @@ enum ACCEL_TYPE {
 };
 
 typedef struct user_params {
+    RSSimulationConcept concept;
+    POSPattern scan_pattern;
+
     float beamwidth;
     float density;
     float lambda;
@@ -248,6 +251,16 @@ enum ValueType {
 #define PARAMS_FLOAT_NOT_SUPPLIED   -999.9f
 #define PARAMS_INT_NOT_SUPPLIED     -999
 
+static char * filename_prefix(const UserParams *user) {
+    static char filename[768];
+    snprintf(filename, sizeof(filename), "%s/sim-%s-%s%04.1f", 
+        user->output_dir,
+        nowlong(),
+        POS_is_ppi(&(user->scan_pattern)) ? "E": (POS_is_rhi(&(user->scan_pattern)) ? "A" : "S"),
+        POS_is_ppi(&(user->scan_pattern)) ? user->scan_pattern.sweeps[0].elStart: (POS_is_rhi(&(user->scan_pattern)) ? user->scan_pattern.sweeps[0].azStart : (float)user->num_pulses));
+    return filename;
+}
+
 static void show_user_param(const char *name, const void* value, const char *unit, const char type, const int count) {
     char str_buf[64] = "not supplied";
     char *value_str = str_buf;
@@ -301,15 +314,16 @@ static void show_user_param(const char *name, const void* value, const char *uni
     }
 }
 
-static void write_iq_file(const UserParams user, POSPattern *scan, const IQFileHeader *file_header, const IQPulseHeader *pulse_headers, const cl_float4 *pulse_cache, const int stride, const int offset) {
+static void write_iq_file(const UserParams user, const IQFileHeader *file_header, const IQPulseHeader *pulse_headers, const cl_float4 *pulse_cache, const int stride, const int offset) {
     char charbuff[2048];
 
     memset(charbuff, 0, sizeof(charbuff));
-    snprintf(charbuff, sizeof(charbuff), "%s/sim-%s-%s%04.1f.iq",
-             user.output_dir,
-             nowlongoffset(offset),
-             POS_is_ppi(scan) ? "E": (POS_is_rhi(scan) ? "A" : "S"),
-             POS_is_ppi(scan) ? scan->sweeps[0].elStart : (POS_is_rhi(scan) ? scan->sweeps[0].azStart : (float)user.num_pulses));
+    // snprintf(charbuff, sizeof(charbuff), "%s/sim-%s-%s%04.1f.iq",
+    //          user.output_dir,
+    //          nowlongoffset(offset),
+    //          POS_is_ppi(&user.scan_pattern) ? "E": (POS_is_rhi(&user.scan_pattern) ? "A" : "S"),
+    //          POS_is_ppi(&user.scan_pattern) ? user.scan_pattern.sweeps[0].elStart : (POS_is_rhi(&user.scan_pattern) ? user.scan_pattern.sweeps[0].azStart : (float)user.num_pulses));
+    snprintf(charbuff, sizeof(charbuff), "%s.iq", filename_prefix(&user));
     printf("%s : Output file : " UNDERLINE("%s") "\n", now(), charbuff);
     FILE *fid = fopen(charbuff, "wb");
     if (fid == NULL) {
@@ -419,6 +433,8 @@ int main(int argc, char *argv[]) {
     UserParams user;
     memset(&user, 0, sizeof(UserParams));
 
+    user.concept           = RSSimulationConceptNull;
+
     user.beamwidth         = PARAMS_FLOAT_NOT_SUPPLIED;
     user.density           = PARAMS_FLOAT_NOT_SUPPLIED;
     user.lambda            = PARAMS_FLOAT_NOT_SUPPLIED;
@@ -441,20 +457,10 @@ int main(int argc, char *argv[]) {
 
     user.output_dir[0]     = '\0';
 
-    // A structure unit that encapsulates a canning strategy
-    POSPattern *scan_pattern = (POSPattern *)malloc(sizeof(POSPattern));
-    if (scan_pattern == NULL) {
-        fprintf(stderr, "Error allocating space for scan pattern.\n");
-        exit(EXIT_FAILURE);
-    }
-
     struct timeval t0, t1, t2;
 
     gettimeofday(&t0, NULL);
 
-    RSSimulationConcept concept = RSSimulationConceptDraggedBackground
-                                | RSSimulationConceptBoundedParticleVelocity
-                                | RSSimulationConceptUniformDSDScaledRCS;
 
     IQFileHeader file_header;
     memset(&file_header, 0, sizeof(IQFileHeader));
@@ -510,24 +516,24 @@ int main(int argc, char *argv[]) {
                 user.quiet_mode = false;
                 break;
             case 'c':
-                concept = RSSimulationConceptNull;
+                user.concept = RSSimulationConceptNull;
                 if (strcasestr(optarg, "B")) {
-                    concept |= RSSimulationConceptBoundedParticleVelocity;
+                    user.concept |= RSSimulationConceptBoundedParticleVelocity;
                 }
                 if (strcasestr(optarg, "D")) {
-                    concept |= RSSimulationConceptDraggedBackground;
+                    user.concept |= RSSimulationConceptDraggedBackground;
                 }
                 if (strcasestr(optarg, "U")) {
-                    concept |= RSSimulationConceptUniformDSDScaledRCS;
+                    user.concept |= RSSimulationConceptUniformDSDScaledRCS;
                 }
                 if (strcasestr(optarg, "T")) {
-                    concept |= RSSimulationConceptTransparentBackground;
+                    user.concept |= RSSimulationConceptTransparentBackground;
                 }
                 if (strcasestr(optarg, "F")) {
-                    concept |= RSSimulationConceptFixedScattererPosition;
+                    user.concept |= RSSimulationConceptFixedScattererPosition;
                 }
                 if (strcasestr(optarg, "V")) {
-                    concept |= RSSimulationConceptVerticallyPointingRadar;
+                    user.concept |= RSSimulationConceptVerticallyPointingRadar;
                 }
                 break;
             case 'C':
@@ -591,6 +597,9 @@ int main(int argc, char *argv[]) {
             case 'l':
                 user.lambda = atof(optarg);
                 break;
+            case 'L':
+                strncpy(user.les_config, optarg, sizeof(user.les_config));
+                break;
             case 'N':
                 user.preview_only = true;
                 break;
@@ -610,7 +619,7 @@ int main(int argc, char *argv[]) {
                 user.seed = atoi(optarg);
                 break;
             case 'S':
-                POS_parse_from_string(scan_pattern, optarg);
+                POS_parse_from_string(&user.scan_pattern, optarg);
                 break;
             case 't':
                 user.prt = atof(optarg);
@@ -687,7 +696,10 @@ int main(int argc, char *argv[]) {
         show_user_param("Particle density", &user.density, "", ValueTypeFloat, 0);
         show_user_param("Output directory", user.output_dir, "", ValueTypeChar, 0);
         show_user_param("User random seed", &user.seed, "", ValueTypeInt, 0);
-        show_user_param("User DSD profile", user.dsd_sizes, "mm", ValueTypeFloatArray, user.dsd_count);
+        if (!(user.concept & RSSimulationConceptFixedScattererPosition)) {
+            show_user_param("User DSD profile", user.dsd_sizes, "mm", ValueTypeFloatArray, user.dsd_count);
+        }
+        show_user_param("User LES configuration", user.les_config, "", ValueTypeChar, 0);
         char name[64];
         char type[64];
         for (k = 0; k < user.debris_group_count; k++) {
@@ -700,9 +712,21 @@ int main(int argc, char *argv[]) {
 
     // ---------------------------------------------------------------------------------------------------------------
 
+    // Some assumed parameters if not set
+    if (user.concept == RSSimulationConceptNull) {
+        user.concept = RSSimulationConceptDraggedBackground
+                     | RSSimulationConceptBoundedParticleVelocity
+                     | RSSimulationConceptUniformDSDScaledRCS;
+    }
+    if (POS_is_empty(&user.scan_pattern)) {
+        rsprint("Using default scan mode.\n");
+        POS_parse_from_string(&user.scan_pattern, "P:3.0,-12:12:0.01");
+    }
+
     // Some conditions that no simulation should be commenced
+
     if (user.num_pulses < 0) {
-        fprintf(stderr, "Error. No pulses was specified.\n");
+        fprintf(stderr, "Error. No number pulses was specified.\n");
         exit(EXIT_FAILURE);
     }
     
@@ -721,21 +745,21 @@ int main(int argc, char *argv[]) {
     // Preview only
     if (user.preview_only) {
         #define FLT_FMT  "\033[1;33m%+6.2f\033[0m"
-        printf("Scan mode: \033[1;92m%c\033[0m\n", scan_pattern->mode);
-        if (scan_pattern->mode == 'P' || scan_pattern->mode == 'p') {
-            for (k = 0; k < scan_pattern->sweepCount; k++) {
+        printf("Scan mode: \033[1;92m%c\033[0m\n", user.scan_pattern.mode);
+        if (user.scan_pattern.mode == 'P' || user.scan_pattern.mode == 'p') {
+            for (k = 0; k < user.scan_pattern.sweepCount; k++) {
                 printf("    %d   EL: " FLT_FMT " deg   AZ: " FLT_FMT " -- " FLT_FMT " deg    delta: " FLT_FMT " deg\n",
-                       k, scan_pattern->sweeps[k].elStart, scan_pattern->sweeps[k].azStart, scan_pattern->sweeps[k].azEnd, scan_pattern->sweeps[k].azDelta);
+                       k, user.scan_pattern.sweeps[k].elStart, user.scan_pattern.sweeps[k].azStart, user.scan_pattern.sweeps[k].azEnd, user.scan_pattern.sweeps[k].azDelta);
             }
-        } else if (scan_pattern->mode == 'R' || scan_pattern->mode == 'r') {
+        } else if (user.scan_pattern.mode == 'R' || user.scan_pattern.mode == 'r') {
             printf("    %d   AZ: " FLT_FMT " deg   EL: " FLT_FMT " -- " FLT_FMT " deg    delta: " FLT_FMT " deg\n",
-                   k, scan_pattern->sweeps[0].azStart, scan_pattern->sweeps[0].elStart, scan_pattern->sweeps[0].elEnd, scan_pattern->sweeps[0].elDelta);
+                   k, user.scan_pattern.sweeps[0].azStart, user.scan_pattern.sweeps[0].elStart, user.scan_pattern.sweeps[0].elEnd, user.scan_pattern.sweeps[0].elDelta);
         } else {
             printf("   I need upgrade here.\n");
         }
         for (k = 0; k < user.num_pulses; k++) {
-            POS_get_next_angles(scan_pattern);
-            printf("k = %4d   el = %6.2f deg   az = %6.2f deg\n", k, scan_pattern->el, scan_pattern->az);
+            POS_get_next_angles(&user.scan_pattern);
+            printf("k = %4d   el = %6.2f deg   az = %6.2f deg\n", k, user.scan_pattern.el, user.scan_pattern.az);
         }
         return EXIT_SUCCESS;
     }
@@ -763,8 +787,8 @@ int main(int argc, char *argv[]) {
 
 #endif
 
-    RS_set_concept(S, concept);
-    RS_set_scan_pattern(S, scan_pattern);
+    RS_set_concept(S, user.concept);
+    RS_set_scan_pattern(S, &user.scan_pattern);
 
     // ---------------------------------------------------------------------------------------------------------------
 
@@ -844,21 +868,21 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    printf("scan mode = %c\n", scan_pattern->mode);
-    if (scan_pattern->mode != 'D') {
+    printf("scan mode = %c\n", user.scan_pattern.mode);
+    if (user.scan_pattern.mode != 'D') {
         // Revise the counts so that we use GPU preferred numbers
         RS_revise_debris_counts_to_gpu_preference(S);
     }
 
     if (user.tight_box) {
-        if (scan_pattern->mode == 'P' || scan_pattern->mode == 'p') {
+        if (user.scan_pattern.mode == 'P' || user.scan_pattern.mode == 'p') {
             // No need to go all the way up if we are looking low
             //box.size.e = MIN(box.size.e, scan.el);
-            box.size.e = MIN(box.size.e, scan_pattern->sweeps[scan_pattern->sweepCount - 1].elStart);
-        } else if (scan_pattern->mode == 'R' || scan_pattern->mode == 'r') {
+            box.size.e = MIN(box.size.e, user.scan_pattern.sweeps[user.scan_pattern.sweepCount - 1].elStart);
+        } else if (user.scan_pattern.mode == 'R' || user.scan_pattern.mode == 'r') {
             // Need to make sure we cover the very top
             //box.size.e = MAX(scan.start, scan.end);
-            box.size.e = MIN(box.size.e, scan_pattern->sweeps[scan_pattern->sweepCount - 1].elEnd);
+            box.size.e = MIN(box.size.e, user.scan_pattern.sweeps[user.scan_pattern.sweepCount - 1].elEnd);
         }
     }
 
@@ -955,11 +979,11 @@ int main(int argc, char *argv[]) {
                 eta = (float)(user.num_pulses - k) / fps;
                 k0 = k;
                 if (verb < 2) {
-                    printf("k %5d   (e%6.2f, a%5.2f)   %.2f fps   \033[1;33m%.2f%%\033[0m   eta %.0f second%s   \r", k, scan_pattern->el, scan_pattern->az, fps, prog, eta, eta > 1.5f ? "s" : "");
+                    printf("k %5d   (e%6.2f, a%5.2f)   %.2f fps   \033[1;33m%.2f%%\033[0m   eta %.0f second%s   \r", k, user.scan_pattern.el, user.scan_pattern.az, fps, prog, eta, eta > 1.5f ? "s" : "");
                  }
             }
         }
-        RS_set_beam_pos(S, scan_pattern->az, scan_pattern->el);
+        RS_set_beam_pos(S, user.scan_pattern.az, user.scan_pattern.el);
         RS_make_pulse(S);
 
         // Only download the necessary data
@@ -995,8 +1019,8 @@ int main(int argc, char *argv[]) {
         // Gather information for the  pulse header
         if (user.output_iq_file) {
             pulse_headers[k].time = S->sim_tic;
-            pulse_headers[k].az_deg = scan_pattern->az;
-            pulse_headers[k].el_deg = scan_pattern->el;
+            pulse_headers[k].az_deg = user.scan_pattern.az;
+            pulse_headers[k].el_deg = user.scan_pattern.el;
             memcpy(&pulse_cache[k * S->params.range_count], S->pulse, S->params.range_count * sizeof(cl_float4));
         }
 
@@ -1004,8 +1028,7 @@ int main(int argc, char *argv[]) {
         RS_advance_time(S);
 
         // Update scan angles for the next pulse
-        //get_next_scan_angles(&scan);
-        POS_get_next_angles(scan_pattern);
+        POS_get_next_angles(&user.scan_pattern);
     }
 
     // Overall fps
@@ -1049,10 +1072,10 @@ int main(int argc, char *argv[]) {
         for (k = 0; k < S->num_types; k++) {
             file_header.counts[k] = (uint32_t)S->counts[k];
         }
-        snprintf(file_header.scan_mode, sizeof(file_header.scan_mode), "%c", scan_pattern->mode);
-        file_header.scan_start      = scan_pattern->sweeps[0].azStart;
-        file_header.scan_end        = scan_pattern->sweeps[0].azEnd;
-        file_header.scan_delta      = scan_pattern->sweeps[0].azDelta;
+        snprintf(file_header.scan_mode, sizeof(file_header.scan_mode), "%c", user.scan_pattern.mode);
+        file_header.scan_start      = user.scan_pattern.sweeps[0].azStart;
+        file_header.scan_end        = user.scan_pattern.sweeps[0].azEnd;
+        file_header.scan_delta      = user.scan_pattern.sweeps[0].azDelta;
         file_header.simulation_seed = S->random_seed;
     }
 
@@ -1080,7 +1103,7 @@ int main(int argc, char *argv[]) {
         // Let master node do all the file writing to avoid identical filenames
         if (world_rank == 0) {
             int count;
-            write_iq_file(user, scan, &file_header, pulse_headers, pulse_cache, S->params.range_count, 0);
+            write_iq_file(user, &file_header, pulse_headers, pulse_cache, S->params.range_count, 0);
             // Collect data from worker nodes
             for (k = 1; k < world_size; k++) {
                 MPI_Recv(&file_header, sizeof(IQFileHeader), MPI_BYTE, k, 0, MPI_COMM_WORLD, &status);
@@ -1099,7 +1122,7 @@ int main(int argc, char *argv[]) {
                     MPI_Get_count(&status, MPI_INT, &count);
                     printf("%s : Received pulse data of %s B from node %d.\n", now(), commaint(count), status.MPI_SOURCE);
                 }
-                write_iq_file(user, scan, &file_header, pulse_headers, pulse_cache, S->params.range_count, k);
+                write_iq_file(user, &file_header, pulse_headers, pulse_cache, S->params.range_count, k);
             }
         } else {
             // Send data to master node
@@ -1110,7 +1133,7 @@ int main(int argc, char *argv[]) {
 
 #else
 
-        write_iq_file(user, scan_pattern, &file_header, pulse_headers, pulse_cache, S->params.range_count, 0);
+        write_iq_file(user, &file_header, pulse_headers, pulse_cache, S->params.range_count, 0);
         
 #endif
 
@@ -1118,11 +1141,12 @@ int main(int argc, char *argv[]) {
 
     if (user.output_state_file) {
         memset(charbuff, 0, sizeof(charbuff));
-        snprintf(charbuff, sizeof(charbuff), "%s/sim-%s-%s%04.1f.simstate",
-                 user.output_dir,
-                 nowlong(),
-                 POS_is_ppi(scan_pattern) ? "E": (scan_pattern->mode == 'R' || scan_pattern->mode == 'r' ? "A" : "S"),
-                 POS_is_ppi(scan_pattern) ? scan_pattern->sweeps[0].elStart: (POS_is_rhi(scan_pattern) ? scan_pattern->sweeps[0].azStart : (float)user.num_pulses));
+        // snprintf(charbuff, sizeof(charbuff), "%s/sim-%s-%s%04.1f.simstate",
+        //          user.output_dir,
+        //          nowlong(),
+        //          POS_is_ppi(&user.scan_pattern) ? "E": (POS_is_rhi(&user.scan_pattern) ? "A" : "S"),
+        //          POS_is_ppi(&user.scan_pattern) ? user.scan_pattern.sweeps[0].elStart: (POS_is_rhi(&user.scan_pattern) ? user.scan_pattern.sweeps[0].azStart : (float)user.num_pulses));
+        snprintf(charbuff, sizeof(charbuff), "%s.simstate", filename_prefix(&user));
         printf("%s : Output file : " UNDERLINE ("%s") "\n", now(), charbuff);
         fid = fopen(charbuff, "wb");
         if (fid == NULL) {
@@ -1161,8 +1185,6 @@ int main(int argc, char *argv[]) {
     MPI_Finalize();
 
 #endif
-
-    free(scan_pattern);
 
     return EXIT_SUCCESS;
 }

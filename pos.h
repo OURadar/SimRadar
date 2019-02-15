@@ -61,9 +61,10 @@ void POS_free(POSPattern *);
 
 int POS_get_next_angles(POSPattern *scan);
 int POS_parse_from_string(POSPattern *scan, const char *string);
-bool POS_is_ppi(POSPattern *scan);
-bool POS_is_rhi(POSPattern *scan);
-bool POS_is_dbs(POSPattern *scan);
+bool POS_is_ppi(const POSPattern *scan);
+bool POS_is_rhi(const POSPattern *scan);
+bool POS_is_dbs(const POSPattern *scan);
+bool POS_is_empty(const POSPattern *scan);
 
 void POS_summary(POSHandle P);
 
