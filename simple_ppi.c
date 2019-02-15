@@ -57,6 +57,8 @@ int main(int argc, char *argv[]) {
                     box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
                     box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
 
+    RS_show_radar_params(S);
+
     // Populate the domain with scatter bodies.
     // This is also the function that triggers kernel compilation, GPU memory allocation and
     // upload all the parameters to the GPU.

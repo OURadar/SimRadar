@@ -2871,13 +2871,16 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
                     table.xs, table.xo, hmax);
             rsprint("LES stretched z-grid using %.6f * log1p( %.6f * z )    Max = %.2f m\n",
                     table.zs, table.zo, zmax);
-            rsprint("GPU LES[%2d/%2d] @ X:[ %.2f - %.2f ] m   Y:[ %.2f - %.2f ] m   Z:[ %.2f - %.2f ] m   (%d, %s MB)\n",
+            rsprint("GPU LES[%2d/%2d] (%d, %s MB)\n",
                     H->vel_idx, H->vel_count,
-                    -hmax, hmax,
-                    -hmax, hmax,
-                    0.0, zmax,
                     H->workers[0].vel_id,
                     commaint(leslie->nn * sizeof(cl_float4) / 1024 / 1024));
+            printf(RS_INDENT "o X:[ %.2f - %.2f ] (%.2f) m\n"
+                   RS_INDENT "o Y:[ %.2f - %.2f ] (%.2f) m\n"
+                   RS_INDENT "o Z:[ %.2f - %.2f ] (%.2f) m\n",
+                   -hmax, hmax, 2.0f * hmax,
+                   -hmax, hmax, 2.0f * hmax,
+                   0.0, zmax, zmax);
         }
     } else {
         table.x_ = leslie->nx;    table.xm = 0.0f;    table.xs = 1.0f / leslie->rx;    table.xo = (float)((leslie->nx - 1) / 2);
@@ -2885,13 +2888,16 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
         table.z_ = leslie->nz;    table.zm = 0.0f;    table.zs = 1.0f / leslie->rz;    table.zo = 0.0f;
         if (H->verb > 0 && H->vel_idx == 0) {
             rsprint("LES uniform grid spacing using %.2f, %.2f, %.2f m\n", leslie->rx, leslie->ry, leslie->rz);
-            rsprint("GPU LES[%2d/%2d] @ X:[ %.2f - %.2f ] m   Y:[ %.2f - %.2f ] m   Z:[ %.2f - %.2f ] m   (%d, %s MB)\n",
+            rsprint("GPU LES[%2d/%2d] (%d, %s MB)\n",
                     H->vel_idx, H->vel_count,
-                    table.xo, table.xm,
-                    table.yo, table.ym,
-                    table.zo, table.zm,
                     H->workers[0].vel_id,
                     commaint(leslie->nn * sizeof(cl_float4) / 1024 / 1024));
+            printf(RS_INDENT "o X:[ %.2f - %.2f ] (%.2f) m\n"
+                   RS_INDENT "o Y:[ %.2f - %.2f ] (%.2f) m\n"
+                   RS_INDENT "o Z:[ %.2f - %.2f ] (%.2f) m\n",
+                   table.xo, table.xm, table.xm - table.xo,
+                   table.yo, table.ym, table.ym - table.yo,
+                   table.zo, table.zm, table.zm - table.zo);
         }
     }
     
@@ -3038,7 +3044,7 @@ void RS_clear_vel_data(RSHandle *H) {
 
 void RS_set_scan_pattern(RSHandle *H, const POSPattern *scan_pattern) {
     H->P = (POSHandle)scan_pattern;
-    if (H->verb) {
+    if (H->verb > 1) {
         POS_summary(H->P);
     }
 }
@@ -4188,7 +4194,7 @@ void RS_populate(RSHandle *H) {
             }
             
             sprintf(H->summary + strlen(H->summary),
-                    "DSD Specifications:\n");
+                    "DSD specifications:\n");
             for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
                 sprintf(H->summary + strlen(H->summary), "  o %.2f mm - P %.5f / %s particles\n", 2000.0f * H->dsd_r[i], (float)H->dsd_pop[i] / (float)H->counts[0], commaint(H->dsd_pop[i]));
             }
@@ -4202,7 +4208,7 @@ void RS_populate(RSHandle *H) {
             }
             
             if (H->verb) {
-                rsprint("Actual DSD Specifications:");
+                rsprint("Actual DSD specifications:");
                 for (i = 0; i < MIN(H->dsd_count - 2, 3); i++) {
                     printf(RS_INDENT "o %.2f mm - PDF %.5f / %.5f / %s particles\n", 2000.0f * H->dsd_r[i], H->dsd_pdf[i], (float)H->dsd_pop[i] / (float)H->counts[0], commaint(H->dsd_pop[i]));
                 }
@@ -5156,11 +5162,15 @@ void RS_show_pulse(RSHandle *H) {
 
 RSBox RS_suggest_scan_domain(RSHandle *H) {
     RSBox box;
-    
+    memset(&box, 0, sizeof(RSBox));
+
     if (H->P == NULL) {
-        rsprint("RS : Need to use RS_set_scan_pattern() before this.\n");
-        memset(&box, 0, sizeof(RSBox));
+        rsprint("Need to use RS_set_scan_pattern() before this.\n");
         return box;
+    }
+    
+    if (H->L == NULL) {
+        RS_set_vel_data_to_config(H, LESConfigSuctionVortices);
     }
     
     if (H->verb > 1) {

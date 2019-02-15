@@ -328,7 +328,7 @@ void *LES_background_read(LESHandle i) {
         int file_id = frame / LES_file_nblock;
 
         #ifdef DEBUG
-        rsprint("Background ingest from file %s for frame %d to slot %d ...\n", h->files[file_id], h->req, h->ibuf);
+        rsprint("Background ingest %s %d -> %d\n", h->files[file_id], h->req, h->ibuf);
         #endif
 
         // The table in collection of data boxes
@@ -343,6 +343,7 @@ void *LES_background_read(LESHandle i) {
         table->rz = h->rz;
         table->tp = h->tp;
         table->tr = h->tr;
+        //rsprint("ax = %.2f   ay = %.2f\n", h->ax, h->ay);
 
         long offset = sizeof(uint32_t) +                     // version number
         (frame % LES_file_nblock) *

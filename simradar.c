@@ -721,6 +721,9 @@ int main(int argc, char *argv[]) {
     if (POS_is_empty(&user.scan_pattern)) {
         rsprint("Using default scan mode.\n");
         POS_parse_from_string(&user.scan_pattern, "P:3.0,-12:12:0.01");
+        if (user.num_pulses < 0) {
+            user.num_pulses = 1000;
+        }
     }
 
     // Some conditions that no simulation should be commenced
@@ -844,7 +847,7 @@ int main(int argc, char *argv[]) {
     }
     
     //RS_set_vel_data_to_config(S, LESConfigSuctionVortices);
-    RS_set_vel_data_to_config(S, LESConfigFlat);
+    //RS_set_vel_data_to_config(S, LESConfigFlat);
 
     // ---------------------------------------------------------------------------------------------------------------
 
@@ -868,18 +871,17 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    printf("scan mode = %c\n", user.scan_pattern.mode);
-    if (user.scan_pattern.mode != 'D') {
+    if (!POS_is_dbs(&user.scan_pattern)) {
         // Revise the counts so that we use GPU preferred numbers
         RS_revise_debris_counts_to_gpu_preference(S);
     }
 
     if (user.tight_box) {
-        if (user.scan_pattern.mode == 'P' || user.scan_pattern.mode == 'p') {
+        if (POS_is_ppi(&user.scan_pattern)) {
             // No need to go all the way up if we are looking low
             //box.size.e = MIN(box.size.e, scan.el);
             box.size.e = MIN(box.size.e, user.scan_pattern.sweeps[user.scan_pattern.sweepCount - 1].elStart);
-        } else if (user.scan_pattern.mode == 'R' || user.scan_pattern.mode == 'r') {
+        } else if (POS_is_rhi(&user.scan_pattern)) {
             // Need to make sure we cover the very top
             //box.size.e = MAX(scan.start, scan.end);
             box.size.e = MIN(box.size.e, user.scan_pattern.sweeps[user.scan_pattern.sweepCount - 1].elEnd);
