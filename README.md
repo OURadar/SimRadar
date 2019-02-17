@@ -242,7 +242,7 @@ Multiple arrays of type `cl_float` are used to keep track of a set of attributes
 
 
 For the Programming Masters
----------------------------
+---
 
 These functions are of low levels. Normal usage should not need to tinker with these.
 
@@ -262,7 +262,11 @@ These functions take input format that are in native format from the data suppli
     RS_set_adm_data_to_ADM_table()
     RS_set_rcs_data_to_RCS_table()
 
-References
-==========
+Publications
+============
 
-B. L. Cheong, D. J. Bodine, C. J. Fulton, S. M. Torres, T. Maruyama, R. D. Palmer, SimRadar: A Polarimetric Radar Time-Series Simulator for Tornadic Debris Studies, *IEEE Trans. Geos. Remote Sensi.*, accepted.
+B. L. Cheong, D. J. Bodine, C. J. Fulton, S. M. Torres, T. Maruyama, R. D. Palmer, SimRadar: A Polarimetric Radar Time-Series Simulator for Tornadic Debris Studies, *IEEE Trans. Geos. Remote Sensi.*, **55**(5), pp 2858-2870, 2017.
+
+
+Notes
+=====
