@@ -209,31 +209,36 @@ void show_help() {
            "           " PROGNAME " -o\n"
            "\n"
            "     The following simulates a vortex and creates a PPI scan data using\n"
-           "     scan parameter: mode = 'P' (PPI), start = -12, end = +12, delta = 0.01,\n"
-           "     el = 3.0 deg, p = 2400 (number of pulses).\n"
-           "           " PROGNAME " -e 3.0 --sweep P:-12:12:0.01 -p 2400 -o\n"
+           "     scan parameter: mode = 'P' (PPI), el = 3.0 deg, start = -12, end = +12,\n"
+           "     delta = 0.01, p = 2400 (number of pulses).\n"
+           "           " PROGNAME " --sweep P:3.0,-12:12:0.01 -p 2400 -o\n"
            "\n"
            "     The following simulates a vortex and creates an RHI scan data using\n"
-           "     scan parameters: mode = 'R' (RHI), start = 0, end = 12, delta = 0.01,\n"
-           "     az = 1.0 deg, p = 1200.\n"
-           "           " PROGNAME " -a 1.0 --sweep R:0:12:0.01 -p 1200 -o\n"
+           "     scan parameters: mode = 'R' (RHI), az = 1.0 deg, start = 0, end = 12,\n"
+           "     delta = 0.01, p = 1200.\n"
+           "           " PROGNAME " --sweep R:1.0,0:12:0.01 -p 1200 -o\n"
            "\n"
            "     The following simulates a vortex and creates a PPI scan data using\n"
            "     10,000 debris type #1, which is the leaf.\n"
-           "           " PROGNAME " -a 1.0 --sweep R:0:12:0.01 -p 1200 -d 1,10000 -o\n"
+           "           " PROGNAME " --sweep P:1.0,-12:12:0.01 -p 1200 -d 1,10000 -o\n"
            "\n"
            "     The following simulates a vortex and creates a PPI scan data with\n"
-           "     scan parameters: mode = 'P' (PPI), start = -12, end = +12, delta = 0.01,\n"
-           "     el = 3.0 (not set, default). With PRT = 0.5ms, it takes 4800 pulses to\n"
-           "     cover the sector so -p 4800 would complete the sweep.\n"
-           "           " PROGNAME " -o -T --sweep P:-12:12:0.005 -t 0.0005 -p 4800\n"
+           "     scan parameters: mode = 'P' (PPI), el = 1.0 deg, start = -12, end = +12,\n"
+           "     delta = 0.01, PRT = 0.5ms. It would take 4800 pulses to cover the sector\n"
+           "     so -p 4800 would complete the sweep.\n"
+           "           " PROGNAME " -o -T --sweep P:1.0,-12:12:0.005 -t 0.0005 -p 4800\n"
            "\n"
            "     The following simulates the same as before but loads the domain with 10^5\n"
            "     debris objects\n"
-           "           " PROGNAME " -o --concept DBU -T --sweep P:-12:12:0.005 -t 0.0005 -p 4800 -d 1,10000\n"
+           "           " PROGNAME " -o --concept DBU -T --sweep P:1.0,-12:12:0.005 -t 0.0005 -p 4800 -d 1,10000\n"
            "\n"
-           "     The following simulates ... (to be completed)\n"
-           "           " PROGNAME " -o -T --sweep D:0,75,10/90,75,10/0,90,10 -t 0.01 -p 30 -N\n"
+           "     The following simulates a profiling radar by specifying the concept\n"
+           "     option '-c FV' for fixed scatterer position and vertically pointing radar.\n"
+           "     The scan pattern is a DBS. Starting at azimuth = 0 deg, elevation at 75 deg\n"
+           "     for 10 pulses, then azimtuh of 90 deg, elevation 75 deg for 10 pulses and\n"
+           "     finally azimuth at 0 deg, elevation 0 deg for 10 pulses. Total number pulses\n"
+           "     of 60 with a PRT of 0.01 s. The scan repeats itself every 30 seconds.\n"
+           "           " PROGNAME " -o -c FV --sweep D:0,75,10/90,75,10/0,90,10 -t 0.01 -p 60 -N\n"
            );
     printf("%s\n(%.1f)\n", buff, (float)k / size * 100.0f);
     free(buff);
@@ -691,12 +696,12 @@ int main(int argc, char *argv[]) {
         show_user_param("Beamwidth", &user.beamwidth, "deg", ValueTypeFloat, 0);
         show_user_param("TX lambda", &user.lambda, "m", ValueTypeFloat, 0);
         show_user_param("TX pulse width", &user.pw, "s", ValueTypeFloat, 0);
-        show_user_param("Warm up pulses", &user.warm_up_pulses, "", ValueTypeInt, 0);
         show_user_param("Number of pulses", &user.num_pulses, "", ValueTypeInt, 0);
-        show_user_param("Particle density", &user.density, "", ValueTypeFloat, 0);
         show_user_param("Output directory", user.output_dir, "", ValueTypeChar, 0);
         show_user_param("User random seed", &user.seed, "", ValueTypeInt, 0);
         if (!(user.concept & RSSimulationConceptFixedScattererPosition)) {
+            show_user_param("Warm up pulses", &user.warm_up_pulses, "", ValueTypeInt, 0);
+            show_user_param("Particle density", &user.density, "", ValueTypeFloat, 0);
             show_user_param("User DSD profile", user.dsd_sizes, "mm", ValueTypeFloatArray, user.dsd_count);
         }
         show_user_param("User LES configuration", user.les_config, "", ValueTypeChar, 0);
