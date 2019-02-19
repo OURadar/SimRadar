@@ -389,7 +389,7 @@
 
 - (void)chooseNextDrawModeForward:(BOOL)forward
 {
-    const int max_mkey = 8;
+    const int max_mkey = 9;
     if (forward) {
         mkey = mkey >= max_mkey ? 0 : mkey + 1;
     } else {
@@ -561,6 +561,12 @@
         case 8:
             ind = 'I';
             mode = 'P';
+            trans = 'O';
+            break;
+            
+        case 9:
+            ind = 'I';
+            mode = 'C';
             trans = 'O';
             break;
             
