@@ -97,7 +97,7 @@ float4 quat_rotate(float4 vector, float4 quat);
 float4 cl_complex_multiply(const float4 a, const float4 b);
 float4 cl_complex_divide(const float4 a, const float4 b);
 float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16 sim_desc);
-float4 compute_bg_vel(const float4 pos, __read_only image3d_t wind_uvw, const float16 wind_desc, const float16 sim_desc);
+float4 compute_bg_vel(const float4 pos, __read_only image3d_t wind_uvwt, const float16 wind_desc, const float16 sim_desc);
 float4 compute_dudt_dwdt(float4 *dwdt, const float4 vel, const float4 vel_bg, const float4 ori, __read_only image2d_t adm_cd, __read_only image2d_t adm_cm, const float16 adm_desc);
 //float4 compute_ellipsoid_rcs(const float4 pos, __read_only image1d_t rcs, const float4 rcs_desc);
 float4 compute_ellipsoid_rcs(const float4 pos, __constant float4 *table, const float4 table_desc);
@@ -203,14 +203,6 @@ float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16
 {
     const float s7 = wind_desc.s7;
     const uint grid_spacing = *(uint *)&s7;
-//    const uint4 mask = (uint4)((grid_spacing & RSTableSpacingStretchedX) << 15,
-//                               (grid_spacing & RSTableSpacingStretchedY) << 15,
-//                               (grid_spacing & RSTableSpacingStretchedZ) << 15,
-//                               0);
-//    float4 pos_lin = fma(pos, wind_desc.s0123, wind_desc.s4567);
-//    float4 pos_rel = pos - (float4)(sim_desc.hi.s01 + 0.5f * sim_desc.hi.s45, 0.0f, 0.0f);
-//    float4 pos_exp = copysign(wind_desc.s0123, pos_rel) * log1p(wind_desc.s4567 * fabs(pos_rel)) + wind_desc.s89ab;
-//    return select(pos_lin, pos_exp, mask);
 
     if (grid_spacing == RSTableSpacingStretchedXYZ) {
         // Relative position from the center of the domain
@@ -267,11 +259,11 @@ float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16
 // Background velocity
 //
 
-float4 compute_bg_vel(const float4 pos, __read_only image3d_t wind_uvw, const float16 wind_desc, const float16 sim_desc) {
+float4 compute_bg_vel(const float4 pos, __read_only image3d_t wind_uvwt, const float16 wind_desc, const float16 sim_desc) {
 
     float4 wind_coord = wind_table_index(pos, wind_desc, sim_desc);
     
-    return read_imagef(wind_uvw, sampler, wind_coord);
+    return read_imagef(wind_uvwt, sampler, wind_coord);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -614,7 +606,8 @@ __kernel void bg_atts(__global float4 *p,
                       __global float4 *v,
                       __global float4 *x,
                       __global uint4 *y,
-                      __read_only image3d_t wind_uvw,
+                      __read_only image3d_t wind_uvwt,
+                      __read_only image3d_t wind_cpxx,
                       const float16 wind_desc,
                       __constant float4 *drop_rcs,
                       const float4 drop_rcs_desc,
@@ -649,7 +642,7 @@ __kernel void bg_atts(__global float4 *p,
     float4 wind_coord = wind_table_index(pos, wind_desc, sim_desc);
     
     // Look up the background velocity from the table
-    vel = read_imagef(wind_uvw, sampler, wind_coord);
+    vel = read_imagef(wind_uvwt, sampler, wind_coord);
     
     float4 rcs = compute_ellipsoid_rcs(pos, drop_rcs, drop_rcs_desc);
     
@@ -670,7 +663,8 @@ __kernel void fp_atts(__global float4 *p,
                       __global float4 *v,
                       __global float4 *x,
                       __global uint4 *y,
-                      __read_only image3d_t wind_uvw,
+                      __read_only image3d_t wind_uvwt,
+                      __read_only image3d_t wind_cpxx,
                       const float16 wind_desc,
                       __constant float4 *drop_rcs,
                       const float4 drop_rcs_desc,
@@ -707,7 +701,7 @@ __kernel void fp_atts(__global float4 *p,
 
     // Derive the lookup index
     float4 wind_coord = wind_table_index(pos, wind_desc, sim_desc);
-    vel = read_imagef(wind_uvw, sampler, wind_coord);
+    vel = read_imagef(wind_uvwt, sampler, wind_coord);
     
     // Derive phase change
     //float cn2 = vel.s4;
@@ -737,7 +731,8 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
                       __global float4 *v,                  // velocity (u, v, w) and a vacant float
                       __global float4 *x,                  // rcs (hi, hq, vi, vq) of the particle
                       __global uint4 *y,                   // 128-bit random seed (4 x 32-bit)
-                      __read_only image3d_t wind_uvw,
+                      __read_only image3d_t wind_uvwt,
+                      __read_only image3d_t wind_cpxx,
                       const float16 wind_desc,
                       __constant float4 *drop_rcs,
                       const float4 drop_rcs_desc,
@@ -779,7 +774,7 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
         float4 wind_coord = wind_table_index(pos, wind_desc, sim_desc);
 
         // Look up the background velocity from the table
-        float4 bg_vel = read_imagef(wind_uvw, sampler, wind_coord);
+        float4 bg_vel = read_imagef(wind_uvwt, sampler, wind_coord);
 
         // Particle velocity due to drag
         float4 delta_v = bg_vel - vel;

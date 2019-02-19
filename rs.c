@@ -420,9 +420,11 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
         C->surf_rcs_imag[i] = NULL;
     }
     C->surf_rcs_ellipsoids = NULL;
-    C->surf_vel[0] = NULL;
-    C->surf_vel[1] = NULL;
-    
+    C->surf_uvwt[0] = NULL;
+    C->surf_uvwt[1] = NULL;
+    C->surf_cpxx[0] = NULL;
+    C->surf_cpxx[1] = NULL;
+
 #else
 
     cl_int ret;
@@ -738,8 +740,9 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &C->scat_rcs);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
-    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
-    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
+    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->les_uvwt[0]);
+    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundCn2Pressure,         sizeof(cl_mem),     &C->les_cpxx[0]);
+    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundDescription,         sizeof(cl_float16), &C->les_desc);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCS,                  sizeof(cl_mem),     &C->rcs_ellipsoid);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCSDescription,       sizeof(cl_float4),  &C->rcs_ellipsoid_desc);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
@@ -753,8 +756,9 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
     ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
     ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &C->scat_rcs);
     ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
-    ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
-    ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
+    ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->les_uvwt[0]);
+    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundCn2Pressure,         sizeof(cl_mem),     &C->les_cpxx[0]);
+    ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentBackgroundDescription,         sizeof(cl_float16), &C->les_desc);
     ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCS,                  sizeof(cl_mem),     &C->rcs_ellipsoid);
     ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCSDescription,       sizeof(cl_float4),  &C->rcs_ellipsoid_desc);
     ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
@@ -768,8 +772,9 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
     ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
     ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &C->scat_rcs);
     ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
-    ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
-    ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
+    ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->les_uvwt[0]);
+    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundCn2Pressure,         sizeof(cl_mem),     &C->les_cpxx[0]);
+    ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentBackgroundDescription,         sizeof(cl_float16), &C->les_desc);
     ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCS,                  sizeof(cl_mem),     &C->rcs_ellipsoid);
     ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCSDescription,       sizeof(cl_float4),  &C->rcs_ellipsoid_desc);
     ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
@@ -785,8 +790,8 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentTumble,                        sizeof(cl_mem),     &C->scat_tum);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &C->scat_rcs);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
-    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->vel[0]);
-    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->vel_desc);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->les_uvwt[0]);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->les_desc);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &C->adm_cd[0]);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelMomentum,          sizeof(cl_mem),     &C->adm_cm[0]);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDescription,       sizeof(cl_float16), &C->adm_desc[0]);
@@ -1181,8 +1186,8 @@ void RS_free(RSHandle *H) {
         gcl_free(H->workers[i].range_weight);
         
         gcl_release_image(H->workers[i].rcs_ellipsoid);
-        gcl_release_image(H->workers[i].vel[0]);
-        gcl_release_image(H->workers[i].vel[1]);
+        gcl_release_image(H->workers[i].les_uvwt[0]);
+        gcl_release_image(H->workers[i].les_uvwt[1]);
         
         for (int a = 0; a < H->adm_count; a++) {
             gcl_release_image(H->workers[i].adm_cd[a]);
@@ -1202,8 +1207,8 @@ void RS_free(RSHandle *H) {
         clReleaseMemObject(H->workers[i].range_weight);
         
         clReleaseMemObject(H->workers[i].rcs_ellipsoid);
-        clReleaseMemObject(H->workers[i].vel[0]);
-        clReleaseMemObject(H->workers[i].vel[1]);
+        clReleaseMemObject(H->workers[i].les_uvwt[0]);
+        clReleaseMemObject(H->workers[i].les_uvwt[1]);
         
         for (int a = 0; a < H->adm_count; a++) {
             clReleaseMemObject(H->workers[i].adm_cd[a]);
@@ -2671,12 +2676,14 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
     cl_image_format format = {CL_RGBA, CL_FLOAT};
 
    for (i = 0; i < H->num_workers; i++) {
-        if (H->workers[i].vel[0] == NULL) {
+        if (H->workers[i].les_uvwt[0] == NULL) {
 
 #if defined (_USE_GCL_)
             
-            H->workers[i].vel[0] = gcl_create_image(&format, table.x_, table.y_, table.z_, H->workers[i].surf_vel[0]);
-            H->workers[i].vel[1] = gcl_create_image(&format, table.x_, table.y_, table.z_, H->workers[i].surf_vel[1]);
+            H->workers[i].les_uvwt[0] = gcl_create_image(&format, table.x_, table.y_, table.z_, H->workers[i].surf_uwvt[0]);
+            H->workers[i].les_uvwt[1] = gcl_create_image(&format, table.x_, table.y_, table.z_, H->workers[i].surf_uvwt[1]);
+            H->workers[i].les_cpxx[0] = gcl_create_image(&format, table.x_, table.y_, table.z_, H->workers[i].surf_cpxx[0]);
+            H->workers[i].les_cpxx[1] = gcl_create_image(&format, table.x_, table.y_, table.z_, H->workers[i].surf_cpxx[1]);
 
 #elif defined (CL_VERSION_1_2)
         
@@ -2693,21 +2700,27 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
             desc.num_samples = 0;
             desc.buffer = NULL;
 
-            H->workers[i].vel[0] = clCreateImage(H->workers[i].context, flags, &format, &desc, NULL, &ret);
-            H->workers[i].vel[1] = clCreateImage(H->workers[i].context, flags, &format, &desc, NULL, NULL);
-            
+            H->workers[i].les_uvwt[0] = clCreateImage(H->workers[i].context, flags, &format, &desc, NULL, &ret);
+            H->workers[i].les_uvwt[1] = clCreateImage(H->workers[i].context, flags, &format, &desc, NULL, NULL);
+            H->workers[i].les_cpxx[0] = clCreateImage(H->workers[i].context, flags, &format, &desc, NULL, NULL);
+            H->workers[i].les_cpxx[1] = clCreateImage(H->workers[i].context, flags, &format, &desc, NULL, NULL);
+
 #else
             
-            H->workers[i].vel[0] = clCreateImage3D(H->workers[i].context, flags, &format, table.x_, table.y_, table.z_, 0, 0, NULL, &ret);
-            H->workers[i].vel[1] = clCreateImage3D(H->workers[i].context, flags, &format, table.x_, table.y_, table.z_, 0, 0, NULL, NULL);
-            
+            H->workers[i].les_uvwt[0] = clCreateImage3D(H->workers[i].context, flags, &format, table.x_, table.y_, table.z_, 0, 0, NULL, &ret);
+            H->workers[i].les_uvwt[1] = clCreateImage3D(H->workers[i].context, flags, &format, table.x_, table.y_, table.z_, 0, 0, NULL, NULL);
+            H->workers[i].les_cpxx[0] = clCreateImage3D(H->workers[i].context, flags, &format, table.x_, table.y_, table.z_, 0, 0, NULL, NULL);
+            H->workers[i].les_cpxx[1] = clCreateImage3D(H->workers[i].context, flags, &format, table.x_, table.y_, table.z_, 0, 0, NULL, NULL);
+
 #endif
             
-            if (H->workers[i].vel[0] == NULL || H->workers[i].vel[1] == NULL) {
-                rsprint("ERROR: workers[%d] unable to create wind table on CL device.  ret = %d   table of %d x %d x %d @ %p (%d)\n", i, ret, table.x_, table.y_, table.z_, table.data, flags);
+            if (H->workers[i].les_uvwt[0] == NULL || H->workers[i].les_uvwt[1] == NULL || H->workers[i].les_cpxx[0] == NULL || H->workers[i].les_cpxx[1] == NULL) {
+                rsprint("ERROR: workers[%d] unable to create wind table on CL device.  ret = %d   table of %d x %d x %d @ %p (%d)\n", i, ret, table.x_, table.y_, table.z_, table.uvwt, flags);
                 exit(EXIT_FAILURE);
             } else if (H->verb > 2) {
-                rsprint("workers[%d] created wind table @ %p %p\n", i, &H->workers[i].vel[0], &H->workers[i].vel[1]);
+                rsprint("workers[%d] created wind table @ %p %p %p %p\n", i,
+                        &H->workers[i].les_uvwt[0], &H->workers[i].les_uvwt[1],
+                        &H->workers[i].les_cpxx[0], &H->workers[i].les_cpxx[1]);
             }
         } // if (H->workers[i].vel[0] == NULL) ...
 
@@ -2716,7 +2729,8 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
         dispatch_async(H->workers[i].que, ^{
             size_t origin[3] = {0, 0, 0};
             size_t region[3] = {table.x_, table.y_, table.z_};
-            gcl_copy_ptr_to_image(H->workers[i].vel[H->workers[i].vel_id], table.data, origin, region);
+            gcl_copy_ptr_to_image(H->workers[i].les_uvwt[H->workers[i].les_id], table.data, origin, region);
+            gcl_copy_ptr_to_image(H->workers[i].les_cpxx[H->workers[i].les_id], table.data, origin, region);
             dispatch_semaphore_signal(H->workers[i].sem_upload);
         });
 
@@ -2724,8 +2738,10 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
         
         size_t origin[3] = {0, 0, 0};
         size_t region[3] = {table.x_, table.y_, table.z_};
-        clEnqueueWriteImage(H->workers[i].que, H->workers[i].vel[H->workers[i].vel_id], CL_FALSE, origin, region,
-                            table.x_ * sizeof(cl_float4), table.y_ * table.x_ * sizeof(cl_float4), table.data, 0, NULL, &H->workers[i].event_upload);
+        clEnqueueWriteImage(H->workers[i].que, H->workers[i].les_uvwt[H->workers[i].les_id], CL_FALSE, origin, region,
+                            table.x_ * sizeof(cl_float4), table.y_ * table.x_ * sizeof(cl_float4), table.uvwt, 0, NULL, &H->workers[i].event_upload);
+        clEnqueueWriteImage(H->workers[i].que, H->workers[i].les_cpxx[H->workers[i].les_id], CL_FALSE, origin, region,
+                            table.x_ * sizeof(cl_float4), table.y_ * table.x_ * sizeof(cl_float4), table.cpxx, 0, NULL, &H->workers[i].event_upload);
 
 #endif
         
@@ -2745,36 +2761,36 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 
         // Copy over to CL worker
         float tmpf; memcpy(&tmpf, &table.spacing, sizeof(float));
-        H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionFormat] = tmpf;                   // Make a copy in float so we are maintaining all 32-bits
+        H->workers[i].les_desc.s[RSTable3DStaggeredDescriptionFormat] = tmpf;                   // Make a copy in float so we are maintaining all 32-bits
         //printf("%s : RS : %d / %.9f\n", now(), table.spacing, H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionFormat]);
         if (table.spacing & RSTableSpacingStretchedX) {
-            H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionBaseChangeX] = table.xs;      // "m" for stretched grid: m * log1p(n * pos.x) + o;
-            H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionPositionScaleX] = table.xo;   // "n" for stretched grid: m * log1p(n * pos.y) + o;
-            H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionOffsetX] = table.xm;          // "o" for stretched grid: m * log1p(n * pos.z) + o;
+            H->workers[i].les_desc.s[RSTable3DStaggeredDescriptionBaseChangeX] = table.xs;      // "m" for stretched grid: m * log1p(n * pos.x) + o;
+            H->workers[i].les_desc.s[RSTable3DStaggeredDescriptionPositionScaleX] = table.xo;   // "n" for stretched grid: m * log1p(n * pos.y) + o;
+            H->workers[i].les_desc.s[RSTable3DStaggeredDescriptionOffsetX] = table.xm;          // "o" for stretched grid: m * log1p(n * pos.z) + o;
         } else {
-            H->workers[i].vel_desc.s[RSTable3DDescriptionScaleX] = table.xs;
-            H->workers[i].vel_desc.s[RSTable3DDescriptionOriginX] = table.xo;
-            H->workers[i].vel_desc.s[RSTable3DDescriptionMaximumX] = table.xm;
+            H->workers[i].les_desc.s[RSTable3DDescriptionScaleX] = table.xs;
+            H->workers[i].les_desc.s[RSTable3DDescriptionOriginX] = table.xo;
+            H->workers[i].les_desc.s[RSTable3DDescriptionMaximumX] = table.xm;
         }
         if (table.spacing & RSTableSpacingStretchedY) {
-            H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionBaseChangeY] = table.ys;
-            H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionPositionScaleY] = table.yo;
-            H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionOffsetY] = table.ym;
+            H->workers[i].les_desc.s[RSTable3DStaggeredDescriptionBaseChangeY] = table.ys;
+            H->workers[i].les_desc.s[RSTable3DStaggeredDescriptionPositionScaleY] = table.yo;
+            H->workers[i].les_desc.s[RSTable3DStaggeredDescriptionOffsetY] = table.ym;
         } else {
-            H->workers[i].vel_desc.s[RSTable3DDescriptionScaleY] = table.ys;
-            H->workers[i].vel_desc.s[RSTable3DDescriptionOriginY] = table.yo;
-            H->workers[i].vel_desc.s[RSTable3DDescriptionMaximumY] = table.ym;
+            H->workers[i].les_desc.s[RSTable3DDescriptionScaleY] = table.ys;
+            H->workers[i].les_desc.s[RSTable3DDescriptionOriginY] = table.yo;
+            H->workers[i].les_desc.s[RSTable3DDescriptionMaximumY] = table.ym;
         }
         if (table.spacing & RSTableSpacingStretchedZ) {
-            H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionBaseChangeZ] = table.zs;
-            H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionPositionScaleZ] = table.zo;
-            H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionOffsetZ] = table.zm;
+            H->workers[i].les_desc.s[RSTable3DStaggeredDescriptionBaseChangeZ] = table.zs;
+            H->workers[i].les_desc.s[RSTable3DStaggeredDescriptionPositionScaleZ] = table.zo;
+            H->workers[i].les_desc.s[RSTable3DStaggeredDescriptionOffsetZ] = table.zm;
         } else {
-            H->workers[i].vel_desc.s[RSTable3DDescriptionScaleZ] = table.zs;
-            H->workers[i].vel_desc.s[RSTable3DDescriptionOriginZ] = table.zo;
-            H->workers[i].vel_desc.s[RSTable3DDescriptionMaximumZ] = table.zm;
+            H->workers[i].les_desc.s[RSTable3DDescriptionScaleZ] = table.zs;
+            H->workers[i].les_desc.s[RSTable3DDescriptionOriginZ] = table.zo;
+            H->workers[i].les_desc.s[RSTable3DDescriptionMaximumZ] = table.zm;
         }
-        H->workers[i].vel_desc.s[RSTable3DDescriptionRefreshTime] = table.tr;
+        H->workers[i].les_desc.s[RSTable3DDescriptionRefreshTime] = table.tr;
     }
 }
 
@@ -2797,22 +2813,22 @@ void RS_set_vel_data_to_config(RSHandle *H, LESConfig c) {
 
     // Release the pre-existing memory. Alaways assume the new LESConfig is not the same size.
     for (i = 0; i < H->num_workers; i++) {
-        if (H->workers[i].vel[i] != NULL) {
+        if (H->workers[i].les_uvwt[i] != NULL) {
 
 #if defined (_USE_GCL_)
 
-            gcl_release_image(H->workers[i].vel[0]);
-            gcl_release_image(H->workers[i].vel[1]);
+            gcl_release_image(H->workers[i].les_uvwt[0]);
+            gcl_release_image(H->workers[i].les_uvwt[1]);
 
 #else
 
-            clReleaseMemObject(H->workers[i].vel[0]);
-            clReleaseMemObject(H->workers[i].vel[1]);
+            clReleaseMemObject(H->workers[i].les_uvwt[0]);
+            clReleaseMemObject(H->workers[i].les_uvwt[1]);
 
 #endif
 
-            H->workers[i].vel[0] = NULL;
-            H->workers[i].vel[1] = NULL;
+            H->workers[i].les_uvwt[0] = NULL;
+            H->workers[i].les_uvwt[1] = NULL;
         }
     }
 
@@ -2833,7 +2849,7 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
     float hmax, zmax;
     
     RSTable3D table = RS_table3d_init(leslie->nn);
-    if (table.data == NULL) {
+    if (table.uvwt == NULL) {
         rsprint("ERROR: LES input data cannot be NULL.");
         return;
     }
@@ -2866,7 +2882,7 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
                     table.zs, table.zo, zmax);
             rsprint("GPU LES[%2d/%2d] (%d, %s MB)\n",
                     H->vel_idx, H->vel_count,
-                    H->workers[0].vel_id,
+                    H->workers[0].les_id,
                     commaint(leslie->nn * sizeof(cl_float4) / 1024 / 1024));
             printf(RS_INDENT "o X:[ %.2f - %.2f ] (%.2f) m\n"
                    RS_INDENT "o Y:[ %.2f - %.2f ] (%.2f) m\n"
@@ -2883,7 +2899,7 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
             rsprint("LES uniform grid spacing using %.2f, %.2f, %.2f m\n", leslie->rx, leslie->ry, leslie->rz);
             rsprint("GPU LES[%2d/%2d] (%d, %s MB)\n",
                     H->vel_idx, H->vel_count,
-                    H->workers[0].vel_id,
+                    H->workers[0].les_id,
                     commaint(leslie->nn * sizeof(cl_float4) / 1024 / 1024));
             printf(RS_INDENT "o X:[ %.2f - %.2f ] (%.2f) m\n"
                    RS_INDENT "o Y:[ %.2f - %.2f ] (%.2f) m\n"
@@ -2898,14 +2914,17 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
     table.tr = leslie->tr;
     
     // There is a toll-free bridge: LESTable has a remapped data structure during background read so there is no need to copy, just reassign the pointer, gotta love C!
-    void *tmp = table.data;
-    table.data = (cl_float4 *)leslie->uvwt;
+    void *uvwt_orig = table.uvwt;
+    void *cpxx_orig = table.cpxx;
+    table.uvwt = (cl_float4 *)leslie->uvwt;
+    table.cpxx = (cl_float4 *)leslie->cpxx;
 
     // Now we call the function to upload to GPU memory
     RS_set_vel_data(H, table);
     
     // Restore the pointer so that it can be freed as expected.
-    table.data = tmp;
+    table.uvwt = uvwt_orig;
+    table.cpxx = cpxx_orig;
     
     // Cache a copy of the parameters but not the data, the data could be deallocated immediately after this function call.
     H->vel_desc = *leslie;
@@ -2935,10 +2954,10 @@ void RS_set_vel_data_to_uniform(RSHandle *H, cl_float4 velocity) {
     
     table.tr = 1000.0f;
     
-    table.data[0].x = velocity.x;
-    table.data[0].y = velocity.y;
-    table.data[0].z = velocity.z;
-    table.data[0].w = 0.0f;
+    table.uvwt[0].x = velocity.x;
+    table.uvwt[0].y = velocity.y;
+    table.uvwt[0].z = velocity.z;
+    table.uvwt[0].w = 0.0f;
     
     RS_set_vel_data(H, table);
     
@@ -2974,10 +2993,10 @@ void RS_set_vel_data_to_cube27(RSHandle *H) {
     const float v = 10.0f;
     
     for (i = 0; i < 27; i++) {
-        table.data[i].x = (float) (i % 3)      * v - v;
-        table.data[i].y = (float)((i % 9) / 3) * v - v;
-        table.data[i].z = (float) (i / 9)      * v - v;
-        table.data[i].w = 0.0f;
+        table.uvwt[i].x = (float) (i % 3)      * v - v;
+        table.uvwt[i].y = (float)((i % 9) / 3) * v - v;
+        table.uvwt[i].z = (float) (i / 9)      * v - v;
+        table.uvwt[i].w = 0.0f;
     }
     
     RS_set_vel_data(H, table);
@@ -3011,10 +3030,10 @@ void RS_set_vel_data_to_cube125(RSHandle *H) {
     const float v = 0.5f;
     
     for (i = 0; i < 125; i++) {
-        table.data[i].x = (float) (i %  5)      * v - 2.0f * v;
-        table.data[i].y = (float)((i % 25) / 5) * v - 2.0f * v;
-        table.data[i].z = (float) (i / 25)      * v - 2.0f * v;
-        table.data[i].w = 0.0f;
+        table.uvwt[i].x = (float) (i %  5)      * v - 2.0f * v;
+        table.uvwt[i].y = (float)((i % 25) / 5) * v - 2.0f * v;
+        table.uvwt[i].z = (float) (i / 25)      * v - 2.0f * v;
+        table.uvwt[i].w = 0.0f;
     }
     
     RS_set_vel_data(H, table);
@@ -3027,9 +3046,9 @@ void RS_set_vel_data_to_cube125(RSHandle *H) {
 void RS_clear_vel_data(RSHandle *H) {
     // Technically the video RAM hasn't been freed but we will assume there is enough room and this memory gets freed when a new table comes in
     for (int i = 0; i < H->num_workers; i++) {
-        cl_uint nx = (cl_uint)H->workers[i].vel_desc.s[RSTable3DDescriptionMaximumX] + 1;
-        cl_uint ny = (cl_uint)H->workers[i].vel_desc.s[RSTable3DDescriptionMaximumY] + 1;
-        cl_uint nz = (cl_uint)H->workers[i].vel_desc.s[RSTable3DDescriptionMaximumZ] + 1;
+        cl_uint nx = (cl_uint)H->workers[i].les_desc.s[RSTable3DDescriptionMaximumX] + 1;
+        cl_uint ny = (cl_uint)H->workers[i].les_desc.s[RSTable3DDescriptionMaximumY] + 1;
+        cl_uint nz = (cl_uint)H->workers[i].les_desc.s[RSTable3DDescriptionMaximumZ] + 1;
         H->workers[i].mem_usage -= nx * ny * nz * sizeof(cl_float4);
     }
 }
@@ -4575,13 +4594,13 @@ void RS_advance_time(RSHandle *H) {
             rsprint("Wind table restarted.");
         }
         for (i = 0; i < H->num_workers; i++) {
-            H->workers[i].vel_id = H->workers[i].vel_id == 1 ? 0 : 1;
+            H->workers[i].les_id = H->workers[i].les_id == 1 ? 0 : 1;
         }
         RS_set_vel_data_to_LES_table(H, LES_get_frame(H->L, H->vel_idx));
         H->vel_idx = H->vel_idx == H->vel_count - 1 ? 0 : H->vel_idx + 1;
         
         if (H->verb > 2) {
-            rsprint("Wind table advanced. vel_idx = %d   ( tp = %.2f / prt = %.4f )  vel_id = %d", H->vel_idx, H->vel_desc.tp, H->params.prt, H->workers[0].vel_id);
+            rsprint("Wind table advanced. vel_idx = %d   ( tp = %.2f / prt = %.4f )  vel_id = %d", H->vel_idx, H->vel_desc.tp, H->params.prt, H->workers[0].les_id);
         }
     }
     
@@ -4643,8 +4662,9 @@ void RS_advance_time(RSHandle *H) {
                                (cl_float4 *)H->workers[i].scat_vel,
                                (cl_float4 *)H->workers[i].scat_rcs,
                                (cl_uint4 *)H->workers[i].scat_rnd,
-                               (cl_image)H->workers[i].vel[H->workers[i].vel_id],
-                               H->workers[i].vel_desc,
+                               (cl_image)H->workers[i].les_uvwt[H->workers[i].les_id],
+                               (cl_image)H->workers[i].les_cpxx[H->workers[i].les_id],
+                               H->workers[i].les_desc,
                                (cl_float4 *)H->workers[i].rcs_ellipsoid,
                                H->workers[i].rcs_ellipsoid_desc,
                                H->sim_desc);
@@ -4654,8 +4674,9 @@ void RS_advance_time(RSHandle *H) {
                                (cl_float4 *)H->workers[i].scat_vel,
                                (cl_float4 *)H->workers[i].scat_rcs,
                                (cl_uint4 *)H->workers[i].scat_rnd,
-                               (cl_image)H->workers[i].vel[H->workers[i].vel_id],
-                               H->workers[i].vel_desc,
+                               (cl_image)H->workers[i].les_uvwt[H->workers[i].les_id],
+                               (cl_image)H->workers[i].les_cpxx[H->workers[i].les_id],
+                               H->workers[i].les_desc,
                                (cl_float4 *)H->workers[i].rcs_ellipsoid,
                                H->workers[i].rcs_ellipsoid_desc,
                                H->sim_desc);
@@ -4675,8 +4696,8 @@ void RS_advance_time(RSHandle *H) {
                                    (cl_float4 *)H->workers[i].scat_tum,
                                    (cl_float4 *)H->workers[i].scat_rcs,
                                    (cl_uint4 *)H->workers[i].scat_rnd,
-                                   (cl_image)H->workers[i].vel[H->workers[i].vel_id],
-                                   H->workers[i].vel_desc,
+                                   (cl_image)H->workers[i].les_uvwt[H->workers[i].les_id],
+                                   H->workers[i].les_desc,
                                    (cl_image)H->workers[i].adm_cd[a],
                                    (cl_image)H->workers[i].adm_cm[a],
                                    H->workers[i].adm_desc[a],
@@ -4717,21 +4738,24 @@ void RS_advance_time(RSHandle *H) {
         
         // Need to refresh some parameters of the background at each time update
         if (H->sim_concept & RSSimulationConceptDraggedBackground) {
-            clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[C->vel_id]);
+            clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->les_uvwt[C->les_id]);
+            clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentBackgroundCn2Pressure, sizeof(cl_mem),     &C->les_cpxx[C->les_id]);
             clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
             clEnqueueNDRangeKernel(C->que, C->kern_el_atts, 1, &C->origins[0], &C->counts[0], NULL, 0, NULL, &events[i][0]);
         } else if (H->sim_concept & RSSimulationConceptFixedScattererPosition) {
-            clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[C->vel_id]);
+            clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->les_uvwt[C->les_id]);
+            clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentBackgroundCn2Pressure, sizeof(cl_mem),     &C->les_cpxx[C->les_id]);
             clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
             clEnqueueNDRangeKernel(C->que, C->kern_fp_atts, 1, &C->origins[0], &C->counts[0], NULL, 0, NULL, &events[i][0]);
         } else {
-            clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[C->vel_id]);
+            clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->les_uvwt[C->les_id]);
+            clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundCn2Pressure, sizeof(cl_mem),     &C->les_cpxx[C->les_id]);
             clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
             clEnqueueNDRangeKernel(C->que, C->kern_bg_atts, 1, &C->origins[0], &C->counts[0], NULL, 0, NULL, &events[i][0]);
         }
         
         // Debris particles
-        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->vel[C->vel_id]);
+        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->les_uvwt[C->les_id]);
         clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
         for (k = 1; k < H->num_types; k++) {
             if (C->counts[k]) {
@@ -5020,19 +5044,27 @@ RSTable3D RS_table3d_init(size_t numel) {
     table.xo = 0.0f;      table.yo = 0.0f;      table.zo = 0.0f;
     table.xm = 1.0f;      table.ym = 1.0f;      table.zm = 1.0f;
     
-    if (posix_memalign((void **)&table.data, RS_ALIGN_SIZE, numel * sizeof(cl_float4))) {
-        rsprint("ERROR: Unable to allocate an RSTable3D->data.\n", now());
+    if (posix_memalign((void **)&table.uvwt, RS_ALIGN_SIZE, numel * sizeof(cl_float4))) {
+        rsprint("ERROR: Unable to allocate an RSTable3D->uvwt.\n", now());
         return table;
     }
-    
+    if (posix_memalign((void **)&table.cpxx, RS_ALIGN_SIZE, numel * sizeof(cl_float4))) {
+        rsprint("ERROR: Unable to allocate an RSTable3D->cpxx.\n", now());
+        return table;
+    }
+
     return table;
 }
 
 
 void RS_table3d_free(RSTable3D T) {
-    if (T.data != NULL) {
-        free(T.data);
-        T.data = NULL;
+    if (T.uvwt != NULL) {
+        free(T.uvwt);
+        T.uvwt = NULL;
+    }
+    if (T.cpxx != NULL) {
+        free(T.cpxx);
+        T.cpxx = NULL;
     }
 }
 

@@ -24,7 +24,8 @@ enum RSBackgroundAttributeKernelArgument {
     RSBackgroundAttributeKernelArgumentRadarCrossSection,
     RSBackgroundAttributeKernelArgumentRandomSeed,
     RSBackgroundAttributeKernelArgumentBackgroundVelocity,
-    RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription,
+    RSBackgroundAttributeKernelArgumentBackgroundCn2Pressure,
+    RSBackgroundAttributeKernelArgumentBackgroundDescription,
     RSBackgroundAttributeKernelArgumentEllipsoidRCS,
     RSBackgroundAttributeKernelArgumentEllipsoidRCSDescription,
     RSBackgroundAttributeKernelArgumentSimulationDescription

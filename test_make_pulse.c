@@ -401,7 +401,7 @@ int main(int argc, char **argv)
     ret |= clSetKernelArg(kernel_el_atts, RSBackgroundAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &rcs);
     ret |= clSetKernelArg(kernel_el_atts, RSBackgroundAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &rnd);
     ret |= clSetKernelArg(kernel_el_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &les);
-    ret |= clSetKernelArg(kernel_el_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_mem),     &les_desc);
+    ret |= clSetKernelArg(kernel_el_atts, RSBackgroundAttributeKernelArgumentBackgroundDescription, sizeof(cl_mem),     &les_desc);
     ret |= clSetKernelArg(kernel_el_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCS,                  sizeof(cl_mem),     &angular_weight);
     ret |= clSetKernelArg(kernel_el_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCSDescription,       sizeof(cl_float4),  &angular_weight_desc);
     ret |= clSetKernelArg(kernel_el_atts, RSBackgroundAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &sim_desc);

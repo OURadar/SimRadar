@@ -8,7 +8,9 @@ int main(int argc, const char **argv) {
 
 	LESTable *table;
 
-	LESHandle L = LES_init();
+	//LESHandle L = LES_init();
+    
+    LESHandle L = LES_init_with_config_path("flat", NULL);
 	
     if (L == NULL) {
         return EXIT_FAILURE;
@@ -16,17 +18,10 @@ int main(int argc, const char **argv) {
 	
     LES_show_handle_summary(L);
     
-//    table = LES_get_frame_0(L, 0);
-//    LES_show_table_summary(table);
-    
-//    table = LES_get_frame_0(L, 1);
-//    LES_show_table_summary(table);
-    
-
     table = LES_get_frame(L, 0);
 	LES_show_table_summary(table);
 
-    table = LES_get_frame(L, 10);
+    table = LES_get_frame(L, 9);
     LES_show_table_summary(table);
 
     LES_free(L);

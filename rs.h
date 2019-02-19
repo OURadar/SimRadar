@@ -126,7 +126,8 @@ typedef struct _rs_table3d {
     float         reserved1;          // n/a. simply pad to 128-bit
     float         reserved2;          // n/a. simply pad to 128-bit
     uint32_t      spacing;            // spacing convention: uniform or stretched (geometric)
-    cl_float4     *data;              // Data in float4 grid, e.g., u, v, w, t
+    cl_float4     *uvwt;              // Data in float4 grid, e.g., u, v, w, t
+    cl_float4     *cpxx;              // Data in float4 grid, e.g., cn2, p, _, _
 } RSTable3D;
 
 
@@ -296,10 +297,10 @@ typedef struct _rs_worker {
     cl_mem                 rcs_imag[RS_MAX_RCS_TABLES];  // RCS of debris
     cl_float16             rcs_desc[RS_MAX_RCS_TABLES];  // RCS-desc of debris
     
-    cl_mem                 vel[2];                       // Double buffering
-    cl_float16             vel_desc;
-    unsigned int           vel_id;
-    
+    cl_mem                 les_uvwt[2];                  // Double buffering of u, v, w, t
+    cl_mem                 les_cpxx[2];                  // Double buffering of cn2, p, _, _
+    cl_float16             les_desc;                     // LES-desc of the table
+    unsigned int           les_id;                       // Index of the active buffer
     
     size_t                 mem_size;
     size_t                 mem_usage;
@@ -323,7 +324,8 @@ typedef struct _rs_worker {
     IOSurfaceRef           surf_adm_cm[RS_MAX_ADM_TABLES];
     IOSurfaceRef           surf_rcs_real[RS_MAX_RCS_TABLES];
     IOSurfaceRef           surf_rcs_imag[RS_MAX_RCS_TABLES];
-    IOSurfaceRef           surf_vel[2];
+    IOSurfaceRef           surf_uvwt[2];
+    IOSurfaceRef           surf_cpxx[2];
     IOSurfaceRef           surf_rcs_ellipsoids;
     
 #else

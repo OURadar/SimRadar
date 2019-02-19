@@ -72,6 +72,7 @@ typedef struct _les_table {
     float     rz;             // Ratio value "r" in the geometric series in z direction. Otherwise, this is delta z.
     LESValue  data;           // Raw data from LES table
     LESFloat4 *uvwt;          // Remapped (u, v, w, t) data for efficient transfer in RS framework
+    LESFloat4 *cpxx;          // Remmapped (cn2, p, _, _) data for efficient transfer in RS framework
 } LESTable;
 
 
