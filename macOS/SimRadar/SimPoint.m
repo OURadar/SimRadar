@@ -335,6 +335,15 @@
             tick_pos[4] = (3.0 + M_PI) / (2.0 * M_PI);
             strcpy(tick_title, "Phi (radians)");
             break;
+        case 'C':
+            tick_lab = [NSArray arrayWithObjects:@"-14.00", @"-13.75", @"-13.50", @"-13.25", @"-13.00", nil];
+            tick_pos[0] = 0.00f;
+            tick_pos[1] = 0.25f;
+            tick_pos[2] = 0.50f;
+            tick_pos[3] = 0.75f;
+            tick_pos[4] = 1.00f;
+            strcpy(tick_title, "Cn2 (unitless)");
+            break;
         default:
             tick_lab = [NSArray array];
             break;

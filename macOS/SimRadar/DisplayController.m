@@ -122,7 +122,9 @@
 		rootSender = sender;
         debrisId = 1;
         //NSLog(@"Allocating recorder ...");
-        mkey = 7;
+        
+        // Just before calling next draw mode
+        mkey = 8;
 	}
 	return self;
 }
@@ -511,60 +513,70 @@
     
     switch (mkey) {
         case 0:
+            // Uniform, Size, Opaque
             ind = 'U';
             mode = 'S';
             trans = 'O';
             break;
             
         case 1:
+            // Uniform, Size, Transparent
             ind = 'U';
             mode = 'S';
             trans = 'T';
             break;
             
         case 2:
+            // Uniform, Antenna Gain (Linear), Opaque
             ind = 'U';
             mode = 'A';
             trans = 'O';
             break;
             
         case 3:
+            // Uniform, Antenna Gain (dB), Opaque
             ind = 'U';
             mode = 'B';
             trans = 'O';
             break;
             
         case 4:
+            // Uniform, Range, Opaque
             ind = 'U';
             mode = 'R';
             trans = 'O';
             break;
             
         case 5:
+            // Independent, ZH, Opaque
             ind = 'I';
             mode = 'H';
             trans = 'O';
             break;
             
         case 6:
+            // Independent, ZV, Opaque
             ind = 'I';
             mode = 'V';
             trans = 'O';
             break;
             
         case 7:
+            // Independent, Differential Z, Opaque
             ind = 'I';
             mode = 'D';
             trans = 'O';
             break;
             
         case 8:
+            // Independent, PhiDP, Opaque
             ind = 'I';
             mode = 'P';
             trans = 'O';
             break;
             
         case 9:
+            // Independent, Cn2, Opaque
             ind = 'I';
             mode = 'C';
             trans = 'O';

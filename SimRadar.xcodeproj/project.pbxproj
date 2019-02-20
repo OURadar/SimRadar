@@ -1108,14 +1108,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				B5715B53218CDF8000FD4064 /* log.c in Sources */,
-				B57241BA1C0CA1F000B76BCB /* main.m in Sources */,
-				B57241B91C0CA1E100B76BCB /* AppDelegate.m in Sources */,
-				B57241B11C0CA11300B76BCB /* rs.c in Sources */,
 				B57241B21C0CA11500B76BCB /* les.c in Sources */,
 				B57241B31C0CA11700B76BCB /* adm.c in Sources */,
-				B57241B51C0CA11D00B76BCB /* rcs.c in Sources */,
 				B57D8E9A1DF5FB5800B69805 /* obj.c in Sources */,
+				B57241B51C0CA11D00B76BCB /* rcs.c in Sources */,
 				B5F7A0D021495FB3001E8515 /* pos.c in Sources */,
+				B57241B11C0CA11300B76BCB /* rs.c in Sources */,
+				B57241BA1C0CA1F000B76BCB /* main.m in Sources */,
+				B57241B91C0CA1E100B76BCB /* AppDelegate.m in Sources */,
 				B57241BB1C0CA20C00B76BCB /* RootController.m in Sources */,
 				B57241BC1C0CA21000B76BCB /* DisplayController.m in Sources */,
 				B57241BD1C0CA21300B76BCB /* Renderer.m in Sources */,

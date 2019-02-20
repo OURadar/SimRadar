@@ -321,6 +321,7 @@ void *LES_background_read(LESHandle i) {
     LESTable *table;
 
     bool p_for_cn2 = !strcmp(h->config, LESConfigFlat);
+    //rsprint("p_for_cn2 = %d\n", p_for_cn2);
     
     // Read ahead
     while (h->active) {
@@ -396,9 +397,11 @@ void *LES_background_read(LESHandle i) {
             table->uvwt[k][2] = table->data.w[k];
             table->uvwt[k][3] = table->data.t[k];
             if (p_for_cn2) {
+                table->cpxx[k][0] = 0.0f;
                 table->cpxx[k][1] = table->data.p[k];
             } else {
                 table->cpxx[k][0] = table->data.p[k];
+                table->cpxx[k][1] = 0.0f;
             }
         }
 

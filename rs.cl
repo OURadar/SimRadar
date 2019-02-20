@@ -663,9 +663,9 @@ __kernel void fp_atts(__global float4 *p,
                       __global float4 *v,
                       __global float4 *x,
                       __global uint4 *y,
-                      __read_only image3d_t wind_uvwt,
-                      __read_only image3d_t wind_cpxx,
-                      const float16 wind_desc,
+                      __read_only image3d_t les_uvwt,
+                      __read_only image3d_t les_cpxx,
+                      const float16 les_desc,
                       __constant float4 *drop_rcs,
                       const float4 drop_rcs_desc,
                       const float16 sim_desc)
@@ -676,7 +676,7 @@ __kernel void fp_atts(__global float4 *p,
 
     // p = position that should be fixed in this module
     // v = velocity but used as phase
-    // x = scattering magnitude from Cn^2
+    // x = scattering magnitude from Cn^2 (mag in s2, phi in s3)
     // y = not used
     
     float4 pos = p[i];
@@ -700,14 +700,16 @@ __kernel void fp_atts(__global float4 *p,
 //    }
 
     // Derive the lookup index
-    float4 wind_coord = wind_table_index(pos, wind_desc, sim_desc);
-    vel = read_imagef(wind_uvwt, sampler, wind_coord);
+    float4 coord = wind_table_index(pos, les_desc, sim_desc);
+    float4 uvwt = read_imagef(les_uvwt, sampler, coord);
+    float4 cpxx = read_imagef(les_cpxx, sampler, coord);
     
-    // Derive phase change
-    //float cn2 = vel.s4;
+    // Accumulate the phase to the existing phase stored in rcs.s3
+    float phi = rcs.s3 - wav_num * dot(normalize(pos.xyz), uvwt.xyz) * dt;
 
-    float phi = rcs.s2 - wav_num * dot(normalize(pos.xyz), vel.xyz) * dt;
-//    float phi = rcs.s2 - 0.05f;
+    // Cn2 from the second set of 4 float values
+    float cn2 = cpxx.s1;
+
 //    if (i == 0) {
 //        printf("wav_num = %.4f   vel = %.4v4f\n", wav_num, vel);
 //    }
@@ -717,8 +719,9 @@ __kernel void fp_atts(__global float4 *p,
     
     rcs.s0 = c;
     rcs.s1 = s;
-    rcs.s2 = atan2(s, c);
-    
+    rcs.s2 = cn2;
+    rcs.s3 = atan2(s, c);
+
     v[i] = vel;
     x[i] = rcs;
     p[i] = pos;
@@ -1059,7 +1062,10 @@ __kernel void scat_clr(__global float4 *c,
     } else if (draw_mode == 'P') {
         // Phase of scatterer from H RCS
         //m = clamp(fma(atan2pi(rcs.s1, rcs.s0), 0.5f, 0.5f), 0.0f, 1.0f);
-        m = clamp(fma(rcs.s2, 0.5f * M_1_PI_F, 0.5f), 0.0f, 1.0f);
+        m = clamp(fma(rcs.s3, 0.5f * M_1_PI_F, 0.5f), 0.0f, 1.0f);
+    } else if (draw_mode == 'C') {
+        // Cn2 of scatterer
+        m = clamp(fma(rcs.s2, 1.0f, 14.0f), 0.0f, 1.0f);
     } else {
         m = 0.5f;
     }
