@@ -181,7 +181,7 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char * _Nullab
         h->rz = 1.0f;
         h->tp = 5.0f;
     } else if (!strcmp(config, LESConfigFlat)) {
-        h->v0 = 25.0f;
+        h->v0 = 100.0f;
         h->p0 = 1.0f;                 // p is used as cn2
         h->t0 = h->v0 * h->v0;
         h->ax = 0.0f;

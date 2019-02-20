@@ -674,15 +674,15 @@ __kernel void fp_atts(__global float4 *p,
     const float wav_num = sim_desc.s4;
     const float dt = sim_desc.sb;
 
-    // p = position that should be fixed in this module
-    // v = velocity but used as phase
+    // p = position (fixed in this module)
+    // v = velocity
     // x = scattering magnitude from Cn^2 (mag in s2, phi in s3)
     // y = not used
     
     float4 pos = p[i];
-    float4 vel = v[i];
     float4 rcs = x[i];
 
+//    float4 vel = v[i];
 //    pos.xyz += vel.xyz * dt;
 //
 //    int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
@@ -710,10 +710,6 @@ __kernel void fp_atts(__global float4 *p,
     // Cn2 from the second set of 4 float values
     float cn2 = cpxx.s1;
 
-//    if (i == 0) {
-//        printf("wav_num = %.4f   vel = %.4v4f\n", wav_num, vel);
-//    }
-
     float c, s;
     s = sincos(phi, &c);
     
@@ -722,7 +718,11 @@ __kernel void fp_atts(__global float4 *p,
     rcs.s2 = cn2;
     rcs.s3 = atan2(s, c);
 
-    v[i] = vel;
+//    vel.xyz = uvwt.xyz;
+//    if (i == 0) {
+//        printf("wav_num = %.4f   pos = %.4v4f   vel = %.4v4f\n", wav_num, pos, vel);
+//    }
+//    v[i] = vel;
     x[i] = rcs;
     p[i] = pos;
 }
