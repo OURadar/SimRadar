@@ -232,13 +232,17 @@ void show_help() {
            "     debris objects\n"
            "           " PROGNAME " -o --concept DBU -T --sweep P:1.0,-12:12:0.005 -t 0.0005 -p 4800 -d 1,10000\n"
            "\n"
-           "     The following simulates a profiling radar by specifying the concept\n"
-           "     option '-c FV' for fixed scatterer position and vertically pointing radar.\n"
-           "     The scan pattern is a DBS. Starting at azimuth = 0 deg, elevation at 75 deg\n"
-           "     for 10 pulses, then azimtuh of 90 deg, elevation 75 deg for 10 pulses and\n"
-           "     finally azimuth at 0 deg, elevation 0 deg for 10 pulses. Total number pulses\n"
-           "     of 60 with a PRT of 0.01 s. The scan repeats itself every 30 seconds.\n"
-           "           " PROGNAME " -o -c FV --sweep D:0,75,10/90,75,10/0,90,10 -t 0.01 -p 60 -N\n"
+           "     The following simulates the same as before but use the LES field suctvort_large\n"
+           "     debris objects\n"
+           "           " PROGNAME " -o --concept DBU -T -L suctvort_large --sweep P:1.0,-12:12:0.005 -t 0.0005 -p 4800 -d 1,10000\n"
+           "\n"
+           "     The following simulates a profiling radar by specifying the concept option '-c FV'\n"
+           "     for fixed scatterer position and vertically pointing radar. The LES field is 'flat'.\n"
+           "     The scan pattern is a DBS. Starting at azimuth = 0 deg, elevation at 75 deg for 10\n"
+           "     pulses, then azimtuh of 90 deg, elevation 75 deg for 10 pulses and finally azimuth\n"
+           "     at 0 deg, elevation 0 deg for 10 pulses. Total of 60 pulses with a PRT of 0.01 s.\n"
+           "     The scan repeats itself every 30 seconds.\n"
+           "           " PROGNAME " -o -c FV -L flat --sweep D:0,75,10/90,75,10/0,90,10 -t 0.01 -p 60 -N\n"
            );
     printf("%s\n(%.1f)\n", buff, (float)k / size * 100.0f);
     free(buff);
@@ -850,9 +854,10 @@ int main(int argc, char *argv[]) {
             RS_set_dsd_to_mp(S);
         }
     }
-    
-    //RS_set_vel_data_to_config(S, LESConfigSuctionVortices);
-    //RS_set_vel_data_to_config(S, LESConfigFlat);
+
+    if (strlen(user.les_config)) {
+      RS_set_vel_data_to_config(S, user.les_config);
+    }
 
     // ---------------------------------------------------------------------------------------------------------------
 

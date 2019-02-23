@@ -26,6 +26,8 @@ end
 
 alpha_count = fread(fid, 1, 'uint16');
 beta_count = fread(fid, 1, 'uint16');
+% alpha_count = 901;
+% beta_count = 451;
 table = fread(fid, 'float');
 fclose(fid);
 
