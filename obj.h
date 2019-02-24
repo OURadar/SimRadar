@@ -39,10 +39,11 @@ typedef struct _obj_table {
 
 typedef void * OBJHandle;
 
-OBJHandle OBJ_init_with_path(const char *path);
+OBJHandle OBJ_init_with_path(const char *);
 OBJHandle OBJ_init(void);
 void OBJ_free(OBJHandle);
 
 OBJTable *OBJ_get_table(const OBJHandle, OBJConfig);
+OBJTable *OBJ_get_table_using_config_file(const OBJHandle, const char *);
 
 #endif

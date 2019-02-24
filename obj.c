@@ -16,15 +16,68 @@ typedef struct _obj_mem {
 } OBJMem;
 
 OBJHandle OBJ_init_with_path(const char *path) {
+    // Find the path
+    char cwd[1024];
+    if (getcwd(cwd, sizeof(cwd)) == NULL)
+        fprintf(stderr, "Error in getcwd()\n");
+    
+    // 10 search paths with the first one being the relative subfolder 'les'
+    char search_paths[10][1024] = {"./obj"};
+    
+    int k = 0;
+    if (path == NULL) {
+        snprintf(search_paths[k++], 1024, "%s/%s", cwd, "Contents/Resources/tables");
+    } else {
+        snprintf(search_paths[k++], 1024, "%s/%s", path, "tables");
+    }
+    
+    char *ctmp = getenv("HOME");
+    if (ctmp != NULL) {
+        //printf("HOME = %s\n", ctmp);
+        snprintf(search_paths[k++], 1024, "%s/Documents/tables", ctmp);
+        snprintf(search_paths[k++], 1024, "%s/Downloads/tables", ctmp);
+    }
+    
+//    struct stat path_stat;
+//    struct stat file_stat;
+//    char *les_path = NULL;
+//    char les_file_path[1024];
+//    int dir_ret;
+//    int file_ret;
+//    int found_dir = 0;
+    
+//    for (int i = 0; i < sizeof(search_paths) / sizeof(search_paths[0]); i++) {
+//        les_path = search_paths[i];
+//        snprintf(les_file_path, 1024, "%s/obj/%s.obj", les_path, config);
+//        dir_ret = stat(les_path, &path_stat);
+//        file_ret = stat(les_file_path, &file_stat);
+//        if (dir_ret < 0 || file_ret < 0) {
+//            continue;
+//        }
+//        if (dir_ret == 0 && S_ISDIR(path_stat.st_mode) && S_ISREG(file_stat.st_mode)) {
+//
+//#ifdef DEBUG
+//            rsprint("Found LES folder @ %s\n", les_path);
+//#endif
+//
+//            found_dir = 1;
+//            break;
+//        }
+//    }
+//    if (found_dir == 0 || les_path == NULL) {
+//        fprintf(stderr, "Unable to find the LES data folder.\n");
+//        return NULL;
+//    }
+    
     // Initialize a memory location for the handler
     OBJMem *h = (OBJMem *)malloc(sizeof(OBJMem));
     
-    h->adm_h = ADM_init();
+    h->adm_h = ADM_init_with_path(path);
     if (h->adm_h == NULL) {
         free(h);
         return NULL;
     }
-    h->rcs_h = RCS_init();
+    h->rcs_h = RCS_init_with_path(path);
     if (h->rcs_h == NULL) {
         free(h);
         return NULL;
@@ -88,6 +141,16 @@ OBJTable *OBJ_get_table(const OBJHandle in, OBJConfig type) {
         default:
             break;
     }
+    
+    O->count++;
+    //printf("OBJ count : %d \n", O->count);
+    return obj_table;
+}
+
+OBJTable *OBJ_get_table_using_config_file(const OBJHandle in, const char *config) {
+    OBJMem *O = (OBJMem *)in;
+    OBJTable *obj_table = &O->obj_table[O->count];
+    
     
     O->count++;
     //printf("OBJ count : %d \n", O->count);
