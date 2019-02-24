@@ -68,7 +68,7 @@ void LES_table_free(LESTable *table);
 
 #pragma mark -
 
-LESHandle LES_init_with_config_path(const LESConfig config, const char * _Nullable path) {
+LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
     // Find the path
     char cwd[1024];
     if (getcwd(cwd, sizeof(cwd)) == NULL)
