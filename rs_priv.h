@@ -113,6 +113,8 @@ void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *table);
 void RS_set_rcs_data_to_unity(RSHandle *H);
 void RS_clear_rcs_data(RSHandle *H);
 
+void RS_set_obj_data_to_config(RSHandle *H, OBJConfig type);
+
 void RS_set_rcs_ellipsoid_table(RSHandle *H, const cl_float4 *weights, const float table_index_start, const float table_index_delta, unsigned int table_size);
 
 void RS_revise_population(RSHandle *H);

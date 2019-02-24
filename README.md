@@ -222,9 +222,8 @@ Multiple arrays of type `cl_float` are used to keep track of a set of attributes
     RS_set_antenna_params()
     RS_set_tx_params()
     RS_set_scan_box()
-    RS_set_obj_data_to_config()
-    RS_set_debris_count()
-
+    RS_add_debris()
+    
 ### Convenient Functions for Simulation Setup ###
 
     RS_suggest_scan_domain()

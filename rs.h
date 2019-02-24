@@ -518,7 +518,7 @@ void RS_clear_vel_data(RSHandle *H);
 void RS_set_scan_pattern(RSHandle *H, const POSPattern *scan_pattern);
 
 // New methods
-void RS_set_obj_data_to_config(RSHandle *H, OBJConfig type);
+//void RS_set_obj_data_to_config(RSHandle *H, OBJConfig type);
 void RS_set_random_seed(RSHandle *H, const unsigned int seed);
 void RS_add_debris(RSHandle *H, OBJConfig type, const size_t count);
 
