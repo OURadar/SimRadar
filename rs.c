@@ -734,7 +734,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_db_rcs().\n", now());
         exit(EXIT_FAILURE);
     }
-    
+
     ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
     ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
@@ -750,14 +750,14 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_bg_atts().\n", now());
         exit(EXIT_FAILURE);
     }
-    
+
     ret = CL_SUCCESS;
     ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentPosition,                      sizeof(cl_mem),     &C->scat_pos);
     ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentVelocity,                      sizeof(cl_mem),     &C->scat_vel);
     ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &C->scat_rcs);
     ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
     ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->les_uvwt[0]);
-    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundCn2Pressure,         sizeof(cl_mem),     &C->les_cpxx[0]);
+    ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentBackgroundCn2Pressure,         sizeof(cl_mem),     &C->les_cpxx[0]);
     ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentBackgroundDescription,         sizeof(cl_float16), &C->les_desc);
     ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCS,                  sizeof(cl_mem),     &C->rcs_ellipsoid);
     ret |= clSetKernelArg(C->kern_fp_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCSDescription,       sizeof(cl_float4),  &C->rcs_ellipsoid_desc);
@@ -773,7 +773,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
     ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &C->scat_rcs);
     ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
     ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->les_uvwt[0]);
-    ret |= clSetKernelArg(C->kern_bg_atts, RSBackgroundAttributeKernelArgumentBackgroundCn2Pressure,         sizeof(cl_mem),     &C->les_cpxx[0]);
+    ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentBackgroundCn2Pressure,         sizeof(cl_mem),     &C->les_cpxx[0]);
     ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentBackgroundDescription,         sizeof(cl_float16), &C->les_desc);
     ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCS,                  sizeof(cl_mem),     &C->rcs_ellipsoid);
     ret |= clSetKernelArg(C->kern_el_atts, RSBackgroundAttributeKernelArgumentEllipsoidRCSDescription,       sizeof(cl_float4),  &C->rcs_ellipsoid_desc);
@@ -3062,6 +3062,12 @@ void RS_set_scan_pattern(RSHandle *H, const POSPattern *scan_pattern) {
 }
 
 
+void RS_set_scan_pattern_with_string(RSHandle *H, const char *scan_string) {
+    POSPattern *scan_pattern = POS_init_with_string(scan_string);
+    RS_set_scan_pattern(H, scan_pattern);
+}
+
+
 void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
     
     int i;
@@ -3492,7 +3498,7 @@ void RS_clear_rcs_data(RSHandle *H) {
     H->rcs_count = 0;
 }
 
-
+// This method can be confusing. Don't use
 void RS_set_obj_data_to_config(RSHandle *H, OBJConfig type) {
     OBJTable *obj_table = OBJ_get_table(H->O, type);
     
@@ -3508,7 +3514,7 @@ void RS_set_random_seed(RSHandle *H, const unsigned int seed) {
     H->random_seed = seed;
 }
 
-
+// Add debris to the simulation machine
 void RS_add_debris(RSHandle *H, OBJConfig type, const size_t count) {
 
     int k = 1;
@@ -4059,9 +4065,9 @@ void RS_populate(RSHandle *H) {
                 
                 i = (int)(H->offset[w] + H->workers[w].origins[k]);
                 
-    #ifdef DEBUG_HEAVY
+                #ifdef DEBUG_HEAVY
                 rsprint(RS_INDENT "type[%d]   workers[%d]   n = %d", k, w,  H->workers[w].counts[k]);
-    #endif
+                #endif
                 
                 for (n = 0; n < H->workers[w].counts[k]; n++) {
                     H->scat_uid[i].s0 = uid++;
@@ -4090,7 +4096,7 @@ void RS_populate(RSHandle *H) {
                     H->scat_ori[i].z = 0.0f;                       // z of quaternion
                     H->scat_ori[i].w = 1.0f;                       // w of quaternion
                     
-    #if defined(QUAT_INIT_FACE_SKY)
+                    #if defined(QUAT_INIT_FACE_SKY)
                     
                     // Facing the sky
                     H->scat_ori[i].x =  0.0f;                      // x of quaternion
@@ -4098,7 +4104,7 @@ void RS_populate(RSHandle *H) {
                     H->scat_ori[i].z =  0.0f;                      // z of quaternion
                     H->scat_ori[i].w =  0.707106781186548f;        // w of quaternion
                     
-    #elif defined(QUAT_INIT_OTHER)
+                    #elif defined(QUAT_INIT_OTHER)
                     
                     // Some other tests
                     H->scat_ori[i].x =  0.5f;                      // x of quaternion
@@ -4106,7 +4112,7 @@ void RS_populate(RSHandle *H) {
                     H->scat_ori[i].z =  0.5f;                      // z of quaternion
                     H->scat_ori[i].w =  0.5f;                      // w of quaternion
                     
-    #elif defined(QUAT_INIT_ROTATE_THETA)
+                    #elif defined(QUAT_INIT_ROTATE_THETA)
                     
                     // Rotate by theta
                     float theta = -70.0f / 180.0f * M_PI;
@@ -4115,7 +4121,7 @@ void RS_populate(RSHandle *H) {
                     H->scat_ori[i].z = 0.0f;
                     H->scat_ori[i].w = cosf(0.5f * theta);
                     
-    #endif
+                    #endif
                     
                     // Facing the beam
                     H->scat_ori[i].x =  0.5f;                      // x of quaternion
@@ -4250,16 +4256,16 @@ void RS_populate(RSHandle *H) {
         
     } // if (H->sim_concept & RSSimulationConceptFixedScattererPosition) ...
     
-#if defined(DEBUG_RCS)
+    #if defined(DEBUG_RCS)
 
     // Replace a few points for debugging purpose.
     H->scat_pos[0].x = domain.origin.x + 0.5f * domain.size.x;
     H->scat_pos[0].y = domain.origin.y + 0.5f * domain.size.y;
     H->scat_pos[0].z = H->scat_pos[0].y * tanf(5.0f / 180.0f * M_PI);
 
-#endif
+    #endif
     
-#if defined(DEBUG_DEBRIS)
+    #if defined(DEBUG_DEBRIS)
 
     // Replace the very first debris particle
     if (H->counts[1] > 0) {
@@ -4272,7 +4278,7 @@ void RS_populate(RSHandle *H) {
         H->scat_aux[k].s0 = H->params.range_start + floorf(H->params.range_count * 0.5f) * H->params.range_delta;
     }
 
-#endif
+    #endif
     
     // Restore simulation time, default beam position at unit vector (0, 1, 0)
     H->sim_tic = 0.0f;
@@ -4318,7 +4324,7 @@ void RS_populate(RSHandle *H) {
         RS_worker_malloc(H, i);
     }
     
-#if defined (_USE_GCL_)
+    #if defined (_USE_GCL_)
     
     CGLContextObj cgl_context = CGLGetCurrentContext();
     if (cgl_context == NULL) {
@@ -4337,7 +4343,7 @@ void RS_populate(RSHandle *H) {
 
     RS_derive_ndranges(H);
     
-#endif
+    #endif
     
     // Upload the particle parameters to the GPU
     RS_upload(H);

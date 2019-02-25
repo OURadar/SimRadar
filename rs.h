@@ -516,6 +516,7 @@ void RS_set_vel_data_to_cube125(RSHandle *H);
 void RS_clear_vel_data(RSHandle *H);
 
 void RS_set_scan_pattern(RSHandle *H, const POSPattern *scan_pattern);
+void RS_set_scan_pattern_with_string(RSHandle *H, const char *scan_string);
 
 // New methods
 //void RS_set_obj_data_to_config(RSHandle *H, OBJConfig type);

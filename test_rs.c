@@ -112,7 +112,7 @@ int main(int argc, char **argv)
 	double dt;
 	size_t byte_size;
 	
-	RSHandle *H = RS_init_verbose(verb);
+    RSHandle *H = RS_init_verbose(verb);
 	if (H == NULL) {
 		fprintf(stderr, "%s : Some errors occurred.\n", now());
 		return EXIT_FAILURE;
@@ -121,26 +121,33 @@ int main(int argc, char **argv)
     if (density > 0) {
         RS_set_density(H, density);
     }
-	
-	RS_set_range_weight_to_triangle(H, 250.0f);
-	
-	RS_set_angular_weight_to_standard(H, 2.0f / 180.0f * M_PI);
     
-    //RS_set_obj_data_to_config(H, OBJConfigLeaf);
+    RS_set_range_weight_to_triangle(H, 250.0f);
 
-    //RS_set_debris_count(H, 1, 100 * 1000);
-    
-    RS_add_debris(H, OBJConfigLeaf, 100 * 1000);
-    
+    RS_set_angular_weight_to_standard(H, 2.0f / 180.0f * M_PI);
+
+    RS_set_dsd_to_mp(H);
+
+    RS_add_debris(H, OBJConfigLeaf, 100 * 1024);
+
     RS_revise_debris_counts_to_gpu_preference(H);
-	
+
+    // Propose a scan pattern
+    RS_set_scan_pattern_with_string(H, "P:0,-12:12:0.05/2,-12:12:0.05/4,-12:12:0.05");
+
+    // After the wind table is set, we can use the API to suggest the optimal scan box
+    RSBox box = RS_suggest_scan_domain(H);
+
+    // Set the scan box
     RS_set_scan_box(H,
-                    15.0e3f, 20.0e3f, 250.0f,
-                    -10.0f, 10.0f, 1.0f,
-                    0.0f, 5.0f, 1.0f);
+                    box.origin.r, box.origin.r + box.size.r, 30.0f,   // Range
+                    box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
+                    box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
+    
+    RS_show_radar_params(H);
     
 	RS_populate(H);
-	
+	    
 	printf("\nTest(s) using %s scatterers and %s debris objects for %s iterations:\n\n",
            commaint(H->num_scats), commaint(H->counts[0]), commaint(N));
 

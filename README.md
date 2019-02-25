@@ -104,12 +104,6 @@ int main(int argc, char *argv[]) {
     // Set the DSD profile
     RS_set_dsd_to_mp(S);
 
-    // Set the first debris object to be leaf
-    RS_set_obj_data_to_config(S, OBJConfigLeaf);
-    
-    // Set the first debris type to have a population of 1024
-    RS_set_debris_count(S, 1, 1024);
-    
     // Revise to the GPU preferred counts if there is no strict requirements on the debris count
     RS_revise_debris_counts_to_gpu_preference(S);
     
