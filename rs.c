@@ -1066,13 +1066,6 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
     RS_set_tx_params(H, RS_PARAMS_TAU, 50.0e3f);
     
     RS_set_beam_pos(H, 5.0f, 1.0f);
-    
-    RS_set_scan_box(H,
-                    15.0e3f, 20.0e3f, 250.0f,                   // Range
-                    -12.0f, 12.0f, 1.0f,                        // Azimuth
-                    0.0f, 8.0f, 1.0f);                          // Elevation
-    
-    //RS_set_angular_weight_to_double_cone(H, 2.0f / 180.0f * M_PI);
 
     H->verb = verb;
     
@@ -1475,9 +1468,6 @@ void RS_set_scan_box(RSHandle *H,
         return;
     }
     
-    if (H->verb) {
-        rsprint("Simulation concept in hex = 0x%x\n", H->sim_concept);
-    }
     //rsprint("%.2f  %.2f  %.2f  /  %.2f  %.2f  %.2f\n", azimuth_start, azimuth_end, azimuth_delta, elevation_start, elevation_end, elevation_delta);
     
     //	H->status &= !RSStatusDomainPopulated;
@@ -2862,12 +2852,16 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
         //
         //  z(k) = a * ( 1 - r ^ k ) / ( 1 - r )
         //
-        //     k = 1 / log(r) * log( 1 - ( 1 - r ) / a * z( k ) )
-        //       = 1 / log(r) * log( 1 + ( r - 1 ) / a * z( k ) )
+        //     k = 1 / log ( r ) * log ( 1 - ( 1 - r ) / a * z [ k ] )
+        //       = 1 / log ( r ) * log ( 1 + ( r - 1 ) / a * z [ k ] )
         //
         // For a = 2.7, r = 1.05, these values may be documented in the data files at some point
         //
-        //     k = 20.495934314287851 * log1p ( 0.018518518518519 * z( k ) )
+        //     k = 20.495934314287851 * log1p ( 0.018518518518519 * z [ k ] )
+        //
+        // For a = 2.0, r = 1.0212
+        //
+        //     k = 47.6681 * log1p ( 0.0160000000 * z [ k ] )
         //
         table.spacing = RSTableSpacingStretchedX | RSTableSpacingStretchedY | RSTableSpacingStretchedZ;
         table.x_ = leslie->nx;    table.xm = 0.5f * (float)(leslie->nx - 1);    table.xs = 1.0f / log(leslie->rx);    table.xo = (leslie->rx - 1.0f) / leslie->ax;
@@ -3880,11 +3874,29 @@ void RS_populate(RSHandle *H) {
 
     // Set LES if they isn't set before
     if (H->L == NULL) {
-        H->L = LES_init_with_config_path(LESConfigSuctionVortices, NULL);
+        RS_set_vel_data_to_config(H, LESConfigSuctionVortices);
     }
     
+    // Set a scanning strategy if none has been provided
+    if (H->P == NULL) {
+        rsprint("RS_populate() Scan pattern does not exist. Assume a PPI.\n");
+        RS_set_scan_pattern(H, POS_init());
+    }
+    
+    // Set a box if it has not been set
+    if (H->num_anchors == 0) {
+        rsprint("No scan box defined. Using scan strategy to derive the scan box.\n");
+        RSBox box = RS_suggest_scan_domain(H);
+        //rsprint("Suggested box size = %.2f x %.2f x %.2f\n", box.size.r, box.size.a, box.size.e);
+        RS_set_scan_box(H,
+                        box.origin.r, box.origin.r + box.size.r, 30.0f,   // Range
+                        box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
+                        box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
+    }
+    
+    // These should be identical
     if (H->adm_count != H->rcs_count) {
-        rsprint("ADM & RCS are not consistent. Unexpected behavior may happen.");
+        rsprint("ADM & RCS are not consistent. Unexpected behavior may happen.\n");
     }
     
     // Use some default tables if there aren't any set
@@ -5203,10 +5215,11 @@ RSBox RS_suggest_scan_domain(RSHandle *H) {
     memset(&box, 0, sizeof(RSBox));
 
     if (H->P == NULL) {
-        rsprint("Need to use RS_set_scan_pattern() before this.\n");
-        return box;
+        rsprint("WARNING. No scanning pattern for RS_set_scan_pattern().\n");
+        rsprint("WARNING. Using a default PPI scan pattern.\n");
+        H->P = POS_init();
     }
-    
+
     if (H->L == NULL) {
         RS_set_vel_data_to_config(H, LESConfigSuctionVortices);
     }
@@ -5257,10 +5270,16 @@ RSBox RS_suggest_scan_domain(RSHandle *H) {
     } else {
 
         // Extremas of the domain
-        w = H->vel_desc.ax * (1.0f - powf(H->vel_desc.rx, 0.5f * (float)(H->vel_desc.nx - 3))) / (1.0f - H->vel_desc.rx);
-        h = H->vel_desc.az * (1.0f - powf(H->vel_desc.rz,        (float)(H->vel_desc.nz - 1))) / (1.0f - H->vel_desc.rz);
+        if (H->vel_desc.is_stretched) {
+            w = H->vel_desc.ax * (1.0f - powf(H->vel_desc.rx, 0.5f * (float)(H->vel_desc.nx - 3))) / (1.0f - H->vel_desc.rx);
+            h = H->vel_desc.az * (1.0f - powf(H->vel_desc.rz,        (float)(H->vel_desc.nz - 1))) / (1.0f - H->vel_desc.rz);
+        } else {
+            rsprint("WARNING. I need upgrade here.\n");
+            w = H->vel_desc.nx * H->vel_desc.rx;
+            h = H->vel_desc.nz * H->vel_desc.rz;
+        }
 
-        // NEW:
+        // TO DO:
         // Derive azimuth swath based on POSPattern
         //
         // ...

@@ -156,7 +156,7 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
     h->data_grid = LES_data_grid_create_from_enclosing_grid(h->enclosing_grid, 0, 0);
 
     // Override if needed
-    if (!strcmp(config, LESConfigSuctionVortices) || !strcmp(config, LESConfigSuctionVorticesLarge)) {
+    if (!strcasecmp(config, LESConfigSuctionVortices) || !strcasecmp(config, LESConfigSuctionVorticesLarge)) {
         // Stretched grid
         h->v0 = 100.0f;
         h->p0 = h->v0 * h->v0;
@@ -169,7 +169,7 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
         h->rz = 1.05f;
         h->tp = 2.0f;
         h->data_grid->is_stretched = true;
-    } else if (!strcmp(config, LESConfigTwoCell)) {
+    } else if (!strcasecmp(config, LESConfigTwoCell)) {
         h->v0 = 225.0f;
         h->p0 = h->v0 * h->v0;
         h->t0 = h->v0 * h->v0;
@@ -180,7 +180,7 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
         h->ry = 1.0f;
         h->rz = 1.0f;
         h->tp = 5.0f;
-    } else if (!strcmp(config, LESConfigFlat)) {
+    } else if (!strcasecmp(config, LESConfigFlat)) {
         h->v0 = 100.0f;
         h->p0 = 1.0f;                 // p is used as cn2
         h->t0 = h->v0 * h->v0;
@@ -203,7 +203,7 @@ LESHandle LES_init_with_config_path(const LESConfig config, const char *path) {
         h->rz = 1.0f;
         h->tp = 5.0f;
     }
-    rsprint("LES grid spacing = %.2f / %.2f   %.2f / %.2f   %.2f / %.2f  (%s)\n",
+    rsprint("LES grid spacing = %.2f / %.4f   %.2f / %.4f   %.2f / %.4f  (%s)\n",
             h->ax, h->rx,
             h->ay, h->ry,
             h->az, h->rz,
