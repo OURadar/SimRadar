@@ -1270,7 +1270,7 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count,
         group_count = param.user_max_groups;
     }
     
-    printf("RS_make_pulse_params()   count=%d  work_items=%d  group_count=%d/%d\n", count, work_items, group_count, param.user_max_groups);
+    // printf("RS_make_pulse_params()   count=%d  work_items=%d  group_count=%d/%d\n", count, work_items, group_count, param.user_max_groups);
     
     // 1st pass
     param.entry_counts[0] = count;
@@ -2903,30 +2903,28 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
                     H->vel_idx, H->vel_count,
                     H->workers[0].les_id,
                     commaint(leslie->nn * sizeof(cl_float4) / 1024 / 1024));
-            printf(RS_INDENT "o X:[ %.2f - %.2f ] (%.2f) m\n"
-                   RS_INDENT "o Y:[ %.2f - %.2f ] (%.2f) m\n"
-                   RS_INDENT "o Z:[ %.2f - %.2f ] (%.2f) m\n",
-                   -hmax, hmax, 2.0f * hmax,
-                   -hmax, hmax, 2.0f * hmax,
-                   0.0, zmax, zmax);
         }
     } else {
-        table.x_ = leslie->nx;    table.xm = 0.0f;    table.xs = 1.0f / leslie->rx;    table.xo = (float)((leslie->nx - 1) / 2);
-        table.y_ = leslie->ny;    table.ym = 0.0f;    table.ys = 1.0f / leslie->ry;    table.yo = (float)((leslie->ny - 1) / 2);
-        table.z_ = leslie->nz;    table.zm = 0.0f;    table.zs = 1.0f / leslie->rz;    table.zo = 0.0f;
+        table.x_ = leslie->nx;    table.xm = (float)leslie->nx - 1.0f;    table.xs = leslie->rx;    table.xo = -((float)leslie->nx - 1.0f) * 0.5f * leslie->rx;
+        table.y_ = leslie->ny;    table.ym = (float)leslie->ny - 1.0f;    table.ys = leslie->ry;    table.yo = -((float)leslie->ny - 1.0f) * 0.5f * leslie->ry;
+        table.z_ = leslie->nz;    table.zm = (float)leslie->nz - 1.0f;    table.zs = leslie->rz;    table.zo = 0.0f;
+        hmax = table.xm * table.xs + table.xo;
+        zmax = table.zm * table.zs + table.zo;
         if (H->verb > 0 && H->vel_idx == 0) {
             rsprint("LES uniform grid spacing using %.2f, %.2f, %.2f m\n", leslie->rx, leslie->ry, leslie->rz);
             rsprint("GPU LES[%2d/%2d] (%d, %s MB)\n",
                     H->vel_idx, H->vel_count,
                     H->workers[0].les_id,
                     commaint(leslie->nn * sizeof(cl_float4) / 1024 / 1024));
-            printf(RS_INDENT "o X:[ %.2f - %.2f ] (%.2f) m\n"
-                   RS_INDENT "o Y:[ %.2f - %.2f ] (%.2f) m\n"
-                   RS_INDENT "o Z:[ %.2f - %.2f ] (%.2f) m\n",
-                   table.xo, table.xm, table.xm - table.xo,
-                   table.yo, table.ym, table.ym - table.yo,
-                   table.zo, table.zm, table.zm - table.zo);
         }
+    }
+    if (H->verb > 0 && H->vel_idx == 0) {
+        printf(RS_INDENT "o X:[ %.2f - %.2f ] (%.2f) m\n"
+               RS_INDENT "o Y:[ %.2f - %.2f ] (%.2f) m\n"
+               RS_INDENT "o Z:[ %.2f - %.2f ] (%.2f) m\n",
+               -hmax, hmax, 2.0f * hmax,
+               -hmax, hmax, 2.0f * hmax,
+               0.0, zmax, zmax);
     }
     
     // Some other parameters
@@ -5258,6 +5256,15 @@ RSBox RS_suggest_scan_domain(RSHandle *H) {
 
     POSPattern *scan = H->P;
     
+    // Extremas of the domain
+    if (H->vel_desc.is_stretched) {
+        w = H->vel_desc.ax * (1.0f - powf(H->vel_desc.rx, 0.5f * (float)(H->vel_desc.nx - 3))) / (1.0f - H->vel_desc.rx);
+        h = H->vel_desc.az * (1.0f - powf(H->vel_desc.rz,        (float)(H->vel_desc.nz - 1))) / (1.0f - H->vel_desc.rz);
+    } else {
+        w = 0.5f * H->vel_desc.nx * H->vel_desc.rx;
+        h = H->vel_desc.nz * H->vel_desc.rz;
+    }
+    
     //if (POS_is_dbs(scan)) {
     if (H->sim_concept & RSSimulationConceptVerticallyPointingRadar) {
 
@@ -5277,8 +5284,14 @@ RSBox RS_suggest_scan_domain(RSHandle *H) {
         }
         //rsprint("scan_count = %d   emin = %.2f   emax = %.2f   rmin = %.2f   rmax = %.2f\n", scan->count, emin, emax, rmin, rmax);
 
-        w = rmax * cos(emin / 180.0f * M_PI);
-        h = rmax * sin(emax / 180.0f * M_PI);
+        //w = rmax * cos(emin / 180.0f * M_PI);
+        //h = rmax * sin(emax / 180.0f * M_PI);
+        if (rmax * cos(emin / 180.0f * M_PI) > w) {
+            rsprint("WARNING. Elevation %.2f at %.2f m exceeds the LES domain width = %.2f.\n", emin, rmax, w);
+        }
+        if (rmax * sin(emax / 180.0f * M_PI) > h) {
+            rsprint("WARNING. Elevation %.2f at %.2f m exceeds the LES domain height = %.2f.\n", emax, rmax, h);
+        }
 
         na = 360.0f;
         ne = ceilf((emax - emin) / H->params.antenna_bw_deg);
@@ -5294,16 +5307,6 @@ RSBox RS_suggest_scan_domain(RSHandle *H) {
         box.size.r = floorf(nr - RS_DOMAIN_PAD - 1.0f) * H->params.dr;
 
     } else {
-
-        // Extremas of the domain
-        if (H->vel_desc.is_stretched) {
-            w = H->vel_desc.ax * (1.0f - powf(H->vel_desc.rx, 0.5f * (float)(H->vel_desc.nx - 3))) / (1.0f - H->vel_desc.rx);
-            h = H->vel_desc.az * (1.0f - powf(H->vel_desc.rz,        (float)(H->vel_desc.nz - 1))) / (1.0f - H->vel_desc.rz);
-        } else {
-            rsprint("WARNING. I need upgrade here.\n");
-            w = H->vel_desc.nx * H->vel_desc.rx;
-            h = H->vel_desc.nz * H->vel_desc.rz;
-        }
 
         // TO DO:
         // Derive azimuth swath based on POSPattern

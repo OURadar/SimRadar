@@ -107,6 +107,8 @@
             RS_set_lambda(S, 3.0e8 / 915.0e6);
 
             RS_set_prt(S, 1.0f / 120.0f);
+            
+            RS_set_sampling_spacing(S, 30.0f, 1.0f, 1.0f);
         } else {
             
             RS_set_concept(S,
@@ -118,17 +120,23 @@
             
             RS_set_tx_params(S, 30.0f * 2.0f / 3.0e8f, 10.0e3);   // Resolution in m, power in W
             
-            RS_set_debris_count(S, 1, 10000);
-            RS_set_debris_count(S, 2, 512);
-            RS_set_debris_count(S, 3, 512);
-            
-            RS_set_obj_data_to_config(S, OBJConfigLeaf);
-            RS_set_obj_data_to_config(S, OBJConfigBrick);
-            RS_set_obj_data_to_config(S, OBJConfigMetalSheet);
+//            RS_set_debris_count(S, 1, 10000);
+//            RS_set_debris_count(S, 2, 512);
+//            RS_set_debris_count(S, 3, 512);
+//
+//            RS_set_obj_data_to_config(S, OBJConfigLeaf);
+//            RS_set_obj_data_to_config(S, OBJConfigBrick);
+//            RS_set_obj_data_to_config(S, OBJConfigMetalSheet);
 
+            RS_add_debris(S, OBJConfigLeaf, 10000);
+            RS_add_debris(S, OBJConfigBrick, 512);
+            RS_add_debris(S, OBJConfigMetalSheet, 512);
+            
             RS_revise_debris_counts_to_gpu_preference(S);
 
             RS_set_prt(S, 1.0f / 60.0f);
+            
+            RS_set_sampling_spacing(S, 30.0f, 1.0f, 1.0f);
         }
         
         if (reportProgress) {
@@ -136,23 +144,13 @@
         }
         if (useLES) {
             RSBox box = RS_suggest_scan_domain(S);
-            if (scan_pattern->mode == 'D') {
-                RS_set_scan_box(S,
-                                box.origin.r, box.origin.r + box.size.r, 30.0f,    // Range
-                                box.origin.a, box.origin.a + box.size.a, 1.0f,     // Azimuth
-                                box.origin.e, box.origin.e + box.size.e, 1.0f);    // Elevation
-            } else {
-                RS_set_scan_box(S,
-                                box.origin.r, box.origin.r + box.size.r, 60.0f,    // Range
-                                box.origin.a, box.origin.a + box.size.a, 1.0f,     // Azimuth
-                                box.origin.e, box.origin.e + box.size.e, 1.0f);    // Elevation
-            }
+            RS_set_scan_box(S, box);
             S->draw_mode.s1 = (cl_uint)(box.origin.r + 0.5 * box.size.r);
         } else {
-            RS_set_scan_box(S,
-                            3.42e3, 4.18e3, 30.0f,                // Range
-                            -7.0f, 7.0f, 1.0f,                    // Azimuth
-                            0.0f, 12.0f, 1.0f);                   // Elevation
+//            RS_set_scan_box(S,
+//                            3.42e3, 4.18e3, 30.0f,                // Range
+//                            -7.0f, 7.0f, 1.0f,                    // Azimuth
+//                            0.0f, 12.0f, 1.0f);                   // Elevation
 
             cl_float4 vel = (cl_float4){50.0f, 0.0f, 0.0f, 0.0f};
             
