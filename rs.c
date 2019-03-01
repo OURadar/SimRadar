@@ -2905,8 +2905,8 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
                     commaint(leslie->nn * sizeof(cl_float4) / 1024 / 1024));
         }
     } else {
-        table.x_ = leslie->nx;    table.xm = (float)leslie->nx - 1.0f;    table.xs = 1.0f / leslie->rx;    table.xo = (float)((leslie->nx - 1) / 2);
-        table.y_ = leslie->ny;    table.ym = (float)leslie->ny - 1.0f;    table.ys = 1.0f / leslie->ry;    table.yo = (float)((leslie->ny - 1) / 2);
+        table.x_ = leslie->nx;    table.xm = (float)leslie->nx - 1.0f;    table.xs = 1.0f / leslie->rx;    table.xo = (float)(leslie->nx - 1) * 0.5f;
+        table.y_ = leslie->ny;    table.ym = (float)leslie->ny - 1.0f;    table.ys = 1.0f / leslie->ry;    table.yo = (float)(leslie->ny - 1) * 0.5f;
         table.z_ = leslie->nz;    table.zm = (float)leslie->nz - 1.0f;    table.zs = 1.0f / leslie->rz;    table.zo = 0.0f;
         hmax = 0.5f * ((float)leslie->nx - 1.0) * leslie->rx;
         zmax = ((float)leslie->nz - 1.0) * leslie->rz;
@@ -2965,9 +2965,9 @@ void RS_set_vel_data_to_uniform(RSHandle *H, cl_float4 velocity) {
     }
     
     // Set up the mapping coefficients:
-    table.x_ = 1;    table.xm = 0.0f;    table.xs = 1.0f / domain.size.x;    table.xo = 0;
-    table.y_ = 1;    table.ym = 0.0f;    table.ys = 1.0f / domain.size.y;    table.yo = 0;
-    table.z_ = 1;    table.zm = 0.0f;    table.zs = 1.0f / domain.size.z;    table.zo = 0;
+    table.x_ = 1;    table.xm = 0.0f;    table.xs = 1.0f / domain.size.x;    table.xo = 0.0f;
+    table.y_ = 1;    table.ym = 0.0f;    table.ys = 1.0f / domain.size.y;    table.yo = 0.0f;
+    table.z_ = 1;    table.zm = 0.0f;    table.zs = 1.0f / domain.size.z;    table.zo = 0.0f;
     
     table.tr = 1000.0f;
     
@@ -2998,9 +2998,9 @@ void RS_set_vel_data_to_cube27(RSHandle *H) {
     }
     
     // Set up the mapping coefficients: -table_start * table_xs
-    table.x_ = 3;    table.xm = 2.0f;    table.xs = 3.0f / domain.size.x;    table.xo = 0;
-    table.y_ = 3;    table.ym = 2.0f;    table.ys = 3.0f / domain.size.y;    table.yo = 0;
-    table.z_ = 3;    table.zm = 2.0f;    table.zs = 3.0f / domain.size.z;    table.zo = 0;
+    table.x_ = 3;    table.xm = 2.0f;    table.xs = 3.0f / domain.size.x;    table.xo = 1.0f;
+    table.y_ = 3;    table.ym = 2.0f;    table.ys = 3.0f / domain.size.y;    table.yo = 1.0f;
+    table.z_ = 3;    table.zm = 2.0f;    table.zs = 3.0f / domain.size.z;    table.zo = 0.0f;
     
     table.tr = 1000.0f;
     

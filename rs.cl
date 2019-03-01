@@ -709,7 +709,7 @@ __kernel void fp_atts(__global float4 *p,
 
     // Cn2 from the second set of 4 float values
     float cn2 = cpxx.s0;
-    float a = sqrt(cn2 + 14.0f);
+    float a = pow(10.0f, cn2);
 
     // I / Q component of the accumulated phase
     float c, s;
