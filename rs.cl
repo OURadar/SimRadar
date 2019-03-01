@@ -708,8 +708,8 @@ __kernel void fp_atts(__global float4 *p,
     float phi = rcs.s3 - wav_num * dot(normalize(pos.xyz), uvwt.xyz) * dt;
 
     // Cn2 from the second set of 4 float values
-    float cn2 = cpxx.s1;
-    float a = sqrt(cn2);
+    float cn2 = cpxx.s0;
+    float a = sqrt(cn2 + 14.0f);
 
     // I / Q component of the accumulated phase
     float c, s;

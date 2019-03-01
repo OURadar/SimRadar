@@ -2905,11 +2905,11 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
                     commaint(leslie->nn * sizeof(cl_float4) / 1024 / 1024));
         }
     } else {
-        table.x_ = leslie->nx;    table.xm = (float)leslie->nx - 1.0f;    table.xs = leslie->rx;    table.xo = -((float)leslie->nx - 1.0f) * 0.5f * leslie->rx;
-        table.y_ = leslie->ny;    table.ym = (float)leslie->ny - 1.0f;    table.ys = leslie->ry;    table.yo = -((float)leslie->ny - 1.0f) * 0.5f * leslie->ry;
-        table.z_ = leslie->nz;    table.zm = (float)leslie->nz - 1.0f;    table.zs = leslie->rz;    table.zo = 0.0f;
-        hmax = table.xm * table.xs + table.xo;
-        zmax = table.zm * table.zs + table.zo;
+        table.x_ = leslie->nx;    table.xm = (float)leslie->nx - 1.0f;    table.xs = 1.0f / leslie->rx;    table.xo = (float)((leslie->nx - 1) / 2);
+        table.y_ = leslie->ny;    table.ym = (float)leslie->ny - 1.0f;    table.ys = 1.0f / leslie->ry;    table.yo = (float)((leslie->ny - 1) / 2);
+        table.z_ = leslie->nz;    table.zm = (float)leslie->nz - 1.0f;    table.zs = 1.0f / leslie->rz;    table.zo = 0.0f;
+        hmax = 0.5f * ((float)leslie->nx - 1.0) * leslie->rx;
+        zmax = ((float)leslie->nz - 1.0) * leslie->rz;
         if (H->verb > 0 && H->vel_idx == 0) {
             rsprint("LES uniform grid spacing using %.2f, %.2f, %.2f m\n", leslie->rx, leslie->ry, leslie->rz);
             rsprint("GPU LES[%2d/%2d] (%d, %s MB)\n",
