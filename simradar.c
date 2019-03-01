@@ -873,6 +873,8 @@ int main(int argc, char *argv[]) {
 
 #endif
 
+    RS_set_sampling_spacing(S, 30.0f, 1.0, 1.0);
+
     RSBox box = RS_suggest_scan_domain(S);
 
     // Set debris population
@@ -899,10 +901,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    RS_set_scan_box(S,
-                    box.origin.r, box.origin.r + box.size.r, 15.0f,                       // Range
-                    box.origin.a, box.origin.a + box.size.a, S->params.antenna_bw_deg,    // Azimuth
-                    box.origin.e, box.origin.e + box.size.e, S->params.antenna_bw_deg);   // Elevation
+    RS_set_scan_box(S, box);
 
     // Save the framework default PRT for later
     if (user.prt == PARAMS_FLOAT_NOT_SUPPLIED) {

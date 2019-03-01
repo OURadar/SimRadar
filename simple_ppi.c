@@ -31,6 +31,7 @@ int main(int argc, char *argv[]) {
     RS_set_antenna_params(S, 1.0f, 44.5f);
     RS_set_tx_params(S, 0.2e-6f, 50.0e3f);
     RS_set_prt(S, 1.0e-3f);
+    RS_set_sampling_spacing(S, 15.0f, 1.0f, 1.0f);
 
     // Set the DSD profile
     RS_set_dsd_to_mp(S);
@@ -49,11 +50,9 @@ int main(int argc, char *argv[]) {
     RSBox box = RS_suggest_scan_domain(S);
     
     // Set the scan box
-    RS_set_scan_box(S,
-                    box.origin.r, box.origin.r + box.size.r, 15.0f,   // Range
-                    box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
-                    box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
+    RS_set_scan_box(S, box);
 
+    // Show a summary of radar parameters
     RS_show_radar_params(S);
 
     // Populate the domain with scatter bodies.

@@ -709,12 +709,15 @@ __kernel void fp_atts(__global float4 *p,
 
     // Cn2 from the second set of 4 float values
     float cn2 = cpxx.s1;
+    float a = sqrt(cn2);
 
+    // I / Q component of the accumulated phase
     float c, s;
     s = sincos(phi, &c);
     
-    rcs.s0 = c;
-    rcs.s1 = s;
+    // RCS is simply the A exp (j * phi)
+    rcs.s0 = a * c;
+    rcs.s1 = a * s;
     rcs.s2 = cn2;
     rcs.s3 = atan2(s, c);
 

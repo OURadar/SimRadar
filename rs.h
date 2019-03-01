@@ -485,10 +485,12 @@ void RS_set_lambda(RSHandle *H, const RSfloat lambda);
 void RS_set_density(RSHandle *H, const RSfloat density);
 void RS_set_antenna_params(RSHandle *H, RSfloat beamwidth_deg, RSfloat gain_dbi);
 void RS_set_tx_params(RSHandle *H, RSfloat pulsewidth, RSfloat tx_power_watt);
-void RS_set_scan_box(RSHandle *H,
-                     RSfloat range_start, RSfloat range_end, RSfloat range_gate,
-                     RSfloat azimuth_start, RSfloat azimuth_end, RSfloat azimuth_gate,
-                     RSfloat elevation_start, RSfloat elevation_end, RSfloat elevation_gate);
+void RS_set_sampling_spacing(RSHandle *H, const RSfloat range, const RSfloat azimuth, const RSfloat elevation);
+void RS_set_scan_box(RSHandle *H, RSBox box);
+void RS_set_scan_extent(RSHandle *H,
+                        RSfloat range_start, RSfloat range_end, RSfloat range_gate,
+                        RSfloat azimuth_start, RSfloat azimuth_end, RSfloat azimuth_gate,
+                        RSfloat elevation_start, RSfloat elevation_end, RSfloat elevation_gate);
 void RS_set_beam_pos(RSHandle *H, RSfloat az_deg, RSfloat el_deg);
 void RS_set_verbosity(RSHandle *H, const char verb);
 void RS_set_debris_count(RSHandle *H, const int debris_id, const size_t count);

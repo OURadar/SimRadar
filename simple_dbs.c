@@ -26,6 +26,8 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
     
+    S->verb = 1;
+    
     // Set up the concepts and basic parameters
     RS_set_concept(S, RSSimulationConceptFixedScattererPosition | RSSimulationConceptVerticallyPointingRadar);
     RS_set_antenna_params(S, 5.0f, 30.5f);    // Antenna beamwidth in degrees and gain in dB
@@ -35,22 +37,20 @@ int main(int argc, char *argv[]) {
 
     RS_show_radar_params(S);
 
+    // Choose an LES configuration
+    RS_set_vel_data_to_config(S, LESConfigFlat);
+
     // Propose a scan pattern
     POSPattern *scan_pattern = POS_init_with_string("D:0,75,50/90,75,50/0,90,50");
     RS_set_scan_pattern(S, scan_pattern);
 
+    RS_set_sampling_spacing(S, 30.0f, 1.0, 1.0);
+    
     // After the wind table is set, we can use the API to suggest the optimal scan box
     RSBox box = RS_suggest_scan_domain(S);
 
     // Set the scan box
-    RS_set_scan_box(S,
-                    box.origin.r, box.origin.r + box.size.r, 30.0f,   // Range
-                    box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
-                    box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
-    
-
-    // Choose an LES configuration
-    RS_set_vel_data_to_config(S, LESConfigFlat);
+    RS_set_scan_box(S, box);
 
     // Populate the domain with scatter bodies.
     // This is also the function that triggers kernel compilation, GPU memory allocation and

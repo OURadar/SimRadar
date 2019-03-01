@@ -1066,6 +1066,8 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
     RS_set_tx_params(H, RS_PARAMS_TAU, 50.0e3f);
     
     RS_set_beam_pos(H, 5.0f, 1.0f);
+    
+    RS_set_sampling_spacing(H, RS_PARAMS_GATEWIDTH, RS_PARAMS_BEAMWIDTH, RS_PARAMS_BEAMWIDTH);
 
     H->verb = verb;
     
@@ -1268,7 +1270,7 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count,
         group_count = param.user_max_groups;
     }
     
-    //printf("count=%d  work_items=%d  group_count=%d/%d\n", count, work_items, group_count, param.user_max_groups);
+    printf("RS_make_pulse_params()   count=%d  work_items=%d  group_count=%d/%d\n", count, work_items, group_count, param.user_max_groups);
     
     // 1st pass
     param.entry_counts[0] = count;
@@ -1302,7 +1304,7 @@ RSMakePulseParams RS_make_pulse_params(const cl_uint count,
     param.entry_counts[1] = work_count;
     work_items = work_count / (param.range_count * 2);
     if (work_items < 1) {
-        fprintf(stderr, "%s : RS : 2nd pass with CL work_items < 2?\n", now());
+        fprintf(stderr, "%s : RS : 2nd pass with CL work_items = %u < 2?\n", now(), work_items);
         work_items = 1;
     }
     
@@ -1457,12 +1459,35 @@ void RS_set_tx_params(RSHandle *H, RSfloat pulsewidth, RSfloat tx_power_watt) {
 }
 
 
+void RS_set_sampling_spacing(RSHandle *H, const RSfloat range, const RSfloat azimuth, const RSfloat elevation) {
+    H->params.range_delta = range;
+    H->params.azimuth_delta_deg = azimuth;
+    H->params.elevation_delta_deg = elevation;
+}
+
+
+void RS_set_scan_box(RSHandle *H, RSBox box) {
+    if (H->params.range_delta == 0.0f) {
+        H->params.range_delta = RS_PARAMS_GATEWIDTH;
+    }
+    if (H->params.azimuth_delta_deg == 0.0f) {
+        H->params.azimuth_delta_deg = RS_PARAMS_BEAMWIDTH;
+    }
+    if (H->params.elevation_delta_deg == 0.0f) {
+        H->params.elevation_delta_deg = RS_PARAMS_BEAMWIDTH;
+    }
+    RS_set_scan_extent(H,
+                       box.origin.r, box.origin.r + box.size.r, H->params.range_delta,            // Range
+                       box.origin.a, box.origin.a + box.size.a, H->params.azimuth_delta_deg,      // Azimuth
+                       box.origin.e, box.origin.e + box.size.e, H->params.elevation_delta_deg);   // Elevation
+}
+
 // This method also suggests number of scatterer to be used based on the scatterer / resolution volume rule.
-void RS_set_scan_box(RSHandle *H,
-                     RSfloat range_start, RSfloat range_end, RSfloat range_delta,
-                     RSfloat azimuth_start, RSfloat azimuth_end, RSfloat azimuth_delta,
-                     RSfloat elevation_start, RSfloat elevation_end, RSfloat elevation_delta) {
-    
+void RS_set_scan_extent(RSHandle *H,
+                        RSfloat range_start, RSfloat range_end, RSfloat range_delta,
+                        RSfloat azimuth_start, RSfloat azimuth_end, RSfloat azimuth_delta,
+                        RSfloat elevation_start, RSfloat elevation_end, RSfloat elevation_delta) {
+
     if (H->status & RSStatusDomainPopulated) {
         rsprint("Simulation domain has been populated. Scan box cannot be changed.");
         return;
@@ -3885,13 +3910,12 @@ void RS_populate(RSHandle *H) {
     
     // Set a box if it has not been set
     if (H->num_anchors == 0) {
-        rsprint("No scan box defined. Using scan strategy to derive the scan box.\n");
+        if (H->verb) {
+            rsprint("No scan box defined. Using scan strategy to derive the scan box.\n");
+        }
         RSBox box = RS_suggest_scan_domain(H);
         //rsprint("Suggested box size = %.2f x %.2f x %.2f\n", box.size.r, box.size.a, box.size.e);
-        RS_set_scan_box(H,
-                        box.origin.r, box.origin.r + box.size.r, 30.0f,   // Range
-                        box.origin.a, box.origin.a + box.size.a, 1.0f,    // Azimuth
-                        box.origin.e, box.origin.e + box.size.e, 1.0f);   // Elevation
+        RS_set_scan_box(H, box);
     }
     
     // These should be identical
@@ -5237,6 +5261,8 @@ RSBox RS_suggest_scan_domain(RSHandle *H) {
     //if (POS_is_dbs(scan)) {
     if (H->sim_concept & RSSimulationConceptVerticallyPointingRadar) {
 
+        //printf("range_delta = %.2f\n", H->params.range_delta);
+        
         // Go through the DBS pattern
         float emin = 90.0f;
         float emax = 0.0f;
@@ -5249,15 +5275,15 @@ RSBox RS_suggest_scan_domain(RSHandle *H) {
             emax = MAX(emax, scan->positions[j].el);
             j++;
         }
-        rsprint("scan_count = %d   emin = %.2f   emax = %.2f   rmin = %.2f   rmax = %.2f\n", scan->count, emin, emax, rmin, rmax);
+        //rsprint("scan_count = %d   emin = %.2f   emax = %.2f   rmin = %.2f   rmax = %.2f\n", scan->count, emin, emax, rmin, rmax);
 
         w = rmax * cos(emin / 180.0f * M_PI);
         h = rmax * sin(emax / 180.0f * M_PI);
 
         na = 360.0f;
-        ne = (emax - emin) / H->params.antenna_bw_deg;
-        nr = (rmax - rmin) / H->params.dr;
-        
+        ne = ceilf((emax - emin) / H->params.antenna_bw_deg);
+        nr = ceilf((rmax - rmin) / H->params.dr * 0.5f) * 2.0f;
+
         box.origin.a = 0.0f;
         box.size.a = 360.0f;
         

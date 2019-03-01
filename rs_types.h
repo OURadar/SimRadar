@@ -15,6 +15,7 @@
 #define RS_PARAMS_TAU               0.2e-6f         // Default pulse width in s
 #define RS_PARAMS_PULSEWIDTH        RS_PARAMS_TAU   // Default pulse width in s, same as RS_PARAMS_TAU
 #define RS_PARAMS_BEAMWIDTH         1.0f
+#define RS_PARAMS_GATEWIDTH         30.0f
 
 #define RSfloat  float
 
