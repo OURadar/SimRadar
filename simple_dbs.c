@@ -30,11 +30,11 @@ int main(int argc, char *argv[]) {
     
     // Set up the concepts and basic parameters
     RS_set_concept(S, RSSimulationConceptFixedScattererPosition | RSSimulationConceptVerticallyPointingRadar);
+    RS_set_sampling_spacing(S, 30.0f, 1.0, 1.0);    // Sampling spacing in range, azimuth and elevation
     RS_set_antenna_params(S, 5.0f, 30.5f);          // Antenna beamwidth in degrees and gain in dB
     RS_set_tx_params(S, 0.2e-6f, 10.0e3f);          // Equivalent transmit pulsewidth in seconds and power in watts
     RS_set_lambda(S, 3.0e8 / 915.0e6);              // Wavelength in meters (derived from frequency)
     RS_set_prt(S, 1.0 / 140.0);                     // Pulse repetition time in seconds
-    RS_set_sampling_spacing(S, 30.0f, 1.0, 1.0);    // Sampling spacing in range, azimuth and elevation
 
     // Summary of radar parameters
     RS_show_radar_params(S);
