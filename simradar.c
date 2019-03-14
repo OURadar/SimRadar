@@ -768,7 +768,7 @@ int main(int argc, char *argv[]) {
             printf("    %d   AZ: " FLT_FMT " deg   EL: " FLT_FMT " -- " FLT_FMT " deg    delta: " FLT_FMT " deg\n",
                    k, user.scan_pattern.sweeps[0].azStart, user.scan_pattern.sweeps[0].elStart, user.scan_pattern.sweeps[0].elEnd, user.scan_pattern.sweeps[0].elDelta);
         } else {
-            printf("   I need upgrade here.\n");
+            printf("   DBS type.\n");
         }
         for (k = 0; k < user.num_pulses; k++) {
             POS_get_next_angles(&user.scan_pattern);
@@ -941,8 +941,9 @@ int main(int argc, char *argv[]) {
     // Some warm up if we are going for real
     setbuf(stdout, NULL);
     if (user.warm_up_pulses > 0) {
-        strcpy(charbuff, commaint(user.warm_up_pulses));
+        // Set a longer PRT for particles to move more
         RS_set_prt(S, 1.0f / 60.0f);
+        strcpy(charbuff, commaint(user.warm_up_pulses));
         gettimeofday(&t1, NULL);
         for (k = 0; k < user.warm_up_pulses; k++) {
             // Skip computing progress if we are not showing progress

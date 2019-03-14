@@ -4045,7 +4045,7 @@ void RS_populate(RSHandle *H) {
             for (k = 0; k < anchors_per_layer; k++) {
                 H->scat_uid[i].s0 = uid++;
                 H->scat_uid[i].s1 = (cl_uint)H->num_scats;
-                H->scat_uid[i].s2 = 0;
+                H->scat_uid[i].s2 = k;
                 H->scat_uid[i].s3 = 0;
                 
                 H->scat_pos[i].x = H->scat_pos[k].x / H->params.range_start * (H->params.range_start + (float)n * H->params.range_delta);
@@ -4078,8 +4078,8 @@ void RS_populate(RSHandle *H) {
                 // Initial return from each point
                 H->scat_rcs[i].s0 = 1.0f;                      // sh_real of rcs
                 H->scat_rcs[i].s1 = 0.0f;                      // sh_imag of rcs
-                H->scat_rcs[i].s2 = 1.0f;                      // sv_real of rcs
-                H->scat_rcs[i].s3 = 0.0f;                      // sv_imag of rcs
+                H->scat_rcs[i].s2 = 1.0e-10f;                  // rcs.s2 = cn2
+                H->scat_rcs[i].s3 = (float)rand() / RAND_MAX;  // rcs.s3 = phi (accumulated phase)
                 
                 // Random seeds
                 H->scat_rnd[i].s0 = rand();                    // random seed
@@ -4332,16 +4332,6 @@ void RS_populate(RSHandle *H) {
         H->workers[i].rcs_ellipsoid_desc.s[RSTable1DDescriptionUserConstant] = H->sim_desc.s[RSSimulationDescriptionDropConcentrationScale];
     }
     
-    // Double buffering: first frame is loaded during RS_init() or changed during RS_set_vel_data_to_config(), now we fill in the alternate buffer
-//    rsprint("RS_populate() reading LES table (%u out of %u)...", H->vel_idx, H->vel_count);
-//    LESTable *table = LES_get_frame(H->L, H->vel_idx);
-//    if (table == NULL) {
-//        rsprint("ERROR: There is no more frame(s)?");
-//        exit(EXIT_FAILURE);
-//    }
-//    RS_set_vel_data_to_LES_table(H, table);
-//    H->vel_idx = H->vel_idx == H->vel_count - 1 ? 0 : H->vel_idx + 1;
-
     // All tables must be ready at this point
     // - range weight table
     // - antenna weight table
@@ -4387,7 +4377,7 @@ void RS_populate(RSHandle *H) {
         rsprint("CL domain synchronized.");
     }
     
-    H->status |= RSStatusDomainPopulated;
+    H->status |= RSStatusDomainPopulated | RSStatusScattererSignalNeedsUpdate;
     
     // Advance time with 0 time so that all attributes kernels (el_atts, db_atts or bg_atts) are called once.
     H->sim_desc.s[RSSimulationDescriptionPRT] = 0.0f;
@@ -4454,6 +4444,9 @@ void RS_download(RSHandle *H) {
 #endif
     
     RS_merge_pulse_tmp(H);
+    printf("pulse %f [ %+11.4e%+11.4ei %+11.4e%+11.4ei (%+6.2f)   %+11.4e%+11.4ei %+11.4e%+11.4ei (%+6.2f)  ... ]\n", H->sim_tic,
+           H->pulse[0].s0, H->pulse[0].s1, H->pulse[0].s2, H->pulse[0].s3, zdr(H->pulse[0]),
+           H->pulse[1].s0, H->pulse[1].s1, H->pulse[1].s2, H->pulse[1].s3, zdr(H->pulse[1]));
 }
 
 
@@ -4559,9 +4552,9 @@ void RS_download_pulse_only(RSHandle *H) {
 #endif
     
     RS_merge_pulse_tmp(H);
-    //    printf("pulse %f [ %+11.4e%+11.4ei %+11.4e%+11.4ei (%+6.2f)   %+11.4e%+11.4ei %+11.4e%+11.4ei (%+6.2f)  ... ]\n", H->sim_tic,
-    //           H->pulse[0].s0, H->pulse[0].s1, H->pulse[0].s2, H->pulse[0].s3, zdr(H->pulse[0]),
-    //           H->pulse[1].s0, H->pulse[1].s1, H->pulse[1].s2, H->pulse[1].s3, zdr(H->pulse[1]));
+    printf("pulse %f [ %+11.4e%+11.4ei %+11.4e%+11.4ei (%+6.2f)   %+11.4e%+11.4ei %+11.4e%+11.4ei (%+6.2f)  ... ]\n", H->sim_tic,
+           H->pulse[0].s0, H->pulse[0].s1, H->pulse[0].s2, H->pulse[0].s3, zdr(H->pulse[0]),
+           H->pulse[1].s0, H->pulse[1].s1, H->pulse[1].s2, H->pulse[1].s3, zdr(H->pulse[1]));
 }
 
 
@@ -5001,7 +4994,7 @@ void RS_make_pulse(RSHandle *H) {
     for (i = 0; i < H->num_workers; i++) {
         RSWorker *C = &H->workers[i];
         if (H->status & RSStatusScattererSignalNeedsUpdate) {
-            //printf("RS_make_pulse() kern_scat_sig_aux : %zu\n", C->num_scats);
+            printf("RS_make_pulse() kern_scat_sig_aux : %zu   sim_tic = %.4f\n", C->num_scats, H->sim_tic);
             clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
             clEnqueueNDRangeKernel(C->que, C->kern_scat_sig_aux, 1, NULL, &C->num_scats, NULL, 0, NULL, &events[i][0]);
             clEnqueueNDRangeKernel(C->que, C->kern_make_pulse_pass_1, 1, NULL, &C->make_pulse_params.global[0], &C->make_pulse_params.local[0], 1, &events[i][0], &events[i][1]);
