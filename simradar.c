@@ -92,6 +92,9 @@ void show_help() {
            "  --alarm\n"
            "         Make an alarm when the simulation is complete.\n"
            "\n"
+           "  -b (--beamwidth) " UNDERLINE("B") "\n"
+           "         Sets the antenna beamwidth to " UNDERLINE("B") " degrees.\n"
+           "\n"
            "  -c (--concept) " UNDERLINE("concepts") "\n"
            "         Sets the simulation concepts to be used, which are OR together for\n"
            "         multiple values that can be combined together.\n"
@@ -162,7 +165,7 @@ void show_help() {
            "         inspecting the output files with extension .iq in the specified output\n"
            "         directory, if supplied, or the default output directory.\n"
            "\n"
-           "  --savestate\n"
+           "  --save-state\n"
            "         Sets the program to generate a simulation state file at the end of the\n"
            "         simulation. An output file like sim-20160229-143941-E03.0.simstate will\n"
            "         be generated in the ~/Downloads folder.\n"
@@ -478,34 +481,34 @@ int main(int argc, char *argv[]) {
     // ---------------------------------------------------------------------------------------------------------------
 
     static struct option long_options[] = {
-        {"alarm"         , no_argument      , 0, 'A'}, // ASCII 65 - 90 : A - Z
+        {"alarm"         , no_argument      , 0, 'A'},
+        {"beamwidth"     , required_argument, 0, 'b'},
+        {"concept"       , required_argument, 0, 'c'},
         {"cpu"           , no_argument      , 0, 'C'},
+        {"debris"        , required_argument, 0, 'd'},
         {"density"       , required_argument, 0, 'D'},
-        {"savestate"     , no_argument      , 0, 'E'},
+        {"save-state"    , no_argument      , 0, 'E'},
+        {"frames"        , required_argument, 0, 'f'},
         {"no-progress"   , no_argument      , 0, 'F'},
-        {"mpdsd"         , required_argument, 0, 'G'},
+        {"mp-dsd"        , required_argument, 0, 'g'},
+        {"gpu"           , no_argument      , 0, 'G'},
+        {"help"          , no_argument      , 0, 'h'},
         {"resume-seed"   , no_argument      , 0, 'H'},
+        {"lambda"        , required_argument, 0, 'l'},
         {"les"           , required_argument, 0, 'L'},
         {"no-run"        , no_argument      , 0, 'N'},
-        {"out-dir"       , required_argument, 0, 'O'},
-        {"sweep"         , required_argument, 0, 'S'},
-        {"tightbox"      , no_argument      , 0, 'T'},
-        {"warmup"        , required_argument, 0, 'W'},
-        {"beamwidth"     , required_argument, 0, 'b'}, // ASCII 97 - 122 : a - z
-        {"concept"       , required_argument, 0, 'c'},
-        {"debris"        , required_argument, 0, 'd'},
-        {"help"          , no_argument      , 0, 'h'},
-        {"gpu"           , no_argument      , 0, 'g'},
-        {"frames"        , required_argument, 0, 'f'},
-        {"lambda"        , required_argument, 0, 'l'},
         {"output"        , no_argument      , 0, 'o'},
+        {"out-dir"       , required_argument, 0, 'O'},
         {"pulses"        , required_argument, 0, 'p'},
-        {"seed"          , required_argument, 0, 's'},
-        {"prt"           , required_argument, 0, 't'},
-        {"pulsewidth"    , required_argument, 0, 'w'},
         {"quiet"         , no_argument      , 0, 'q'},
+        {"seed"          , required_argument, 0, 's'},
+        {"sweep"         , required_argument, 0, 'S'},
+        {"prt"           , required_argument, 0, 't'},
+        {"tightbox"      , no_argument      , 0, 'T'},
         {"verbose"       , no_argument      , 0, 'v'},
-        {"dont-ask"      , no_argument      , 0, 'y'},
+        {"pulsewidth"    , required_argument, 0, 'w'},
+        {"warmup"        , required_argument, 0, 'W'},
+        {"do-not-ask"    , no_argument      , 0, 'y'},
         {0, 0, 0, 0}
     };
     
@@ -583,9 +586,6 @@ int main(int argc, char *argv[]) {
                 user.show_progress = false;
                 break;
             case 'g':
-                accel_type = ACCEL_TYPE_GPU;
-                break;
-            case 'G':
                 //k = sscanf(optarg, "%c:%f:%f:%f", &c1, &f1, &f2, &f3);
                 strcpy(charbuff, optarg);
                 k = 0;
@@ -600,6 +600,9 @@ int main(int argc, char *argv[]) {
                         printf("k=%d  size=%.2f mm\n", k, 1000.0f * user.dsd_sizes[k]);
                     }
                 }
+                break;
+            case 'G':
+                accel_type = ACCEL_TYPE_GPU;
                 break;
             case 'h':
                 show_help();
