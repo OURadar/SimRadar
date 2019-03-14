@@ -174,7 +174,7 @@ void show_help() {
            "         Sets the beam to scan mode.\n"
            "         The argument " UNDERLINE("M:...") " are parameters for mode, followed\n"
            "         the by scan-specific paramters.\n"
-           "            M = P for PPI (plane position indicator) mode\n"
+           "            M = P for PPI (plan position indicator) mode\n"
            "            M = R for RHI (range height indicator) mode\n"
            "            M = D for DBS (Doppler beam swinging) mode\n"
            "         For PPI and RHI scans, the scan-specific parameters are expected as:\n"
@@ -199,11 +199,11 @@ void show_help() {
            "  -t " UNDERLINE("period") "\n"
            "         Sets the pulse repetition time to " UNDERLINE("period") " seconds.\n"
            "\n"
-           "  -T (--tightbox)\n"
+           "  -T (--tight-box)\n"
            "         Sets the program to use a tight box, i.e., only simulate from ground to\n"
            "         the scan elevation. Note that framework padding will still be respected.\n"
            "\n"
-           "  -W (--warmup) " UNDERLINE("count") "\n"
+           "  -W (--warm-up) " UNDERLINE("count") "\n"
            "         Sets the warm up stage to use " UNDERLINE("count") " pulses.\n"
            "\n\n"
            "EXAMPLES\n"
@@ -240,13 +240,14 @@ void show_help() {
            "     debris objects\n"
            "           " PROGNAME " -o --concept DBU -T -L suctvort_large --sweep P:1.0,-12:12:0.005 -t 0.0005 -p 4800 -d 1,10000\n"
            "\n"
-           "     The following simulates a profiling radar by specifying the concept option '-c FV'\n"
+           "     The following simulates a profiling radar with 5.0-degree antenna beamwidth (3-dB),\n"
+           "     wavelength lambda = 0.328 m (915 MHz), simulate using the concept option '-c FV'\n"
            "     for fixed scatterer position and vertically pointing radar. The LES field is 'flat'.\n"
            "     The scan pattern is a DBS. Starting at azimuth = 0 deg, elevation at 75 deg for 10\n"
            "     pulses, then azimtuh of 90 deg, elevation 75 deg for 10 pulses and finally azimuth\n"
            "     at 0 deg, elevation 0 deg for 10 pulses. Total of 60 pulses with a PRT of 0.01 s.\n"
            "     The scan repeats itself every 30 seconds.\n"
-           "           " PROGNAME " -o -c FV -L flat --sweep D:0,75,10/90,75,10/0,90,10 -t 0.01 -p 60 -N\n"
+           "           " PROGNAME " -o -b 0.5 -l 0.328 -c FV -L flat --sweep D:0,75,10/90,75,10/0,90,10 -t 0.01 -p 60\n"
            );
     printf("%s\n(%.1f)\n", buff, (float)k / size * 100.0f);
     free(buff);
@@ -504,10 +505,10 @@ int main(int argc, char *argv[]) {
         {"seed"          , required_argument, 0, 's'},
         {"sweep"         , required_argument, 0, 'S'},
         {"prt"           , required_argument, 0, 't'},
-        {"tightbox"      , no_argument      , 0, 'T'},
+        {"tight-box"     , no_argument      , 0, 'T'},
         {"verbose"       , no_argument      , 0, 'v'},
         {"pulsewidth"    , required_argument, 0, 'w'},
-        {"warmup"        , required_argument, 0, 'W'},
+        {"warm-up"       , required_argument, 0, 'W'},
         {"do-not-ask"    , no_argument      , 0, 'y'},
         {0, 0, 0, 0}
     };
