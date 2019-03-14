@@ -772,7 +772,10 @@ int main(int argc, char *argv[]) {
             printf("    %d   AZ: " FLT_FMT " deg   EL: " FLT_FMT " -- " FLT_FMT " deg    delta: " FLT_FMT " deg\n",
                    k, user.scan_pattern.sweeps[0].azStart, user.scan_pattern.sweeps[0].elStart, user.scan_pattern.sweeps[0].elEnd, user.scan_pattern.sweeps[0].elDelta);
         } else {
-            printf("   DBS type.\n");
+            for (k = 0; k < user.scan_pattern.count; k++) {
+                printf("    %d   EL: " FLT_FMT " deg   AZ: " FLT_FMT " deg    pulse count: %u\n",
+                       k, user.scan_pattern.positions[k].el, user.scan_pattern.positions[k].az, user.scan_pattern.positions[k].count);
+            }
         }
         for (k = 0; k < user.num_pulses; k++) {
             POS_get_next_angles(&user.scan_pattern);
@@ -1053,7 +1056,7 @@ int main(int argc, char *argv[]) {
     // Overall fps
     gettimeofday(&t2, NULL);
     dt = DTIME(t0, t2);
-    float acc_fps = user.num_pulses / dt;
+    float avg_fps = user.num_pulses / dt;
 
     // Clear the last line and beep five times
     fprintf(stderr, "%120s\r", "");
@@ -1067,11 +1070,11 @@ int main(int argc, char *argv[]) {
 
 #if defined (_OPEN_MPI)
 
-    printf("%s : Finished on %s.  Total time elapsed = %.2f s  (%.1f FPS / %.1f FPS)\n", now(), processor_name, dt, acc_fps, fps);
+    printf("%s : Finished on %s.  Total time elapsed = %.2f s  (avg: %.1f FPS / ins: %.1f FPS)\n", now(), processor_name, dt, acc_fps, fps);
     
 #else
     
-    printf("%s : Finished.  Total time elapsed = %.2f s  (%.1f FPS / %.1f FPS)\n", now(), dt, acc_fps, fps);
+    printf("%s : Finished.  Total time elapsed = %.2f s  (avg: %.1f FPS / ins: %.1f FPS)\n", now(), dt, avg_fps, fps);
 
 #endif
     
