@@ -53,6 +53,7 @@ typedef struct pos_pattern {
     POSSweep    sweeps[POS_MAX_SWEEP_COUNT];           // For summary generation only
     float       az;                                    // Current azimuth to use
     float       el;                                    // Current elevation to use
+    uint64_t    tic;
 } POSPattern;
 
 POSPattern *POS_init(void);

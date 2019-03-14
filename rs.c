@@ -374,7 +374,7 @@ float read_table(const float *table, const float index_last, const float index) 
 }
 
 float zdr(cl_float4 x) {
-    return 10.0f * log10f((x.s0 * x.s0 + x.s1 * x.s1) / (x.s2 * x.s2 + x.s3 * x.s3));
+    return 10.0f * log10f((x.s0 * x.s0 + x.s1 * x.s1) / (x.s2 * x.s2 + x.s3 * x.s3 + 1.0e-20));
 }
 
 #pragma mark -
@@ -1555,7 +1555,7 @@ void RS_set_scan_extent(RSHandle *H,
         const RSfloat edge = el_lo;
         // Raster grid for AZ, EL
         if (H->verb) {
-            rsprint("xx / yy = %.2f ... %.2f\n", edge - 90.0f, 90.0f - edge);
+            rsprint("Spherical grid for a profiler: xx / yy = [ %.2f ... %.2f ] deg\n", edge - 90.0f, 90.0f - edge);
         }
         RSfloat xx;
         RSfloat yy = edge - 90.0f;
@@ -3895,7 +3895,7 @@ void RS_populate(RSHandle *H) {
         exit(EXIT_FAILURE);
     }
 
-    // Set LES if they isn't set before
+    // Set an LES field if there isn't one set before
     if (H->L == NULL) {
         RS_set_vel_data_to_config(H, LESConfigSuctionVortices);
     }
@@ -4020,7 +4020,7 @@ void RS_populate(RSHandle *H) {
         if (H->num_types > 1) {
             rsprint("WARNING. Debris particles are not emulated in RSSimulationConceptFixedScattererPosition mode.\n");
         }
-        rsprint("num_workers = %d\n", H->num_workers);
+        rsprint("RS_populate() num_workers = %d\n", H->num_workers);
 
         const RSfloat r_lo = sqrtf(H->anchor_pos[0].x * H->anchor_pos[0].x + H->anchor_pos[0].y * H->anchor_pos[0].y + H->anchor_pos[0].z * H->anchor_pos[0].z);
 
@@ -4053,39 +4053,39 @@ void RS_populate(RSHandle *H) {
                 H->scat_pos[i].z = H->scat_pos[k].z / H->params.range_start * (H->params.range_start + (float)n * H->params.range_delta);
                 H->scat_pos[i].w = 0.0f;
                 
-                H->scat_aux[i].s0 = 0.0f;                      // range
-                H->scat_aux[i].s1 = (float)rand() / RAND_MAX;  // age
-                H->scat_aux[i].s2 = 0.0f;                      // dsd bin index
-                H->scat_aux[i].s3 = 1.0f;                      // angular weight [0.0, 1.0]
+                H->scat_aux[i].s0 = 0.0f;                                   // range
+                H->scat_aux[i].s1 = (float)rand() / RAND_MAX;               // age
+                H->scat_aux[i].s2 = 0.0f;                                   // dsd bin index
+                H->scat_aux[i].s3 = 1.0f;                                   // angular weight [0.0, 1.0]
                 
-                H->scat_vel[i].x = 0.0f;                       // u component of velocity
-                H->scat_vel[i].y = 0.0f;                       // v component of velocity
-                H->scat_vel[i].z = 0.0f;                       // w component of velocity
-                H->scat_vel[i].w = 0.0f;                       // n/a
+                H->scat_vel[i].x = 0.0f;                                    // u component of velocity
+                H->scat_vel[i].y = 0.0f;                                    // v component of velocity
+                H->scat_vel[i].z = 0.0f;                                    // w component of velocity
+                H->scat_vel[i].w = 0.0f;                                    // n/a
                 
                 // At the reference
-                H->scat_ori[i].x = 0.0f;                       // x of quaternion
-                H->scat_ori[i].y = 0.0f;                       // y of quaternion
-                H->scat_ori[i].z = 0.0f;                       // z of quaternion
-                H->scat_ori[i].w = 1.0f;                       // w of quaternion
+                H->scat_ori[i].x = 0.0f;                                    // x of quaternion
+                H->scat_ori[i].y = 0.0f;                                    // y of quaternion
+                H->scat_ori[i].z = 0.0f;                                    // z of quaternion
+                H->scat_ori[i].w = 1.0f;                                    // w of quaternion
 
                 // Tumbling vector for orientation update
-                H->scat_tum[i].x = 0.0f;                       // x of quaternion
-                H->scat_tum[i].y = 0.0f;                       // y of quaternion
-                H->scat_tum[i].z = 0.0f;                       // z of quaternion
-                H->scat_tum[i].w = 1.0f;                       // w of quaternion
+                H->scat_tum[i].x = 0.0f;                                    // x of quaternion
+                H->scat_tum[i].y = 0.0f;                                    // y of quaternion
+                H->scat_tum[i].z = 0.0f;                                    // z of quaternion
+                H->scat_tum[i].w = 1.0f;                                    // w of quaternion
                 
                 // Initial return from each point
-                H->scat_rcs[i].s0 = 1.0f;                      // sh_real of rcs
-                H->scat_rcs[i].s1 = 0.0f;                      // sh_imag of rcs
-                H->scat_rcs[i].s2 = 1.0e-10f;                  // rcs.s2 = cn2
-                H->scat_rcs[i].s3 = (float)rand() / RAND_MAX;  // rcs.s3 = phi (accumulated phase)
+                H->scat_rcs[i].s0 = 1.0e-10f;                               // sh_real of rcs
+                H->scat_rcs[i].s1 = 0.0f;                                   // sh_imag of rcs
+                H->scat_rcs[i].s2 = 1.0e-10f;                               // rcs.s2 = cn2
+                H->scat_rcs[i].s3 = (float)rand() / RAND_MAX * 2.0 * M_PI;  // rcs.s3 = phi (accumulated phase)
                 
                 // Random seeds
-                H->scat_rnd[i].s0 = rand();                    // random seed
-                H->scat_rnd[i].s1 = rand();                    // random seed
-                H->scat_rnd[i].s2 = rand();                    // random seed
-                H->scat_rnd[i].s3 = rand();                    // random seed
+                H->scat_rnd[i].s0 = rand();                                 // random seed
+                H->scat_rnd[i].s1 = rand();                                 // random seed
+                H->scat_rnd[i].s2 = rand();                                 // random seed
+                H->scat_rnd[i].s3 = rand();                                 // random seed
                 
                 i++;
             }
@@ -4241,14 +4241,14 @@ void RS_populate(RSHandle *H) {
                     }
                 }
                 
-#if defined(DEBUG_DSD)
+                #if defined(DEBUG_DSD)
                 
                 // Replace a few for debugging purpose
                 H->scat_pos[0].w = 0.0025f;
                 H->scat_pos[1].w = 0.001f;
                 H->scat_pos[2].w = 0.0005f;
                 
-#endif
+                #endif
                 
             }
             
@@ -4368,7 +4368,7 @@ void RS_populate(RSHandle *H) {
     RS_derive_ndranges(H);
     
     #endif
-    
+
     // Upload the particle parameters to the GPU
     RS_upload(H);
     
@@ -4377,12 +4377,22 @@ void RS_populate(RSHandle *H) {
         rsprint("CL domain synchronized.");
     }
     
-    H->status |= RSStatusDomainPopulated | RSStatusScattererSignalNeedsUpdate;
-    
-    // Advance time with 0 time so that all attributes kernels (el_atts, db_atts or bg_atts) are called once.
+    H->status |= RSStatusDomainPopulated;
+
+    // Set initial scan position to be the very first position
+    RS_advance_beam(H);
+
+    // Advance time with 0 s so that all attributes kernels (bg_atts, fp_atts, el_atts, or db_atts) are called once but positions aren't updated.
     H->sim_desc.s[RSSimulationDescriptionPRT] = 0.0f;
     RS_advance_time(H);
+    RS_make_pulse(H);
+    if (H->verb > 2) {
+        RS_download(H);
+        RS_show_scat_att(H);
+    }
     H->sim_desc.s[RSSimulationDescriptionPRT] = H->params.prt;
+
+    // Now we undo that sim_tic counter due to RS_advance_time()
     H->sim_tic -= H->params.prt;
     H->sim_desc.s[RSSimulationDescriptionSimTic] = H->sim_tic;
     
@@ -4444,9 +4454,6 @@ void RS_download(RSHandle *H) {
 #endif
     
     RS_merge_pulse_tmp(H);
-    printf("pulse %f [ %+11.4e%+11.4ei %+11.4e%+11.4ei (%+6.2f)   %+11.4e%+11.4ei %+11.4e%+11.4ei (%+6.2f)  ... ]\n", H->sim_tic,
-           H->pulse[0].s0, H->pulse[0].s1, H->pulse[0].s2, H->pulse[0].s3, zdr(H->pulse[0]),
-           H->pulse[1].s0, H->pulse[1].s1, H->pulse[1].s2, H->pulse[1].s3, zdr(H->pulse[1]));
 }
 
 
@@ -4519,6 +4526,7 @@ void RS_merge_pulse_tmp(RSHandle *H) {
     // Amplitude scale to 1-km referece: sqrt(R ^ 4) = R ^ 2 = 1.0e6
     //
     float g = powf(10.0f, 0.1f * H->params.antenna_gain_dbi) * sqrtf(H->params.tx_power_watt) / (4.0f * M_PI) * 1.0e6f;
+    //printf("** g = %.4e (linear unit)\n", g);
     for (int k = 0; k < H->params.range_count; k++) {
         H->pulse[k].s0 *= g;
         H->pulse[k].s1 *= g;
@@ -4552,9 +4560,6 @@ void RS_download_pulse_only(RSHandle *H) {
 #endif
     
     RS_merge_pulse_tmp(H);
-    printf("pulse %f [ %+11.4e%+11.4ei %+11.4e%+11.4ei (%+6.2f)   %+11.4e%+11.4ei %+11.4e%+11.4ei (%+6.2f)  ... ]\n", H->sim_tic,
-           H->pulse[0].s0, H->pulse[0].s1, H->pulse[0].s2, H->pulse[0].s3, zdr(H->pulse[0]),
-           H->pulse[1].s0, H->pulse[1].s1, H->pulse[1].s2, H->pulse[1].s3, zdr(H->pulse[1]));
 }
 
 
@@ -4994,7 +4999,7 @@ void RS_make_pulse(RSHandle *H) {
     for (i = 0; i < H->num_workers; i++) {
         RSWorker *C = &H->workers[i];
         if (H->status & RSStatusScattererSignalNeedsUpdate) {
-            printf("RS_make_pulse() kern_scat_sig_aux : %zu   sim_tic = %.4f\n", C->num_scats, H->sim_tic);
+            //printf("RS_make_pulse() kern_scat_sig_aux : %zu   sim_tic = %.4f\n", C->num_scats, H->sim_tic);
             clSetKernelArg(C->kern_scat_sig_aux, RSScattererAngularWeightKernalArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
             clEnqueueNDRangeKernel(C->que, C->kern_scat_sig_aux, 1, NULL, &C->num_scats, NULL, 0, NULL, &events[i][0]);
             clEnqueueNDRangeKernel(C->que, C->kern_make_pulse_pass_1, 1, NULL, &C->make_pulse_params.global[0], &C->make_pulse_params.local[0], 1, &events[i][0], &events[i][1]);
@@ -5113,7 +5118,7 @@ void RS_show_radar_params(RSHandle *H) {
 
 
 static void RS_show_scat_i(RSHandle *H, const size_t i) {
-    printf(" [%7d %7d %d %d]   ( %9.2f, %9.2f, %9.2f, %4.1f )  %7.2f %7.2f %7.2f   %7.4f %7.4f %7.4f %7.4f\n",
+    printf(" [%7d %7d %5d %d]   ( %9.2f, %9.2f, %9.2f, %4.1f )  %7.2f %7.2f %7.2f   %7.4f %7.4f %7.4f %7.4f\n",
            H->scat_uid[i].x, H->scat_uid[i].y, H->scat_uid[i].z, H->scat_uid[i].w,
            H->scat_pos[i].x, H->scat_pos[i].y, H->scat_pos[i].z, 2000.0f * H->scat_pos[i].w,
            H->scat_vel[i].x, H->scat_vel[i].y, H->scat_vel[i].z,
@@ -5122,7 +5127,7 @@ static void RS_show_scat_i(RSHandle *H, const size_t i) {
 
 
 static void RS_show_rcs_i(RSHandle *H, const size_t i) {
-    printf(" [%7d %7d %d %d]   ( %10.3e, %10.3e, %10.3e, %10.3e )   ( %10.3e %10.3e %10.3e %10.3e )   r = %.2f m  d = %.1f mm\n",
+    printf(" [%7d %7d %5d %d]   ( %10.3e, %10.3e, %10.3e, %10.3e )   ( %10.3e %10.3e %10.3e %10.3e )   r = %.2f m  d = %.1f mm\n",
            H->scat_uid[i].x, H->scat_uid[i].y, H->scat_uid[i].z, H->scat_uid[i].w,
            H->scat_sig[i].x, H->scat_sig[i].y, H->scat_sig[i].z, H->scat_sig[i].w,
            H->scat_rcs[i].x, H->scat_rcs[i].y, H->scat_rcs[i].z, H->scat_rcs[i].w,
@@ -5131,20 +5136,20 @@ static void RS_show_rcs_i(RSHandle *H, const size_t i) {
 
 
 static void RS_show_att_i(RSHandle *H, const size_t i) {
-    printf(" [%7d %7d %d %d]   p( %9.2f, %9.2f, %9.2f, %4.1f )   v( %7.2f %7.2f %7.2f )   o( %7.4f %7.4f %7.4f %7.4f)   s( %10.3e, %10.3e, %10.3e, %10.3e )   r( %10.3e %10.3e %10.3e %10.3e )   r = %.2f m\n",
+    printf(" [%7d %7d %5d %4d]   p( %9.2f, %9.2f, %9.2f, %4.1f )   v( %7.2f %7.2f %7.2f )   o( %7.4f %7.4f %7.4f %7.4f)   s( %10.3e, %10.3e, %10.3e, %10.3e )   r( %10.3e %10.3e %10.3e %10.3e )   a( %10.3e %10.3e %10.3e %10.3e )\n",
            H->scat_uid[i].x, H->scat_uid[i].y, H->scat_uid[i].z, H->scat_uid[i].w,
            H->scat_pos[i].x, H->scat_pos[i].y, H->scat_pos[i].z, 2000.0f * H->scat_pos[i].w,
            H->scat_vel[i].x, H->scat_vel[i].y, H->scat_vel[i].z,
            H->scat_ori[i].x, H->scat_ori[i].y, H->scat_ori[i].z, H->scat_ori[i].w,
            H->scat_sig[i].x, H->scat_sig[i].y, H->scat_sig[i].z, H->scat_sig[i].w,
            H->scat_rcs[i].x, H->scat_rcs[i].y, H->scat_rcs[i].z, H->scat_rcs[i].w,
-           H->scat_aux[i].s0);
+           H->scat_aux[i].x, H->scat_aux[i].y, H->scat_aux[i].z, H->scat_aux[i].w);
 }
 
 
 void RS_show_scat_pos(RSHandle *H) {
     size_t i, w;
-    printf("A subset of meteorological scatterer positions, velocities & orientations:\n");
+    printf("A subset of meteorological scatterer POS, VEL & ORI:\n");
     for (w = 0; w < H->num_workers; w++) {
         for (i = H->workers[w].origins[0];
              i < H->workers[w].origins[0] + H->workers[w].counts[0];
@@ -5155,7 +5160,7 @@ void RS_show_scat_pos(RSHandle *H) {
     if (H->counts[1] == 0) {
         return;
     }
-    printf("A subset of debris[1] positions, velocities & orientations:\n");
+    printf("A subset of debris[1] POS, VEL & ORI:\n");
     for (w = 0; w < H->num_workers; w++) {
         if (H->workers[w].counts[1]) {
             for (i = H->workers[w].origins[1];
@@ -5170,7 +5175,7 @@ void RS_show_scat_pos(RSHandle *H) {
 
 void RS_show_scat_sig(RSHandle *H) {
     size_t i, w;
-    printf("A subset of meteorological scatterer signal, RCS & aux. attributes:\n");
+    printf("A subset of meteorological scatterer SIG, RCS & AUX:\n");
     for (w = 0; w < H->num_workers; w++) {
         for (i = 0; i < H->workers[w].counts[0]; i += H->workers[w].counts[0] / RS_SHOW_DIV) {
             RS_show_rcs_i(H, H->offset[w] + H->workers[w].origins[0] + i);
@@ -5179,7 +5184,7 @@ void RS_show_scat_sig(RSHandle *H) {
     if (H->counts[1] == 0) {
         return;
     }
-    printf("A subset of debris[1] scatterer signal, RCS & aux. attributes:\n");
+    printf("A subset of debris[1] scatterer SIG, RCS, & AUX:\n");
     for (w = 0; w < H->num_workers; w++) {
         for (i = 0; i < H->workers[w].counts[1]; i += H->workers[w].counts[1] / RS_SHOW_DIV) {
             RS_show_rcs_i(H, H->offset[w] + H->workers[w].origins[1] + i);
@@ -5190,7 +5195,7 @@ void RS_show_scat_sig(RSHandle *H) {
 
 void RS_show_scat_att(RSHandle *H) {
     size_t i, w;
-    printf("A subset of meteorological scatterer position, velocity, orientation, signal, RCS, etc.:\n");
+    printf("A subset of meteorological scatterer POS, VEL, ORI, SIG, RCS, and AUX:\n");
     for (w = 0; w < H->num_workers; w++) {
         for (i = 0; i < H->workers[w].counts[0]; i += H->workers[w].counts[0] / RS_SHOW_DIV) {
             RS_show_att_i(H, H->offset[w] + H->workers[w].origins[0] + i);
@@ -5199,7 +5204,7 @@ void RS_show_scat_att(RSHandle *H) {
     if (H->counts[1] == 0) {
         return;
     }
-    printf("A subset of debris[1] scatterer position, velocity, orientation, signal, RCS, etc.:\n");
+    printf("A subset of debris[1] scatterer POS, VEL, ORI, SIG, RCS, and AUX:\n");
     for (w = 0; w < H->num_workers; w++) {
         for (i = 0; i < H->workers[w].counts[1]; i += H->workers[w].counts[1] / RS_SHOW_DIV) {
             RS_show_att_i(H, H->offset[w] + H->workers[w].origins[1] + i);

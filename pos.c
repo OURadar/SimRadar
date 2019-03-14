@@ -51,6 +51,7 @@ int POS_get_next_angles(POSPattern *scan) {
             scan->index = 0;
         }
     }
+    scan->tic++;
     return 0;
 }
 
@@ -172,6 +173,10 @@ int POS_parse_from_string(POSPattern *scan, const char *string) {
         default:
             break;
     }
+    
+    // Set initial position to be the very first position
+    scan->el = scan->positions[0].el;
+    scan->az = scan->positions[0].az;
     
     return 0;
 }

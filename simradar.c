@@ -965,6 +965,8 @@ int main(int argc, char *argv[]) {
     // Set PRT to the actual one
     RS_set_prt(S, user.prt);
 
+    RS_download_pulse_only(S);
+
     // ---------------------------------------------------------------------------------------------------------------
 
     gettimeofday(&t1, NULL);
@@ -996,7 +998,7 @@ int main(int argc, char *argv[]) {
                  }
             }
         }
-        RS_set_beam_pos(S, user.scan_pattern.az, user.scan_pattern.el);
+        
         RS_make_pulse(S);
 
         // Only download the necessary data
@@ -1005,8 +1007,9 @@ int main(int argc, char *argv[]) {
 
             RS_show_scat_sig(S);
 
-            if (verb > 3) { 
-                printf("signal:\n");
+            if (verb > 2) {
+                // The tic counter of scan_pattern represents the next scan, like getting ready for the next iteration so we offset it by -1
+                printf("signal @ E%.2f A%.2f   tic = %llu:\n", user.scan_pattern.el, user.scan_pattern.az, user.scan_pattern.tic - 1);
                 if (S->num_workers == 2) {
                     for (int r = 0; r < S->params.range_count; r++) {
                         printf("sig[%2d] = (%10.3e %10.3e %10.3e %10.3e) <- (%10.3e %10.3e %10.3e %10.3e) + (%10.3e %10.3e %10.3e %10.3e)\n",
@@ -1041,7 +1044,7 @@ int main(int argc, char *argv[]) {
         RS_advance_time(S);
 
         // Update scan angles for the next pulse
-        POS_get_next_angles(&user.scan_pattern);
+        RS_advance_beam(S);
     }
 
     // Overall fps
