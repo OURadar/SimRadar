@@ -27,6 +27,7 @@ cd /home/boonleng/simradar
 decho "==================<<< $nowstr >>>================="
 decho `pwd`
 
+./simradar -o -b 0.5 -l 0.328 -c FV -L flat --sweep D:0,75,10/90,75,10/0,90,10 -t 0.01 -p 60
 #./radarsim -v -p 999 -O ${HOME}/Downloads/big/ --tightbox --concept DB -W 1000 --no-progress --dont-ask
-./cldemo
+#./cldemo
 

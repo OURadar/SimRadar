@@ -1018,7 +1018,7 @@ int main(int argc, char *argv[]) {
 
             if (verb > 2) {
                 // The tic counter of scan_pattern represents the next scan, like getting ready for the next iteration so we offset it by -1
-                printf("signal @ E%.2f A%.2f   tic = %llu:\n", user.scan_pattern.el, user.scan_pattern.az, user.scan_pattern.tic - 1);
+                printf("signal @ E%.2f A%.2f   tic = %lu:\n", user.scan_pattern.el, user.scan_pattern.az, (unsigned long)user.scan_pattern.tic - 1);
                 if (S->num_workers == 2) {
                     for (int r = 0; r < S->params.range_count; r++) {
                         printf("sig[%2d] = (%10.3e %10.3e %10.3e %10.3e) <- (%10.3e %10.3e %10.3e %10.3e) + (%10.3e %10.3e %10.3e %10.3e)\n",
@@ -1074,7 +1074,7 @@ int main(int argc, char *argv[]) {
 
 #if defined (_OPEN_MPI)
 
-    printf("%s : Finished on %s.  Total time elapsed = %.2f s  (avg: %.1f FPS / ins: %.1f FPS)\n", now(), processor_name, dt, acc_fps, fps);
+    printf("%s : Finished on %s.  Total time elapsed = %.2f s  (avg: %.1f FPS / ins: %.1f FPS)\n", now(), processor_name, dt, avg_fps, fps);
     
 #else
     
