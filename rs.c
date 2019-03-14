@@ -3966,6 +3966,9 @@ void RS_populate(RSHandle *H) {
         return;
     }
     
+    memset(H->scat_aux, 0, H->num_scats * sizeof(cl_float4));
+    memset(H->scat_sig, 0, H->num_scats * sizeof(cl_float4));
+    
     H->mem_size = H->num_scats * (8 * sizeof(cl_float4) + 2 * sizeof(cl_uint4)) + H->params.range_count * sizeof(cl_float4);
     
     char has_null = 0;
@@ -4591,6 +4594,7 @@ void RS_upload(RSHandle *H) {
             gcl_memcpy(H->workers[i].scat_tum, H->scat_tum + H->offset[i], H->workers[i].num_scats * sizeof(cl_float4));
             gcl_memcpy(H->workers[i].scat_aux, H->scat_aux + H->offset[i], H->workers[i].num_scats * sizeof(cl_float4));
             gcl_memcpy(H->workers[i].scat_rcs, H->scat_rcs + H->offset[i], H->workers[i].num_scats * sizeof(cl_float4));
+            gcl_memcpy(H->workers[i].scat_sig, H->scat_sig + H->offset[i], H->workers[i].num_scats * sizeof(cl_float4));
             gcl_memcpy(H->workers[i].scat_rnd, H->scat_rnd + H->offset[i], H->workers[i].num_scats * sizeof(cl_uint4));
             dispatch_semaphore_signal(H->workers[i].sem);
         });
@@ -4606,7 +4610,8 @@ void RS_upload(RSHandle *H) {
         clEnqueueWriteBuffer(H->workers[i].que, H->workers[i].scat_ori, CL_TRUE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_ori + H->offset[i], 0, NULL, NULL);
         clEnqueueWriteBuffer(H->workers[i].que, H->workers[i].scat_tum, CL_TRUE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_tum + H->offset[i], 0, NULL, NULL);
         clEnqueueWriteBuffer(H->workers[i].que, H->workers[i].scat_aux, CL_TRUE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_aux + H->offset[i], 0, NULL, NULL);
-        clEnqueueWriteBuffer(H->workers[i].que, H->workers[i].scat_rcs, CL_TRUE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_pos + H->offset[i], 0, NULL, NULL);
+        clEnqueueWriteBuffer(H->workers[i].que, H->workers[i].scat_rcs, CL_TRUE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_rcs + H->offset[i], 0, NULL, NULL);
+        clEnqueueWriteBuffer(H->workers[i].que, H->workers[i].scat_sig, CL_TRUE, 0, H->workers[i].num_scats * sizeof(cl_float4), H->scat_sig + H->offset[i], 0, NULL, NULL);
         clEnqueueWriteBuffer(H->workers[i].que, H->workers[i].scat_rnd, CL_TRUE, 0, H->workers[i].num_scats * sizeof(cl_uint4),  H->scat_rnd + H->offset[i], 0, NULL, NULL);
     }
     
@@ -5118,7 +5123,7 @@ void RS_show_radar_params(RSHandle *H) {
 
 
 static void RS_show_scat_i(RSHandle *H, const size_t i) {
-    printf(" [%7d %7d %5d %d]   ( %9.2f, %9.2f, %9.2f, %4.1f )  %7.2f %7.2f %7.2f   %7.4f %7.4f %7.4f %7.4f\n",
+    printf(" [%7d %7d %5d %d]   p( %9.2f, %9.2f, %9.2f, %4.1f )  v( %7.2f %7.2f %7.2f )   o( %7.4f %7.4f %7.4f %7.4f)\n",
            H->scat_uid[i].x, H->scat_uid[i].y, H->scat_uid[i].z, H->scat_uid[i].w,
            H->scat_pos[i].x, H->scat_pos[i].y, H->scat_pos[i].z, 2000.0f * H->scat_pos[i].w,
            H->scat_vel[i].x, H->scat_vel[i].y, H->scat_vel[i].z,
@@ -5127,7 +5132,7 @@ static void RS_show_scat_i(RSHandle *H, const size_t i) {
 
 
 static void RS_show_rcs_i(RSHandle *H, const size_t i) {
-    printf(" [%7d %7d %5d %d]   ( %10.3e, %10.3e, %10.3e, %10.3e )   ( %10.3e %10.3e %10.3e %10.3e )   r = %.2f m  d = %.1f mm\n",
+    printf(" [%7d %7d %5d %d]   s( %10.3e, %10.3e, %10.3e, %10.3e )   x( %10.3e %10.3e %10.3e %10.3e )   r = %.2f m  d = %.1f mm\n",
            H->scat_uid[i].x, H->scat_uid[i].y, H->scat_uid[i].z, H->scat_uid[i].w,
            H->scat_sig[i].x, H->scat_sig[i].y, H->scat_sig[i].z, H->scat_sig[i].w,
            H->scat_rcs[i].x, H->scat_rcs[i].y, H->scat_rcs[i].z, H->scat_rcs[i].w,
@@ -5136,7 +5141,7 @@ static void RS_show_rcs_i(RSHandle *H, const size_t i) {
 
 
 static void RS_show_att_i(RSHandle *H, const size_t i) {
-    printf(" [%7d %7d %5d %4d]   p( %9.2f, %9.2f, %9.2f, %4.1f )   v( %7.2f %7.2f %7.2f )   o( %7.4f %7.4f %7.4f %7.4f)   s( %10.3e, %10.3e, %10.3e, %10.3e )   r( %10.3e %10.3e %10.3e %10.3e )   a( %10.3e %10.3e %10.3e %10.3e )\n",
+    printf(" [%7d %7d %5d %4d]   p( %9.2f, %9.2f, %9.2f, %4.1f )   v( %7.2f %7.2f %7.2f )   o( %7.4f %7.4f %7.4f %7.4f)   s( %10.3e, %10.3e, %10.3e, %10.3e )   x( %10.3e %10.3e %10.3e %10.3e )   a( %10.3e %10.3e %10.3e %10.3e )\n",
            H->scat_uid[i].x, H->scat_uid[i].y, H->scat_uid[i].z, H->scat_uid[i].w,
            H->scat_pos[i].x, H->scat_pos[i].y, H->scat_pos[i].z, 2000.0f * H->scat_pos[i].w,
            H->scat_vel[i].x, H->scat_vel[i].y, H->scat_vel[i].z,

@@ -680,9 +680,9 @@ __kernel void fp_atts(__global float4 *p,
     // y = not used
     
     float4 pos = p[i];
+    float4 vel = v[i];
     float4 rcs = x[i];
 
-//    float4 vel = v[i];
 //    pos.xyz += vel.xyz * dt;
 //
 //    int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
@@ -710,6 +710,7 @@ __kernel void fp_atts(__global float4 *p,
     // Cn2 from the second set of 4 float values
     float cn2 = cpxx.s0;
     float a = pow(10.0f, cn2);
+//    float a = 1.0e-12f;
 
     // I / Q component of the accumulated phase
     float c, s;
@@ -721,11 +722,15 @@ __kernel void fp_atts(__global float4 *p,
     rcs.s2 = cn2;
     rcs.s3 = atan2(s, c);
 
-//    vel.xyz = uvwt.xyz;
+//    if (i == 0) {
+//        printf("rcs = %12.4v4e   %12.4v4e\n", rcs, pos);
+//    }
+
+    vel.xyz = uvwt.xyz;
 //    if (i == 0) {
 //        printf("wav_num = %.4f   pos = %.4v4f   vel = %.4v4f\n", wav_num, pos, vel);
 //    }
-//    v[i] = vel;
+    v[i] = vel;
     x[i] = rcs;
     p[i] = pos;
 }
@@ -1078,12 +1083,12 @@ __kernel void scat_clr(__global float4 *c,
 }
 
 //
-// weight and attenuate - angular + range effects
+// weight and attenuate - angular + range effects (two-way propagation phase)
 //
 __kernel void scat_sig_aux(__global float4 *s,
                            __global float4 *a,
                            __global __read_only float4 *p,
-                           __global __read_only float4 *r,
+                           __global __read_only float4 *x,
                            __constant float *angular_weight,
                            const float4 angular_weight_desc,
                            const float16 sim_desc)
@@ -1132,10 +1137,10 @@ __kernel void scat_sig_aux(__global float4 *s,
     // cosine & sine to represent exp(j phase)
     float cc, ss = sincos(phase, &cc);
 
-    sig = cl_complex_multiply(r[i], (float4)(cc, -ss, cc, -ss)) * atten;
+    sig = cl_complex_multiply(x[i], (float4)(cc, -ss, cc, -ss)) * atten;
     
 //    if (i == 0) {
-//        printf("atten = %.4e  %.4v4e\n", atten, sig);
+//        printf("atten = %11.4e   sig = %11.4v4e (%11.4e)\n", atten, sig, length(sig.s01));
 //    }
     
     s[i] = sig;

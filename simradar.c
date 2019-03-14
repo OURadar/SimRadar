@@ -491,7 +491,8 @@ int main(int argc, char *argv[]) {
         {"sweep"         , required_argument, 0, 'S'},
         {"tightbox"      , no_argument      , 0, 'T'},
         {"warmup"        , required_argument, 0, 'W'},
-        {"concept"       , required_argument, 0, 'c'}, // ASCII 97 - 122 : a - z
+        {"beamwidth"     , required_argument, 0, 'b'}, // ASCII 97 - 122 : a - z
+        {"concept"       , required_argument, 0, 'c'},
         {"debris"        , required_argument, 0, 'd'},
         {"help"          , no_argument      , 0, 'h'},
         {"gpu"           , no_argument      , 0, 'g'},
@@ -524,6 +525,9 @@ int main(int argc, char *argv[]) {
         switch (opt) {
             case 'A':
                 user.quiet_mode = false;
+                break;
+            case 'b':
+                user.beamwidth = atof(optarg);
                 break;
             case 'c':
                 user.concept = RSSimulationConceptNull;
@@ -965,8 +969,6 @@ int main(int argc, char *argv[]) {
     // Set PRT to the actual one
     RS_set_prt(S, user.prt);
 
-    RS_download_pulse_only(S);
-
     // ---------------------------------------------------------------------------------------------------------------
 
     gettimeofday(&t1, NULL);
@@ -976,7 +978,7 @@ int main(int argc, char *argv[]) {
     cl_float4 *pulse_cache = (cl_float4 *)malloc(user.num_pulses * S->params.range_count * sizeof(cl_float4));
     memset(pulse_headers, 0, user.num_pulses * sizeof(IQPulseHeader));
     memset(pulse_cache, 0, user.num_pulses * S->params.range_count * sizeof(cl_float4));
-
+    
     // Now we bake
     int k0 = 0;
     for (k = 0; k < user.num_pulses; k++) {
@@ -1039,6 +1041,7 @@ int main(int argc, char *argv[]) {
             pulse_headers[k].el_deg = user.scan_pattern.el;
             memcpy(&pulse_cache[k * S->params.range_count], S->pulse, S->params.range_count * sizeof(cl_float4));
         }
+        
 
         // Advance time
         RS_advance_time(S);
