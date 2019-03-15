@@ -27,14 +27,10 @@
 
 #define RSfloat float
 
-//#if !defined (BOOL)
-//typedef signed char BOOL;
-//#endif
-//
-//#if !defined (TRUE) && !defined (FALSE)
-//#define TRUE            ((BOOL)1)
-//#define FALSE           ((BOOL)0)
-//#endif
+#if !defined (TRUE) && !defined (FALSE)
+#define TRUE            ((bool)1)
+#define FALSE           ((bool)0)
+#endif
 
 #ifndef MAX
 #define MAX(X, Y)      ((X) > (Y) ? (X) : (Y))

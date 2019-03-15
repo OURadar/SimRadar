@@ -332,11 +332,6 @@ static void write_iq_file(const UserParams user, const IQFileHeader *file_header
     char charbuff[2048];
 
     memset(charbuff, 0, sizeof(charbuff));
-    // snprintf(charbuff, sizeof(charbuff), "%s/sim-%s-%s%04.1f.iq",
-    //          user.output_dir,
-    //          nowlongoffset(offset),
-    //          POS_is_ppi(&user.scan_pattern) ? "E": (POS_is_rhi(&user.scan_pattern) ? "A" : "S"),
-    //          POS_is_ppi(&user.scan_pattern) ? user.scan_pattern.sweeps[0].elStart : (POS_is_rhi(&user.scan_pattern) ? user.scan_pattern.sweeps[0].azStart : (float)user.num_pulses));
     snprintf(charbuff, sizeof(charbuff), "%s.iq", filename_prefix(&user));
     printf("%s : Output file : " UNDERLINE("%s") "\n", now(), charbuff);
     FILE *fid = fopen(charbuff, "wb");
@@ -1059,7 +1054,7 @@ int main(int argc, char *argv[]) {
     float avg_fps = user.num_pulses / dt;
 
     // Clear the last line and beep five times
-    fprintf(stderr, "%120s\r", "");
+    printf("\033[2K");
     if (!user.quiet_mode) {
         #if defined (__APPLE__)
         system("say -v Bells dong dong dong dong &");
