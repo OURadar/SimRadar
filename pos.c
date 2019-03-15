@@ -56,7 +56,7 @@ int POS_get_next_angles(POSPattern *scan) {
 }
 
 int POS_parse_from_string(POSPattern *scan, const char *string) {
-    int i, j, k;
+    int i, j, k = 0;
     float f1, f2, f3, f4;
     const char delim[] = "/";
     char scan_pattern[1024], *token;
@@ -174,9 +174,11 @@ int POS_parse_from_string(POSPattern *scan, const char *string) {
             break;
     }
     
-    // Set initial position to be the very first position
-    scan->el = scan->positions[0].el;
-    scan->az = scan->positions[0].az;
+    // Set initial position to be the very first position, if any sscanf() returned k > 0
+    if (k > 0) {
+        scan->el = scan->positions[0].el;
+        scan->az = scan->positions[0].az;
+    }
     
     return 0;
 }

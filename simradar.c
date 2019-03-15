@@ -790,6 +790,8 @@ int main(int argc, char *argv[]) {
 
     // ---------------------------------------------------------------------------------------------------------------
 
+    gettimeofday(&t1, NULL);
+
     // Initialize the RS framework
     RSHandle *S;
     if (accel_type == ACCEL_TYPE_CPU) {
@@ -978,8 +980,6 @@ int main(int argc, char *argv[]) {
 
     // ---------------------------------------------------------------------------------------------------------------
 
-    gettimeofday(&t1, NULL);
-
     // Allocate a pulse cache
     IQPulseHeader *pulse_headers = (IQPulseHeader *)malloc(user.num_pulses * sizeof(IQPulseHeader));
     cl_float4 *pulse_cache = (cl_float4 *)malloc(user.num_pulses * S->params.range_count * sizeof(cl_float4));
@@ -1008,35 +1008,32 @@ int main(int argc, char *argv[]) {
             }
         }
         
+        // Compose the current pulse
         RS_make_pulse(S);
 
         // Only download the necessary data
         if (verb > 2) {
             RS_download(S);
-
             RS_show_scat_sig(S);
-
-            if (verb > 2) {
-                // The tic counter of scan_pattern represents the next scan, like getting ready for the next iteration so we offset it by -1
-                printf("signal @ E%.2f A%.2f   tic = %lu:\n", user.scan_pattern.el, user.scan_pattern.az, (unsigned long)user.scan_pattern.tic - 1);
-                if (S->num_workers == 2) {
-                    for (int r = 0; r < S->params.range_count; r++) {
-                        printf("sig[%2d] = (%10.3e %10.3e %10.3e %10.3e) <- (%10.3e %10.3e %10.3e %10.3e) + (%10.3e %10.3e %10.3e %10.3e)\n",
-                               r,
-                               S->pulse[r].s0, S->pulse[r].s1, S->pulse[r].s2, S->pulse[r].s3,
-                               S->pulse_tmp[0][r].s0, S->pulse_tmp[0][r].s1, S->pulse_tmp[0][r].s2, S->pulse_tmp[0][r].s3,
-                               S->pulse_tmp[1][r].s0, S->pulse_tmp[1][r].s1, S->pulse_tmp[1][r].s2, S->pulse_tmp[1][r].s3);
-                    }
-                } else {
-                    for (int r = 0; r < S->params.range_count; r++) {
-                        printf("sig[%2d] = (%10.3e %10.3e %10.3e %10.3e) <- (%10.3e %10.3e %10.3e %10.3e)\n",
-                               r,
-                               S->pulse[r].s0, S->pulse[r].s1, S->pulse[r].s2, S->pulse[r].s3,
-                               S->pulse_tmp[0][r].s0, S->pulse_tmp[0][r].s1, S->pulse_tmp[0][r].s2, S->pulse_tmp[0][r].s3);
-                    }
+            // The tic counter of scan_pattern represents the next scan, like getting ready for the next iteration so we offset it by -1
+            printf("signal @ E%.2f A%.2f   tic = %lu:\n", user.scan_pattern.el, user.scan_pattern.az, (unsigned long)user.scan_pattern.tic - 1);
+            if (S->num_workers == 2) {
+                for (int r = 0; r < S->params.range_count; r++) {
+                    printf("sig[%2d] = (%10.3e %10.3e %10.3e %10.3e) <- (%10.3e %10.3e %10.3e %10.3e) + (%10.3e %10.3e %10.3e %10.3e)\n",
+                           r,
+                           S->pulse[r].s0, S->pulse[r].s1, S->pulse[r].s2, S->pulse[r].s3,
+                           S->pulse_tmp[0][r].s0, S->pulse_tmp[0][r].s1, S->pulse_tmp[0][r].s2, S->pulse_tmp[0][r].s3,
+                           S->pulse_tmp[1][r].s0, S->pulse_tmp[1][r].s1, S->pulse_tmp[1][r].s2, S->pulse_tmp[1][r].s3);
                 }
-                printf("\n");
+            } else {
+                for (int r = 0; r < S->params.range_count; r++) {
+                    printf("sig[%2d] = (%10.3e %10.3e %10.3e %10.3e) <- (%10.3e %10.3e %10.3e %10.3e)\n",
+                           r,
+                           S->pulse[r].s0, S->pulse[r].s1, S->pulse[r].s2, S->pulse[r].s3,
+                           S->pulse_tmp[0][r].s0, S->pulse_tmp[0][r].s1, S->pulse_tmp[0][r].s2, S->pulse_tmp[0][r].s3);
+                }
             }
+            printf("\n");
         } else if (user.output_iq_file) {
             RS_download_pulse_only(S);
         }
@@ -1048,7 +1045,6 @@ int main(int argc, char *argv[]) {
             pulse_headers[k].el_deg = user.scan_pattern.el;
             memcpy(&pulse_cache[k * S->params.range_count], S->pulse, S->params.range_count * sizeof(cl_float4));
         }
-        
 
         // Advance time
         RS_advance_time(S);
