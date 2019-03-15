@@ -6,8 +6,8 @@
 #SBATCH --mem=1GB
 #SBATCH --time=00:05:00
 #SBATCH --job-name=simradar
-#SBATCH --output=radarsim_stdout.txt
-#SBATCH --error=radarsim_stderr.txt
+#SBATCH --output=simradar_stdout.txt
+#SBATCH --error=simradar_stderr.txt
 #SBATCH --mail-user=boonleng@ou.edu
 #SBATCH --mail-type=FAIL
 #SBATCH --workdir=/home/boonleng/simradar
@@ -20,7 +20,7 @@ function decho() {
     echo $@ >> ${errlog}
 }
 
-errlog="radarsim_stderr.txt"
+errlog="simradar_stderr.txt"
 nowstr=`date`
 
 cd /home/boonleng/simradar
