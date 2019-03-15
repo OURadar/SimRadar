@@ -133,6 +133,7 @@ enum RendererLineSegment {
 	GLint MVPUniformIndex, singleColorMVPUniformIndex;
 	GLint ColorUniformIndex;
 
+    GLfloat scattererScale;
 	GLfloat pixelsPerUnit;
 	GLfloat unitsPerPixel;
     GLfloat devicePixelRatio;

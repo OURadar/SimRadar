@@ -204,6 +204,13 @@ unsigned int grayToBinary(unsigned int num)
 {
 	bodyRenderer[deviceId].count = number;
     backgroundOpacity = MIN(1.0f, 1000.0f / ((float)number * 0.02f));
+    if (number < 100000) {
+        scattererScale = 4.0f;
+    } else if (number < 50000) {
+        scattererScale = 2.0f;
+    } else {
+        scattererScale = 1.0f;
+    }
 	vbosNeedUpdate = true;
 }
 
@@ -493,6 +500,7 @@ unsigned int grayToBinary(unsigned int num)
     if (resource->sizeUI >= 0) {
         //NSLog(@"%@ has drawSize", vShader);
         glUniform4f(resource->sizeUI, 1.0f, 1.0f, 1.0f, 1.0f);
+        //glUniform4f(resource->sizeUI, 0.5f, 0.5f, 0.5f, 1.0f);
     }
     
     // Use drawTemplate1, drawTemplate2, etc. for various drawing shapes; All to TEXTURE0
@@ -742,6 +750,7 @@ unsigned int grayToBinary(unsigned int num)
         width = 1;
         height = 1;
         spinModel = 5;
+        scattererScale = 1.0f;
         aspectRatio = 1.0f;
         beamElevation = 75.0f / 180.0f * M_PI;
         
@@ -1237,12 +1246,11 @@ unsigned int grayToBinary(unsigned int num)
     glEnable(GL_DEPTH_TEST);
 
     // The background scatter bodies
-    const float minimumSize = 4.0f;
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     for (i = 0; i < clDeviceCount; i++) {
         glBindVertexArray(bodyRenderer[i].vao);
         glUseProgram(bodyRenderer[i].program);
-        glUniform4f(bodyRenderer[i].sizeUI, minimumSize * pixelsPerUnit * devicePixelRatio, 1.0f, 1.0f, 1.0f);
+        glUniform4f(bodyRenderer[i].sizeUI, scattererScale * pixelsPerUnit * devicePixelRatio, 1.0f, 1.0f, 1.0f);
         glUniform4f(bodyRenderer[i].colorUI, bodyRenderer[i].colormapIndexNormalized, 1.0f, 1.0f, backgroundOpacity);
         
         glUniformMatrix4fv(bodyRenderer[i].mvpUI, 1, GL_FALSE, modelViewProjection.m);

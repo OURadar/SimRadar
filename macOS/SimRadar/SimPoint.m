@@ -59,9 +59,9 @@
 
         BOOL useLES = TRUE;
         
-        // POSPattern *scan_pattern = POS_init_with_string("P:5,-12:12:0.05/10,-12:12:0.05/15,-12:12:0.05");
+         POSPattern *scan_pattern = POS_init_with_string("P:5,-12:12:0.05/10,-12:12:0.05/15,-12:12:0.05");
         // POSPattern *scan_pattern = POS_init_with_string("R:-3,0.5:25.0:0.05/3,0.5:25.0:0.05");
-        POSPattern *scan_pattern = POS_init_with_string("D:0,75,50/90,75,50/0,90,50");
+//        POSPattern *scan_pattern = POS_init_with_string("D:0,75,50/90,75,50/0,90,50");
 
         RS_set_scan_pattern(S, scan_pattern);
         
@@ -77,11 +77,12 @@
                 RS_set_density(S, 50.0f);
             }
         } else {
-            RS_set_density(S, 1.0f);
+            RS_set_density(S, 50.0f);
         }
 
         // Choose an LES configuration
-        RS_set_vel_data_to_config(S, LESConfigFlat);
+//        RS_set_vel_data_to_config(S, LESConfigFlat);
+        RS_set_vel_data_to_config(S, LESConfigSuctionVortices);
 
         // Copy out some convenient constants
         nearest_thousand = (size_t)ceilf(1000.0f / S->preferred_multiple) * S->preferred_multiple;
@@ -119,14 +120,6 @@
             RS_set_antenna_params(S, 1.0f, 44.5f);                // 1.0-deg beamwidth, 44.5-dBi gain
             
             RS_set_tx_params(S, 30.0f * 2.0f / 3.0e8f, 10.0e3);   // Resolution in m, power in W
-            
-//            RS_set_debris_count(S, 1, 10000);
-//            RS_set_debris_count(S, 2, 512);
-//            RS_set_debris_count(S, 3, 512);
-//
-//            RS_set_obj_data_to_config(S, OBJConfigLeaf);
-//            RS_set_obj_data_to_config(S, OBJConfigBrick);
-//            RS_set_obj_data_to_config(S, OBJConfigMetalSheet);
 
             RS_add_debris(S, OBJConfigLeaf, 10000);
             RS_add_debris(S, OBJConfigBrick, 512);
@@ -147,11 +140,6 @@
             RS_set_scan_box(S, box);
             S->draw_mode.s1 = (cl_uint)(box.origin.r + 0.5 * box.size.r);
         } else {
-//            RS_set_scan_box(S,
-//                            3.42e3, 4.18e3, 30.0f,                // Range
-//                            -7.0f, 7.0f, 1.0f,                    // Azimuth
-//                            0.0f, 12.0f, 1.0f);                   // Elevation
-
             cl_float4 vel = (cl_float4){50.0f, 0.0f, 0.0f, 0.0f};
             
             RS_set_vel_data_to_uniform(S, vel);
