@@ -9,7 +9,6 @@
 #define iq_h
 
 #include "rs_types.h"
-#include "rs_const.h"
 
 // Basic structure of a complex sample
 typedef struct iq_complex {

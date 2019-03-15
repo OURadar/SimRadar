@@ -9,14 +9,6 @@
 #ifndef _radarsim_adm_h
 #define _radarsim_adm_h
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-
 #include "log.h"
 
 #define ADMConfigModelPlate        "plate"

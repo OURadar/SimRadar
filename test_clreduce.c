@@ -100,7 +100,7 @@ int main(int argc, char **argv)
 	cl_float4 *host_mem = (cl_float4 *)malloc(NUM_ELEM * sizeof(cl_float4));
 
 	clEnqueueReadBuffer(queue[0], input, CL_TRUE, 0, NUM_ELEM * sizeof(cl_float4), host_mem, 0, NULL, NULL);
-	BOOL all_same = TRUE;
+	bool all_same = TRUE;
 	for (int i=0; i<NUM_ELEM; i++) {
 		all_same &= (host_mem[i].s0 == (float)(i % 32));
 	}

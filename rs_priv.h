@@ -8,6 +8,8 @@
 #ifndef rs_priv_h
 #define rs_priv_h
 
+#include "rs_types.h"
+
 enum RSDebrisRCSKernelArgument {
     RSDebrisRCSKernelArgumentPosition,
     RSDebrisRCSKernelArgumentOrientation,

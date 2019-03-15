@@ -9,22 +9,6 @@
 #ifndef _rs_h
 #define _rs_h
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <stdarg.h>
-#include <unistd.h>
-#include <math.h>
-#include <time.h>
-#include <string.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/sysctl.h>
-#include <sys/stat.h>
-#include <pthread.h>
-
-#include "rs_const.h"
 #include "rs_types.h"
 #include "log.h"
 #include "les.h"

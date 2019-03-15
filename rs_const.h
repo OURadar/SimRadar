@@ -23,15 +23,14 @@
 #define RS_MAX_ADM_TABLES           RS_MAX_DEBRIS_TYPES
 #define RS_MAX_RCS_TABLES           RS_MAX_DEBRIS_TYPES
 
-#ifndef MAX
-#define MAX(X, Y)      ((X) > (Y) ? (X) : (Y))
-#endif
-#ifndef MIN
-#define MIN(X, Y)      ((X) > (Y) ? (Y) : (X))
-#endif
-
-#define DTIME(T_begin, T_end)  ((double)(T_end.tv_sec - T_begin.tv_sec) + 1.0e-6 * (double)(T_end.tv_usec - T_begin.tv_usec))
-#define UNDERLINE(x)           "\033[4m" x "\033[24m"
+#define RS_MAX_NUM_SCATS    120000000               // Maximum tested = 110M, 2016-03-003 (25k body/cell)
+#define RS_BODY_PER_CELL          100.0f            // Default scatterer density
+#define RS_PARAMS_LAMBDA            0.1f            // Default wavelength in m
+#define RS_PARAMS_PRT               1.0e-3f         // Default PRT in s
+#define RS_PARAMS_TAU               0.2e-6f         // Default pulse width in s
+#define RS_PARAMS_PULSEWIDTH        RS_PARAMS_TAU   // Default pulse width in s, same as RS_PARAMS_TAU
+#define RS_PARAMS_BEAMWIDTH         1.0f
+#define RS_PARAMS_GATEWIDTH         30.0f
 
 enum RSStatus {
     RSStatusNull                         = 0,

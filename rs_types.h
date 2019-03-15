@@ -8,38 +8,43 @@
 #ifndef _rs_types_h
 #define _rs_types_h
 
-#define RS_MAX_NUM_SCATS    120000000               // Maximum tested = 110M, 2016-03-003 (25k body/cell)
-#define RS_BODY_PER_CELL          100.0f            // Default scatterer density
-#define RS_PARAMS_LAMBDA            0.1f            // Default wavelength in m
-#define RS_PARAMS_PRT               1.0e-3f         // Default PRT in s
-#define RS_PARAMS_TAU               0.2e-6f         // Default pulse width in s
-#define RS_PARAMS_PULSEWIDTH        RS_PARAMS_TAU   // Default pulse width in s, same as RS_PARAMS_TAU
-#define RS_PARAMS_BEAMWIDTH         1.0f
-#define RS_PARAMS_GATEWIDTH         30.0f
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdarg.h>
+#include <unistd.h>
+#include <math.h>
+#include <time.h>
+#include <string.h>
+#include <pthread.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
 
-#define RSfloat  float
+#include "rs_const.h"
 
-#if !defined (BOOL)
-typedef signed char BOOL;
+#define RSfloat float
+
+//#if !defined (BOOL)
+//typedef signed char BOOL;
+//#endif
+//
+//#if !defined (TRUE) && !defined (FALSE)
+//#define TRUE            ((BOOL)1)
+//#define FALSE           ((BOOL)0)
+//#endif
+
+#ifndef MAX
+#define MAX(X, Y)      ((X) > (Y) ? (X) : (Y))
+#endif
+#ifndef MIN
+#define MIN(X, Y)      ((X) > (Y) ? (Y) : (X))
 #endif
 
-#if !defined (TRUE) && !defined (FALSE)
-#define TRUE            ((BOOL)1)
-#define FALSE           ((BOOL)0)
-#endif
-
-/*
-typedef struct rs_vertex {
-	RSfloat x;               // Position x
-	RSfloat y;               // Position y
-	RSfloat z;               // Position z
-	RSfloat u;               // Velocity u
-	RSfloat v;               // Velocity v
-	RSfloat w;               // Velocity w
-	RSfloat a;               // Amplitude of RCS
-	RSfloat p;               // Phase of RCS
-} RSVertex;
-*/
+#define DTIME(T_begin, T_end)  ((double)(T_end.tv_sec - T_begin.tv_sec) + 1.0e-6 * (double)(T_end.tv_usec - T_begin.tv_usec))
+#define UNDERLINE(x)           "\033[4m" x "\033[24m"
 
 typedef struct _rs_point {
 	RSfloat x;

@@ -8,10 +8,6 @@
 #ifndef _radarsim_pos_h
 #define _radarsim_pos_h
 
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
-
 #include "log.h"
 
 #define POS_MAX_PATTERN_COUNT    10000

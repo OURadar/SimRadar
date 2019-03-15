@@ -574,8 +574,8 @@
 		B50A281517D7BF0900E4DE66 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
-				B57ADA6017E21A8900B03074 /* rs_types.h */,
 				B5B9F5871C6BF2B7007FC9A4 /* rs_const.h */,
+				B57ADA6017E21A8900B03074 /* rs_types.h */,
 				B5CFAD1F1ADF4A1800360E9A /* rs_priv.h */,
 				B5715B50218CDF8000FD4064 /* log.c */,
 				B5715B4F218CDF8000FD4064 /* log.h */,
