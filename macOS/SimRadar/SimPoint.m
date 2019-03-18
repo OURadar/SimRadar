@@ -80,10 +80,6 @@
             RS_set_density(S, 50.0f);
         }
 
-        // Choose an LES configuration
-//        RS_set_vel_data_to_config(S, LESConfigFlat);
-        RS_set_vel_data_to_config(S, LESConfigSuctionVortices);
-
         // Copy out some convenient constants
         nearest_thousand = (size_t)ceilf(1000.0f / S->preferred_multiple) * S->preferred_multiple;
         nearest_hundred = (size_t)ceilf(100.0f / S->preferred_multiple) * S->preferred_multiple;
@@ -97,6 +93,7 @@
         }
         
         if (scan_pattern->mode == 'D') {
+            RS_set_vel_data_to_config(S, LESConfigFlat);
             
             RS_set_concept(S, RSSimulationConceptFixedScattererPosition |
                               RSSimulationConceptVerticallyPointingRadar);
@@ -111,7 +108,8 @@
             
             RS_set_sampling_spacing(S, 30.0f, 1.0f, 1.0f);
         } else {
-            
+            RS_set_vel_data_to_config(S, LESConfigSuctionVortices);
+
             RS_set_concept(S,
                            RSSimulationConceptDraggedBackground |
                            RSSimulationConceptBoundedParticleVelocity |
