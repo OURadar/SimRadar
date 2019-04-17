@@ -2648,6 +2648,34 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
 }
 
 
+void RS_set_angular_weight_2d(RSHandle *H,
+                              const float *weights,
+                              const float xs, const float xo, unsigned int xc,
+                              const float ys, const float yo, unsigned int yc) {
+//    int i;
+    
+    RSTable2D table = RS_table2d_init(xc * yc);
+    table.xs = xs;
+    table.xo = xo;
+    table.xm = (float)(xc - 1);
+    table.ys = ys;
+    table.yo = yo;
+    table.ym = (float)(yc - 1);
+    memcpy(table.data, weights, xc * yc * sizeof(float));
+    
+    if (H->verb > 1) {
+        rsprint("Host angular weight table 2d received\n");
+        rsprint("dx = %.4f   x0 = %.1f   xm = %.1f   n = %d\n", table.xs, table.xo, table.xm, xc);
+        rsprint("dy = %.4f   y0 = %.1f   ym = %.1f   n = %d\n", table.ys, table.yo, table.ym, yc);
+    }
+    
+#if defined (_USE_GCL_)
+#else
+#endif
+    
+    RS_table2d_free(table);
+}
+
 void RS_set_angular_weight_to_double_cone(RSHandle *H, float beamwidth_rad) {
     float w[] = {1.0f, 0.0f, 0.8f, 0.0f};
     unsigned int n = sizeof(w) / sizeof(float);

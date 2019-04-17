@@ -270,6 +270,9 @@ typedef struct _rs_worker {
     cl_mem                 angular_weight;
     cl_float4              angular_weight_desc;
     
+    cl_mem                 angular_weight_2d;
+    cl_float16             angular_weight_2d_desc;
+    
     cl_mem                 rcs_ellipsoid;                // RCS of background scatterers
     cl_float4              rcs_ellipsoid_desc;           // RCS-desc of background scatterers
     
