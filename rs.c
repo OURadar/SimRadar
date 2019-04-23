@@ -2652,7 +2652,7 @@ void RS_set_angular_weight_2d(RSHandle *H,
                               const float *weights,
                               const float xs, const float xo, unsigned int xc,
                               const float ys, const float yo, unsigned int yc) {
-//    int i;
+    int i;
     
     RSTable2D table = RS_table2d_init(xc * yc);
     table.xs = xs;
@@ -2669,9 +2669,99 @@ void RS_set_angular_weight_2d(RSHandle *H,
         rsprint("dy = %.4f   y0 = %.1f   ym = %.1f   n = %d\n", table.ys, table.yo, table.ym, yc);
     }
     
-#if defined (_USE_GCL_)
-#else
+    // This is the part that we need to create a texture map for the RSTable2D table
+    cl_image_format format = {CL_RGBA, CL_FLOAT};
+
+#if defined (CL_VERSION_1_2)
+
+    cl_image_desc desc;
+    desc.image_type = CL_MEM_OBJECT_IMAGE2D;
+    desc.image_width  = xc;
+    desc.image_height = yc;
+    desc.image_depth  = 1;
+    desc.image_array_size = 0;
+    desc.image_row_pitch = desc.image_width * sizeof(cl_float4);
+    desc.image_slice_pitch = desc.image_height * desc.image_row_pitch;
+    desc.num_mip_levels = 0;
+    desc.num_samples = 0;
+    desc.buffer = NULL;
+
 #endif
+
+    for (i = 0; i < H->num_workers; i++) {
+        if (H->workers[i].angular_weight_2d != NULL) {
+
+#if defined (_USE_GCL_)
+
+            gcl_release_image(H->workers[i].angular_weight_2d);
+
+#else
+
+            clReleaseMemObject(H->workers[i].angular_weight_2d);
+            
+#endif
+            
+            H->workers[i].mem_usage -= ((cl_uint)(H->workers[i].angular_weight_2d_desc.s8 + 1.0f) * (H->workers[i].angular_weight_2d_desc.s9 + 1.0f) * sizeof(cl_float4));
+    
+    }
+        
+#if defined (_USE_GCL_)
+
+        H->workers[i].angular_weight_2d = gcl_create_image(&format, xc, yc, 1, H->workers[i].surf_angular_weight_2d);
+        
+#elif defined (CL_VERSION_1_2)
+
+        cl_int ret;
+        cl_mem_flags flags = CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR;
+        
+        H->workers[i].angular_weight_2d = clCreateImage(H->workers[i].context, flags, &format, &desc, table.data, &ret);
+        
+#else
+        
+        H->workers[i].angular_weight_2d = clCreateImage2D(H->workers[i].context, flags, &format, xc, yc, xc * sizeof(cl_float4), table.data, &ret);
+        
+#endif
+        
+        if (H->workers[i].angular_weight_2d == NULL) {
+            rsprint("ERROR: workers[%d] unable to create angular_weight_2d tables on CL device(s).", i);
+            return;
+        } else if (H->verb > 2) {
+            rsprint("workers[%d] created angular_weight_2d table @ %p", i, H->workers[i].angular_weight_2d);
+        }
+
+#if defined (_USE_GCL_)
+
+        dispatch_async(H->workers[i].que, ^{
+            size_t origin[3] = {0, 0, 0};
+            size_t region[3] = {table.xc, table.yc, 1};
+            gcl_copy_ptr_to_image(H->workers[i].angular_weight_2d, table.data, origin, region);
+            dispatch_semaphore_signal(H->workers[i].sem);
+        });
+        
+#endif
+    
+    }
+    
+    for (i = 0; i < H->num_workers; i++) {
+
+#if defined (_USE_GCL_)
+        
+        dispatch_semaphore_wait(H->workers[i].sem, DISPATCH_TIME_FOREVER);
+        
+#endif
+
+        // Copy over to CL worker
+        H->workers[i].angular_weight_2d_desc.s[RSTable3DDescriptionScaleX] = table.xs;
+        H->workers[i].angular_weight_2d_desc.s[RSTable3DDescriptionScaleY] = table.ys;
+        H->workers[i].angular_weight_2d_desc.s[RSTable3DDescriptionScaleZ] = 0.0f;
+        H->workers[i].angular_weight_2d_desc.s[RSTable3DDescriptionOriginX] = table.xo;
+        H->workers[i].angular_weight_2d_desc.s[RSTable3DDescriptionOriginY] = table.yo;
+        H->workers[i].angular_weight_2d_desc.s[RSTable3DDescriptionOriginZ] = 0.0f;
+        H->workers[i].angular_weight_2d_desc.s[RSTable3DDescriptionMaximumX] = table.xm;
+        H->workers[i].angular_weight_2d_desc.s[RSTable3DDescriptionMaximumY] = table.ym;
+        H->workers[i].angular_weight_2d_desc.s[RSTable3DDescriptionMaximumZ] = 0.0f;
+        H->workers[i].mem_usage += ((cl_uint)(table.xm + 1.0f) * (table.ym + 1.0f)) * sizeof(cl_float4);
+    }
     
     RS_table2d_free(table);
 }
@@ -3178,7 +3268,6 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
         cl_int retd, retm;
         cl_mem_flags flags = CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR;
         
-
         H->workers[i].adm_cd[t] = clCreateImage(H->workers[i].context, flags, &format, &desc, cd.data, &retd);
         H->workers[i].adm_cm[t] = clCreateImage(H->workers[i].context, flags, &format, &desc, cm.data, &retm);
         

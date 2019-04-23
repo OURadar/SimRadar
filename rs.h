@@ -314,6 +314,7 @@ typedef struct _rs_worker {
     IOSurfaceRef           surf_uvwt[2];
     IOSurfaceRef           surf_cpxx[2];
     IOSurfaceRef           surf_rcs_ellipsoids;
+    IOSurfaceRef           surf_angular_weight_2d;
     
 #else
     
