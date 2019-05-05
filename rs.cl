@@ -214,9 +214,9 @@ float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16
         //    RSTable3DStaggeredDescriptionBaseChangeY     =  1,
         //    RSTable3DStaggeredDescriptionBaseChangeZ     =  2,
         //    RSTable3DStaggeredDescriptionRefreshTime     =  3,
-        //    RSTable3DStaggeredDescriptionPositionScaleX  =  4,
-        //    RSTable3DStaggeredDescriptionPositionScaleY  =  5,
-        //    RSTable3DStaggeredDescriptionPositionScaleZ  =  6,
+        //    RSTable3DStaggeredDescriptionPositionScaleX  =  4,  (rx - 1.0)
+        //    RSTable3DStaggeredDescriptionPositionScaleY  =  5,  (ry - 1.0)
+        //    RSTable3DStaggeredDescriptionPositionScaleZ  =  6,  (rz - 1.0)
         //    RSTable3DStaggeredDescription7               =  7,
         //    RSTable3DStaggeredDescriptionOffsetX         =  8,
         //    RSTable3DStaggeredDescriptionOffsetY         =  9,

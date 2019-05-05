@@ -2898,8 +2898,8 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
         //printf("%s : RS : %d / %.9f\n", now(), table.spacing, H->workers[i].vel_desc.s[RSTable3DStaggeredDescriptionFormat]);
         if (table.spacing & RSTableSpacingStretchedX) {
             H->workers[i].les_desc.s[RSTable3DStaggeredDescriptionBaseChangeX] = table.xs;      // "m" for stretched grid: m * log1p(n * pos.x) + o;
-            H->workers[i].les_desc.s[RSTable3DStaggeredDescriptionPositionScaleX] = table.xo;   // "n" for stretched grid: m * log1p(n * pos.y) + o;
-            H->workers[i].les_desc.s[RSTable3DStaggeredDescriptionOffsetX] = table.xm;          // "o" for stretched grid: m * log1p(n * pos.z) + o;
+            H->workers[i].les_desc.s[RSTable3DStaggeredDescriptionPositionScaleX] = table.xo;   // "n" for stretched grid: m * log1p(n * pos.x) + o;
+            H->workers[i].les_desc.s[RSTable3DStaggeredDescriptionOffsetX] = table.xm;          // "o" for stretched grid: m * log1p(n * pos.x) + o;
         } else {
             H->workers[i].les_desc.s[RSTable3DDescriptionScaleX] = table.xs;
             H->workers[i].les_desc.s[RSTable3DDescriptionOriginX] = table.xo;
