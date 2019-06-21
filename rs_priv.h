@@ -41,6 +41,7 @@ enum RSDebrisAttributeKernelArgument {
     RSDebrisAttributeKernelArgumentRadarCrossSection,
     RSDebrisAttributeKernelArgumentRandomSeed,
     RSDebrisAttributeKernelArgumentBackgroundVelocity,
+    RSDebrisAttributeKernelArgumentBackgroundCn2Pressure,
     RSDebrisAttributeKernelArgumentBackgroundVelocityDescription,
     RSDebrisAttributeKernelArgumentAirDragModelDrag,
     RSDebrisAttributeKernelArgumentAirDragModelMomentum,

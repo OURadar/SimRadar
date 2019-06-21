@@ -791,6 +791,7 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSection,             sizeof(cl_mem),     &C->scat_rcs);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRandomSeed,                    sizeof(cl_mem),     &C->scat_rnd);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,            sizeof(cl_mem),     &C->les_uvwt[0]);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundCn2Pressure,         sizeof(cl_mem),     &C->les_cpxx[0]);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocityDescription, sizeof(cl_float16), &C->les_desc);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &C->adm_cd[0]);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelMomentum,          sizeof(cl_mem),     &C->adm_cm[0]);
@@ -4916,6 +4917,7 @@ void RS_advance_time(RSHandle *H) {
         
         // Debris particles
         clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->les_uvwt[C->les_id]);
+        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundCn2Pressure, sizeof(cl_mem),     &C->les_cpxx[C->les_id]);
         clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
         for (k = 1; k < H->num_types; k++) {
             if (C->counts[k]) {

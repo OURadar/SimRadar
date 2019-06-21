@@ -844,6 +844,7 @@ __kernel void db_atts(__global float4 *p,
                       __read_only image2d_t rcs_real,
                       __read_only image2d_t rcs_imag,
                       const float16 rcs_desc,
+                      __read_only image2d_t pos_cdf,
                       const float16 sim_desc)
 {
     const unsigned int i = get_global_id(0);
