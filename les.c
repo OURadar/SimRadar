@@ -407,7 +407,7 @@ void *LES_background_read(LESHandle i) {
             }
             va = table->data.u[k] * table->data.u[k] + table->data.v[k] * table->data.v[k] + table->data.w[k] * table->data.w[k];
             va_sum += va;
-            table->cpxx[k][2] = va;
+            table->cpxx[k][2] = va_sum;
         }
         for (int k = 0; k < table->nn; k++) {
             table->cpxx[k][2] /= va_sum;
