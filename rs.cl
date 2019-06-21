@@ -836,7 +836,8 @@ __kernel void db_atts(__global float4 *p,
                       __global float4 *t,
                       __global float4 *x,
                       __global uint4 *y,
-                      __read_only image3d_t wind_uvw,
+                      __read_only image3d_t wind_uvwt,
+                      __read_only image2d_t wind_cpxx,
                       const float16 wind_desc,
                       __read_only image2d_t adm_cd,
                       __read_only image2d_t adm_cm,
@@ -844,7 +845,6 @@ __kernel void db_atts(__global float4 *p,
                       __read_only image2d_t rcs_real,
                       __read_only image2d_t rcs_imag,
                       const float16 rcs_desc,
-                      __read_only image2d_t pos_cdf,
                       const float16 sim_desc)
 {
     const unsigned int i = get_global_id(0);
@@ -912,7 +912,7 @@ __kernel void db_atts(__global float4 *p,
         return;
     }
 
-    float4 vel_bg = compute_bg_vel(pos, wind_uvw, wind_desc, sim_desc);
+    float4 vel_bg = compute_bg_vel(pos, wind_uvwt, wind_desc, sim_desc);
 
     float4 dwdt, dudt = compute_dudt_dwdt(&dwdt, vel, vel_bg, ori, adm_cd, adm_cm, adm_desc);
     
