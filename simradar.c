@@ -98,12 +98,13 @@ void show_help() {
            "  -c (--concept) " UNDERLINE("concepts") "\n"
            "         Sets the simulation concepts to be used, which are OR together for\n"
            "         multiple values that can be combined together.\n"
-           "            B - Bounded particle velocity.\n"
+           "            B - Bounded particle velocity against the background velocity.\n"
+           "            C - Concentration of debris injection as a function of velocity.\n"
            "            D - Dragged background.\n"
            "            F - Fixed scatterer position.\n"
            "            T - Transparent background.\n"
            "            U - Uniform rain drop size density with scaled RCS.\n"
-           "            V - Vertically pointed radar (profiler)\n"
+           "            V - Vertically pointed radar (wind profiler).\n"
            "         Examples:\n"
            "            --concept DU\n"
            "                sets simulation to use the concept of dragged background and\n"
@@ -532,6 +533,9 @@ int main(int argc, char *argv[]) {
                 user.concept = RSSimulationConceptNull;
                 if (strcasestr(optarg, "B")) {
                     user.concept |= RSSimulationConceptBoundedParticleVelocity;
+                }
+                if (strcasestr(optarg, "C")) {
+                    user.concept |= RSSimulationConceptDebrisFluxFromVelocity;
                 }
                 if (strcasestr(optarg, "D")) {
                     user.concept |= RSSimulationConceptDraggedBackground;

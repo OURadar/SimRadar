@@ -18,9 +18,14 @@ enum RSTableSpacing {
 };
 
 enum RSSimulationConcept {
-    RSSimulationConceptNull                    = 0,
-    RSSimulationConceptDraggedBackground       = 1,
-    RSSimulationConceptBoundedParticleVelocity = 1 << 1
+    RSSimulationConceptNull                        = 0,
+    RSSimulationConceptDraggedBackground           = 1,
+    RSSimulationConceptTransparentBackground       = 1 << 1,
+    RSSimulationConceptBoundedParticleVelocity     = 1 << 2,
+    RSSimulationConceptUniformDSDScaledRCS         = 1 << 3,
+    RSSimulationConceptFixedScattererPosition      = 1 << 4,
+    RSSimulationConceptVerticallyPointingRadar     = 1 << 5,
+    RSSimulationConceptDebrisFluxFromVelocity      = 1 << 6
 };
 
 enum RSSimulationDescription {

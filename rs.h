@@ -139,6 +139,7 @@ enum RSTable1DDescrip {
     RSTable1DDescriptionUserConstant = 3
 };
 
+// These enums should match the ones in CL kernel, check rs.cl
 enum RSTable3DDescription {
     RSTable3DDescriptionScaleX      =  0,
     RSTable3DDescriptionScaleY      =  1,
@@ -158,6 +159,7 @@ enum RSTable3DDescription {
     RSTable3DDescriptionTachikawa   = 15
 };
 
+// These enums should match the ones in CL kernel, check rs.cl
 enum RSTable3DStaggeredDescription {
     RSTable3DStaggeredDescriptionBaseChangeX     =  0,
     RSTable3DStaggeredDescriptionBaseChangeY     =  1,
@@ -177,6 +179,7 @@ enum RSTable3DStaggeredDescription {
     RSTable3DStaggeredDescriptionTachikawa       = 15
 };
 
+// These enums should match the ones in CL kernel, check rs.cl
 enum RSSimulationDescription {
     RSSimulationDescriptionBeamUnitX              =  0,
     RSSimulationDescriptionBeamUnitY              =  1,
@@ -218,6 +221,7 @@ enum {
     RS_GPU_VENDOR_AMD
 };
 
+// These enums should match the ones in CL kernel, check rs.cl
 typedef uint32_t RSSimulationConcept;
 enum RSSimulationConcept {
     RSSimulationConceptNull                        = 0,
@@ -226,7 +230,8 @@ enum RSSimulationConcept {
     RSSimulationConceptBoundedParticleVelocity     = 1 << 2,
     RSSimulationConceptUniformDSDScaledRCS         = 1 << 3,
     RSSimulationConceptFixedScattererPosition      = 1 << 4,
-    RSSimulationConceptVerticallyPointingRadar     = 1 << 5
+    RSSimulationConceptVerticallyPointingRadar     = 1 << 5,
+    RSSimulationConceptDebrisFluxFromVelocity      = 1 << 6
 };
 
 #pragma pack(push, 1)
