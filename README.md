@@ -26,8 +26,6 @@ Follow these steps to get the project
     - ~/Downloads
     - ~/Documents
     - ~/Desktop
-    
-5. Download [Matlab Scripts] for reading the I/Q data into Matlab.
 
 [^1]: An Xcode project is included so you can manage the source codes using Xcode on Mac OS X. Git is readily supported under Xcode.
 
