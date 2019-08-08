@@ -14,18 +14,50 @@ Follow these steps to get the project
 
 2. Clone a git project[^1] from either ARRC's Git server or GitHub, using one of the following commands in Terminal:
 
-        git clone https://git.arrc.ou.edu/cheo4524/simradar.git
-    
+    ```shell
+    git clone https://git.arrc.ou.edu/cheo4524/simradar.git
+    ```
+
     or
 
-        git clone https://github.com/ouradar/simradar.git
+    ```shell
+    git clone https://github.com/ouradar/simradar.git
+    ```
 
 3. Download [Sparkle Framework], extract and move the folder **Sparkle.framework**[^2] into the sub-folder **maOS/SimRadar**
 
 4. Download the [LES, ADM & RCS data] in a zip archive (15GB), extract and move the folder **tables** into one of the following locations:
-    - ~/Downloads
-    - ~/Documents
-    - ~/Desktop
+   - ~/Downloads
+   - ~/Documents
+   - ~/Desktop
+
+
+5. Compile the code by running
+    ```shell
+    make
+    ```
+6. Run the `simradar` tool once to see if you receive a similar output.
+   ```shell
+   simradar
+   ```
+   should produce a screen output similar to the follows.
+   ```
+    08:55:47 : RS : Using default scan mode.
+    08:55:47 : RS : Parsing scan pattern 'P:3.0,-12:12:0.01' ...
+    08:55:47 : RS : Session initialized
+    08:55:47 : RS : Drop concentration ~ 891 drops / m^3
+    08:55:47 : RS : Found LES folder @ /Users/boonleng/Downloads/tables
+    08:55:47 : RS : LES index @ /Users/boonleng/Downloads/tables/les/suctvort/fort.10_2
+    08:55:47 : RS : LES enclosing_grid = 176 x 176 x 80
+    08:55:47 : RS : LES grid spacing = 2.00 / 1.0212   2.00 / 1.0212   2.00 / 1.0500  (streched)
+    08:55:47 : RS : LES file count = 16    nvol = 10    ncubes = 160
+    08:55:48 : RS : Background ingest /Users/boonleng/Downloads/tables/les/suctvort/LES_mean_1_6_fnum1.dat 0 -> 0
+    08:55:48 : RS : Background ingest /Users/boonleng/Downloads/tables/les/suctvort/LES_mean_1_6_fnum1.dat 1 -> 1
+    08:55:48 : RS : Drops / scatterer = 279,838.53  (559,354,675,200.00 / 1,998,848)
+    08:55:48 : Emulating 1,000 frames with 1,998,848 scatter bodies
+    08:55:53 : Finished.  Total time elapsed = 5.29 s  (avg: 189.1 FPS / ins: 222.3 FPS)
+    08:55:53 : Session ended
+    ```
 
 [^1]: An Xcode project is included so you can manage the source codes using Xcode on Mac OS X. Git is readily supported under Xcode.
 
