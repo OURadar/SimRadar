@@ -1,5 +1,8 @@
 # Check for OS - Linux or Darwin (macOS)
-UNAME := $(shell uname)
+KERNEL := $(shell uname)
+MACHINE := $(shell uname -m)
+KERNEL_VER := $(shell uname -v)
+GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 
 # Check for availability of MPI
 MPIVER := $(shell [ ! -z ${EBVERSIONOPENMPI} ] && echo true || echo false)
@@ -17,12 +20,21 @@ MYLIB = lib/librs.a
 
 PROGS = simradar
 PROGS += simple_ppi simple_dbs lsiq 
-PROGS += cldemo test_clreduce test_make_pulse test_rs test_les test_adm test_rcs
+PROGS += cldemo test_clreduce test_make_pulse test_les test_adm test_rcs
 PROGS += rsutil
 
 MPI_PROGS =
 
-ifeq ($(UNAME), Darwin)
+# The command echo from macOS and Ubuntu needs no -e
+ECHO_FLAG = -e
+ifneq (, $(findstring Darwin, $(KERNEL_VER)))
+	ECHO_FLAG =
+endif
+ifneq (, $(findstring Ubuntu, $(KERNEL_VER)))
+	ECHO_FLAG =
+endif
+
+ifeq ($(KERNEL), Darwin)
 	# macOS
 	CC = clang
 	CFLAGS += -D_DARWIN_C_SOURCE
@@ -46,6 +58,12 @@ LDFLAGS += -lm -lpthread
 
 all: $(MYLIB) $(PROGS) $(MPI_PROGS)
 
+showinfo:
+	@echo $(ECHO_FLAG) "KERNEL_VER = \033[38;5;15m$(KERNEL_VER)\033[0m"
+	@echo $(ECHO_FLAG) "KERNEL = \033[38;5;15m$(KERNEL)\033[0m"
+	@echo $(ECHO_FLAG) "MACHINE = \033[38;5;220m$(MACHINE)\033[0m"
+	@echo $(ECHO_FLAG) "GIT_BRANCH = \033[38;5;46m$(GIT_BRANCH)\033[0m"
+
 #$(OBJS): %.o: %.c %.h rs_types.h
 #	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -55,12 +73,16 @@ $(OBJS_PATH)/%.o: %.c | $(OBJS_PATH)
 $(OBJS_PATH):
 	mkdir -p $@
 
-$(PROGS): %: %.c $(MYLIB)
-	$(CC) $(CFLAGS) -o $@ $@.c $(LDFLAGS)
-
 lib/librs.a: $(OBJS_WITH_PATH)
-	mkdir -p lib
 	ar rvcs $@ $(OBJS_WITH_PATH)
+
+$(PROGS): %: %.c $(MYLIB)
+ifeq ($(KERNEL), Darwin)
+	@echo "\033[38;5;203m$@\033[0m"
+else
+	@echo $(ECHO_FLAG) "\033[38;5;203m$@\033[0m"
+endif
+	$(CC) $(CFLAGS) -o $@ $@.c $(LDFLAGS)
 
 $(MPI_PROGS): %: %.c $(MYLIB)
 	$(CC) $(CFLAGS) -D_OPEN_MPI $(MPI_CFLAGS) -o $@ $@.c $(LDFLAGS) $(MPI_LDFLAGS)
