@@ -113,8 +113,13 @@
             RS_set_concept(S,
                            RSSimulationConceptDraggedBackground |
                            RSSimulationConceptBoundedParticleVelocity |
-                           RSSimulationConceptUniformDSDScaledRCS);
-            
+                           RSSimulationConceptUniformDSDScaledRCS |
+                           RSSimulationConceptDebrisFluxFromVelocity);
+//            RS_set_concept(S,
+//                           RSSimulationConceptDraggedBackground |
+//                           RSSimulationConceptBoundedParticleVelocity |
+//                           RSSimulationConceptUniformDSDScaledRCS);
+
             RS_set_antenna_params(S, 1.0f, 44.5f);                // 1.0-deg beamwidth, 44.5-dBi gain
             
             RS_set_tx_params(S, 30.0f * 2.0f / 3.0e8f, 10.0e3);   // Resolution in m, power in W
@@ -144,7 +149,6 @@
 
             S->draw_mode.s1 = 5500;
         }
-
     }
 	return self;
 }
@@ -198,6 +202,7 @@
 - (void)advanceTime
 {
 	RS_advance_time(S);
+//    RS_advance_time(S);
     RS_update_colors(S);
 }
 
@@ -214,6 +219,8 @@
 {
     RS_advance_beam(S);
     RS_advance_time(S);
+//    RS_advance_time(S);
+//    RS_advance_time(S);
     RS_update_colors(S);
     POSPattern *scan_pattern = S->P;
     az_deg = scan_pattern->az;

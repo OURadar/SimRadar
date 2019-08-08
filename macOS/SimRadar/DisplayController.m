@@ -64,17 +64,13 @@
 	[glView.renderer setAnchorLines:(GLfloat *)sim.anchorLines number:(GLuint)sim.anchorLineCount];
     [glView.renderer setResetRange:sim.recommendedViewRange];
 
-//    GLKMatrix4 modelRotate = GLKMatrix4MakeRotation(-0.15f, 1.0f, 0.0f, 0.0f);
-//    modelRotate = GLKMatrix4RotateY(modelRotate, 1.5f);
-
-//    GLKMatrix4 modelRotate = GLKMatrix4MakeRotation(0.25f, 1.0f, 0.0f, 0.0f);
-//    modelRotate = GLKMatrix4RotateY(modelRotate, -0.3f);
-    
-//    [glView.renderer setResetModelRotate:modelRotate];
-    
-    [glView.renderer stopSpinModel];
+    //[glView.renderer setCameraRoll:0.0f pitch:M_PI_2 yaw:M_PI_2];
+    [glView.renderer setCameraRoll:0.0f pitch:M_PI_2 yaw:0.0f];
     
     [glView.renderer resetViewParameters];
+  
+    [glView.renderer setBackgroundOpacity:0.015f];
+    [glView.renderer stopSpinModel];
     
 #ifdef DEBUG
     NSLog(@"Recommend viewing at %.2f m", sim.recommendedViewRange);
@@ -124,7 +120,8 @@
         //NSLog(@"Allocating recorder ...");
         
         // Just before calling next draw mode
-        mkey = 8;
+        //mkey = 8;
+        mkey = MAX_MKEY;
 	}
 	return self;
 }
@@ -391,11 +388,10 @@
 
 - (void)chooseNextDrawModeForward:(BOOL)forward
 {
-    const int max_mkey = 9;
     if (forward) {
-        mkey = mkey >= max_mkey ? 0 : mkey + 1;
+        mkey = mkey >= MAX_MKEY ? 0 : mkey + 1;
     } else {
-        mkey = mkey <= 0 ? max_mkey : mkey - 1;
+        mkey = mkey <= 0 ? MAX_MKEY : mkey - 1;
     }
     [self setDrawMode:mkey];
 }

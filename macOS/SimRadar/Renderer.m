@@ -52,6 +52,8 @@ unsigned int grayToBinary(unsigned int num)
 @synthesize width, height;
 @synthesize beamAzimuth, beamElevation;
 @synthesize showDebrisAttributes, fadeSmallScatterers, viewParametersNeedUpdate;
+@synthesize backgroundOpacity;
+@synthesize cameraRoll, cameraPitch, cameraYaw;
 
 - (void)setSize:(CGSize)size
 {
@@ -400,6 +402,13 @@ unsigned int grayToBinary(unsigned int num)
     prim->drawMode = GL_LINES;
 }
 
+- (void)setCameraRoll:(GLfloat)roll pitch:(GLfloat)pitch yaw:(GLfloat)yaw;
+{
+    cameraRoll = roll;
+    cameraPitch = pitch;
+    cameraYaw = yaw;
+}
+
 #pragma mark -
 #pragma mark Private Methods
 
@@ -545,7 +554,7 @@ unsigned int grayToBinary(unsigned int num)
     // This is specific to instanced geometry shader
     resource->lowZUI = glGetUniformLocation(resource->program, "lowZ");
     if (resource->lowZUI >= 0) {
-        glUniform1f(resource->lowZUI, 1.0f);
+        glUniform1f(resource->lowZUI, 0.1f);
     }
     
     // Get attributes
@@ -758,9 +767,9 @@ unsigned int grayToBinary(unsigned int num)
         
         resetRange = 5000.0f;
         resetModelRotate = GLKMatrix4Identity;
-        //resetModelRotate = GLKMatrix4MakeRotation(1.0, 0.0f, 1.0f, 1.0f);
         
-        hudConfigGray = hudConfigShowGrid | hudConfigShowOverlay | hudConfigShowRadarView | hudConfigShowAnchors;
+        //hudConfigGray = hudConfigShowGrid | hudConfigShowOverlay | hudConfigShowRadarView | hudConfigShowAnchors;
+        hudConfigGray = hudConfigShowGrid | hudConfigShowOverlay;
         hudConfigDecimal = grayToBinary(hudConfigGray);
         
         beamNearZ = 2.0f;
@@ -1678,8 +1687,6 @@ unsigned int grayToBinary(unsigned int num)
 
     GLfloat w = hudSize.width / hudSize.height;
     beamProjection = GLKMatrix4MakeFrustum(-w, w, -1.0f, 1.0f, beamNearZ, RENDERER_FAR_RANGE);
-//    mat = GLKMatrix4MakeZRotation(beamAzimuth);
-//    mat = GLKMatrix4RotateX(mat, -M_PI_2 - beamElevation);
     mat = GLKMatrix4MakeXRotation(-M_PI_2 - beamElevation);
     mat = GLKMatrix4RotateZ(mat, beamAzimuth);
     beamModelViewProjection = GLKMatrix4Multiply(beamProjection, mat);
@@ -1757,7 +1764,6 @@ unsigned int grayToBinary(unsigned int num)
 
 - (void)rotate:(GLfloat)angle
 {
-	//modelRotate = GLKMatrix4Multiply(GLKMatrix4MakeYRotation(-angle), modelRotate);
     cameraRoll -= angle;
     if (cameraRoll > 2.0 * M_PI) {
         cameraRoll -= 2.0 * M_PI;

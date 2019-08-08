@@ -204,7 +204,7 @@ int main(int argc, char **argv)
 	}
 	
 	char *src_ptr[RS_MAX_KERNEL_LINES];
-	cl_uint len = read_kernel_source_from_files(src_ptr, "rs.cl", NULL);
+	cl_uint len = read_kernel_source_from_files(src_ptr, "rs_enum.h", "rs.cl", NULL);
 	
 	// Program
 	program = clCreateProgramWithSource(context, len, (const char **)src_ptr, NULL, &ret);

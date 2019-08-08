@@ -12,6 +12,7 @@ Sparkle.framework
 *.xcuserstate
 project.xcworkspace/
 xcuserdata/
+.ipynb_checkpoints/
 *.mp4
 
 # Misc. assets
@@ -34,4 +35,5 @@ simradar-mpi
 simple_ppi
 simple_dbs
 lsiq
+rsutil
 

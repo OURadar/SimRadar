@@ -49,6 +49,8 @@ enum RSDebrisAttributeKernelArgument {
     RSDebrisAttributeKernelArgumentRadarCrossSectionReal,
     RSDebrisAttributeKernelArgumentRadarCrossSectionImag,
     RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,
+    RSDebrisAttributeKernelArgumentDebrisFluxField,
+    RSDebrisAttributeKernelArgumentDebrisFluxFieldDescription,
     RSDebrisAttributeKernelArgumentSimulationDescription
 };
 

@@ -44,9 +44,9 @@ void main (void)
     // Make debris closer to surface more transparent
     float a = 1.0f;
     if (inTranslation.z < 0.1f * lowZ) {
-        varColor.a = 0.1f;
+        varColor.a = 0.2f;
     } else if (inTranslation.z < lowZ) {
-        a = (inTranslation.z - 0.1f * lowZ) / (0.9f * lowZ) + 0.1f;
+        a = clamp((inTranslation.z - 0.1f * lowZ) / (0.9f * lowZ), 0.2f, 1.0f);
         varColor.a *= a;
     }
 }

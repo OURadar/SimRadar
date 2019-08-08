@@ -10,6 +10,9 @@
 #import "SimGLView.h"
 //#import "Recorder.h"
 
+// Maximum mode. See setDrawMode()
+#define MAX_MKEY  9
+
 @interface DisplayController : NSWindowController <NSWindowDelegate> {
 	
 	SimPoint *sim;
