@@ -211,6 +211,8 @@ enum RendererLineSegment {
 @property (nonatomic, readonly) GLsizei width, height;
 @property (nonatomic) GLfloat beamAzimuth, beamElevation;
 @property (nonatomic) BOOL showDebrisAttributes, fadeSmallScatterers, viewParametersNeedUpdate;
+@property (nonatomic) GLfloat backgroundOpacity;
+@property (nonatomic) GLfloat cameraRoll, cameraPitch, cameraYaw;
 
 - (id)initWithDevicePixelRatio:(GLfloat)pixelRatio;
 
@@ -221,6 +223,7 @@ enum RendererLineSegment {
 - (void)setAnchorPoints:(GLfloat *)points number:(GLuint)number;
 - (void)setAnchorLines:(GLfloat *)lines number:(GLuint)number;
 - (void)setBeamElevation:(GLfloat)elevation azimuth:(GLfloat)azimuth;
+- (void)setCameraRoll:(GLfloat)roll pitch:(GLfloat)pitch yaw:(GLfloat)yaw;
 
 - (void)allocateVAO:(GLuint)count;
 - (void)updateBodyToDebrisMappings;

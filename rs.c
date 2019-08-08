@@ -410,6 +410,10 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
     }
     
     // Set all the surface to null
+    //C->surf_range_weight = NULL;
+    //C->surf_angular_weight = NULL;
+    //C->surf_angular_weight_2d = NULL;
+    C->surf_rcs_ellipsoids = NULL;
     int i;
     for (i = 0; i < RS_MAX_ADM_TABLES; i++) {
         C->surf_adm_cd[i] = NULL;
@@ -419,7 +423,6 @@ void RS_worker_init(RSWorker *C, cl_device_id dev, cl_uint src_size, const char 
         C->surf_rcs_real[i] = NULL;
         C->surf_rcs_imag[i] = NULL;
     }
-    C->surf_rcs_ellipsoids = NULL;
     C->surf_uvwt[0] = NULL;
     C->surf_uvwt[1] = NULL;
     C->surf_cpxx[0] = NULL;
@@ -548,6 +551,27 @@ void RS_worker_free(RSWorker *C) {
     dispatch_release(C->sem);
     dispatch_release(C->que);
     
+    gcl_free(C->range_weight);
+    gcl_free(C->angular_weight);
+    gcl_free(C->angular_weight_2d);
+    gcl_release_image(C->rcs_ellipsoid);
+    
+    for (int a = 0; a < C->adm_count; a++) {
+        gcl_release_image(C->adm_cd[a]);
+        gcl_release_image(C->adm_cm[a]);
+    }
+    
+    for (int r = 0; r < C->rcs_count; r++) {
+        gcl_release_image(C->rcs_real[r]);
+        gcl_release_image(C->rcs_imag[r]);
+    }
+    
+    gcl_release_image(C->les_uvwt[0]);
+    gcl_release_image(C->les_uvwt[1]);
+    
+    gcl_release_image(C->dff_icdf[0]);
+    gcl_release_image(C->dff_icdf[1]);
+
 #else
     
     clReleaseCommandQueue(C->que);
@@ -570,6 +594,27 @@ void RS_worker_free(RSWorker *C) {
     
     clReleaseContext(C->context);
     
+    clReleaseMemObject(C->range_weight);
+    clReleaseMemObject(C->angular_weight);
+    clReleaseMemObject(C->angular_weight_2d);
+    clReleaseMemObject(C->rcs_ellipsoid);
+    
+    for (int a = 0; a < C->adm_count; a++) {
+        clReleaseMemObject(C->adm_cd[a]);
+        clReleaseMemObject(C->adm_cm[a]);
+    }
+    
+    for (int r = 0; r < C->rcs_count; r++) {
+        clReleaseMemObject(C->rcs_real[r]);
+        clReleaseMemObject(C->rcs_imag[r]);
+    }
+    
+    clReleaseMemObject(C->les_uvwt[0]);
+    clReleaseMemObject(C->les_uvwt[1]);
+    
+    clReleaseMemObject(C->dff_icdf[0]);
+    clReleaseMemObject(C->dff_icdf[1]);
+
 #endif
     
 }
@@ -799,6 +844,8 @@ void RS_worker_malloc(RSHandle *H, const int worker_id) {
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionReal,         sizeof(cl_mem),     &C->rcs_real[0]);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionImag,         sizeof(cl_mem),     &C->rcs_imag[0]);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[0]);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentDebrisFluxField,               sizeof(cl_mem),     &C->dff_icdf[0]);
+    ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentDebrisFluxFieldDescription,    sizeof(cl_float16), &C->dff_desc);
     ret |= clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
     if (ret != CL_SUCCESS) {
         fprintf(stderr, "%s : RS : Error: Failed to set arguments for kernel kern_db_atts().\n", now());
@@ -916,6 +963,12 @@ cl_uint RS_gpu_count(void) {
     return num_devs;
 }
 
+char *RS_version_string(void) {
+    static char string[16];
+    sprintf(string, "%s", RS_VERSION_STRING);
+    return string;
+}
+
 #pragma mark -
 #pragma mark RS Initialization and Deallocation
 
@@ -1008,9 +1061,12 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
     
     // Kernel source
     if (!strcmp(bundle_path, ".")) {
-        count = read_kernel_source_from_files(src_ptr, "rs.cl", NULL);
+        count = read_kernel_source_from_files(src_ptr, "rs_enum.h", "rs.cl", NULL);
     } else {
         
+        char enum_h_path[RS_MAX_STR];
+        snprintf(enum_h_path, RS_MAX_STR, "%s/rs_enum.h", bundle_path);
+
 #ifdef INCLUDE_TYPES_IN_KERNEL
         
         // This version combines special types along with the kernel functions
@@ -1018,14 +1074,14 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context
         char kern_src_path[RS_MAX_STR];
         snprintf(types_h_path, RS_MAX_STR, "%s/rs_types.h", bundle_path);
         snprintf(kern_src_path, RS_MAX_STR, "%s/rs.cl", bundle_path);
-        count = read_kernel_source_from_files(src_ptr, types_h_path, kern_src_path, NULL);
+        count = read_kernel_source_from_files(src_ptr, enum_h_path, types_h_path, kern_src_path, NULL);
         
 #else
         
         // This version does not depend on custom types
         char kern_src_path[RS_MAX_STR];
         snprintf(kern_src_path, RS_MAX_STR, "%s/rs.cl", bundle_path);
-        count = read_kernel_source_from_files(src_ptr, kern_src_path, NULL);
+        count = read_kernel_source_from_files(src_ptr, enum_h_path, kern_src_path, NULL);
         
 #endif
         
@@ -1175,50 +1231,6 @@ void RS_free(RSHandle *H) {
     
     RS_free_scat_memory(H);
     
-#if defined (_USE_GCL_)
-    
-    for (i = 0; i < H->num_workers; i++) {
-        gcl_free(H->workers[i].angular_weight);
-        gcl_free(H->workers[i].range_weight);
-        
-        gcl_release_image(H->workers[i].rcs_ellipsoid);
-        gcl_release_image(H->workers[i].les_uvwt[0]);
-        gcl_release_image(H->workers[i].les_uvwt[1]);
-        
-        for (int a = 0; a < H->adm_count; a++) {
-            gcl_release_image(H->workers[i].adm_cd[a]);
-            gcl_release_image(H->workers[i].adm_cm[a]);
-        }
-        
-        for (int r = 0; r < H->rcs_count; r++) {
-            gcl_release_image(H->workers[i].rcs_real[r]);
-            gcl_release_image(H->workers[i].rcs_imag[r]);
-        }
-    }
-    
-#else
-    
-    for (i = 0; i < H->num_workers; i++) {
-        clReleaseMemObject(H->workers[i].angular_weight);
-        clReleaseMemObject(H->workers[i].range_weight);
-        
-        clReleaseMemObject(H->workers[i].rcs_ellipsoid);
-        clReleaseMemObject(H->workers[i].les_uvwt[0]);
-        clReleaseMemObject(H->workers[i].les_uvwt[1]);
-        
-        for (int a = 0; a < H->adm_count; a++) {
-            clReleaseMemObject(H->workers[i].adm_cd[a]);
-            clReleaseMemObject(H->workers[i].adm_cm[a]);
-        }
-        
-        for (int r = 0; r < H->rcs_count; r++) {
-            clReleaseMemObject(H->workers[i].rcs_real[r]);
-            clReleaseMemObject(H->workers[i].rcs_imag[r]);
-        }
-    }
-    
-#endif
-    
     free(H->anchor_pos);
     free(H->anchor_lines);
     
@@ -1352,8 +1364,9 @@ void RS_set_concept(RSHandle *H, RSSimulationConcept c) {
 char *RS_simulation_concept_string(RSHandle *H) {
     static char string[32];
     sprintf(string,
-            "Concepts used: %s%s%s%s%s%s",
+            "Concepts used: %s%s%s%s%s%s%s",
             H->sim_concept & RSSimulationConceptBoundedParticleVelocity ? "B" : "",
+            H->sim_concept & RSSimulationConceptDebrisFluxFromVelocity ? "C" : "",
             H->sim_concept & RSSimulationConceptDraggedBackground ? "D" : "",
             H->sim_concept & RSSimulationConceptFixedScattererPosition ? "F" : "",
             H->sim_concept & RSSimulationConceptTransparentBackground ? "T" : "",
@@ -1368,6 +1381,9 @@ char *RS_simulation_concept_bulleted_string(RSHandle *H) {
     sprintf(string, "Concepts used:\n");
     if (H->sim_concept & RSSimulationConceptBoundedParticleVelocity) {
         sprintf(string + strlen(string), RS_INDENT "o B - Bounded Particle Velocity\n");
+    }
+    if (H->sim_concept & RSSimulationConceptDebrisFluxFromVelocity) {
+        sprintf(string + strlen(string), RS_INDENT "o C - Debris Concentration from Velocity\n");
     }
     if (H->sim_concept & RSSimulationConceptDraggedBackground) {
         sprintf(string + strlen(string), RS_INDENT "o D - Dragged Meteorological Scatterers\n");
@@ -2581,6 +2597,7 @@ void RS_set_angular_weight(RSHandle *H, const float *weights, const float table_
     
     RSTable table = RS_table_init(table_size);
     if (table.data == NULL) {
+        rsprint("RS_set_angular_weight(): Unable to allocate memory.\n");
         return;
     }
     // Set up the coefficients for FMA(a, b, c) in the CL kernel
@@ -2821,7 +2838,6 @@ void RS_set_vel_data(RSHandle *H, const RSTable3D table) {
 
 #elif defined (CL_VERSION_1_2)
         
-
             cl_image_desc desc;
             desc.image_type = CL_MEM_OBJECT_IMAGE3D;
             desc.image_width  = table.x_;
@@ -2992,7 +3008,7 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
         //
         // For LES tables with streched grid:
         //
-        // dz(k) = a * r ^ 1.05
+        // dz(k) = a * r ^ k
         //
         //  z(k) = a * ( 1 - r ^ k ) / ( 1 - r )
         //
@@ -3055,6 +3071,13 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
     table.uvwt = (cl_float4 *)leslie->uvwt;
     table.cpxx = (cl_float4 *)leslie->cpxx;
 
+    if (H->sim_concept & RSSimulationConceptDebrisFluxFromVelocity) {
+        //RS_set_debris_flux_field_to_center_cell_of_3x3(H);
+        //RS_set_debris_flux_field_to_checker_board(H, 51);
+        RS_set_debris_flux_field_to_checker_board_stretched(H, leslie);
+        //RS_set_debris_flux_field_from_LES(H, leslie);
+    }
+    
     // Now we call the function to upload to GPU memory
     RS_set_vel_data(H, table);
     
@@ -3189,6 +3212,386 @@ void RS_clear_vel_data(RSHandle *H) {
     }
 }
 
+void RS_set_debris_flux_field_by_pdf(RSHandle *H, RSTable2D *map, const float *pdf) {
+    int k;
+    
+    // Some constants
+    const int n = 2048;
+    const int pdf_count = map->x_;
+    const int cdf_count = pdf_count + 1;
+    
+    double *cdf = (double *)malloc(cdf_count * sizeof(double));
+
+    int b, e;
+    float vl, vh, a, x;
+    
+    // The corresponding CDF
+    float cumsum = 0.0f;
+    for (k = 0; k < pdf_count; k++) {
+        cdf[k] = cumsum;
+        cumsum += pdf[k];
+        if (cumsum > 1.0f) {
+            if (k < pdf_count - 2) {
+                rsprint("Error. Bad PDF was supplied, cumsum = %.8f > 1.0 @ k = %d / %d\n", cumsum, k, pdf_count);
+                free(cdf);
+                return;
+            } else if (k < pdf_count - 1) {
+                rsprint("Warning. PDF value[%d/%d] = %.8f clamped to 1.0\n", k, pdf_count, cumsum);
+                cumsum = 1.0f;
+            }
+        }
+    }
+    cdf[k] = 1.0f;
+    
+    float *tab = (float *)malloc(n * sizeof(float));
+
+    // Derive the CDF inverse lookup table
+    for (k = 0; k < n; k++) {
+        x = (float)k / (n - 1);
+        b = 0;
+        while (cdf[b] <= x && b < cdf_count) {
+            b++;
+        }
+        b = MAX(b - 1, 0);
+        e = MIN(b + 1, pdf_count);
+        if (cdf[b] == cdf[e]) {
+            #if defined(DEBUG_CDF)
+            printf("roll back   (b, e) = (%d, %d)   x = %.2f   cdf[b] = %.2f -> %s\n", b, e, x, cdf[b], cdf[b] >= x ? "Y" : "N");
+            #endif
+            while (cdf[b] >= x && b > 0) {
+                b--;
+            }
+            e = MIN(b + 1, pdf_count);
+            #if defined(DEBUG_CDF)
+            printf("      -->   (b, e) = (%d, %d)\n", b, e);
+            #endif
+        }
+        // Gather the two points for linear interpolation
+        vl = (float)b;
+        vh = (float)e;
+        if (b == e) {
+            tab[k] = vl;
+        } else {
+            a = (x - cdf[b]) / (cdf[e] - cdf[b]);
+            if (cdf[b] <= x && x <= cdf[e]) {
+                tab[k] =  vl + a * (vh - vl);
+            } else {
+                rsprint("ERROR. Unable to continue. I need upgrades. Tell my father.  (b, e) = (%d, %d)  x = %.2f\n", b, e, x);
+                return;
+            }
+        }
+        //printf("k = %3d   (b, e) = (%d, %d)   x = [%.2f, (%.2f), %.2f]   v = [%.2f, (%.2f), %.2f]\n", k, b, e, cdf[b], x, cdf[e], vl, tab[k], vh);
+    }
+    
+    // Replace the count of table elements to CDF element count
+    map->x_ = n;
+
+    RS_set_debris_flux_field_by_icdf(H, map, tab);
+
+    free(cdf);
+    free(tab);
+}
+
+
+void RS_set_debris_flux_field_by_icdf(RSHandle *H, RSTable2D *map, const float *icdf) {
+    
+    int i;
+    cl_int ret;
+
+    const int count = (int)(map->x_);
+
+    RSTable table = RS_table_init(count);
+    if (table.data == NULL) {
+        rsprint("RS_set_debris_flux_field(): Unable to allocate memory.\n");
+        return;
+    }
+    memcpy(table.data, icdf, count * sizeof(float));
+    
+    for (i = 0; i < H->num_workers; i++) {
+        if (H->workers[i].dff_icdf[0] == NULL) {
+
+#if defined (_USE_GCL_)
+
+            rsprint("Error. This portion still needs to be implemented (A). i = %d\n", i);
+
+#else
+
+            H->workers[i].dff_icdf[0] = clCreateBuffer(H->workers[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, count * sizeof(float), table.data, &ret);
+            H->workers[i].dff_icdf[1] = clCreateBuffer(H->workers[i].context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, count * sizeof(float), table.data, NULL);
+            H->workers[i].mem_usage += count * sizeof(cl_float);
+
+#endif
+            
+            if (H->workers[i].dff_icdf[0] == NULL || H->workers[i].dff_icdf[1] == NULL || ret != CL_SUCCESS) {
+                rsprint("ERROR: workers[%d] unable to create debris flux field table on CL device.  ret = %d   table of %d @ %p\n", i, ret, count, table.data);
+                exit(EXIT_FAILURE);
+            } else if (H->verb > 2) {
+                rsprint("workers[%d] created debris flux field @ %p %p.", i, H->workers[i].dff_icdf[0], H->workers[i].dff_icdf[1]);
+            }
+            
+        } else {
+            
+#if defined (_USE_GCL_)
+            
+            rsprint("Error. This portion still needs to be implemented (B). i = %d\n", i);
+            
+#else
+            
+            clEnqueueWriteBuffer(H->workers[i].que, H->workers[i].dff_icdf[H->workers[i].les_id], CL_FALSE, 0, count * sizeof(cl_float), table.data, 0, NULL, &H->workers[i].event_upload);
+            clEnqueueWriteBuffer(H->workers[i].que, H->workers[i].dff_icdf[H->workers[i].les_id], CL_FALSE, 0, count * sizeof(cl_float), table.data, 0, NULL, &H->workers[i].event_upload);
+
+#endif
+            
+        } // if (H->workers[i].iff[0] == NULL) ...
+    }
+
+    for (i = 0; i < H->num_workers; i++) {
+
+#if defined (_USE_GCL_)
+        
+        rsprint("Error. This portion still needs to be implemented (C).\n")
+        
+#else
+
+        clWaitForEvents(1, &H->workers[i].event_upload);
+        
+#endif
+        
+        H->workers[i].dff_desc.s[RSTableDescriptionScaleX] = map->xs;                                   // s0
+        H->workers[i].dff_desc.s[RSTableDescriptionScaleY] = map->ys;                                   // s1
+        H->workers[i].dff_desc.s[RSTableDescriptionScaleZ] = -1.0f;                                     // s2
+        H->workers[i].dff_desc.s[RSTableDescriptionOriginX] = map->xo;                                  // s4
+        H->workers[i].dff_desc.s[RSTableDescriptionOriginY] = map->yo;                                  // s5
+        H->workers[i].dff_desc.s[RSTableDescriptionOriginZ] = -1.0f;                                    // s6
+        H->workers[i].dff_desc.s[RSTableDescriptionMaximumX] = map->xm;                                 // s8
+        H->workers[i].dff_desc.s[RSTableDescriptionMaximumY] = map->ym;                                 // s9
+        H->workers[i].dff_desc.s[RSTableDescriptionMaximumZ] = -1.0f;                                   // sa
+        H->workers[i].dff_desc.s[RSTableDescriptionReserved4] = 0.0f;                                   // sc
+        H->workers[i].dff_desc.s[RSTableDescriptionReserved5] = map->xm + 1.0f;                         // sd
+        H->workers[i].dff_desc.s[RSTableDescriptionReserved6] = (float)map->y_;                         // se
+        H->workers[i].dff_desc.s[RSTableDescriptionReserved7] = (float)map->x_ - 1.0f;                  // sf
+    }
+    RS_table_free(table);
+}
+
+
+void RS_set_debris_flux_field_to_center_cell_of_3x3(RSHandle *H) {
+    // CDF: 3 x 3 flux field with a middle cell at 1.0 (cell 4)
+    //
+    //  1.0  |         o o o o
+    //       |         | | | |
+    //  0.0  o-o-o-o-o-+-+-+-+---> cell index
+    //       0 1 2 3 4 5 6 7 8
+    //
+    // iCDF should be:
+    //
+    //        1.0  |                   (This point does not exist in the table
+    //             |                    but it is assumed in this convention)
+    //    5/count  |      ...  o
+    //    4/count  o  ...      |
+    //             |           |
+    //             +-----------+--> v
+    //             0    ...   1.0
+    //
+    //     iCDF = [4 4.1 4.2 ... 5]
+    //
+    float icdf[2] = {4.0f, 5.0f};
+    RSTable2D map = {
+        .x_ = sizeof(icdf) / sizeof(float),
+        .xs = 1.0 / 3.0f,
+        .xo = -1.0f,
+        .xm = 2.0f,
+        .ys = 1.0 / 3.0f,
+        .yo = -1.0f,
+        .ym = 2.0f
+    };
+    RS_set_debris_flux_field_by_icdf(H, &map, icdf);
+}
+
+
+void RS_set_debris_flux_field_to_checker_board(RSHandle *H, const int c) {
+    int k;
+
+    // Some constants for the derived CDF
+    const int pdf_count = c * c;
+    float *pdf = (float *)malloc(pdf_count * sizeof(float));
+    
+    // Psuedo-PDF, not yet normalized
+    memset(pdf, 0, pdf_count * sizeof(float));
+    for (k = 0; k < pdf_count; k += 2) {
+        pdf[k] = 100.0;
+    }
+    
+    // Actual PDF after a proper normalization
+    float sum = 0.0;
+    for (k = 0; k < pdf_count; k++) {
+        sum += pdf[k];
+    }
+    for (k = 0; k < pdf_count; k++) {
+        pdf[k] /= sum;
+    }
+
+    // rsprint("=== %.2f %.2f / %.2f %.2f\n", H->sim_desc.hi.s4, H->sim_desc.hi.s5, H->sim_desc.hi.s0, H->sim_desc.hi.s1);
+    
+    // Mapping convention
+    RSTable2D map = {
+        .x_ = c * c,                  // Total number of cells
+        .y_ = 2,                      // Table convention: 0 - uniform grid, 1 - stretched_grid, >= 2 - test modes
+        .xs = 1.0f / (float)c,        // Scale of X
+        .ys = 1.0f / (float)c,        // Scale of Y
+        .xo = -1.0f,                  // Offset of X
+        .yo = -1.0f,                  // Offset of Y
+        .xm = (float)(c - 1),         // Maximum cell index of X (for CL kernel)
+        .ym = (float)(c - 1)          // Maximum cell index of Y (for CL kernel)
+    };
+
+    RS_set_debris_flux_field_by_pdf(H, &map, pdf);
+    
+    free(pdf);
+}
+
+
+void RS_set_debris_flux_field_to_checker_board_stretched(RSHandle *H, const LESTable *leslie) {
+    int k;
+    int ix, iy;
+    float dx, dy;
+
+    const int c = 9;
+    
+    // Scale the r constant so that the rate increases quicker since we use a small c
+    const float q = 1.46f;
+    
+    // Some constants for the derived CDF
+    const int pdf_count = c * c;
+    const float m = 0.5f * (float)(c - 1);
+
+    // A local storage for the pdf function
+    float *pdf = (float *)malloc(pdf_count * sizeof(float));
+    
+    // Psuedo-PDF, not yet normalized
+    memset(pdf, 0, pdf_count * sizeof(float));
+    for (k = 0; k < pdf_count; k += 2) {
+        if (leslie->is_stretched) {
+            iy = k / c;
+            ix = k % c;
+            // d(k) = a * r ^ k
+            dx = leslie->ax * powf(q * leslie->rx, fabs((float)ix - m));
+            dy = leslie->ay * powf(q * leslie->ry, fabs((float)iy - m));
+            pdf[k] = dx * dy;
+        } else {
+            pdf[k] = 1.0;
+        }
+    }
+    
+    // Actual PDF after normalization
+    float sum = 0.0;
+    for (k = 0; k < pdf_count; k++) {
+        sum += pdf[k];
+    }
+    for (k = 0; k < pdf_count; k++) {
+        pdf[k] /= sum;
+    }
+
+    RSTable2D map = {
+        .x_ = pdf_count,
+        .y_ = 1
+    };
+
+    if (leslie->is_stretched) {
+        //
+        // z(k) = a * (1.0 - r ^ k) / (1.0 - r)
+        //      = (1.0 - pow(r, k)) * a / (1.0 - r)
+        //      = pow(r, k) * -a / (1.0 - r) + a / (1.0 - r)
+        //      = fma(pow(r, k), -a / (1.0 - r), a / (1.0 - r))
+        //
+        // Note that k is assumed to have value of 0.0 at the middle of the domain
+        //
+        // Need to pass (1) = a / (1.0 - r), (2) r, and (3) count of x
+        //
+        map.xs = leslie->ax / (1.0f - leslie->rx);                 // --> dff_desc.s0
+        map.ys = leslie->ay / (1.0f - leslie->ry);                 // --> dff_desc.s1
+        map.xo = q * leslie->rx;                                   // --> dff_desc.s4
+        map.yo = q * leslie->ry;                                   // --> dff_desc.s5
+    } else {
+        map.xs = leslie->rx;
+        map.ys = leslie->ry;
+        map.xo = (float)(leslie->nx - 1) * 0.5f * leslie->rx;
+        map.yo = (float)(leslie->ny - 1) * 0.5f * leslie->ry;
+    }
+    map.xm = (float)(c - 1);                                       // --> dff_desc.s8
+    map.ym = (float)(c - 1);                                       // --> dff_desc.s9
+    
+    // Temporary use a local pdf instead of leslie-flux
+    RS_set_debris_flux_field_by_pdf(H, &map, pdf);
+    
+    // Be a good citizen, clean up
+    free(pdf);
+}
+
+
+void RS_set_debris_flux_field_from_LES(RSHandle *H, const LESTable *leslie) {
+    int k;
+    int ix, iy;
+    float dx, dy;
+    
+    // Some constants for the derived CDF
+    const int pdf_count = leslie->nx * leslie->ny;
+    const float mx = 0.5f * (float)(leslie->nx - 1);
+    const float my = 0.5f * (float)(leslie->ny - 1);
+
+    // Derive a PDF from velocity
+    float v;
+    float sum = 0.0;
+    int i = pdf_count;
+    for (k = 0; k < pdf_count; k++) {
+        v = leslie->data.u[i] * leslie->data.u[i] + leslie->data.v[i] * leslie->data.v[i] + leslie->data.w[i] * leslie->data.w[i];
+        if (leslie->is_stretched) {
+            iy = k / leslie->nx;
+            ix = k % leslie->nx;
+            // d(k) = a * r ^ k
+            dx = leslie->ax * powf(leslie->rx, fabs((float)ix - mx));
+            dy = leslie->ay * powf(leslie->ry, fabs((float)iy - my));
+            v *= dx * dy;
+        }
+        leslie->flux[k] = v;
+        sum += v;
+        i++;
+    }
+    for (k = 0; k < pdf_count; k++) {
+        leslie->flux[k] /= sum;
+    }
+    
+    RSTable2D map = {
+        .x_ = pdf_count,
+        .y_ = leslie->is_stretched
+    };
+    
+    if (leslie->is_stretched) {
+        //
+        // z(k) = a * (1.0 - r ^ k) / (1.0 - r)
+        //      = (1.0 - pow(r, k)) * a / (1.0 - r)
+        //      = pow(r, k) * -a / (1.0 - r) + a / (1.0 - r)
+        //      = fma(pow(r, k), -a / (1.0 - r), a / (1.0 - r))
+        //
+        // Note that k is assumed to have value of 0.0 at the middle of the domain
+        //
+        // Need to pass (1) = a / (1.0 - r), (2) r, and (3) count of x
+        //
+        map.xs = leslie->ax / (1.0f - leslie->rx);                 // --> dff_desc.s0
+        map.ys = leslie->ay / (1.0f - leslie->ry);                 // --> dff_desc.s1
+        map.xo = leslie->rx;                                       // --> dff_desc.s4
+        map.yo = leslie->ry;                                       // --> dff_desc.s5
+    } else {
+        map.xs = leslie->rx;
+        map.ys = leslie->ry;
+        map.xo = (float)(leslie->nx - 1) * 0.5f * leslie->rx;
+        map.yo = (float)(leslie->ny - 1) * 0.5f * leslie->ry;
+    }
+    map.xm = (float)(leslie->nx - 1);                              // --> dff_desc.s8
+    map.ym = (float)(leslie->ny - 1);                              // --> dff_desc.s9
+    
+    RS_set_debris_flux_field_by_pdf(H, &map, leslie->flux);
+}
 
 void RS_set_scan_pattern(RSHandle *H, const POSPattern *scan_pattern) {
     H->P = (POSHandle)scan_pattern;
@@ -3208,7 +3611,7 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
     
     int i;
     
-    const int t = H->adm_count;
+    const int t = H->workers[0].adm_count;
     
     const size_t n = cd.x_ * cd.y_;
     if (cm.x_ * cm.y_ != n) {
@@ -3217,7 +3620,7 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
     }
     
     if (H->verb > 2) {
-        rsprint("ADM[%d] @ X:[ -M_PI - +M_PI ]  Y:[ 0 - M_PI ]", H->adm_count);
+        rsprint("ADM[%d] @ X:[ -M_PI - +M_PI ]  Y:[ 0 - M_PI ]", H->workers[0].adm_count);
     }
     
     // This is the part that we need to create two texture maps for each RSTable2D table
@@ -3307,7 +3710,7 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
         
 #endif
         
-        // Copy over to CL worker
+        // Copy over to the CL worker
         H->workers[i].adm_desc[t].s[RSTable3DDescriptionScaleX] = cd.xs;
         H->workers[i].adm_desc[t].s[RSTable3DDescriptionScaleY] = cd.ys;
         H->workers[i].adm_desc[t].s[RSTable3DDescriptionScaleZ] = 0.0f;
@@ -3321,9 +3724,9 @@ void RS_set_adm_data(RSHandle *H, const RSTable2D cd, const RSTable2D cm) {
         H->workers[i].adm_desc[t].s[RSTable3DDescriptionRecipInLnY] = H->adm_desc[t].phys.inv_inln_y;
         H->workers[i].adm_desc[t].s[RSTable3DDescriptionRecipInLnZ] = H->adm_desc[t].phys.inv_inln_z;
         H->workers[i].adm_desc[t].s[RSTable3DDescriptionTachikawa] = H->adm_desc[t].phys.Ta;
+        H->workers[i].adm_count++;
         H->workers[i].mem_usage += ((cl_uint)(cd.xm + 1.0f) * (cd.ym + 1.0f)) * 2 * sizeof(cl_float4);
     }
-    H->adm_count++;
 }
 
 
@@ -3360,11 +3763,11 @@ void RS_set_adm_data_to_ADM_table(RSHandle *H, const ADMTable *adam) {
     }
     
     // Cache a copy of the parameters but not the data, the data could be deallocated immediately after this function call.
-    H->adm_desc[H->adm_count] = *adam;
-    memset(&H->adm_desc[H->adm_count].data, 0, sizeof(ADMData));
+    H->adm_desc[H->workers[0].adm_count] = *adam;
+    memset(&H->adm_desc[H->workers[0].adm_count].data, 0, sizeof(ADMData));
     
     if (H->verb > 1) {
-        const int t = H->adm_count;
+        const int t = H->workers[0].adm_count;
         rsprint("GPU ADM[%d]   Ta = %.4f  inv_inln = [%.4f %.4f %.4f]   mass = %.4f kg",
                 t, H->adm_desc[t].phys.Ta, H->adm_desc[t].phys.inv_inln_x, H->adm_desc[t].phys.inv_inln_y, H->adm_desc[t].phys.inv_inln_z, H->adm_desc[t].phys.mass);
     }
@@ -3404,13 +3807,13 @@ void RS_set_adm_data_to_unity(RSHandle *H) {
 
 void RS_clear_adm_data(RSHandle *H) {
     for (int i = 0; i < H->num_workers; i++) {
-        for (int t = 0; t < H->adm_count; t++) {
+        for (int t = 0; t < H->workers[i].adm_count; t++) {
             cl_uint nx = (cl_uint)H->workers[i].adm_desc[t].s[RSTable3DDescriptionMaximumX] + 1;
             cl_uint ny = (cl_uint)H->workers[i].adm_desc[t].s[RSTable3DDescriptionMaximumY] + 1;
             H->workers[i].mem_usage -= nx * ny * 2 * sizeof(cl_float4);
         }
+        H->workers[0].adm_count = 0;
     }
-    H->adm_count = 0;
 }
 
 
@@ -3418,7 +3821,7 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
     
     int i;
     
-    const int t = H->rcs_count;
+    const int t = H->workers[0].rcs_count;
     
     const size_t n = real.x_ * real.y_;
     if (imag.x_ * imag.y_ != n) {
@@ -3427,7 +3830,7 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
     }
     
     if (H->verb > 1) {
-        rsprint("GPU RCS[%d] @ X:[ -M_PI - +M_PI ]  Y:[ 0 - M_PI ]", H->rcs_count);
+        rsprint("GPU RCS[%d] @ X:[ -M_PI - +M_PI ]  Y:[ 0 - M_PI ]", H->workers[0].rcs_count);
     }
     
     // This is the part that we need to create two texture maps for each RSTable2D table
@@ -3521,7 +3924,7 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
         
 #endif
         
-        // Copy over to CL worker
+        // Copy over to the CL worker
         H->workers[i].rcs_desc[t].s[RSTable3DDescriptionScaleX] = real.xs;
         H->workers[i].rcs_desc[t].s[RSTable3DDescriptionScaleY] = real.ys;
         H->workers[i].rcs_desc[t].s[RSTable3DDescriptionScaleZ] = 0.0f;
@@ -3531,9 +3934,9 @@ void RS_set_rcs_data(RSHandle *H, const RSTable2D real, const RSTable2D imag) {
         H->workers[i].rcs_desc[t].s[RSTable3DDescriptionMaximumX] = real.xm;
         H->workers[i].rcs_desc[t].s[RSTable3DDescriptionMaximumY] = real.ym;
         H->workers[i].rcs_desc[t].s[RSTable3DDescriptionMaximumZ] = 0.0f;
+        H->workers[i].rcs_count++;
         H->workers[i].mem_usage += ((cl_uint)(real.xm + 1.0f) * (real.ym + 1.0f)) * 2 * sizeof(cl_float4);
     }
-    H->rcs_count++;
 }
 
 
@@ -3569,11 +3972,11 @@ void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *rosie) {
     }
     
     // Cache a copy of the parameters but not the data, the data could be deallocated immediately after this function call.
-    H->rcs_desc[H->rcs_count] = *rosie;
-    memset(&H->rcs_desc[H->rcs_count].data, 0, sizeof(RCSData));
+    H->rcs_desc[H->workers[0].rcs_count] = *rosie;
+    memset(&H->rcs_desc[H->workers[0].rcs_count].data, 0, sizeof(RCSData));
     
     if (H->verb > 1) {
-        const int t = H->rcs_count;
+        const int t = H->workers[0].rcs_count;
         rsprint("GPU RCS[%d]   lambda = %.2f m",
                 t, H->rcs_desc[t].lambda);
     }
@@ -3582,7 +3985,6 @@ void RS_set_rcs_data_to_RCS_table(RSHandle *H, const RCSTable *rosie) {
     
     RS_table2d_free(real);
     RS_table2d_free(imag);
-    
 }
 
 
@@ -3624,13 +4026,13 @@ void RS_set_rcs_data_to_unity(RSHandle *H) {
 
 void RS_clear_rcs_data(RSHandle *H) {
     for (int i = 0; i < H->num_workers; i++) {
-        for (int t = 0; t < H->rcs_count; t++) {
+        for (int t = 0; t < H->workers[i].rcs_count; t++) {
             cl_uint nx = (cl_uint)H->workers[i].rcs_desc[t].s[RSTable3DDescriptionMaximumX] + 1;
             cl_uint ny = (cl_uint)H->workers[i].rcs_desc[t].s[RSTable3DDescriptionMaximumY] + 1;
             H->workers[i].mem_usage -= nx * ny * 2 * sizeof(cl_float4);
         }
+        H->workers[i].rcs_count = 0;
     }
-    H->rcs_count = 0;
 }
 
 // This method can be confusing. Don't use
@@ -3666,7 +4068,7 @@ void RS_add_debris(RSHandle *H, OBJConfig type, const size_t count) {
         k++;
     }
 
-    if (k == RS_MAX_DEBRIS_TYPES || H->adm_count == RS_MAX_ADM_TABLES || H->rcs_count == RS_MAX_RCS_TABLES) {
+    if (k == RS_MAX_DEBRIS_TYPES || H->workers[0].adm_count == RS_MAX_ADM_TABLES || H->workers[0].rcs_count == RS_MAX_RCS_TABLES) {
         rsprint("Unable to add more debris type.");
         return;
     }
@@ -3676,8 +4078,8 @@ void RS_add_debris(RSHandle *H, OBJConfig type, const size_t count) {
     RS_set_rcs_data_to_RCS_table(H, obj_table->rcs_table);
     H->counts[k] = count;
     H->num_types++;
-    if (k != H->adm_count || k != H->rcs_count) {
-        rsprint("WARNING: Inconsistent k = %d vs H->adm_count = %d vs H->rcs_count = %d.", k, H->adm_count, H->rcs_count);
+    if (k != H->workers[0].adm_count || k != H->workers[0].rcs_count) {
+        rsprint("WARNING: Inconsistent k = %d vs H->workers[0].adm_count = %d vs H->workers[0].rcs_count = %d.", k, H->workers[0].adm_count, H->workers[0].rcs_count);
         return;
     }
     if (H->verb) {
@@ -3779,8 +4181,8 @@ void RS_update_colors(RSHandle *H) {
                         dispatch_semaphore_signal(C->sem);
                     });
                 }
-                r = r == H->rcs_count - 1 ? 0 : r + 1;
-                a = a == H->adm_count - 1 ? 0 : a + 1;
+                r = r == H->workers[k].rcs_count - 1 ? 0 : r + 1;
+                a = a == H->workers[k].adm_count - 1 ? 0 : a + 1;
             }
             for (k = 1; k < H->num_types; k++) {
                 if (C->counts[k]) {
@@ -3842,8 +4244,8 @@ void RS_update_colors(RSHandle *H) {
                     clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
                     clEnqueueNDRangeKernel(C->que, C->kern_db_rcs, 1, &C->origins[k], &C->counts[k], NULL, 0, NULL, &events[i][k]);
                 }
-                r = r == H->rcs_count - 1 ? 0 : r + 1;
-                a = a == H->adm_count - 1 ? 0 : a + 1;
+                r = r == H->workers[i].rcs_count - 1 ? 0 : r + 1;
+                a = a == H->workers[i].adm_count - 1 ? 0 : a + 1;
             }
         }
         for (i = 0; i < H->num_workers; i++) {
@@ -4035,15 +4437,15 @@ void RS_populate(RSHandle *H) {
     }
     
     // These should be identical
-    if (H->adm_count != H->rcs_count) {
+    if (H->workers[0].adm_count != H->workers[0].rcs_count) {
         rsprint("ADM & RCS are not consistent. Unexpected behavior may happen.\n");
     }
     
     // Use some default tables if there aren't any set
-    if (H->adm_count == 0) {
+    if (H->workers[0].adm_count == 0) {
         RS_set_adm_data_to_unity(H);
     }
-    if (H->rcs_count == 0) {
+    if (H->workers[0].rcs_count == 0) {
         RS_set_rcs_data_to_unity(H);
     }
     
@@ -4232,7 +4634,9 @@ void RS_populate(RSHandle *H) {
                     
                     H->scat_pos[i].x = (float)rand() / RAND_MAX * domain.size.x + domain.origin.x;
                     H->scat_pos[i].y = (float)rand() / RAND_MAX * domain.size.y + domain.origin.y;
-                    H->scat_pos[i].z = (float)rand() / RAND_MAX * domain.size.z + domain.origin.z;
+                    //H->scat_pos[i].z = (float)rand() / RAND_MAX * domain.size.z + domain.origin.z;
+                    H->scat_pos[i].z = (float)rand() / RAND_MAX * 10.0f + domain.origin.z;
+                    //H->scat_pos[i].z = 20.0f;
                     H->scat_pos[i].w = 0.0f;                       // Use this to store drop radius in m
                     
                     H->scat_aux[i].s0 = 0.0f;                      // range
@@ -4460,6 +4864,7 @@ void RS_populate(RSHandle *H) {
     // - RCS of debris table
     // - ADM of debris table
     // - 3D wind table
+    // - Flux table
     RS_compute_rcs_ellipsoids(H);
     
     //
@@ -4494,7 +4899,7 @@ void RS_populate(RSHandle *H) {
     RS_upload(H);
     
     if (H->verb) {
-        rsprint("ADM / RCS count = %d / %d", H->adm_count, H->rcs_count);
+        rsprint("ADM / RCS count = %d / %d", H->workers[0].adm_count, H->workers[0].rcs_count);
         rsprint("CL domain synchronized.");
     }
     
@@ -4869,8 +5274,8 @@ void RS_advance_time(RSHandle *H) {
                     dispatch_semaphore_signal(H->workers[i].sem);
                 });
             }
-            r = r == H->rcs_count - 1 ? 0 : r + 1;
-            a = a == H->adm_count - 1 ? 0 : a + 1;
+            r = r == H->workers[i].rcs_count - 1 ? 0 : r + 1;
+            a = a == H->workers[i].adm_count - 1 ? 0 : a + 1;
         }
     }
     
@@ -4916,9 +5321,11 @@ void RS_advance_time(RSHandle *H) {
         }
         
         // Debris particles
-        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,    sizeof(cl_mem),     &C->les_uvwt[C->les_id]);
-        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundCn2Pressure, sizeof(cl_mem),     &C->les_cpxx[C->les_id]);
-        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription, sizeof(cl_float16), &H->sim_desc);
+        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundVelocity,         sizeof(cl_mem),     &C->les_uvwt[C->les_id]);
+        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentBackgroundCn2Pressure,      sizeof(cl_mem),     &C->les_cpxx[C->les_id]);
+        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentDebrisFluxField,            sizeof(cl_mem),     &C->dff_icdf[C->les_id]);
+        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentDebrisFluxFieldDescription, sizeof(cl_float16), &C->dff_desc);
+        clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentSimulationDescription,      sizeof(cl_float16), &H->sim_desc);
         for (k = 1; k < H->num_types; k++) {
             if (C->counts[k]) {
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentAirDragModelDrag,              sizeof(cl_mem),     &C->adm_cd[a]);
@@ -4929,8 +5336,8 @@ void RS_advance_time(RSHandle *H) {
                 clSetKernelArg(C->kern_db_atts, RSDebrisAttributeKernelArgumentRadarCrossSectionDescription,  sizeof(cl_float16), &C->rcs_desc[r]);
                 clEnqueueNDRangeKernel(C->que, C->kern_db_atts, 1, &C->origins[k], &C->counts[k], NULL, 0, NULL, &events[i][k]);
             }
-            r = r == H->rcs_count - 1 ? 0 : r + 1;
-            a = a == H->adm_count - 1 ? 0 : a + 1;
+            r = r == H->workers[i].rcs_count - 1 ? 0 : r + 1;
+            a = a == H->workers[i].adm_count - 1 ? 0 : a + 1;
         }
     }
     
@@ -4993,8 +5400,8 @@ void RS_make_pulse(RSHandle *H) {
                         dispatch_semaphore_signal(C->sem);
                     });
                 }
-                r = r == H->rcs_count - 1 ? 0 : r + 1;
-                a = a == H->adm_count - 1 ? 0 : a + 1;
+                r = r == H->workers[i].rcs_count - 1 ? 0 : r + 1;
+                a = a == H->workers[i].adm_count - 1 ? 0 : a + 1;
             }
         }
         for (i = 0; i < H->num_workers; i++) {
@@ -5103,8 +5510,8 @@ void RS_make_pulse(RSHandle *H) {
                     clSetKernelArg(C->kern_db_rcs, RSDebrisRCSKernelArgumentSimulationDescription,         sizeof(cl_float16), &H->sim_desc);
                     clEnqueueNDRangeKernel(C->que, C->kern_db_rcs, 1, &C->origins[k], &C->counts[k], NULL, 0, NULL, &events[i][k]);
                 }
-                r = r == H->rcs_count - 1 ? 0 : r + 1;
-                a = a == H->adm_count - 1 ? 0 : a + 1;
+                r = r == H->workers[i].rcs_count - 1 ? 0 : r + 1;
+                a = a == H->workers[i].adm_count - 1 ? 0 : a + 1;
             }
         }
         for (i = 0; i < H->num_workers; i++) {

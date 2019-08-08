@@ -9,6 +9,8 @@
 #ifndef rs_const_h
 #define rs_const_h
 
+#define RS_VERSION_STRING           "2.0.0"
+
 #define RS_C                 29979458.0
 #define RS_DOMAIN_PAD               2.0
 #define RS_MAX_STR               4096

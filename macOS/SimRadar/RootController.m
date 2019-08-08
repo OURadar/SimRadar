@@ -223,7 +223,8 @@
             GLuint pop = [sim populationForDebris:k];
             [dc.glView.renderer setPopulationTo:pop forDebris:k forDevice:0];
         }
-        [dc setDrawMode:9];
+        // Initial draw mode
+        [dc setDrawMode:0];
         // Get some information from the simulator
         [dc.glView.renderer setOverlayText:sim.simulationDescription withTitle:@"Basic Parameters"];
     } else {

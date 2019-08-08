@@ -9,6 +9,7 @@
 #ifndef _rs_h
 #define _rs_h
 
+#include "rs_enum.h"
 #include "rs_types.h"
 #include "log.h"
 #include "les.h"
@@ -130,109 +131,15 @@ typedef struct _rs_box {
     RSPolar size;
 } RSBox;
 
-
-// A typical convention for table description, which is a set of parameters along with a table
-enum RSTable1DDescrip {
-    RSTable1DDescriptionScale        = 0,
-    RSTable1DDescriptionOrigin       = 1,
-    RSTable1DDescriptionMaximum      = 2,
-    RSTable1DDescriptionUserConstant = 3
-};
-
-// These enums should match the ones in CL kernel, check rs.cl
-enum RSTable3DDescription {
-    RSTable3DDescriptionScaleX      =  0,
-    RSTable3DDescriptionScaleY      =  1,
-    RSTable3DDescriptionScaleZ      =  2,
-    RSTable3DDescriptionRefreshTime =  3,
-    RSTable3DDescriptionOriginX     =  4,
-    RSTable3DDescriptionOriginY     =  5,
-    RSTable3DDescriptionOriginZ     =  6,
-    RSTable3DDescriptionFormat      =  7,
-    RSTable3DDescriptionMaximumX    =  8,
-    RSTable3DDescriptionMaximumY    =  9,
-    RSTable3DDescriptionMaximumZ    = 10,
-    RSTable3DDescription11          = 11,
-    RSTable3DDescriptionRecipInLnX  = 12,
-    RSTable3DDescriptionRecipInLnY  = 13,
-    RSTable3DDescriptionRecipInLnZ  = 14,
-    RSTable3DDescriptionTachikawa   = 15
-};
-
-// These enums should match the ones in CL kernel, check rs.cl
-enum RSTable3DStaggeredDescription {
-    RSTable3DStaggeredDescriptionBaseChangeX     =  0,
-    RSTable3DStaggeredDescriptionBaseChangeY     =  1,
-    RSTable3DStaggeredDescriptionBaseChangeZ     =  2,
-    RSTable3DStaggeredDescriptionRefreshTime     =  3,
-    RSTable3DStaggeredDescriptionPositionScaleX  =  4,
-    RSTable3DStaggeredDescriptionPositionScaleY  =  5,
-    RSTable3DStaggeredDescriptionPositionScaleZ  =  6,
-    RSTable3DStaggeredDescriptionFormat          =  7,
-    RSTable3DStaggeredDescriptionOffsetX         =  8,
-    RSTable3DStaggeredDescriptionOffsetY         =  9,
-    RSTable3DStaggeredDescriptionOffsetZ         = 10,
-    RSTable3DStaggeredDescription11              = 11,
-    RSTable3DStaggeredDescriptionRecipInLnX      = 12,
-    RSTable3DStaggeredDescriptionRecipInLnY      = 13,
-    RSTable3DStaggeredDescriptionRecipInLnZ      = 14,
-    RSTable3DStaggeredDescriptionTachikawa       = 15
-};
-
-// These enums should match the ones in CL kernel, check rs.cl
-enum RSSimulationDescription {
-    RSSimulationDescriptionBeamUnitX              =  0,
-    RSSimulationDescriptionBeamUnitY              =  1,
-    RSSimulationDescriptionBeamUnitZ              =  2,
-    RSSimulationDescriptionTotalParticles         =  3,
-    RSSimulationDescriptionWaveNumber             =  4,
-    RSSimulationDescriptionConcept                =  5,
-    RSSimulationDescriptionDropConcentrationScale =  6,
-    RSSimulationDescriptionSimTic                 =  7,
-    RSSimulationDescriptionBoundOriginX           =  8,  // hi.s0
-    RSSimulationDescriptionBoundOriginY           =  9,  // hi.s1
-    RSSimulationDescriptionBoundOriginZ           =  10, // hi.s2
-    RSSimulationDescriptionPRT                    =  11,
-    RSSimulationDescriptionBoundSizeX             =  12, // hi.s4
-    RSSimulationDescriptionBoundSizeY             =  13, // hi.s5
-    RSSimulationDescriptionBoundSizeZ             =  14, // hi.s6
-    RSSimulationDescription15                     =  15  //
-};
-
-enum RSDropSizeDistribution {
-    RSDropSizeDistributionUndefined      = 0,
-    RSDropSizeDistributionMarshallPalmer = 1,
-    RSDropSizeDistributionGamma          = 2,
-    RSDropSizeDistributionArbitrary      = 3
-};
-
-enum RSTableSpacing {
-    RSTableSpacingUniform          = 0,
-    RSTableSpacingStretchedX       = 1,
-    RSTableSpacingStretchedY       = 1 << 1,
-    RSTableSpacingStretchedZ       = 1 << 2,
-    RSTableSpacingStretchedXYZ     = RSTableSpacingStretchedX | RSTableSpacingStretchedY | RSTableSpacingStretchedZ
-};
-
-enum {
-    RS_GPU_VENDOR_UNKNOWN,
-    RS_GPU_VENDOR_NVIDIA,
-    RS_GPU_VENDOR_INTEL,
-    RS_GPU_VENDOR_AMD
-};
-
-// These enums should match the ones in CL kernel, check rs.cl
+typedef uint32_t RSTable1DDescription;
+typedef uint32_t RSTable3DDescription;
+typedef uint32_t RSTable3DStaggeredDescription;
+typedef uint32_t RSTableDescription;
+typedef uint32_t RSTableStaggeredDescription;
+typedef uint32_t RSSimulationDescription;
+typedef uint32_t RSDropSizeDistribution;
+typedef uint32_t RSTableSpacing;
 typedef uint32_t RSSimulationConcept;
-enum RSSimulationConcept {
-    RSSimulationConceptNull                        = 0,
-    RSSimulationConceptDraggedBackground           = 1,
-    RSSimulationConceptTransparentBackground       = 1 << 1,
-    RSSimulationConceptBoundedParticleVelocity     = 1 << 2,
-    RSSimulationConceptUniformDSDScaledRCS         = 1 << 3,
-    RSSimulationConceptFixedScattererPosition      = 1 << 4,
-    RSSimulationConceptVerticallyPointingRadar     = 1 << 5,
-    RSSimulationConceptDebrisFluxFromVelocity      = 1 << 6
-};
 
 #pragma pack(push, 1)
 
@@ -257,26 +164,26 @@ typedef struct _rs_worker {
     RSMakePulseParams      make_pulse_params;
     
     // GPU side memory
-    cl_mem                 scat_pos;   // x, y, z coordinates
-    cl_mem                 scat_vel;   // u, v, w wind components
-    cl_mem                 scat_ori;   // alpha, beta, gamma angles
-    cl_mem                 scat_tum;   // alpha, beta, gamma tumbling
-    cl_mem                 scat_aux;   // type, dot products, range, etc.
-    cl_mem                 scat_rcs;   // radar cross section: Ih Qh Iv Qv
-    cl_mem                 scat_sig;   // signal: Ih Qh Iv Qv
-    cl_mem                 scat_rnd;   // random seed
-    cl_mem                 scat_clr;   // color
+    cl_mem                 scat_pos;                     // x, y, z coordinates
+    cl_mem                 scat_vel;                     // u, v, w wind components
+    cl_mem                 scat_ori;                     // alpha, beta, gamma angles
+    cl_mem                 scat_tum;                     // alpha, beta, gamma tumbling
+    cl_mem                 scat_aux;                     // type, dot products, range, etc.
+    cl_mem                 scat_rcs;                     // radar cross section: Ih Qh Iv Qv
+    cl_mem                 scat_sig;                     // signal: Ih Qh Iv Qv
+    cl_mem                 scat_rnd;                     // random seed
+    cl_mem                 scat_clr;                     // color
     cl_mem                 work;
     cl_mem                 pulse;
     
-    cl_mem                 range_weight;
-    cl_float4              range_weight_desc;
+    cl_mem                 range_weight;                 // 1D range weight
+    cl_float4              range_weight_desc;            // 1D range weight description
     
-    cl_mem                 angular_weight;
-    cl_float4              angular_weight_desc;
+    cl_mem                 angular_weight;               // 1D angular weight
+    cl_float4              angular_weight_desc;          // 1D angular weight description
     
-    cl_mem                 angular_weight_2d;
-    cl_float16             angular_weight_2d_desc;
+    cl_mem                 angular_weight_2d;            // 2D angular weight
+    cl_float16             angular_weight_2d_desc;       // 2D angular weight description
     
     cl_mem                 rcs_ellipsoid;                // RCS of background scatterers
     cl_float4              rcs_ellipsoid_desc;           // RCS-desc of background scatterers
@@ -284,16 +191,21 @@ typedef struct _rs_worker {
     cl_mem                 adm_cd[RS_MAX_ADM_TABLES];    // ADM-cd of debris
     cl_mem                 adm_cm[RS_MAX_ADM_TABLES];    // ADM-cm of debris
     cl_float16             adm_desc[RS_MAX_ADM_TABLES];  // ADM-desc of debris
+    cl_uint                adm_count;
     
     cl_mem                 rcs_real[RS_MAX_RCS_TABLES];  // RCS of debris
     cl_mem                 rcs_imag[RS_MAX_RCS_TABLES];  // RCS of debris
     cl_float16             rcs_desc[RS_MAX_RCS_TABLES];  // RCS-desc of debris
+    cl_uint                rcs_count;
     
     cl_mem                 les_uvwt[2];                  // Double buffering of u, v, w, t
     cl_mem                 les_cpxx[2];                  // Double buffering of cn2, p, _, _
     cl_float16             les_desc;                     // LES-desc of the table
     unsigned int           les_id;                       // Index of the active buffer
     
+    cl_mem                 dff_icdf[2];                  // Debris flux field
+    cl_float16             dff_desc;                // Debris flux field description
+
     size_t                 mem_size;
     size_t                 mem_usage;
     
@@ -312,14 +224,16 @@ typedef struct _rs_worker {
     cl_ndrange             ndrange_pulse_pass_1;
     cl_ndrange             ndrange_pulse_pass_2;
     
+    IOSurfaceRef           surf_range_weight;
+    IOSurfaceRef           surf_angular_weight;
+    IOSurfaceRef           surf_angular_weight_2d;
+    IOSurfaceRef           surf_rcs_ellipsoids;
     IOSurfaceRef           surf_adm_cd[RS_MAX_ADM_TABLES];
     IOSurfaceRef           surf_adm_cm[RS_MAX_ADM_TABLES];
     IOSurfaceRef           surf_rcs_real[RS_MAX_RCS_TABLES];
     IOSurfaceRef           surf_rcs_imag[RS_MAX_RCS_TABLES];
     IOSurfaceRef           surf_uvwt[2];
     IOSurfaceRef           surf_cpxx[2];
-    IOSurfaceRef           surf_rcs_ellipsoids;
-    IOSurfaceRef           surf_angular_weight_2d;
     
 #else
     
@@ -374,9 +288,7 @@ struct _rs_handle {
     uint32_t               vel_idx;
     uint32_t               vel_count;
     uint32_t               adm_idx;
-    uint32_t               adm_count;
     uint32_t               rcs_idx;
-    uint32_t               rcs_count;
     
     // Table parameter shadow copy: only the constants, not the pointers
     LESTable               vel_desc;
@@ -452,6 +364,7 @@ struct _rs_handle {
 #pragma pack(pop)
 
 cl_uint RS_gpu_count(void);
+char *RS_version_string(void);
 
 #pragma mark -
 #pragma mark Initialization and Deallocation
@@ -509,6 +422,13 @@ void RS_set_vel_data_to_uniform(RSHandle *H, cl_float4 velocity);
 void RS_set_vel_data_to_cube27(RSHandle *H);
 void RS_set_vel_data_to_cube125(RSHandle *H);
 void RS_clear_vel_data(RSHandle *H);
+
+void RS_set_debris_flux_field_by_pdf(RSHandle *H, RSTable2D *map, const float *pdf);
+void RS_set_debris_flux_field_by_icdf(RSHandle *H, RSTable2D *map, const float *icdf);
+void RS_set_debris_flux_field_to_center_cell_of_3x3(RSHandle *H);
+void RS_set_debris_flux_field_to_checker_board(RSHandle *H, const int);
+void RS_set_debris_flux_field_to_checker_board_stretched(RSHandle *H, const LESTable *table);
+void RS_set_debris_flux_field_from_LES(RSHandle *H, const LESTable *leslie);
 
 void RS_set_scan_pattern(RSHandle *H, const POSPattern *scan_pattern);
 void RS_set_scan_pattern_with_string(RSHandle *H, const char *scan_string);

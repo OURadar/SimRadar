@@ -1,89 +1,6 @@
-#define MIN_HEIGHT        10.0f
+#define MIN_HEIGHT       2.0f
 #define FLOAT4_ZERO      (float4)(0.0f, 0.0f, 0.0f, 0.0f)
 #define QUAT_IDENTITY    (float4)(0.0f, 0.0f, 0.0f, 1.0f)
-
-enum RSTable1DDescrip {
-    RSTable1DDescriptionScale        = 0,
-    RSTable1DDescriptionOrigin       = 1,
-    RSTable1DDescriptionMaximum      = 2,
-    RSTable1DDescriptionUserConstant = 3
-};
-
-enum RSTableSpacing {
-    RSTableSpacingUniform          = 0,
-    RSTableSpacingStretchedX       = 0x01,   // 1
-    RSTableSpacingStretchedY       = 0x02,   // 1 << 1
-    RSTableSpacingStretchedZ       = 0x04,   // 1 << 2
-    RSTableSpacingStretchedXYZ     = 0x07
-};
-
-enum RSSimulationConcept {
-    RSSimulationConceptNull                        = 0,
-    RSSimulationConceptDraggedBackground           = 1,
-    RSSimulationConceptTransparentBackground       = 1 << 1,
-    RSSimulationConceptBoundedParticleVelocity     = 1 << 2,
-    RSSimulationConceptUniformDSDScaledRCS         = 1 << 3,
-    RSSimulationConceptFixedScattererPosition      = 1 << 4,
-    RSSimulationConceptVerticallyPointingRadar     = 1 << 5,
-    RSSimulationConceptDebrisFluxFromVelocity      = 1 << 6
-};
-
-enum RSSimulationDescription {
-    RSSimulationDescriptionBeamUnitX          =  0,
-    RSSimulationDescriptionBeamUnitY          =  1,
-    RSSimulationDescriptionBeamUnitZ          =  2,
-    RSSimulationDescriptionTotalParticles     =  3,
-    RSSimulationDescriptionWaveNumber         =  4,
-    RSSimulationDescriptionConcept            =  5,
-    RSSimulationDescription6                  =  6,
-    RSSimulationDescriptionSimTic             =  7,
-    RSSimulationDescriptionBoundOriginX       =  8,  // hi.s0
-    RSSimulationDescriptionBoundOriginY       =  9,  // hi.s1
-    RSSimulationDescriptionBoundOriginZ       =  10, // hi.s2
-    RSSimulationDescriptionTimeIncrement      =  11,
-    RSSimulationDescriptionBoundSizeX         =  12, // hi.s4
-    RSSimulationDescriptionBoundSizeY         =  13, // hi.s5
-    RSSimulationDescriptionBoundSizeZ         =  14, // hi.s6
-    RSSimulationDescription15                 =  15  //
-};
-
-enum RSTable3DDescription {
-    RSTable3DDescriptionScaleX      =  0,
-    RSTable3DDescriptionScaleY      =  1,
-    RSTable3DDescriptionScaleZ      =  2,
-    RSTable3DDescriptionRefreshTime =  3,
-    RSTable3DDescriptionOriginX     =  4,
-    RSTable3DDescriptionOriginY     =  5,
-    RSTable3DDescriptionOriginZ     =  6,
-    RSTable3DDescription7           =  7,
-    RSTable3DDescriptionMaximumX    =  8,
-    RSTable3DDescriptionMaximumY    =  9,
-    RSTable3DDescriptionMaximumZ    = 10,
-    RSTable3DDescription11          = 11,
-    RSTable3DDescriptionRecipInLnX  = 12,
-    RSTable3DDescriptionRecipInLnY  = 13,
-    RSTable3DDescriptionRecipInLnZ  = 14,
-    RSTable3DDescriptionTachikawa   = 15
-};
-
-enum RSTable3DStaggeredDescription {
-    RSTable3DStaggeredDescriptionBaseChangeX     =  0,
-    RSTable3DStaggeredDescriptionBaseChangeY     =  1,
-    RSTable3DStaggeredDescriptionBaseChangeZ     =  2,
-    RSTable3DStaggeredDescriptionRefreshTime     =  3,
-    RSTable3DStaggeredDescriptionPositionScaleX  =  4,
-    RSTable3DStaggeredDescriptionPositionScaleY  =  5,
-    RSTable3DStaggeredDescriptionPositionScaleZ  =  6,
-    RSTable3DStaggeredDescription7               =  7,
-    RSTable3DStaggeredDescriptionOffsetX         =  8,
-    RSTable3DStaggeredDescriptionOffsetY         =  9,
-    RSTable3DStaggeredDescriptionOffsetZ         = 10,
-    RSTable3DStaggeredDescription11              = 11,
-    RSTable3DStaggeredDescriptionRecipInLnX      = 12,
-    RSTable3DStaggeredDescriptionRecipInLnY      = 13,
-    RSTable3DStaggeredDescriptionRecipInLnZ      = 14,
-    RSTable3DStaggeredDescriptionTachikawa       = 15
-};
 
 #pragma mark -
 #pragma mark Function Declarations
@@ -104,7 +21,6 @@ float4 cl_complex_divide(const float4 a, const float4 b);
 float4 wind_table_index(const float4 pos, const float16 wind_desc, const float16 sim_desc);
 float4 compute_bg_vel(const float4 pos, __read_only image3d_t wind_uvwt, const float16 wind_desc, const float16 sim_desc);
 float4 compute_dudt_dwdt(float4 *dwdt, const float4 vel, const float4 vel_bg, const float4 ori, __read_only image2d_t adm_cd, __read_only image2d_t adm_cm, const float16 adm_desc);
-//float4 compute_ellipsoid_rcs(const float4 pos, __read_only image1d_t rcs, const float4 rcs_desc);
 float4 compute_ellipsoid_rcs(const float4 pos, __constant float4 *table, const float4 table_desc);
 float4 compute_debris_rcs(const float4 pos, const float4 ori, __read_only image2d_t rcs_real, __read_only image2d_t rcs_imag, const float16 rcs_desc, const float16 sim_desc);
 
@@ -365,6 +281,9 @@ float4 compute_ellipsoid_rcs(const float4 pos, __constant float4 *table, const f
 
 float4 compute_debris_rcs(const float4 pos, const float4 ori, __read_only image2d_t rcs_real, __read_only image2d_t rcs_imag, const float16 rcs_desc, const float16 sim_desc) {
 
+    const float s5 = sim_desc.s5;
+    const uint concept = *(uint *)&s5;
+
     const float el = atan2(pos.s2, length(pos.s01));
     const float az = atan2(pos.s0, pos.s1);
     
@@ -420,20 +339,23 @@ float4 compute_debris_rcs(const float4 pos, const float4 ori, __read_only image2
     // For gamma projection
     float cg, sg = sincos(gamma, &cg);
     
-    // Check smat.m for derivation
+    // Assign signal amplitude as Hi, Hq, Vi, Vq. Check smat.m for derivation of hh, hv, vh, vv, etc.
     float hh_real = cg * (cg * real.s0 - real.s2 * sg) - sg * (cg * real.s2 - real.s1 * sg);
     float hh_imag = cg * (cg * imag.s0 - imag.s2 * sg) - sg * (cg * imag.s2 - imag.s1 * sg);
-//    float hv_real = cg * (cg * real.s2 + real.s0 * sg) - sg * (cg * real.s1 + real.s2 * sg);
-//    float hv_imag = cg * (cg * imag.s2 + imag.s0 * sg) - sg * (cg * imag.s1 + imag.s2 * sg);
-//    float vh_real = cg * (cg * real.s2 - real.s1 * sg) + sg * (cg * real.s0 - real.s2 * sg);
-//    float vh_imag = cg * (cg * imag.s2 - imag.s1 * sg) + sg * (cg * imag.s0 - imag.s2 * sg);
     float vv_real = cg * (cg * real.s1 + real.s2 * sg) + sg * (cg * real.s2 + real.s0 * sg);
     float vv_imag = cg * (cg * imag.s1 + imag.s2 * sg) + sg * (cg * imag.s2 + imag.s0 * sg);
+    float4 ss = (float4)(hh_real, hh_imag, vv_real, vv_imag);
     
-    // Assign signal amplitude as Hi, Hq, Vi, Vq
-    return (float4)(hh_real, hh_imag, vv_real, vv_imag);
-    //return (float4)(hh_real + vh_real, hh_imag + vh_imag, vv_real + hv_real, vv_imag + hv_imag);
-    //return (float4)(hh_real + hv_real, hh_imag + hv_imag, vv_real + vh_real, vv_imag + vh_imag);
+    // Again, check smat.m for derivation
+    if (concept & RSSimulationConceptNonZeroCrossPol) {
+        float hv_real = cg * (cg * real.s2 + real.s0 * sg) - sg * (cg * real.s1 + real.s2 * sg);
+        float hv_imag = cg * (cg * imag.s2 + imag.s0 * sg) - sg * (cg * imag.s1 + imag.s2 * sg);
+        float vh_real = cg * (cg * real.s2 - real.s1 * sg) + sg * (cg * real.s0 - real.s2 * sg);
+        float vh_imag = cg * (cg * imag.s2 - imag.s1 * sg) + sg * (cg * imag.s0 - imag.s2 * sg);
+        ss += (float4)(vh_real, vh_imag, hv_real, hv_imag);
+    }
+
+    return ss;
 }
 
 #pragma mark -
@@ -466,6 +388,9 @@ __kernel void dummy(__read_only __global float4 *p,
 {
     unsigned int i = get_global_id(0);
     
+    const float s5 = sim_desc.s5;
+    const uint concept = *(uint *)&s5;
+
     float4 pos = p[i];
     float4 ori = o[i];
     
@@ -576,23 +501,21 @@ __kernel void dummy(__read_only __global float4 *p,
     // For gamma projection
     float cg, sg = sincos(gamma, &cg);
     
-    // Check smat.m for derivation
+    // Assign signal amplitude as Hi, Hq, Vi, Vq. Check smat.m for derivation of hh, hv, vh, vv, etc.
     float hh_real = cg * (cg * real.s0 - real.s2 * sg) - sg * (cg * real.s2 - real.s1 * sg);
     float hh_imag = cg * (cg * imag.s0 - imag.s2 * sg) - sg * (cg * imag.s2 - imag.s1 * sg);
-//    float hv_real = cg * (cg * real.s2 + real.s0 * sg) - sg * (cg * real.s1 + real.s2 * sg);
-//    float hv_imag = cg * (cg * imag.s2 + imag.s0 * sg) - sg * (cg * imag.s1 + imag.s2 * sg);
-//    float vh_real = cg * (cg * real.s2 - real.s1 * sg) + sg * (cg * real.s0 - real.s2 * sg);
-//    float vh_imag = cg * (cg * imag.s2 - imag.s1 * sg) + sg * (cg * imag.s0 - imag.s2 * sg);
     float vv_real = cg * (cg * real.s1 + real.s2 * sg) + sg * (cg * real.s2 + real.s0 * sg);
     float vv_imag = cg * (cg * imag.s1 + imag.s2 * sg) + sg * (cg * imag.s2 + imag.s0 * sg);
-    
-    
-    
-    
-    // Assign signal amplitude as Hi, Hq, Vi, Vq
-//    float4 ss = (float4)(hh_real + vh_real, hh_imag + vh_imag, vv_real + hv_real, vv_imag + hv_imag);
     float4 ss = (float4)(hh_real, hh_imag, vv_real, vv_imag);
 
+    // Again, check smat.m for derivation
+    if (concept & RSSimulationConceptNonZeroCrossPol) {
+        float hv_real = cg * (cg * real.s2 + real.s0 * sg) - sg * (cg * real.s1 + real.s2 * sg);
+        float hv_imag = cg * (cg * imag.s2 + imag.s0 * sg) - sg * (cg * imag.s1 + imag.s2 * sg);
+        float vh_real = cg * (cg * real.s2 - real.s1 * sg) + sg * (cg * real.s0 - real.s2 * sg);
+        float vh_imag = cg * (cg * imag.s2 - imag.s1 * sg) + sg * (cg * imag.s0 - imag.s2 * sg);
+        ss += (float4)(vh_real, vh_imag, hv_real, hv_imag);
+    }
 //    if (i == 0) {
 //        float hh = dot(ss.s01, ss.s01);
 //        float vv = dot(ss.s23, ss.s23);
@@ -688,22 +611,6 @@ __kernel void fp_atts(__global float4 *p,
     float4 vel = v[i];
     float4 rcs = x[i];
 
-//    pos.xyz += vel.xyz * dt;
-//
-//    int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
-//
-//    if (is_outside) {
-//        uint4 seed = y[i];
-//        float4 r = rand(&seed);
-//        pos.xyz = r.xyz * sim_desc.hi.s456 + sim_desc.hi.s012;
-//        //pos.xyz = (float3)(fma(r.xy, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT);   // Feed from the bottom
-//        vel = FLOAT4_ZERO;
-//
-//        p[i] = pos;
-//        v[i] = vel;
-//        y[i] = seed;
-//    }
-
     // Derive the lookup index
     float4 coord = wind_table_index(pos, les_desc, sim_desc);
     float4 uvwt = read_imagef(les_uvwt, sampler, coord);
@@ -756,7 +663,7 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
 {
     const unsigned int i = get_global_id(0);
     const float4 dt = (float4)(sim_desc.sb, sim_desc.sb, sim_desc.sb, 0.0f);
-    
+
     float4 pos = p[i];  // position
     float4 vel = v[i];  // velocity
     float4 rcs = x[i];
@@ -765,8 +672,7 @@ __kernel void el_atts(__global float4 *p,                  // position (x, y, z)
     const float s5 = sim_desc.s5;
     const uint concept = *(uint *)&s5;
 
-    //pos += vel * dt;                 // this line should be more efficient but my desktop does not like this.
-    //pos.xyz += vel.xyz * dt.xyz;     // use this as the substitue for the line above.
+    // Position update
     pos = fma(vel, dt, pos);
     
     // Calculate Reynold's number with air density and viscousity
@@ -842,7 +748,7 @@ __kernel void db_atts(__global float4 *p,
                       __global float4 *x,
                       __global uint4 *y,
                       __read_only image3d_t wind_uvwt,
-                      __read_only image2d_t wind_cpxx,
+                      __read_only image3d_t wind_cpxx,
                       const float16 wind_desc,
                       __read_only image2d_t adm_cd,
                       __read_only image2d_t adm_cm,
@@ -850,6 +756,8 @@ __kernel void db_atts(__global float4 *p,
                       __read_only image2d_t rcs_real,
                       __read_only image2d_t rcs_imag,
                       const float16 rcs_desc,
+                      __constant float *dff_icdf,
+                      const float16 dff_desc,
                       const float16 sim_desc)
 {
     const unsigned int i = get_global_id(0);
@@ -874,19 +782,67 @@ __kernel void db_atts(__global float4 *p,
     pos += vel * dt;
     
     int is_outside = any(islessequal(pos.xyz, sim_desc.hi.s012) | isgreaterequal(pos.xyz, sim_desc.hi.s012 + sim_desc.hi.s456));
-    
+
+//    if (i == 0) {
+//        printf("i = %d  is_outside = %d\n", i, is_outside);
+//    }
+
     if (is_outside) {
         uint4 seed = y[i];
         float4 r = rand(&seed);
 
-        // Random within the box but z component is at MIN_HEIGHT
-        //pos.xyz = (float3)(fma(r.xy, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT);
-        
-        // Random within the box but z component is at the lowest + MIN_HEIGHT
-        pos.xyz = (float3)(fma(r.xy, sim_desc.hi.s45, sim_desc.hi.s01), sim_desc.hi.s2 + MIN_HEIGHT);
-        
-        // Random within the box
-        //pos.xyz = fma(r.xyz, sim_desc.hi.s456, sim_desc.hi.s012);
+        // Reposition the xy components if the concept of debris flux as a velocity is activated
+        if (concept & RSSimulationConceptDebrisFluxFromVelocity) {
+            // Local scale and offset, flux pdf always starts with offset 0 so we don't calculate it like other tables
+            float2 table_s = (float2)(dff_desc.sf, dff_desc.sf);
+            float2 table_o = (float2)(0.0f, 1.0f);
+            float2 i_cdf_2 = (float2)(r.x, r.x);
+            
+            // e.g., If fidx_raw = 4.023, fidx_int = 4.0 ==> iidx = 4; fidx_dec = 0.023
+            float2 fidx_int;
+            float2 fidx_raw = clamp(fma(i_cdf_2, table_s, table_o), 0.0f, dff_desc.sf); // fidx_raw in [0, count)
+            float2 fidx_dec = fract(fidx_raw, &fidx_int);
+            uint2 iidx = convert_uint2(fidx_int);
+            float cidx = mix(dff_icdf[iidx.s0], dff_icdf[iidx.s1], fidx_dec.s0);
+            
+//            if (i < 1000000) {
+//                printf("i = %d   table_s = %.2v2f  o = %.2v2f  --> %.2v2f   dff_desc.sc = %.1f\n", i, table_s, table_o, fma(i_cdf_2, table_s, table_o), dff_desc.sc);
+//                printf("             r.xy = %.2v2f --> fidx_raw = %.2v2f  iidx = %v2d -> cidx = %.2f   pos.xy = %.2v2f\n", r.xy, fidx_raw, iidx, cidx, pos.xy);
+//            }
+
+            //pos.xy = fma(pos.xy, sim_desc.hi.s45 * dff_desc.s01, sim_desc.hi.s01);
+            
+            // Map cell index to x-index and y-index
+            pos.y = floor(cidx / dff_desc.sd);
+            pos.x = fma(pos.y, -dff_desc.sd, cidx);  // Same as pos.x = cidx - pos.y * dff_desc.sd;
+            pos.y += r.y;
+
+            // We use H->workers[i].dff_desc.s[RSTableDescriptionReserved6] = (float)map->y_ to indicate stretched grid
+            if (dff_desc.se == 1.0f) {
+                float2 pos_rel = pos.xy - fma(0.5f, dff_desc.s89, 0.5f);
+                pos.xy = fma(pow(dff_desc.s45, fabs(pos_rel)), -dff_desc.s01, dff_desc.s01);
+                pos.xy = copysign(pos.xy, pos_rel) + fma(0.5f, sim_desc.hi.s45, sim_desc.hi.s01);
+            } else if (dff_desc.se == 2.0f) {
+                // Checkerboard thing, stretch the board to the simulation domain
+                pos.xy = fma(pos.xy, sim_desc.hi.s45 * dff_desc.s01, sim_desc.hi.s01);
+            } else {
+//                if (i < 1000000) {
+//                    printf("i = %d   dff_desc = %.2v8f\n", i, dff_desc.lo);
+//                }
+                pos.xy = fma(pos.xy, dff_desc.s01, sim_desc.hi.s01);
+            }
+            
+            pos.z = MIN_HEIGHT;
+        } else {
+            // Random within the box but z component is at the lowest + MIN_HEIGHT
+            pos.xyz = (float3)(fma(r.xy, sim_desc.hi.s45, sim_desc.hi.s01), sim_desc.hi.s2 + MIN_HEIGHT);
+
+            // Random within the box but z component is at MIN_HEIGHT
+            //pos.xyz = (float3)(fma(r.xy, sim_desc.hi.s45, sim_desc.hi.s01), MIN_HEIGHT);
+            
+            // Random within the box
+            //pos.xyz = fma(r.xyz, sim_desc.hi.s456, sim_desc.hi.s012);
+        }
 
         r = rand(&seed);
         float4 c = (float4)(sqrt(-2.0f * log(r.s012)), r.s3);

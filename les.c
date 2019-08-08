@@ -319,7 +319,6 @@ void *LES_background_read(LESHandle i) {
     LESMem *h = (LESMem *)i;
     int frame;
     LESTable *table;
-    float va, va_sum;
 
     bool p_for_cn2 = !strcmp(h->config, LESConfigFlat);
     //rsprint("==> p_for_cn2 = %d\n", p_for_cn2);
@@ -387,7 +386,6 @@ void *LES_background_read(LESHandle i) {
         fclose(fid);
 
         // Scale back & remap
-        va_sum = 0.0f;
         for (int k = 0; k < table->nn; k++) {
             table->data.u[k] *= h->v0;
             table->data.v[k] *= h->v0;
@@ -405,12 +403,6 @@ void *LES_background_read(LESHandle i) {
                 table->cpxx[k][0] = 0.0f;
                 table->cpxx[k][1] = table->data.p[k];
             }
-            va = table->data.u[k] * table->data.u[k] + table->data.v[k] * table->data.v[k] + table->data.w[k] * table->data.w[k];
-            va_sum += va;
-            table->cpxx[k][2] = va_sum;
-        }
-        for (int k = 0; k < table->nn; k++) {
-            table->cpxx[k][2] /= va_sum;
         }
 
         // Record down the frame id
@@ -606,7 +598,9 @@ LESTable *LES_table_create(const LESGrid *grid) {
 	table->data.t = (float *)malloc(table->nn * sizeof(float));
     table->uvwt = (LESFloat4 *)malloc(table->nn * sizeof(LESFloat4));
     table->cpxx = (LESFloat4 *)malloc(table->nn * sizeof(LESFloat4));
-	if (table->data.u == NULL || table->data.v == NULL || table->data.w == NULL || table->data.p == NULL || table->data.t == NULL || table->uvwt == NULL) {
+    table->flux = (float *)malloc(table->nn * sizeof(float));
+	if (table->data.u == NULL || table->data.v == NULL || table->data.w == NULL || table->data.p == NULL || table->data.t == NULL ||
+        table->uvwt == NULL || table->cpxx == NULL || table->flux == NULL) {
         fprintf(stderr, "Error allocating memory for [LESTable] values.\n");
         free(table);
         return NULL;
@@ -618,6 +612,7 @@ LESTable *LES_table_create(const LESGrid *grid) {
     memset(table->data.t, 0, table->nn * sizeof(float));
     memset(table->uvwt, 0, table->nn * sizeof(LESFloat4));
     memset(table->cpxx, 0, table->nn * sizeof(LESFloat4));
+    memset(table->flux, 0, table->nn * sizeof(float));
 	return table;
 }
 
@@ -633,6 +628,7 @@ void LES_table_free(LESTable *table) {
 	free(table->data.t);
     free(table->uvwt);
     free(table->cpxx);
+    free(table->flux);
 	free(table);
 }
 

@@ -351,8 +351,7 @@ static void write_iq_file(const UserParams user, const IQFileHeader *file_header
     fclose(fid);
 }
 
-int cstring_cmp(const void *a, const void *b)
-{
+int cstring_cmp(const void *a, const void *b) {
     const char **ia = (const char **)a;
     const char **ib = (const char **)b;
     return strcmp(*ia, *ib);
@@ -1162,11 +1161,6 @@ int main(int argc, char *argv[]) {
 
     if (user.output_state_file) {
         memset(charbuff, 0, sizeof(charbuff));
-        // snprintf(charbuff, sizeof(charbuff), "%s/sim-%s-%s%04.1f.simstate",
-        //          user.output_dir,
-        //          nowlong(),
-        //          POS_is_ppi(&user.scan_pattern) ? "E": (POS_is_rhi(&user.scan_pattern) ? "A" : "S"),
-        //          POS_is_ppi(&user.scan_pattern) ? user.scan_pattern.sweeps[0].elStart: (POS_is_rhi(&user.scan_pattern) ? user.scan_pattern.sweeps[0].azStart : (float)user.num_pulses));
         snprintf(charbuff, sizeof(charbuff), "%s.simstate", filename_prefix(&user));
         printf("%s : Output file : " UNDERLINE ("%s") "\n", now(), charbuff);
         fid = fopen(charbuff, "wb");
