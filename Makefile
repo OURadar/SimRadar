@@ -20,7 +20,7 @@ MYLIB = lib/librs.a
 
 PROGS = simradar
 PROGS += simple_ppi simple_dbs lsiq 
-PROGS += cldemo test_clreduce test_make_pulse test_les test_adm test_rcs
+PROGS += cldemo test_clreduce test_make_pulse
 PROGS += rsutil
 
 MPI_PROGS =

@@ -37,7 +37,6 @@
 		B56077F717E356B10068C6BE /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
 		B567F8B21A6D522F00F40660 /* adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B11A6D522F00F40660 /* adm.c */; };
 		B567F8B31A6D522F00F40660 /* adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B11A6D522F00F40660 /* adm.c */; };
-		B567F8C41A6D671F00F40660 /* test_adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B41A6D635100F40660 /* test_adm.c */; };
 		B567F8C51A6D672700F40660 /* adm.c in Sources */ = {isa = PBXBuildFile; fileRef = B567F8B11A6D522F00F40660 /* adm.c */; };
 		B56A7CE81C0F5AF700133ACF /* Shaders in Resources */ = {isa = PBXBuildFile; fileRef = B56A7CE71C0F5AF700133ACF /* Shaders */; };
 		B56A7CE91C0F5AF700133ACF /* Shaders in Resources */ = {isa = PBXBuildFile; fileRef = B56A7CE71C0F5AF700133ACF /* Shaders */; };
@@ -108,7 +107,6 @@
 		B5BAD55C18B67E8B007AC15D /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B50A281117D7B24500E4DE66 /* OpenCL.framework */; };
 		B5BAD56318B67E9B007AC15D /* test_rs.c in Sources */ = {isa = PBXBuildFile; fileRef = B5BAD55618B67E80007AC15D /* test_rs.c */; };
 		B5C0D40F183178A000564D83 /* rs.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281917D7C4D500E4DE66 /* rs.c */; };
-		B5C2D1FA1ADC157300DD91B1 /* test_rcs.c in Sources */ = {isa = PBXBuildFile; fileRef = B5C2D1EE1ADC154900DD91B1 /* test_rcs.c */; };
 		B5C2D1FB1ADC157600DD91B1 /* rcs.c in Sources */ = {isa = PBXBuildFile; fileRef = B55716851AB7519D001984E0 /* rcs.c */; };
 		B5CFAD201ADFF4D800360E9A /* rcs.c in Sources */ = {isa = PBXBuildFile; fileRef = B55716851AB7519D001984E0 /* rcs.c */; };
 		B5D1421918AA731E0041566E /* rs.c in Sources */ = {isa = PBXBuildFile; fileRef = B50A281917D7C4D500E4DE66 /* rs.c */; };
@@ -140,7 +138,6 @@
 		B5EF31C51820619E002DDEFC /* RootController.m in Sources */ = {isa = PBXBuildFile; fileRef = B5EF31C41820619E002DDEFC /* RootController.m */; };
 		B5F3C31D18F2F86700092A72 /* les.c in Sources */ = {isa = PBXBuildFile; fileRef = B5F3C31C18F2F86700092A72 /* les.c */; };
 		B5F3C31E18F2F86700092A72 /* les.c in Sources */ = {isa = PBXBuildFile; fileRef = B5F3C31C18F2F86700092A72 /* les.c */; };
-		B5F3C32D18F2FDE700092A72 /* test_les.c in Sources */ = {isa = PBXBuildFile; fileRef = B5F3C31F18F2FD3800092A72 /* test_les.c */; };
 		B5F3C32E18F2FDF700092A72 /* les.c in Sources */ = {isa = PBXBuildFile; fileRef = B5F3C31C18F2F86700092A72 /* les.c */; };
 		B5F7A0CE21495F87001E8515 /* pos.c in Sources */ = {isa = PBXBuildFile; fileRef = B5F7A0CD21495F87001E8515 /* pos.c */; };
 		B5F7A0CF21495F87001E8515 /* pos.c in Sources */ = {isa = PBXBuildFile; fileRef = B5F7A0CD21495F87001E8515 /* pos.c */; };
@@ -342,7 +339,6 @@
 		B56077EF17E356910068C6BE /* cldemo */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = cldemo; sourceTree = BUILT_PRODUCTS_DIR; };
 		B567F8B01A6D520C00F40660 /* adm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = adm.h; sourceTree = "<group>"; };
 		B567F8B11A6D522F00F40660 /* adm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = adm.c; sourceTree = "<group>"; };
-		B567F8B41A6D635100F40660 /* test_adm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = test_adm.c; sourceTree = "<group>"; };
 		B567F8BB1A6D66E700F40660 /* test_adm */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_adm; sourceTree = BUILT_PRODUCTS_DIR; };
 		B56A7CE71C0F5AF700133ACF /* Shaders */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Shaders; path = macOS/SimRadar/Shaders; sourceTree = "<group>"; };
 		B56C7FA41ADC22E300552B1E /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Sparkle.framework; path = macOS/SimRadar/Sparkle.framework; sourceTree = "<group>"; };
@@ -370,7 +366,6 @@
 		B5B9F5871C6BF2B7007FC9A4 /* rs_const.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rs_const.h; sourceTree = "<group>"; };
 		B5BAD55618B67E80007AC15D /* test_rs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = test_rs.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		B5BAD56218B67E8B007AC15D /* test_make_pulse copy */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "test_make_pulse copy"; sourceTree = BUILT_PRODUCTS_DIR; };
-		B5C2D1EE1ADC154900DD91B1 /* test_rcs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_rcs.c; sourceTree = "<group>"; };
 		B5C2D1F31ADC155700DD91B1 /* test_rcs */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_rcs; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5CFAD1F1ADF4A1800360E9A /* rs_priv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rs_priv.h; sourceTree = "<group>"; };
 		B5D1420A18AA72E90041566E /* test_make_pulse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_make_pulse.c; sourceTree = "<group>"; };
@@ -403,7 +398,6 @@
 		B5EF31C41820619E002DDEFC /* RootController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RootController.m; sourceTree = "<group>"; };
 		B5F3C31B18F2F85C00092A72 /* les.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = les.h; sourceTree = "<group>"; };
 		B5F3C31C18F2F86700092A72 /* les.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = les.c; sourceTree = "<group>"; };
-		B5F3C31F18F2FD3800092A72 /* test_les.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_les.c; sourceTree = "<group>"; };
 		B5F3C32418F2FD8F00092A72 /* test_les */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test_les; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5F7A0CC21495F87001E8515 /* pos.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pos.h; sourceTree = "<group>"; };
 		B5F7A0CD21495F87001E8515 /* pos.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pos.c; sourceTree = "<group>"; };
@@ -553,8 +547,6 @@
 				B50A281517D7BF0900E4DE66 /* Sources */,
 				B519295217D9153C00AB3687 /* Programs */,
 				B5EF317718204B5C002DDEFC /* SimRadar */,
-				B5A2598A2215BDD100909464 /* simple_dbs */,
-				B5EBEA3A22FC6B7100648B0B /* rsutil */,
 				B50A281317D7B27500E4DE66 /* Frameworks */,
 				B54DEB3618A5453800EBEC07 /* Minion-Icons */,
 				B56D60441C9DF47E0016AFEC /* Fonts */,
@@ -638,9 +630,6 @@
 				B50A280617D7B1EC00E4DE66 /* cldemo.c */,
 				B5760EA718A938F2008DAF83 /* test_clreduce.c */,
 				B5D1420A18AA72E90041566E /* test_make_pulse.c */,
-				B5F3C31F18F2FD3800092A72 /* test_les.c */,
-				B567F8B41A6D635100F40660 /* test_adm.c */,
-				B5C2D1EE1ADC154900DD91B1 /* test_rcs.c */,
 				B57DE9FE22F2217000D6C5DA /* rsutil.c */,
 				B524E9221DE89AE0004C3D7B /* test_wx_db_compare.sh */,
 			);
@@ -654,20 +643,6 @@
 				B570B0AF18BC5B5500391717 /* rs.cl */,
 			);
 			name = Kernels;
-			sourceTree = "<group>";
-		};
-		B5A2598A2215BDD100909464 /* simple_dbs */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = simple_dbs;
-			sourceTree = "<group>";
-		};
-		B5EBEA3A22FC6B7100648B0B /* rsutil */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = rsutil;
 			sourceTree = "<group>";
 		};
 		B5EF317318204B5C002DDEFC /* Other Frameworks */ = {
@@ -1161,7 +1136,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				B567F8C51A6D672700F40660 /* adm.c in Sources */,
-				B567F8C41A6D671F00F40660 /* test_adm.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1227,7 +1201,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B5C2D1FA1ADC157300DD91B1 /* test_rcs.c in Sources */,
 				B5C2D1FB1ADC157600DD91B1 /* rcs.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1287,7 +1260,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				B5F3C32E18F2FDF700092A72 /* les.c in Sources */,
-				B5F3C32D18F2FDE700092A72 /* test_les.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

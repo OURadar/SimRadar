@@ -365,6 +365,7 @@ struct _rs_handle {
 
 cl_uint RS_gpu_count(void);
 char *RS_version_string(void);
+int RS_indent_copy(char *dst, char *src, const int width);
 
 #pragma mark -
 #pragma mark Initialization and Deallocation
