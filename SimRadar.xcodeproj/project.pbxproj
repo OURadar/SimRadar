@@ -123,6 +123,8 @@
 		B5EBEA4622FC6BBB00648B0B /* rcs.c in Sources */ = {isa = PBXBuildFile; fileRef = B55716851AB7519D001984E0 /* rcs.c */; };
 		B5EBEA4722FC6BBE00648B0B /* obj.c in Sources */ = {isa = PBXBuildFile; fileRef = B57D8E951DDE131100B69805 /* obj.c */; };
 		B5EBEA4822FC6D9300648B0B /* pos.c in Sources */ = {isa = PBXBuildFile; fileRef = B5F7A0CD21495F87001E8515 /* pos.c */; };
+		B5EBEA4922FC797C00648B0B /* rs.cl in CopyFiles */ = {isa = PBXBuildFile; fileRef = B570B0AF18BC5B5500391717 /* rs.cl */; };
+		B5EBEA4A22FC798400648B0B /* rs_enum.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = B57DE9FC22F1D3C500D6C5DA /* rs_enum.h */; };
 		B5EF317218204B5C002DDEFC /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5EF317118204B5C002DDEFC /* Cocoa.framework */; };
 		B5EF317C18204B5C002DDEFC /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = B5EF317A18204B5C002DDEFC /* InfoPlist.strings */; };
 		B5EF317E18204B5C002DDEFC /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = B5EF317D18204B5C002DDEFC /* main.m */; };
@@ -286,12 +288,14 @@
 		};
 		B5EBEA3722FC6B7000648B0B /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = /usr/share/man/man1/;
-			dstSubfolderSpec = 0;
+			buildActionMask = 12;
+			dstPath = "";
+			dstSubfolderSpec = 16;
 			files = (
+				B5EBEA4922FC797C00648B0B /* rs.cl in CopyFiles */,
+				B5EBEA4A22FC798400648B0B /* rs_enum.h in CopyFiles */,
 			);
-			runOnlyForDeploymentPostprocessing = 1;
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 		B5F3C32218F2FD8F00092A72 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
