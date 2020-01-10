@@ -997,7 +997,7 @@ int RS_indent_copy(char *dst, char *src, const int width) {
 
 RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const uint8_t gpu_mask, cl_context_properties sharegroup, const char verb) {
     
-    int i;
+    int i, k;
     
     RSHandle *H;
     
@@ -1044,7 +1044,7 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const uint
     }
     
     H->num_workers = MIN(__builtin_popcount(gpu_mask), H->num_devs);
-    printf("gpu_mask = 0x%x    count = %d    num_workers = %d\n", gpu_mask, __builtin_popcount(gpu_mask), H->num_workers);
+    rsprint("gpu_mask = 0x%x    count = %d    num_workers = %d\n", gpu_mask, __builtin_popcount(gpu_mask), H->num_workers);
     switch (H->vendors[0]) {
         case RS_GPU_VENDOR_AMD:
         case RS_GPU_VENDOR_INTEL:
@@ -1114,11 +1114,16 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const uint
         return NULL;
     }
     
-    for (i = 0; i < H->num_workers; i++) {
-        if (verb > 2) {
-            rsprint("Initializing worker %d using %p\n", i, H->devs[i]);
+    i = 0;
+    for (k = 0; k < H->num_devs; k++) {
+        if ((gpu_mask & (1 << k)) == 0) {
+            continue;
+        }
+        if (verb > 1) {
+            rsprint("Initializing worker %d using device %d @ %p\n", i, k, H->devs[k]);
         }
         RS_worker_init(&H->workers[i], H->devs[i], count, (const char **)src_ptr, sharegroup, verb);
+        i++;
     }
     
 #endif
@@ -1154,13 +1159,13 @@ RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const uint
 }
 
 
-RSHandle *RS_init_for_cpu_verbose(const char verb) {
-    return RS_init_with_path(".", RS_METHOD_CPU, 0, 0, verb);
+RSHandle *RS_init_for_selected_gpu(const uint8_t gpu_mask, const char verb) {
+    return RS_init_with_path(".", RS_METHOD_GPU, gpu_mask, 0, verb);
 }
 
 
-RSHandle *RS_init_for_selected_gpu(const uint8_t gpu_mask) {
-    return RS_init_with_path(".", RS_METHOD_GPU, gpu_mask, 0, 0);
+RSHandle *RS_init_for_cpu_verbose(const char verb) {
+    return RS_init_with_path(".", RS_METHOD_CPU, 0, 0, verb);
 }
 
 
@@ -3622,7 +3627,7 @@ void RS_set_debris_flux_field_from_LES(RSHandle *H, const LESTable *leslie) {
 
 void RS_set_scan_pattern(RSHandle *H, const POSPattern *scan_pattern) {
     H->P = (POSHandle)scan_pattern;
-    if (H->verb > 1) {
+    if (H->verb > 2) {
         POS_summary(H->P);
     }
 }
