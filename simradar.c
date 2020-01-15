@@ -36,6 +36,8 @@ enum ACCEL_TYPE {
 typedef struct user_params {
     RSSimulationConcept concept;
     POSPattern scan_pattern;
+    
+    int gpu_mask;
 
     float beamwidth;
     float density;
@@ -132,6 +134,9 @@ void show_help() {
            "  -f " UNDERLINE("count") "\n"
            "         Sets the number of frames to " UNDERLINE("count") ". This option is identical -p.\n"
            "         See -p for more information.\n"
+           "\n"
+           "  --gpu-mask" UNDERLINE("mask") "\n"
+           "         Selects the GPU devices to use through " UNDERLINE("mask") ".\n"
            "\n"
            "  -l (--lambda) " UNDERLINE("wavelength") "\n"
            "         Sets the radar wavelength to " UNDERLINE("wavelength") " meters. Framework default value\n"
@@ -249,6 +254,9 @@ void show_help() {
            "     at 0 deg, elevation 0 deg for 10 pulses. Total of 60 pulses with a PRT of 0.01 s.\n"
            "     The scan repeats itself every 30 seconds.\n"
            "           " PROGNAME " -o -b 0.5 -l 0.328 -c FV -L flat --sweep D:0,75,10/90,75,10/0,90,10 -t 0.01 -p 60\n"
+           "\n"
+           "     The following simulates a default run using GPU 1 only (binary 0010 = 2).\n"
+           "           " PROGNAME " --gpu-mask 2\n"
            );
     printf("%s\n(%.1f)\n", buff, (float)k / size * 100.0f);
     free(buff);
@@ -443,6 +451,7 @@ int main(int argc, char *argv[]) {
     memset(&user, 0, sizeof(UserParams));
 
     user.concept           = RSSimulationConceptNull;
+    user.gpu_mask          = PARAMS_INT_NOT_SUPPLIED;
 
     user.beamwidth         = PARAMS_FLOAT_NOT_SUPPLIED;
     user.density           = PARAMS_FLOAT_NOT_SUPPLIED;
@@ -492,6 +501,7 @@ int main(int argc, char *argv[]) {
         {"resume-seed"   , no_argument      , 0, 'H'},
         {"lambda"        , required_argument, 0, 'l'},
         {"les"           , required_argument, 0, 'L'},
+        {"gpu-mask"      , required_argument, 0, 'm'},
         {"no-run"        , no_argument      , 0, 'N'},
         {"output"        , no_argument      , 0, 'o'},
         {"out-dir"       , required_argument, 0, 'O'},
@@ -616,6 +626,9 @@ int main(int argc, char *argv[]) {
             case 'L':
                 strncpy(user.les_config, optarg, sizeof(user.les_config));
                 break;
+            case 'm':
+                user.gpu_mask = atoi(optarg);
+                break;
             case 'N':
                 user.preview_only = true;
                 break;
@@ -704,6 +717,7 @@ int main(int argc, char *argv[]) {
         printf("----------------------------------------------\n");
         printf("  User parameters:\n");
         printf("----------------------------------------------\n");
+        show_user_param("GPU mask", &user.gpu_mask, "", ValueTypeInt, 0);
         show_user_param("Beamwidth", &user.beamwidth, "deg", ValueTypeFloat, 0);
         show_user_param("TX lambda", &user.lambda, "m", ValueTypeFloat, 0);
         show_user_param("TX pulse width", &user.pw, "s", ValueTypeFloat, 0);
@@ -743,7 +757,11 @@ int main(int argc, char *argv[]) {
     }
 
     // Some conditions that no simulation should be commenced
-
+    if (user.gpu_mask == 0) {
+        fprintf(stderr, "Error. GPU mask cannot be 0.\n");
+        exit(EXIT_FAILURE);
+    }
+    
     if (user.num_pulses < 0) {
         fprintf(stderr, "Error. No number pulses was specified.\n");
         exit(EXIT_FAILURE);
@@ -795,7 +813,11 @@ int main(int argc, char *argv[]) {
     if (accel_type == ACCEL_TYPE_CPU) {
         S = RS_init_for_cpu_verbose(verb);
     } else {
-        S = RS_init_verbose(verb);
+        if (user.gpu_mask == PARAMS_INT_NOT_SUPPLIED) {
+            S = RS_init_verbose(verb);
+        } else {
+            S = RS_init_for_selected_gpu((uint8_t)(user.gpu_mask & 0xFF), verb);
+        }
     }
     if (S == NULL) {
         return EXIT_FAILURE;
@@ -1000,7 +1022,7 @@ int main(int argc, char *argv[]) {
                 }
                 eta = (float)(user.num_pulses - k) / fps;
                 k0 = k;
-                if (verb < 2) {
+                if (verb < 3) {
                     printf("k %5d   (e%6.2f, a%5.2f)   %.2f fps   \033[1;33m%.2f%%\033[0m   eta %.0f second%s   \r", k, user.scan_pattern.el, user.scan_pattern.az, fps, prog, eta, eta > 1.5f ? "s" : "");
                  }
             }

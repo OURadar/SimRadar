@@ -371,8 +371,8 @@ int RS_indent_copy(char *dst, char *src, const int width);
 #pragma mark Initialization and Deallocation
 
 // Initializes a simulation space
-RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, cl_context_properties sharegroup, const char verb);
-//RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const char verb);
+RSHandle *RS_init_with_path(const char *bundle_path, RSMethod method, const uint8_t gpu_mask, cl_context_properties sharegroup, const char verb);
+RSHandle *RS_init_for_selected_gpu(const uint8_t gpu_mask, const char verb);
 RSHandle *RS_init_for_cpu_verbose(const char verb);
 RSHandle *RS_init_verbose(const char verb);
 RSHandle *RS_init(void);
