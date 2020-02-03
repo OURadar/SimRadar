@@ -50,7 +50,7 @@
 
         cl_context_properties property = (cl_context_properties)shareGroup;
 
-        S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, property, 1);
+        S = RS_init_with_path([resourcePath UTF8String], RS_METHOD_GPU, 0xff, property, 1);
         if (S == NULL) {
             NSLog(@"Some error(s) in RS_init() occurred.");
             [delegate progressUpdated:3.0 message:@"LES / ADM / RCS table not found."];
