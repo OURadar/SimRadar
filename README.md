@@ -24,7 +24,7 @@ Follow these steps to get the project
     git clone https://github.com/ouradar/simradar.git
     ```
 
-3. Download [Sparkle Framework], extract and move the folder **Sparkle.framework**[^2] into the sub-folder **maOS/SimRadar**
+3. Download [Sparkle Framework], extract and move the folder **Sparkle.framework**[^2] into the sub-folder **macOS/SimRadar**
 
 4. Download the [LES, ADM & RCS data] in a zip archive (15GB), extract and move the folder **tables** into one of the following locations:
    - ~/Downloads
@@ -212,10 +212,10 @@ Alternatively, if you are on a linux machine, the following should work:
 On linux machines, it is important that the GPU driver's include and library paths are also included in the compilation command.
 
 
-The SimRadar App for Mac OS X
------------------------------
+The SimRadar App for macOS X
+----------------------------
 
-A dedicated project SimRadar, which is a Mac OS X implemtation of visualization and graphical user interface, is included. It demonstrates how to wrap the framework in Objective-C. There is currently no plan to make this a full-fledge application that allows users to access all simulation parameters through the GUI.
+A dedicated project SimRadar, which is a Mac OS X implementation of visualization and graphical user interface, is included. It demonstrates how to wrap the framework in Objective-C. There is currently no plan to make this a full-fledge application that allows users to access all simulation parameters through the GUI.
 
 
 

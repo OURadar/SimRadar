@@ -3106,8 +3106,8 @@ void RS_set_vel_data_to_LES_table(RSHandle *H, const LESTable *leslie) {
     if (H->sim_concept & RSSimulationConceptDebrisFluxFromVelocity) {
         //RS_set_debris_flux_field_to_center_cell_of_3x3(H);
         //RS_set_debris_flux_field_to_checker_board(H, 51);
-        RS_set_debris_flux_field_to_checker_board_stretched(H, leslie);
-        //RS_set_debris_flux_field_from_LES(H, leslie);
+        //RS_set_debris_flux_field_to_checker_board_stretched(H, leslie);
+        RS_set_debris_flux_field_from_LES(H, leslie);
     }
     
     // Now we call the function to upload to GPU memory
