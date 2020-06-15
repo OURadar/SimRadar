@@ -111,24 +111,63 @@
 
 - (void)awakeFromNib
 {
-//    sc = [[SplashController alloc] initWithWindowNibName:@"Splash"];
-//    [sc setDelegate:self];
-//    [sc.window makeKeyAndOrderFront:nil];
-//    [sc showWindow:self];
-    
-	iconFolder = [[[NSBundle mainBundle] pathForResource:@"Minion-Icons" ofType:nil] retain];
-	icons = [[[NSFileManager defaultManager] contentsOfDirectoryAtPath:iconFolder error:nil] retain];
-
     // Default simulation state: 0 - advance beam and time; 1 - advance nothing; 2 - advance beam
     state = 0;
 
-//    NSLog(@"%@ %@", startRecordMenuItem, stopRecordMenuItem);
-    
-    NSLog(@"Add Downloads folder access check");
-    
+    // Check folders
     NSFileManager *fm = [NSFileManager defaultManager];
-    NSArray *folders = [fm URLsForDirectory:NSUserDirectory inDomains:NSUserDomainMask];
-    NSLog(@"%@", folders);
+    const char *homeFolder = getenv("HOME");
+    NSString *tableFolder = nil;
+    for (NSString *folder in @[@"Downloads", @"Documents", @"Desktop"]) {
+        NSString *path = [NSString stringWithFormat:@"%s/%@/tables", homeFolder, folder];
+        NSDictionary *attr = [fm attributesOfItemAtPath:path error:nil];
+        #ifdef DEBUG
+        NSLog(@"%@ -> %@", path, attr);
+        #endif
+        if (attr) {
+            if (tableFolder == nil) {
+                tableFolder = folder;
+            }
+        }
+    }
+    bool allExists = true;
+    bool allAccessible = true;
+    if (tableFolder) {
+        // Check LES, ADM and RCS
+        for (NSString *folder in @[@"les", @"adm", @"rcs"]) {
+            NSString *path = [NSString stringWithFormat:@"%s/%@/tables/%@", homeFolder, tableFolder, folder];
+            NSDictionary *attr = [fm attributesOfItemAtPath:path error:nil];
+            #ifdef DEBUG
+            NSLog(@"%@ -> %@", path, attr);
+            #endif
+            allExists &= (attr != nil);
+        }
+        NSLog(@"allExists = %s", allExists ? "true" : "false");
+        for (NSString *file in @[@"les/suctvort/fort.10_2", @"adm/plate.adm", @"rcs/brick.rcs"]) {
+            NSString *path = [NSString stringWithFormat:@"%s/%@/tables/%@", homeFolder, tableFolder, file];
+            NSLog(@"%@ -> %@", path, [fm attributesOfItemAtPath:path error:nil]);
+            FILE *fid = fopen([path UTF8String], "r");
+            if (fid == NULL) {
+                allAccessible = false;
+                break;
+            }
+            fclose(fid);
+        }
+        NSLog(@"allAccessible = %s", allAccessible ? "true" : "false");
+    }
+    if (allExists && allAccessible) {
+        sc = [[SplashController alloc] initWithWindowNibName:@"Splash"];
+        [sc setDelegate:self];
+        [sc.window makeKeyAndOrderFront:nil];
+        [sc showWindow:self];
+    } else {
+        [self alertMissingResources];
+    }
+
+	iconFolder = [[[NSBundle mainBundle] pathForResource:@"Minion-Icons" ofType:nil] retain];
+	icons = [[[NSFileManager defaultManager] contentsOfDirectoryAtPath:iconFolder error:nil] retain];
+
+//    NSLog(@"%@ %@", startRecordMenuItem, stopRecordMenuItem);
     
 //    [startRecordMenuItem setEnabled:true];
 //    [stopRecordMenuItem setEnabled:false];
@@ -155,10 +194,11 @@
     NSAlert *alert = [NSAlert new];
     [alert addButtonWithTitle:@"OK"];
     [alert addButtonWithTitle:@"Cancel"];
-    [alert setMessageText:@"Error"];
-    [alert setInformativeText:@"Required resource(s) cannot be found in any of the search paths. Check Console log for more details."];
+    [alert setMessageText:@"Resources Not Found"];
+    [alert setInformativeText:@"Required resources, e.g., LES, ADM and or RCS tables cannot be found in any of the search paths. Check Console log for more details."];
     [alert setAlertStyle:NSAlertStyleCritical];
     if ([alert runModal] == NSAlertFirstButtonReturn) {
+        [[NSApplication sharedApplication] terminate:self];
         return;
     }
     [alert release];
@@ -277,7 +317,7 @@
 
 - (void)splashWindowDidLoad:(id)sender
 {
-//    [self newLiveDisplay:self];
+    [self newLiveDisplay:self];
 }
 
 #pragma mark -

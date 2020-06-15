@@ -9,6 +9,10 @@
 #define GL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED 1
 #endif
 
+#ifndef GL_SILENCE_DEPRECATION
+#define GL_SILENCE_DEPRECATION 1
+#endif
+
 #import <Foundation/Foundation.h>
 #import <OpenGL/OpenGL.h>
 #import <GLKit/GLKit.h>

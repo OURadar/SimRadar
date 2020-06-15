@@ -483,6 +483,7 @@ LESGrid *LES_enclosing_grid_create_from_file(const char *filename) {
 	}
 	FILE *fid = fopen(filename, "r");
 	if (fid == NULL) {
+        fprintf(stderr, "Unable to open file %s\n", filename);
         free(grid);
 		return NULL;
 	}
