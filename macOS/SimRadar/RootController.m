@@ -111,10 +111,10 @@
 
 - (void)awakeFromNib
 {
-    sc = [[SplashController alloc] initWithWindowNibName:@"Splash"];
-    [sc setDelegate:self];
-    [sc.window makeKeyAndOrderFront:nil];
-    [sc showWindow:self];
+//    sc = [[SplashController alloc] initWithWindowNibName:@"Splash"];
+//    [sc setDelegate:self];
+//    [sc.window makeKeyAndOrderFront:nil];
+//    [sc showWindow:self];
     
 	iconFolder = [[[NSBundle mainBundle] pathForResource:@"Minion-Icons" ofType:nil] retain];
 	icons = [[[NSFileManager defaultManager] contentsOfDirectoryAtPath:iconFolder error:nil] retain];
@@ -123,6 +123,12 @@
     state = 0;
 
 //    NSLog(@"%@ %@", startRecordMenuItem, stopRecordMenuItem);
+    
+    NSLog(@"Add Downloads folder access check");
+    
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSArray *folders = [fm URLsForDirectory:NSUserDirectory inDomains:NSUserDomainMask];
+    NSLog(@"%@", folders);
     
 //    [startRecordMenuItem setEnabled:true];
 //    [stopRecordMenuItem setEnabled:false];
@@ -271,7 +277,7 @@
 
 - (void)splashWindowDidLoad:(id)sender
 {
-    [self newLiveDisplay:self];
+//    [self newLiveDisplay:self];
 }
 
 #pragma mark -
