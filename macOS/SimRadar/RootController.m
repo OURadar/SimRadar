@@ -128,6 +128,8 @@
             if (tableFolder == nil) {
                 tableFolder = folder;
             }
+        } else {
+            NSLog(@"%@ does not exist", path);
         }
     }
     bool allExists = true;
@@ -140,18 +142,40 @@
             #ifdef DEBUG
             NSLog(@"%@ -> %@", path, attr);
             #endif
-            allExists &= (attr != nil);
+            if (attr == nil) {
+                allExists = false;
+                NSLog(@"%@ does not exist", path);
+            }
         }
-        for (NSString *file in @[@"les/suctvort/fort.10_2", @"adm/plate.adm", @"rcs/brick.rcs"]) {
+    } else {
+        allExists = false;
+    }
+    char buf[8];
+    unsigned long b = 0;
+    if (allExists) {
+        // Check some sample tables that come with original downloads
+        for (NSString *file in @[@"les/suctvort/fort.10_2", @"adm/plate.adm", @"adm/square_plate.adm", @"rcs/brick.rcs", @"rcs/leaf.rcs"]) {
             NSString *path = [NSString stringWithFormat:@"%s/%@/tables/%@", homeFolder, tableFolder, file];
             #ifdef DEBUG
             NSLog(@"%@ -> %@", path, [fm attributesOfItemAtPath:path error:nil]);
             #endif
+            NSDictionary *attr = [fm attributesOfItemAtPath:path error:nil];
+            if (attr == nil) {
+                allAccessible = false;
+                NSLog(@"%@ does not exist", path);
+                break;
+            }
+            // Really open the file and read one byte off
             FILE *fid = fopen([path UTF8String], "r");
             if (fid == NULL) {
-                NSLog(@"%@ -> %@", path, [fm attributesOfItemAtPath:path error:nil]);
                 allAccessible = false;
+                NSLog(@"%@ -> %@", path, [fm attributesOfItemAtPath:path error:nil]);
                 break;
+            }
+            b = fread(buf, sizeof(char), 4, fid);
+            if (b == 0) {
+                NSLog(@"Unable to read %@ (b = %zu)", path, b);
+                allAccessible = false;
             }
             fclose(fid);
         }
