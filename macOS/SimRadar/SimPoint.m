@@ -70,7 +70,7 @@
             if (S->num_cus[0] <= 16) {
                 RS_set_density(S, 1.2f);
             } else if (S->num_cus[0] <= 24) {
-                RS_set_density(S, 1.6f);
+                RS_set_density(S, 2.0f);
             } else if (S->num_cus[0] <= 48) {
                 RS_set_density(S, 5.0f);
             } else {

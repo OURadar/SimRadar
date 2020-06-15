@@ -142,18 +142,20 @@
             #endif
             allExists &= (attr != nil);
         }
-        NSLog(@"allExists = %s", allExists ? "true" : "false");
         for (NSString *file in @[@"les/suctvort/fort.10_2", @"adm/plate.adm", @"rcs/brick.rcs"]) {
             NSString *path = [NSString stringWithFormat:@"%s/%@/tables/%@", homeFolder, tableFolder, file];
+            #ifdef DEBUG
             NSLog(@"%@ -> %@", path, [fm attributesOfItemAtPath:path error:nil]);
+            #endif
             FILE *fid = fopen([path UTF8String], "r");
             if (fid == NULL) {
+                NSLog(@"%@ -> %@", path, [fm attributesOfItemAtPath:path error:nil]);
                 allAccessible = false;
                 break;
             }
             fclose(fid);
         }
-        NSLog(@"allAccessible = %s", allAccessible ? "true" : "false");
+        NSLog(@"Table check: allExists = %s   allAccessible = %s", allExists ? "true" : "false", allAccessible ? "true" : "false");
     }
     if (allExists && allAccessible) {
         sc = [[SplashController alloc] initWithWindowNibName:@"Splash"];
