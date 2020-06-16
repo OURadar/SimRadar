@@ -116,16 +116,16 @@
 
     // Check folders
     NSFileManager *fm = [NSFileManager defaultManager];
-    const char *homeFolder = getenv("HOME");
-    NSString *tableFolder = nil;
+    const char *userHome = getenv("HOME");
+    NSString *tableHome = nil;
     for (NSString *folder in @[@"Downloads", @"Documents", @"Desktop"]) {
-        NSString *path = [NSString stringWithFormat:@"%s/%@/tables", homeFolder, folder];
+        NSString *path = [NSString stringWithFormat:@"%s/%@/tables", userHome, folder];
         NSDictionary *attr = [fm attributesOfItemAtPath:path error:nil];
         #ifdef DEBUG
         NSLog(@"%@ -> %@", path, attr);
         #endif
-        if (attr && tableFolder == nil) {
-            tableFolder = folder;
+        if (attr && tableHome == nil) {
+            tableHome = folder;
             break;
         } else {
             NSLog(@"%@ does not exist", path);
@@ -133,10 +133,10 @@
     }
     bool allExists = true;
     bool allAccessible = true;
-    if (tableFolder) {
+    if (tableHome) {
         // Check LES, ADM and RCS
         for (NSString *folder in @[@"les", @"adm", @"rcs"]) {
-            NSString *path = [NSString stringWithFormat:@"%s/%@/tables/%@", homeFolder, tableFolder, folder];
+            NSString *path = [NSString stringWithFormat:@"%s/%@/tables/%@", userHome, tableHome, folder];
             NSDictionary *attr = [fm attributesOfItemAtPath:path error:nil];
             #ifdef DEBUG
             NSLog(@"%@ -> %@", path, attr);
@@ -154,7 +154,7 @@
     if (allExists) {
         // Check some sample tables that come with original downloads
         for (NSString *file in @[@"les/suctvort/fort.10_2", @"adm/plate.adm", @"adm/square_plate.adm", @"rcs/brick.rcs", @"rcs/leaf.rcs"]) {
-            NSString *path = [NSString stringWithFormat:@"%s/%@/tables/%@", homeFolder, tableFolder, file];
+            NSString *path = [NSString stringWithFormat:@"%s/%@/tables/%@", userHome, tableHome, file];
             #ifdef DEBUG
             NSLog(@"%@ -> %@", path, [fm attributesOfItemAtPath:path error:nil]);
             #endif
@@ -164,7 +164,7 @@
                 NSLog(@"%@ does not exist", path);
                 break;
             }
-            // Really open the file and read one byte off
+            // Really open the file and read a few bytes out of it
             FILE *fid = fopen([path UTF8String], "r");
             if (fid == NULL) {
                 allAccessible = false;
@@ -196,7 +196,6 @@
     
 //    [startRecordMenuItem setEnabled:true];
 //    [stopRecordMenuItem setEnabled:false];
-    
 }
 
 - (void)dealloc
