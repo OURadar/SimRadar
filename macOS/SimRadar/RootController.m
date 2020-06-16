@@ -111,16 +111,86 @@
 
 - (void)awakeFromNib
 {
-    sc = [[SplashController alloc] initWithWindowNibName:@"Splash"];
-    [sc setDelegate:self];
-    [sc.window makeKeyAndOrderFront:nil];
-    [sc showWindow:self];
-    
-	iconFolder = [[[NSBundle mainBundle] pathForResource:@"Minion-Icons" ofType:nil] retain];
-	icons = [[[NSFileManager defaultManager] contentsOfDirectoryAtPath:iconFolder error:nil] retain];
-
     // Default simulation state: 0 - advance beam and time; 1 - advance nothing; 2 - advance beam
     state = 0;
+
+    // Check folders
+    NSFileManager *fm = [NSFileManager defaultManager];
+    const char *homeFolder = getenv("HOME");
+    NSString *tableFolder = nil;
+    for (NSString *folder in @[@"Downloads", @"Documents", @"Desktop"]) {
+        NSString *path = [NSString stringWithFormat:@"%s/%@/tables", homeFolder, folder];
+        NSDictionary *attr = [fm attributesOfItemAtPath:path error:nil];
+        #ifdef DEBUG
+        NSLog(@"%@ -> %@", path, attr);
+        #endif
+        if (attr && tableFolder == nil) {
+            tableFolder = folder;
+            break;
+        } else {
+            NSLog(@"%@ does not exist", path);
+        }
+    }
+    bool allExists = true;
+    bool allAccessible = true;
+    if (tableFolder) {
+        // Check LES, ADM and RCS
+        for (NSString *folder in @[@"les", @"adm", @"rcs"]) {
+            NSString *path = [NSString stringWithFormat:@"%s/%@/tables/%@", homeFolder, tableFolder, folder];
+            NSDictionary *attr = [fm attributesOfItemAtPath:path error:nil];
+            #ifdef DEBUG
+            NSLog(@"%@ -> %@", path, attr);
+            #endif
+            if (attr == nil) {
+                allExists = false;
+                NSLog(@"%@ does not exist", path);
+            }
+        }
+    } else {
+        allExists = false;
+    }
+    char buf[8];
+    unsigned long b = 0;
+    if (allExists) {
+        // Check some sample tables that come with original downloads
+        for (NSString *file in @[@"les/suctvort/fort.10_2", @"adm/plate.adm", @"adm/square_plate.adm", @"rcs/brick.rcs", @"rcs/leaf.rcs"]) {
+            NSString *path = [NSString stringWithFormat:@"%s/%@/tables/%@", homeFolder, tableFolder, file];
+            #ifdef DEBUG
+            NSLog(@"%@ -> %@", path, [fm attributesOfItemAtPath:path error:nil]);
+            #endif
+            NSDictionary *attr = [fm attributesOfItemAtPath:path error:nil];
+            if (attr == nil) {
+                allAccessible = false;
+                NSLog(@"%@ does not exist", path);
+                break;
+            }
+            // Really open the file and read one byte off
+            FILE *fid = fopen([path UTF8String], "r");
+            if (fid == NULL) {
+                allAccessible = false;
+                NSLog(@"%@ -> %@", path, [fm attributesOfItemAtPath:path error:nil]);
+                break;
+            }
+            b = fread(buf, sizeof(char), 4, fid);
+            if (b == 0) {
+                NSLog(@"Unable to read %@ (b = %zu)", path, b);
+                allAccessible = false;
+            }
+            fclose(fid);
+        }
+        NSLog(@"Table check: allExists = %s   allAccessible = %s", allExists ? "true" : "false", allAccessible ? "true" : "false");
+    }
+    if (allExists && allAccessible) {
+        sc = [[SplashController alloc] initWithWindowNibName:@"Splash"];
+        [sc setDelegate:self];
+        [sc.window makeKeyAndOrderFront:nil];
+        [sc showWindow:self];
+    } else {
+        [self alertMissingResources];
+    }
+
+	iconFolder = [[[NSBundle mainBundle] pathForResource:@"Minion-Icons" ofType:nil] retain];
+	icons = [[[NSFileManager defaultManager] contentsOfDirectoryAtPath:iconFolder error:nil] retain];
 
 //    NSLog(@"%@ %@", startRecordMenuItem, stopRecordMenuItem);
     
@@ -149,10 +219,11 @@
     NSAlert *alert = [NSAlert new];
     [alert addButtonWithTitle:@"OK"];
     [alert addButtonWithTitle:@"Cancel"];
-    [alert setMessageText:@"Error"];
-    [alert setInformativeText:@"Required resource(s) cannot be found in any of the search paths. Check Console log for more details."];
+    [alert setMessageText:@"Resources Not Found"];
+    [alert setInformativeText:@"Required resources, e.g., LES, ADM and or RCS tables cannot be found in any of the search paths. Check Console log for more details."];
     [alert setAlertStyle:NSAlertStyleCritical];
     if ([alert runModal] == NSAlertFirstButtonReturn) {
+        [[NSApplication sharedApplication] terminate:self];
         return;
     }
     [alert release];

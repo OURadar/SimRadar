@@ -417,12 +417,12 @@
 #endif
     
     result = [result imageByCroppingToRect:rect];
-//    result = alphaMask;
+    //    result = alphaMask;
     //    result = letterMap;
     
-    NSLog(@"bitmapImageRep --->");
+    //NSLog(@"bitmapImageRep --->");
     NSBitmapImageRep *bitmapImageRep = [[NSBitmapImageRep alloc] initWithCIImage:result];
-    NSLog(@"bitmapImageRep <---");
+    //NSLog(@"bitmapImageRep <---");
     memcpy(bitmap, [bitmapImageRep bitmapData], bitmapWidth * bitmapHeight * 4);
     [bitmapImageRep release];
     
