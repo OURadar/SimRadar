@@ -124,10 +124,9 @@
         #ifdef DEBUG
         NSLog(@"%@ -> %@", path, attr);
         #endif
-        if (attr) {
-            if (tableFolder == nil) {
-                tableFolder = folder;
-            }
+        if (attr && tableFolder == nil) {
+            tableFolder = folder;
+            break;
         } else {
             NSLog(@"%@ does not exist", path);
         }
