@@ -2404,6 +2404,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				VALIDATE_WORKSPACE_SKIPPED_SDK_FRAMEWORKS = "OpenGL GLKit";
 			};
 			name = Release;
 		};
@@ -2462,6 +2463,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				VALIDATE_WORKSPACE_SKIPPED_SDK_FRAMEWORKS = "OpenGL GLKit";
 			};
 			name = GEN_IMG;
 		};
@@ -2525,6 +2527,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				VALIDATE_WORKSPACE_SKIPPED_SDK_FRAMEWORKS = "OpenGL GLKit";
 			};
 			name = "Debug GL";
 		};
@@ -2586,6 +2589,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRIP_INSTALLED_PRODUCT = NO;
+				VALIDATE_WORKSPACE_SKIPPED_SDK_FRAMEWORKS = "OpenGL GLKit";
 			};
 			name = Debug;
 		};
@@ -4129,6 +4133,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = edu.ou.arrc.SimRadar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				VALIDATE_WORKSPACE_SKIPPED_SDK_FRAMEWORKS = "OpenGL GLKit";
 			};
 			name = DUMMY;
 		};
