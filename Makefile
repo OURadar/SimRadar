@@ -74,6 +74,7 @@ $(OBJS_PATH):
 	mkdir -p $@
 
 lib/librs.a: $(OBJS_WITH_PATH)
+	mkdir -p lib
 	ar rvcs $@ $(OBJS_WITH_PATH)
 
 $(PROGS): %: %.c $(MYLIB)
